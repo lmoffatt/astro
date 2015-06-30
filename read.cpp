@@ -71,7 +71,22 @@ void writeCommand::run(const std::string line)
       f.close();
 
     }
-  }
+
+
+  CortexMeasure* m=cmd_->getMeasure(dataName);
+  if (m!=nullptr)
+    {
+      std::string filename=dataName+"_histo.txt";
+      std::ofstream f;
+      f.open(filename.c_str(),std::ofstream::out);
+
+        m->write(f);
+      f.close();
+
+    }
+
+
+}
 
 
 

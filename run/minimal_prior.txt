@@ -1,0 +1,16 @@
+// set de parametros mínimos
+// solo DAMPs, no hay adsorcion ni especifica, ni inespecifica
+// los damps solo disparan la transicion inicial
+// we took the diffussion coefficient of a small protein, we use a 3 db error by no particular reason
+D   1E-6   3  [cm^2 s-1]  Diffussion constant for all cases
+
+//  adsorption, unit
+// the adsorption will be determined by the number of union sites per cell the kon and the koff y kcat
+// kcat representa tanto la aparicion de nuevos receptores como la degradacion del ligando.
+
+
+a[0]
+
+  std::vector<double> fpos,fneg;
+
+  std::vector<double> nhd,nhm,q,r,Ed,Em;

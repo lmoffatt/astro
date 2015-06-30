@@ -27,5 +27,10 @@ HEADERS += \
 
 DISTFILES += \
     run/script \
-    run/3dpl.txt
+    run/3dpl.txt \
+    run/minimal_prior.txt \
+    run/7dpl.txt \
+    run/sim_zero.txt \
+    run/simulate_script \
+    run/parameters_zero.txt
 

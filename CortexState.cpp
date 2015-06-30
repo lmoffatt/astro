@@ -4,7 +4,8 @@
 #include <sstream>
 #include <list>
 #include <iostream>
-
+#include <set>
+#include <algorithm>
 void TissuePhoto::read(std::string& line, std::istream &s)
 {
   std::string name;
@@ -24,11 +25,11 @@ void TissuePhoto::read(std::string& line, std::istream &s)
           ss.clear();
           ss>>name;
           while (name.empty()&&safeGetline(s,line))
-          {
+            {
               ss.str(line);
               ss.clear();
               ss>>name;
-          }
+            }
           if (line.find("celulas")!=std::string::npos)
             {
               safeGetline(s,line);
@@ -48,7 +49,23 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                   ss2.str(line);
                   ss2.clear();
                 }
-              line;
+            }
+          else if (line.find("limite foto")!=std::string::npos)
+            {
+              safeGetline(s,line);
+              safeGetline(s,line);
+              std::stringstream ss2(line);
+              double x,y;
+              std::vector<position> v;
+              while (ss2>>x>>y)
+                {
+                  v.push_back(position(x,y));
+                  safeGetline(s,line);
+                  ss2.str(line);
+                  ss2.clear();
+                }
+              lf_=LimiteFoto(v);
+
             }
           else if (line.find("limite tejido")!=std::string::npos)
             {
@@ -79,7 +96,7 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                   v.push_back(position(x,y));
                   safeGetline(s,line);
                   ss2.str(line);
-                   ss2.clear();
+                  ss2.clear();
                 }
               ll_=LimiteLesion(v);
 
@@ -97,7 +114,7 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                   v.push_back(position(x,y));
                   safeGetline(s,line);
                   ss2.str(line);
-                   ss2.clear();
+                  ss2.clear();
                 }
               vasos_.push_back(LimiteVaso(v));
 
@@ -120,7 +137,7 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                   safeGetline(s,line);
 
                   ss2.str(line);
-                   ss2.clear();
+                  ss2.clear();
                 }
               pines_[pinNum]=Pin(v);
 
@@ -148,10 +165,10 @@ void TissuePhoto::write(std::ostream &s)
     }
 
   s<<"celulas"<<"\n";
-  s<<"X (um)"<<"\t"<<"Y (um)"<<"TIPO"<<"\t"<<"PB"<<"\n";
+  s<<astr_.front().getHeader()<<"\n";
   for (Astrocyte a:astr_)
     {
-      s<<a.pos().x<<"\t"<<a.pos().y<<"\t"<<a.type()<<"\t"<<a.prob()<<"\n";
+      a.write(s);
     }
   s<<"\n";
 
@@ -182,7 +199,16 @@ void TissuePhoto::write(std::ostream &s)
         s<<e.x<<"\t"<<e.y<<"\n";
       s<<"\n";
     }
-  }
+  if (!lf_.limits().empty())
+    {
+      s<<"limite foto"<<"\n";
+      s<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
+      for (auto e:lf_.limits())
+        s<<e.x<<"\t"<<e.y<<"\n";
+      s<<"\n";
+    }
+
+}
 
 bool TissuePhoto::align( TissuePhoto &other)
 {
@@ -203,7 +229,7 @@ bool TissuePhoto::align( TissuePhoto &other)
     {// calculate the displacement for all found pins
       std::vector<double> dxs;
       std::vector<double> dys;
-      std::cerr<<"foto"<<other.num<<"\n";
+      std::cerr<<"\nfoto"<<other.num<<"\n";
       double sdx=0,sdy=0;
       for (auto aPin:commonPins)
         {
@@ -249,6 +275,7 @@ void TissuePhoto::correctPosition(double dx, double dy)
 {
   this->ll_.correctPosition(dx,dy);
   this->lt_.correctPosition(dx,dy);
+  this->lf_.correctPosition(dx,dy);
   for (auto& pin:pines_)
     {
       pin.second.correctPosition(dx,dy);
@@ -270,111 +297,378 @@ void TissuePhoto::correctPosition(double dx, double dy)
 
 
 
-CortexState SimplestModel::next(CortexState &c)
+
+CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const CortexState &c, double dt)
 {
-  CortexState n(c);
-
-  unsigned nboxes=c.nboxes;
-
-
-  double ap=0;
-  for (unsigned is=0; is<c.nstates; ++is)
-    ap+=a[is]*c.pAstro_[0][is]*c.cAstro[0];
+  auto dPsi=dPsi_dt(p,c);
+  auto dOmega=dOmega_dt(p,c);
+  auto dRhoOmegaLigand=dRhoOmegaLigand_dt(p,c);
+  auto dRhoOmegaState=dRhoOmegaState_dt(p,c);
+  auto dRhoPsiLigand=dRhoPsiLigand_dt(p,c);
+  auto dRhoPsiState=dRhoPsiState_dt(p,c);
 
 
-  double jr=(c.damp_[1]-c.damp_[0])/(c.dx_[0]+c.dx_[1]);
-  double jl=0;
-  n.damp_[0]=c.damp_[0]
-      +Dd_*2.0*jr/c.dx_[0]
-      -Kd_*c.damp_[0]-ap;
-  for (unsigned ix=1; ix<c.damp_.size()-1; ++ix)
-    {
-      ap=0;
-      for (unsigned is=0; is<c.nstates; ++is)
-        ap+=a[is]*c.pAstro_[ix][is]*c.cAstro[ix];
-      jr=(c.damp_[ix+1]-c.damp_[ix])/(c.dx_[ix]+c.dx_[ix+1]);
-      jl=(c.damp_[ix-1]-c.damp_[ix])/(c.dx_[ix]+c.dx_[ix-1]);
+  CortexState out(c);
+  out.omega_+=dOmega*dt;
+  out.psi_+=dPsi*dt;
+  out.rho_i_+=(dRhoPsiLigand+dRhoPsiState)*dt;
+  out.rho_j_+=(dRhoOmegaLigand+dRhoOmegaState)*dt;
 
-      n.damp_[ix]=c.damp_[ix]
-          +Dd_*2.0*(jr+jl)/c.dx_[0]
-          -Kd_*c.damp_[ix]-ap;
+  out.rho_=sum(out.rho_i_);
 
-    }
-  ap=0;
-  for (unsigned is=0; is<c.nstates; ++is)
-    ap+=a[is]*c.pAstro_[nboxes][is]*c.cAstro[nboxes];
+  return out;
 
-
-  jl=(c.damp_[nboxes-1]-c.damp_[nboxes])/(c.dx_[nboxes]+c.dx_[nboxes-1]);
-  n.damp_[nboxes]=c.damp_[nboxes]
-      +Dd_*2.0*jl/c.dx_[nboxes]
-      -(Kd_+ap)*c.damp_[nboxes];
-
-
-  // mediators
-
-  double vpb=0;
-  for (unsigned is=0; is<c.nstates; ++is)
-    vpb+=(v[is]-c.med_[0]*b[is])*c.pAstro_[0][is]*c.cAstro[0];;
-
-
-  jr=(c.med_[1]-c.med_[0])/(c.dx_[0]+c.dx_[1]);
-  jl=0;
-  n.med_[0]=c.med_[0]
-      +Dm_*2.0*jr/c.dx_[0]
-      -Km_*c.med_[0]+vpb;
-  for (unsigned ix=1; ix<nboxes-1; ++ix)
-    {
-      vpb=0;
-      for (unsigned is=0; is<c.nstates; ++is)
-        vpb+=(v[is]-c.med_[ix]*b[is])*c.pAstro_[ix][is]*c.cAstro[ix];;
-      jr=(c.med_[ix+1]-c.med_[ix])/(c.dx_[ix]+c.dx_[ix+1]);
-      jl=(c.med_[ix-1]-c.med_[ix])/(c.dx_[ix]+c.dx_[ix-1]);
-
-      n.med_[ix]=c.med_[ix]
-          +Dm_*2.0*(jr+jl)/c.dx_[ix]
-          -Km_*c.med_[ix]+vpb;
-
-    }
-  vpb=0;
-  for (unsigned is=0; is<c.nstates; ++is)
-    vpb+=(v[is]-c.med_[nboxes]*b[is])*c.pAstro_[nboxes][is]*c.cAstro[nboxes];;
-
-
-  jl=(c.med_[nboxes-1]-c.med_[nboxes])/(c.dx_[nboxes-1]+c.dx_[nboxes]);
-  n.med_[nboxes]=c.med_[nboxes]
-      +Dm_*2.0*jl/c.dx_[nboxes]
-      -Km_*c.med_[nboxes]+vpb;
-
-
-  std::vector<double> g(0,c.nstates-1);
-
-  for (unsigned ix=0; ix<c.nboxes; ++ix)
-    {
-      for (unsigned is=0; is<c.nstates-1;++is )
-        {
-          g[is]=a[is]*q[is]*std::pow(c.damp_[ix],nhd[is])
-              /(std::pow(c.damp_[ix],nhd[is])+std::pow(Ed[is],nhd[is]))
-              +b[is]*r[is]*std::pow(c.med_[ix],nhm[is])
-              /(std::pow(c.med_[ix],nhm[is])+std::pow(Em[is],nhm[is]));
-        }
-      n.pAstro_[ix][0]=c.pAstro_[ix][1]*fneg[0]-c.pAstro_[ix][0]*(fpos[0]+g[0]);
-
-      for (unsigned is=1; is<c.nstates-1;++is )
-        {
-          n.pAstro_[ix][is]=+c.pAstro_[ix][is-1]*(fpos[is-1]+g[is-1])
-              +c.pAstro_[ix][is+1]*fneg[is]
-              -c.pAstro_[ix][is]*(fpos[is]+g[is]+fneg[is-1]);
-        }
-
-      n.pAstro_[ix][c.nstates]=+c.pAstro_[ix][c.nstates-1]*(fpos[c.nstates-1]+g[c.nstates-1])
-          -c.pAstro_[ix][c.nstates]*(fneg[c.nstates-1]);
-
-    }
-
-  return n;
 
 }
+
+CortexState SimplestModel::init(const SimplestModel::Param &p,const SimplestModel::SimParam &s)
+{
+  CortexState o(s.x_,s.dx_,p.N_,s.n_,s.dn_,p.M_,s.m_,s.dm_);
+
+
+  unsigned numX=o.x_.size();
+  for (unsigned x=0; x<numX; ++x)
+    {
+      o.rho_[x][0]=p.nAstr_[x];
+      o.rho_i_[x][0][0]=p.nAstr_[x];
+      o.rho_j_[x][0][0]=p.nAstr_[x];
+    }
+  return o;
+}
+
+CortexState SimplestModel::injectDamp(const CortexState &c, double damp)
+{
+     CortexState o(c);
+     o.psi_[0]+=damp;  // TODO: correct by dx
+     return o;
+}
+
+std::vector<double> SimplestModel::dPsi_dt(const Param &p,
+                                           const CortexState &c)
+{
+  unsigned numX=c.rho_.size();
+  unsigned numK=c.rho_.front().size();
+  unsigned numI=c.rho_i_.front().front().size();
+
+  
+  std::vector<double> o(numX,0);
+  for (unsigned x=0; x<numX; ++x)
+    {
+      double Jn=0;
+      double Jp=0;
+      if (x>0)
+        Jn=2.0*p.Dpsi_*(c.psi_[x-1]-c.psi_[x])/(c.dx_[x-1]+c.dx_[x]);
+      if (x+1<numX)
+        Jp=2.0*p.Dpsi_*(c.psi_[x+1]-c.psi_[x])/(c.dx_[x+1]+c.dx_[x]);
+
+      double a=0;
+
+      for (unsigned k=0; k<numK; ++k)
+        {
+          double nRecep=0;
+          for (unsigned i=0; i<numI; ++i)
+            {
+              nRecep+=(c.N_[k]-c.n_[i])*c.rho_i_[x][k][i];
+            }
+          a+=p.kon_psi_[k]*nRecep;
+        }
+      o[x]=(Jn+Jp)/c.dx_[x]-c.psi_[x]*a;
+    }
+  return o;
+}
+
+std::vector<double> SimplestModel::dOmega_dt(const Param &p,
+                                             const CortexState &c)
+{
+  unsigned numX=c.rho_.size();
+  unsigned numK=c.rho_.front().size();
+  unsigned numI=c.rho_j_.front().front().size();
+
+
+  std::vector<double> o(numX,0);
+  for (unsigned x=0; x<numX; ++x)
+    {
+      double Jn=0;
+      double Jp=0;
+      if (x>0)
+        Jn=2.0*p.Domega_*(c.omega_[x-1]-c.omega_[x])/(c.dx_[x-1]+c.dx_[x]);
+      if (x+1<numX)
+        Jp=2.0*p.Domega_*(c.omega_[x+1]-c.omega_[x])/(c.dx_[x+1]+c.dx_[x]);
+
+      double a=0;
+      double sig=0;
+      for (unsigned k=0; k<numK; ++k)
+        {
+          double nRecep=0;
+          for (unsigned i=0; i<numI; ++i)
+            {
+              nRecep+=(c.N_[k]-c.n_[i])*c.rho_j_[x][k][i];
+            }
+          a+=p.kon_omega_[k]*nRecep;
+          sig+=p.ksig_omega_[k]*c.rho_[x][k];
+        }
+      o[x]=(Jn+Jp)/c.dx_[x]+sig-c.omega_[x]*a;
+    }
+  return o;
+}
+
+
+std::vector<std::vector<std::vector<double>>> SimplestModel::
+dRhoOmegaLigand_dt(const Param &p,
+                   const CortexState &c)
+{
+  unsigned numX=c.rho_.size();
+  unsigned numK=c.rho_.front().size();
+  unsigned numJ=c.rho_j_.front().front().size();
+
+
+  std::vector<std::vector<std::vector<double>>> dr(numX,std::vector<std::vector<double>>(numK,std::vector<double>(numJ,0)));
+  for (unsigned x=0; x<numX; ++x)
+    {
+      for (unsigned k=0; k<numK; ++k)
+        {
+          for (unsigned j=0; j<numJ; ++j)
+            {
+              double Jpos,Jneg;
+              if (j+1<numJ)
+                Jpos=p.kcat_omega_[k]*c.m_[j+1]/c.dm_[j+1]*c.rho_j_[x][k][j+1]
+                    -p.kon_omega_[k]*c.omega_[x]*(c.M_[k]-c.m_[j])/c.dm_[j]
+                    *c.rho_j_[x][k][j];
+              else
+                Jpos=0;
+              if (j>0)
+                Jneg=-p.kcat_omega_[k]*c.m_[j]/c.dm_[j]*c.rho_j_[x][k][j]
+                    -p.kon_omega_[k]*c.omega_[x]*(c.M_[k]-c.m_[j-1])/c.dm_[j-1]
+                    *c.rho_j_[x][k][j-1];
+              else
+                Jneg=0;
+              dr[x][k][j]=Jpos+Jneg;
+
+            }
+        }
+    }
+  return dr;
+}
+
+std::vector<std::vector<std::vector<double>>> SimplestModel::
+dRhoOmegaState_dt(const Param &p,
+                  const CortexState &c)
+{
+  unsigned numX=c.rho_.size();
+  unsigned numK=c.rho_.front().size();
+  unsigned numJ=c.rho_j_.front().front().size();
+  unsigned numI=c.rho_i_.front().front().size();
+
+
+  std::vector<std::vector<std::vector<double>>> dr(
+        numX,std::vector<std::vector<double>>(numK,std::vector<double>(numJ,0)));
+  for (unsigned x=0; x<numX; ++x)
+    {
+      for (unsigned k=0; k<numK; ++k)
+        {
+          double gkk1_n=0;
+          double gk_1k_n=0;
+          double ak_n=0;
+
+          for (unsigned i=0; i<numI; ++i)
+            {
+              gkk1_n+=g_psi(p,k,c.n_[i])*c.rho_i_[x][k][i];
+              ak_n+=a_psi(p,k,c.n_[i])*c.rho_i_[x][k][i];
+            }
+          gkk1_n/=c.rho_[x][k];
+          ak_n/=c.rho_[x][k];
+
+          if (k>0)
+            {
+              for (unsigned i=0; i<numI; ++i)
+                {
+                  gk_1k_n+=g_psi(p,k-1,c.n_[i])*c.rho_i_[x][k-1][i];
+                }
+              gk_1k_n/=c.rho_[x][k-1];
+            }
+
+
+
+          for (unsigned j=0; j<numJ; ++j)
+            {
+              double Jpos,Jneg;
+
+              if (k+1<numK)
+                Jpos=p.g_rev_[k+1]*c.rho_j_[x][k+1][j]
+                    -gkk1_n*c.rho_j_[x][k][j]
+                    -g_omega(p,k,c.m_[j])*c.rho_j_[x][k][j];
+              else
+                Jpos=0;
+              if (k>0)
+                Jneg=-p.g_rev_[k]*c.rho_j_[x][k][j]
+                    +gk_1k_n*c.rho_j_[x][k-1][j]
+                    +g_omega(p,k-1,c.m_[j])*c.rho_j_[x][k-1][j];
+              else Jneg=0;
+              double JA=-ak_n*c.rho_j_[x][k][j]
+                  -a_omega(p,k,c.m_[j])*c.rho_j_[x][k][j];
+
+              dr[x][k][j]=Jpos+Jneg+JA;
+
+            }
+        }
+    }
+  return dr;
+}
+
+
+
+std::vector<std::vector<std::vector<double>>> SimplestModel::
+dRhoPsiLigand_dt(const Param &p,
+                 const CortexState &c)
+{
+  unsigned numX=c.rho_.size();
+  unsigned numK=c.rho_.front().size();
+  unsigned numI=c.rho_i_.front().front().size();
+
+
+  std::vector<std::vector<std::vector<double>>>
+      dr(numX,std::vector<std::vector<double>>(numK,std::vector<double>(numI)));
+  for (unsigned x=0; x<numX; ++x)
+    {
+      for (unsigned k=0; k<numK; ++k)
+        {
+          for (unsigned i=0; i<numI; ++i)
+            {
+              double Jpos,Jneg;
+              if (i+1<numI)
+                Jpos=p.kcat_psi_[k]*c.n_[i+1]/c.dn_[i+1]*c.rho_i_[x][k][i+1]
+                    -p.kon_psi_[k]*c.psi_[x]*(c.N_[k]-c.n_[i])/c.dn_[i]
+                    *c.rho_i_[x][k][i];
+              else Jpos=0;
+              if (i>0)
+                Jneg=-p.kcat_psi_[k]*c.n_[i]/c.dn_[i]*c.rho_i_[x][k][i]
+                    -p.kon_psi_[k]*c.psi_[x]*(c.N_[k]-c.n_[i-1])/c.dn_[i-1]
+                    *c.rho_i_[x][k][i-1];
+              else
+                Jneg=0;
+              dr[x][k][i]=Jpos+Jneg;
+
+            }
+        }
+    }
+  return dr;
+}
+
+std::vector<std::vector<std::vector<double>>> SimplestModel::
+dRhoPsiState_dt(const Param &p,
+                const CortexState &c)
+{
+  unsigned numX=c.rho_.size();
+  unsigned numK=c.rho_.front().size();
+  unsigned numJ=c.rho_j_.front().front().size();
+  unsigned numI=c.rho_i_.front().front().size();
+
+
+  std::vector<std::vector<std::vector<double>>> dr(
+        numX,std::vector<std::vector<double>>(numK,std::vector<double>(numI,0)));
+  for (unsigned x=0; x<numX; ++x)
+    {
+      for (unsigned k=0; k<numK; ++k)
+        {
+          double gkk1_n=0;
+          double gk_1k_n=0;
+          double ak_n=0;
+          if (k>0)
+            {
+              for (unsigned j=0; j<numJ; ++j)
+                {
+                  gk_1k_n+=g_omega(p,k-1,c.n_[j])*c.rho_j_[x][k-1][j];
+                }
+              gk_1k_n/=c.rho_[x][k-1];
+            }
+          for (unsigned j=0; j<numJ; ++j)
+            {
+              gkk1_n+=g_omega(p,k,c.n_[j])*c.rho_j_[x][k][j];
+              ak_n+=a_omega(p,k,c.n_[j])*c.rho_j_[x][k][j];
+            }
+          gkk1_n/=c.rho_[x][k];
+          ak_n/=c.rho_[x][k];
+
+
+          for (unsigned i=0; i<numI; ++i)
+            {
+              double Jpos,Jneg;
+              if (k+1<numK)
+                Jpos=p.g_rev_[k+1]*c.rho_i_[x][k+1][i]
+                    -gkk1_n*c.rho_i_[x][k][i]
+                    -g_omega(p,k,c.m_[i])*c.rho_i_[x][k][i];
+              else Jpos=0;
+              if (k>0)
+                Jneg=-p.g_rev_[k]*c.rho_i_[x][k][i]
+                    +gk_1k_n*c.rho_i_[x][k-1][i]
+                    +g_omega(p,k-1,c.m_[i])*c.rho_i_[x][k-1][i];
+              else Jneg=0;
+              double JA=-ak_n*c.rho_i_[x][k][i]
+                  -a_omega(p,k,c.m_[i])*c.rho_i_[x][k][i];
+
+              dr[x][k][i]=Jpos+Jneg+JA;
+
+            }
+        }
+    }
+  return dr;
+}
+
+
+
+
+
+
+
+
+
+double SimplestModel::g_omega(const Param &p,unsigned k,double m)
+{
+  return p.g_max_omega_[k]*std::pow(m,p.h_omega_[k])
+      /(std::pow(m,p.h_omega_[k])+std::pow(p.n_50_omega_[k],p.h_omega_[k]));
+}
+
+double SimplestModel::a_omega(const Param &p,unsigned k,double m)
+{
+  return p.a_max_omega_[k]*std::pow(m,p.ha_omega_[k])
+      /(std::pow(m,p.ha_omega_[k])+std::pow(p.na_50_omega_[k],p.ha_omega_[k]));
+}
+
+
+double SimplestModel::g_psi(const Param &p,unsigned k,double m)
+{
+  return p.g_max_psi_[k]*std::pow(m,p.h_psi_[k])
+      /(std::pow(m,p.h_psi_[k])+std::pow(p.n_50_psi_[k],p.h_psi_[k]));
+}
+
+double SimplestModel::a_psi(const Param &p,unsigned k,double m)
+{
+  return p.a_max_psi_[k]*std::pow(m,p.ha_psi_[k])
+      /(std::pow(m,p.ha_psi_[k])+std::pow(p.na_50_psi_[k],p.ha_psi_[k]));
+}
+
+void SimplestModel::run(const SimplestModel::SimParam &s, const SimplestModel::Param &p)
+{
+  CortexState c=init(p,s);
+
+  double t=0;
+  double dt=s.dt_;
+  while (t<s.teq_)
+    {
+      c=nextEuler(p,c,dt);
+      t+=dt;
+    }
+
+  c.addDamp(s.);
+  while (t<s.tsim_)
+    {
+      c=nextEuler(p,c,dt);
+      t+=dt;
+    }
+
+
+}
+
 
 
 
@@ -404,6 +698,183 @@ void TissueSection::align()
 }
 
 
+
+void TissueSection::merge()
+{
+  TissuePhoto foto;
+
+  for (auto it:fotos)
+    {
+      foto.include(it.second);
+    }
+
+
+  foto.id="Merged";
+  foto.num=0;
+  fotos.clear();
+  fotos[0]=foto;
+
+
+
+}
+
+void TissueSection::distances()
+{
+  for (auto& f:fotos)
+    f.second.calculate_distances();
+}
+
+
+
+class Intervaling
+{
+public:
+  virtual unsigned num() const=0;
+
+  virtual std::vector<double> limits()const=0;
+
+  unsigned npos=std::numeric_limits<unsigned>::max();
+  virtual unsigned getIndex(double x)const=0;
+  ~Intervaling(){}
+};
+
+
+class pointDefined: public Intervaling
+{
+
+
+  // Intervaling interface
+public:
+  virtual unsigned num() const
+  {
+    return ticks_.size();
+  }
+  virtual std::vector<double> limits() const
+  {
+    std::vector<double> out(ticks_.size());
+    unsigned i=0;
+    for (auto it=ticks_.begin();it!=ticks_.end(); ++it)
+      {
+        out[i]=it->first;
+        ++i;
+      }
+    return out;
+
+  }
+  virtual unsigned getIndex(double x) const
+  {
+    auto it=ticks_.lower_bound(x);
+    if (it!=ticks_.end())
+      return it->second;
+    else
+      return npos;
+  }
+
+  pointDefined(std::vector<double> c)
+  {
+    std::sort(c.begin(),c.end());
+    for (unsigned i=0; i<c.size(); ++i)
+      ticks_[c[i]]=i;
+
+
+
+
+  }
+
+private:
+  std::map<double, unsigned> ticks_;
+
+};
+
+CortexMeasure *TissuePhoto::measure(std::string id,std::vector<double> x)
+{
+  pointDefined p(x);
+
+  std::vector<std::vector<double>> numx(p.num(),std::vector<double>(Astrocyte::numTypes(),0));
+
+
+  std::vector<std::vector<double>> var(p.num(),std::vector<double>(Astrocyte::numTypes(),0));
+
+
+  for (Astrocyte a:astr_)
+    {
+      switch (a.type()){
+        case 1:
+        case 2:
+          numx[p.getIndex(a.distance_to_lession())][a.type()-1]++;
+          break;
+        case 3:
+          numx[p.getIndex(a.distance_to_lession())][2]+=a.prob();
+          numx[p.getIndex(a.distance_to_lession())][0]+=1.0-a.prob();
+          // we only sum the variance for the landing state;
+          //we calculate the whole covariance matrix at the end
+          var[p.getIndex(a.distance_to_lession())][2]+=a.prob()*(1.0-a.prob());
+          break;
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+          numx[p.getIndex(a.distance_to_lession())][a.type()-1]+=a.prob();
+          numx[p.getIndex(a.distance_to_lession())][a.type()-2]+=1.0-a.prob();
+          // we only sum the variance for the landing state;
+          //we calculate the whole covariance matrix at the end
+          var[p.getIndex(a.distance_to_lession())][a.type()-1]+=a.prob()*(1.0-a.prob());
+          break;
+        default:
+          break;
+
+        }
+    }
+  std::vector<std::vector<std::vector<double>>>
+      covar(p.num()
+            ,std::vector<std::vector<double>>(Astrocyte::numTypes(),
+                                              std::vector<double>(Astrocyte::numTypes(),0)));
+  for (unsigned ix=0; ix<p.num(); ++ix)
+    for (unsigned i=0; i<Astrocyte::numTypes(); ++i)
+      {
+        switch (i){
+          case 0:
+          case 1:
+            break;
+          case 2:
+            covar[ix][2][2]+=var[ix][2];
+            covar[ix][0][0]+=var[ix][2];
+            covar[ix][0][2]-=var[ix][2];
+            covar[ix][2][0]-=var[ix][2];
+            break;
+          case 3:
+          case 4:
+          case 5:
+          case 6:
+            covar[ix][i][i]+=var[ix][i];
+            covar[ix][i-1][i-1]+=var[ix][i];
+            covar[ix][i][i-1]-=var[ix][i];
+            covar[ix][i-1][i]-=var[ix][i];
+            break;
+          default:
+            break;
+          }
+
+
+      }
+
+
+
+
+  CortexMeasure* m=new CortexMeasure(id,p.limits(),numx,covar);
+  return m;
+
+
+}
+
+
+
+
+
+
+
+
+
 void tissueElement::correctPosition(double dx, double dy)
 {
   for (auto& pos:limits_)
@@ -411,4 +882,32 @@ void tissueElement::correctPosition(double dx, double dy)
       pos.x+=dx;
       pos.y+=dy;
     }
+}
+
+
+std::ostream &Astrocyte::write(std::ostream &s)
+{
+  s<<id()<<"\t";
+  if (distance_to_lession_<std::numeric_limits<double>::infinity())
+    s<<distance_to_lession_<<"\t"<<distance_to_tissue_<<"\t";
+  s<<pos().x<<"\t"<<pos().y<<"\t"<<type()<<"\t"<<prob()<<"\n";
+  return s;
+}
+
+std::string Astrocyte::getHeader()
+{
+  std::string ss;
+  std::stringstream s(ss);
+  s<<"ID"<<"\t";
+  if (distance_to_lession_<std::numeric_limits<double>::infinity())
+    s<<"d_les (um)"<<"\t"<<"d_tej (um)"<<"\t";
+  s<<"X (um)"<<"\t"<<"Y (um)"<<"\t"<<"TIPO"<<"\t"<<"PB"<<"\n";
+
+  return s.str();
+}
+
+void Astrocyte::calculateDistances(const TissuePhoto &f)
+{
+  distance_to_lession_=f.ll_.distance(*this);
+  distance_to_tissue_=f.lt_.distance(*this);
 }

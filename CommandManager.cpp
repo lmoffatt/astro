@@ -8,6 +8,11 @@ CommandManager::CommandManager()
  cmd_["read"]=new readCommand(this);
  cmd_["align"]=new AlignCommand(this);
  cmd_["write"]=new writeCommand(this);
+ cmd_["merge"]=new MergeCommand(this);
+ cmd_["distances"]=new DistancesCommand(this);
+ cmd_["histogram"]=new HistogramCommand(this);
+
+
 }
 
 void CommandManager::execute(std::string line)
@@ -42,3 +47,11 @@ TissueSection *CommandManager::getSection(std::string idSection)
    return nullptr;
 }
 
+CortexMeasure *CommandManager::getMeasure(std::string id)
+{
+ auto it=measures.find(id);
+ if(it!=measures.end())
+   return it->second;
+ else
+   return nullptr;
+}

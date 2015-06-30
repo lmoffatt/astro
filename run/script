@@ -1,3 +1,22 @@
+read 7dpl
+align 7dpl
+merge 7dpl
+distances 7dpl
+histogram 7dpl d_les  0:+250:4000
+write 7dpl
 read 3dpl
 align 3dpl
+merge 3dpl
+distances 3dpl
+histogram 3dpl d_les  0:+250:4000
 write 3dpl
+
+experiment sim_zero
+model parameters_zero
+simulate sim_zero parameters_zero
+
+
+
+
+
+

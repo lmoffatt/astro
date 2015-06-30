@@ -1,0 +1,31 @@
+simulacion
+
+grilla espacial
+[um]
+0:+50:4000:*1.5:20000
+
+dt
+[s]
+1
+
+tiempo equilibrio
+[s]
+7200
+
+tiempo total
+[s]
+700000
+
+grilla numero receptores DAMP
+[number of DAMP receptors]
+0:+1:2:*1.5:1E5
+
+grilla numero receptores mediadores
+[number of mediator receptors]
+0:+1:2:*1.5:1E6
+
+DAMP inyectado
+[nM]
+400  300  200  0 ...
+
+

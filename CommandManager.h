@@ -10,8 +10,8 @@ class CommandBase
 public:
   virtual void run(const std::string line)=0;
 
- virtual std::string id()const=0;
- virtual ~CommandBase(){}
+  virtual std::string id()const=0;
+  virtual ~CommandBase(){}
 
 
 
@@ -37,17 +37,30 @@ public:
     sections[section->id()]=section;
   }
 
-~CommandManager()
-{
+  void push_back(CortexMeasure* measure)
+  {
+    measures[measure->id()]=measure;
+  }
+
+
+  ~CommandManager()
+  {
     for (auto elem:cmd_)
       delete elem.second;
     for (auto elem: sections)
       delete elem.second;
+    for (auto elem: measures)
+      delete elem.second;
+
   }
 
+  CortexMeasure *getMeasure(std::string id);
 private:
   std::map <std::string, CommandBase*> cmd_;
   std::map <std::string,TissueSection*> sections;
+  std::map <std::string,CortexMeasure*> measures;
+
+
 
 };
 

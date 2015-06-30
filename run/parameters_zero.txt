@@ -1,0 +1,28 @@
+parameters
+
+model 0
+
+D  1E-6  [cm⁻2 s-1]  // diffusion coefficient in both cases
+
+kon  1E9  [M-1 s-1]  // association constant in both cases
+
+kcat 2E-4  [s-1]  // ligand removal rate in both cases
+
+ksig  1E-19  [M s-1] // ligand production per cell
+
+g_01   5E-5  [s-1] // cell type change rate from 0to 1
+
+g_10   1E-4   [s-1]  // cell type change rate from 1 to 0
+
+g_23  2E-5   [s-1]  //   cell type change rate from 2 to 3
+
+g_max  2E-5  [s-1]  // maximal cell type change rate from 1 to 2
+
+N0    1000 [receptors] // number of DAMP/mediator receptors on resting cells
+
+N2    10000   [receptors] // number of DAMP/mediator receptors on reactive cells
+
+a_5    2E-5  [s-1]  // cell apoptosis rate in the last state
+
+
+
