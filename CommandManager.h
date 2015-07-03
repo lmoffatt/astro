@@ -37,6 +37,17 @@ public:
     sections[section->id()]=section;
   }
 
+  void push_back(BaseModel* model)
+  {
+    models[model->id()]=model;
+  }
+
+  void push_back(CortexSimulation* simulation)
+  {
+    simulations[simulation->id_]=simulation;
+  }
+
+
   void push_back(CortexMeasure* measure)
   {
     measures[measure->id()]=measure;
@@ -51,14 +62,25 @@ public:
       delete elem.second;
     for (auto elem: measures)
       delete elem.second;
+    for (auto elem: models)
+      delete elem.second;
+    for (auto elem: simulations)
+      delete elem.second;
 
   }
 
   CortexMeasure *getMeasure(std::string id);
+  BaseModel *getModel(std::string idModel);
+  CortexSimulation *getSimulation(std::string idSimulation);
 private:
   std::map <std::string, CommandBase*> cmd_;
   std::map <std::string,TissueSection*> sections;
   std::map <std::string,CortexMeasure*> measures;
+
+
+  std::map <std::string,BaseModel*> models;
+
+  std::map <std::string,CortexSimulation*> simulations;
 
 
 

@@ -1,0 +1,2 @@
+simulate sim_zero parameters_zero 1
+write sim_parameters_zero

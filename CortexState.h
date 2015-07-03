@@ -339,59 +339,137 @@ private:
 
 class CortexExperiment
 {
-
-  // grilla receptores damp
-  std::vector<double> n_;
-  std::vector<double>dn_;
-
-  //grilla receptores mediadores
-  std::vector<double> m_;
-  std::vector<double>dm_;
-
+public:
   // grilla espacial
   std::vector<double> x_;
 
   std::vector<double>dx_;
 
-  double dt_;
-  double teq;
+  double h_;
+
+
+  double sample_time_;
+  double teq_;
   double tsim_;
 
+  void read(std::string& line,std::istream& s);
+
+
+  void write(std::ostream& s);
+ };
+
+class CortexState
+{
+public:
+  std::vector<double> x_;
+  std::vector<double> dx_;
+
+  double h_;
+
+
+  std::vector<double> psi_;
+
+  std::vector<double> omega_;
+
+  std::vector<std::vector<double> > rho_;
 
 
 
-  /*
+  CortexState(const std::vector<double>& x
+              ,const std::vector<double>& dx
+              ,double h
+              ,unsigned numK)
+    :
+      x_(x)
+    ,dx_(dx)
+    ,h_(h)
+    ,psi_(std::vector<double>(x.size(),0))
+    ,omega_(std::vector<double> (x.size(),0))
+    ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
+   {}
 
-  grilla espacial
-  [um]
-  0:+50:4000:*1.5:20000
 
-  dt
-  [s]
-  1
+  void addDamp(const std::vector<double> d)
+  {
+    for (unsigned i=0; i<d.size(); ++i)
+    psi_[i]+=d[i]/dx_[i]/h_/h_/1000.0;
+  }
 
-  tiempo equilibrio
-  [s]
-  7200
-
-  tiempo total
-  [s]
-  700000
-
-  grilla numero receptores DAMP
-  [number of DAMP receptors]
-  0:+1:2:*1.5:1E5
-
-  grilla numero receptores mediadores
-  [number of mediator receptors]
-  0:+1:2:*1.5:1E6
-
-  DAMP inyectado
-  [nM]
-  400  300  200  0 ...
-  */
 };
 
+
+
+
+
+
+
+
+
+
+class CortexSimulation
+{
+public:
+CortexSimulation(){}
+
+std::ostream& write(std::ostream& s);
+
+std::ostream& write(std::ostream& s, const std::string& var, const std::string& par );
+
+
+
+std::string id_;
+
+ std::vector<double> x_;
+ std::vector<double> dx_;
+
+ std::vector<double> t_;
+ std::vector<double> sdt_;
+
+ std::vector<std::vector<double>> psi_;
+
+ std::vector<std::vector<double>> omega_;
+
+ std::vector<std::vector<std::vector<double>>> rho_;
+
+ CortexSimulation(const CortexState& c,unsigned numSamples):
+   x_(c.x_),dx_(c.dx_),
+   t_(std::vector<double>(numSamples)),
+   sdt_(std::vector<double>(numSamples)),
+   psi_(std::vector<std::vector<double>>(numSamples,std::vector<double>(c.psi_.size()))),
+   omega_(std::vector<std::vector<double>>(numSamples,std::vector<double>(c.omega_.size()))),
+   rho_(std::vector<std::vector<std::vector<double>>>(
+                                                      numSamples,std::vector<std::vector<double>>
+                                                      (c.rho_.size(),
+                                                       std::vector<double>(
+                                                         c.rho_.front().size()))))
+
+ {
+     psi_[0]=c.psi_;
+     omega_[0]=c.omega_;
+     rho_[0]=c.rho_;
+
+ }
+ 
+ 
+ CortexSimulation(const std::string& id,unsigned numSamples,unsigned numNodes,unsigned numStates):
+   id_(id)
+   ,x_(std::vector<double>(numNodes)),
+   dx_(std::vector<double>(numNodes)),
+   t_(std::vector<double>(numSamples)),
+   sdt_(std::vector<double>(numSamples)),
+   psi_(std::vector<std::vector<double>>(numSamples,std::vector<double>(numNodes))),
+   omega_(std::vector<std::vector<double>>(numSamples,std::vector<double>(numNodes))),
+   rho_(std::vector<std::vector<std::vector<double>>>(
+                                                      numSamples,std::vector<std::vector<double>>
+                                                      (numNodes,
+                                                       std::vector<double>(
+                                                         numStates)))){}
+ 
+ 
+ 
+ 
+ void read(std::string &line, std::istream &s);
+};
 
 
 class TissuePhoto
@@ -495,72 +573,6 @@ private:
 
 
 
-class CortexState
-{
-public:
-  std::vector<double> x_;
-  std::vector<double> dx_;
-
-  std::vector<double> psi_;
-
-  std::vector<double> omega_;
-  std::vector<double> N_;
-
-  std::vector<double> n_;
-
-  std::vector<double> M_;
-  std::vector<double> m_;
-
-
-  std::vector<double> dn_;
-  std::vector<double> dm_;
-
-
-  std::vector<std::vector<double> > rho_;
-
-  std::vector<std::vector<std::vector<double>> > rho_i_;
-
-  std::vector<std::vector<std::vector<double>> > rho_j_;
-
-
-
-
-  CortexState(const std::vector<double>& x
-              ,const std::vector<double>& dx
-
-              , const std::vector<double>&N
-              , const std::vector<double>& n
-              , const std::vector<double>& dn
-              , const std::vector<double>& M
-              ,const std::vector<double>& m
-              ,const std::vector<double>& dm
-              )
-    :
-      x_(x)
-    ,dx_(dx)
-    ,psi_(std::vector<double>(x.size(),0))
-    ,omega_(std::vector<double> (x.size(),0))
-    ,N_(N),n_(n),M_(M),m_(m),
-      dn_(dn)
-    , dm_(dm)
-    ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(N.size(),0)))
-    ,rho_i_(std::vector<std::vector<std::vector<
-            double>>>(x.size(),std::vector<std::vector<
-                      double>>(N.size(),std::vector<double>(n.size(),0))))
-
-    ,rho_j_(std::vector<std::vector<std::vector<
-            double>>>(x.size(),std::vector<std::vector<
-                      double>>(N.size(),std::vector<double>(m.size(),0))))
-  {}
-
-
-  void addDamp(const std::vector<double> d)
-  {
-    for (unsigned i=0; i<d.size(); ++i)
-    psi_[i]+=d[i];
-  }
-
-};
 
 
 
@@ -573,121 +585,320 @@ public:
 
   class Parameters
   {
-
-  };
-
-
-  class CortexModelBase
-  {
   public:
-    virtual void loadParameters(Parameters p)=0;
-    virtual CortexState next(CortexState& aCortex)=0;
-
-    virtual ~CortexModelBase(){}
-
-  };
-
-  class SimplestModel: public CortexModelBase
-  {
-  public:
-
-
-
-    class SimParam
+    double get(const std::string& name)const
     {
-    public:
-      std::vector<double> n_;
-      std::vector<double> m_;
-      std::vector<double> x_;
-      std::vector<double>dn_;
-      std::vector<double>dm_;
-      std::vector<double>dx_;
-      double dt_;
-      double tsim_;
-      double teq_;
-      std::vector<double> damp_;
+      auto it=m_.find(name);
+      if (it!=m_.end())
+        return it->second.first;
+      else
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    void push_back(const std::string& name, double val,std::string comment)
+    {
+      m_[name]=std::pair<double,std::string>(val,comment);
+    }
+    void push_back(const std::string& name, double val)
+    {
+      m_[name]=std::pair<double,std::string>(val,"");
+    }
 
-    };
+    unsigned size()const
+    {
+      return m_.size();
+    }
+
+    void read(std::string &line, std::istream &s);
+
+
+
+   private:
+    std::map<std::string, std::pair<double,std::string>> m_;
+
+  };
+
+
+
+  class SimplestModel
+  {
+  public:
+
+
+
 
     class Param
     {
     public:
+      std::vector<double> damp_;
       double Dpsi_;
       double Domega_;
-      std::vector<double> kon_psi_;
-      std::vector<double> kcat_psi_;
+      double epsilon_;
+
+      double kon_psi_;
+      double kcat_psi_;
+      double kon_omega_;
+      double kcat_omega_;
 
       std::vector<double> ksig_omega_;
-      std::vector<double> kon_omega_;
-      std::vector<double> kcat_omega_;
-      std::vector<double> g_rev_;
+      std::vector<double> g_left_;
+      std::vector<double> g_rigth_;
 
       std::vector<double> g_max_omega_;
-      std::vector<double> h_omega_;
-      std::vector<double> n_50_omega_;
-
-      std::vector<double> a_max_omega_;
-      std::vector<double> ha_omega_;
-      std::vector<double> na_50_omega_;
-
       std::vector<double> g_max_psi_;
-      std::vector<double> h_psi_;
-      std::vector<double> n_50_psi_;
 
-      std::vector<double> a_max_psi_;
-      std::vector<double> ha_psi_;
-      std::vector<double> na_50_psi_;
+
+
+      std::vector<double> a_;
+
+      std::vector<double> a_omega_;
+      std::vector<double> a_psi_;
 
 
       std::vector<double> N_;
       std::vector<double> M_;
 
-      std::vector<double> nAstr_;
+       double dens_Astr_;
+
+       double dens_Neur_;
 
 
     };
 
-    SimplestModel() {}
-    void loadParameters(Parameters p)=0;
-    CortexState nextEuler(const Param &p,const CortexState& c, double dt);
+     SimplestModel() {}
+    CortexState nextEuler(const Param &p,const CortexState& c, double dt) const;
 
-    CortexState init(const Param &p, const SimParam &s);
+    CortexState init(const Param &p, const CortexExperiment &s) const;
 
-    CortexState injectDamp(const CortexState& c, double damp);
+    CortexState injectDamp(const CortexState& c, double damp)const;
 
-
-
+    CortexSimulation simulate(const Param &p, const CortexExperiment &sp, double dt)const;
 
 
 
 
-    std::vector<double> dPsi_dt(const Param &p, const CortexState& c);
-
-    std::vector<double> dOmega_dt(const Param &p, const CortexState &c);
-
-    std::vector<std::vector<std::vector<double> > >
-    dRhoOmegaLigand_dt(const Param &p, const CortexState &c);
-    std::vector<std::vector<std::vector<double> > >
-    dRhoOmegaState_dt(const Param &p, const CortexState &c);
-
-    std::vector<std::vector<std::vector<double> > >
-    dRhoPsiLigand_dt(const Param &p, const CortexState &c);
-
-    std::vector<std::vector<std::vector<double> > >
-    dRhoPsiState_dt(const Param &p, const CortexState &c);
 
 
-    double g_omega(const Param &p, unsigned k, double m);
-    double a_omega(const Param &p, unsigned k, double m);
-    double g_psi(const Param &p, unsigned k, double m);
-    double a_psi(const Param &p, unsigned k, double m);
+    std::vector<double> dPsi_dt(const Param &p, const CortexState& c) const;
 
-    void run(const SimParam& s,
-             const Param& p);
+    std::vector<double> dOmega_dt(const Param &p, const CortexState &c)const;
 
+
+
+
+
+    std::vector<std::vector<double> > dRho_dt(const Param &p, const CortexState &c, bool hasOmega)const;
+  };
+
+
+
+
+
+  class BaseModel
+  {public:
+
+    virtual std::string id()const=0;
+
+
+    virtual Parameters getParameters()const=0;
+
+    virtual void loadParameters(const Parameters& p)=0;
+
+    virtual CortexSimulation run(const CortexExperiment& e,double dt) const=0;
+
+
+    static BaseModel* create(const Parameters& p);
+
+    virtual ~BaseModel(){}
+
+   private:
+    static std::map<double,BaseModel*> models_;
+    static std::map<double,BaseModel*> getModels();
+  };
+
+
+  class Model00:public BaseModel
+  {
+    SimplestModel m;
+
+
+
+
+    class myParameters
+    {
+    public:
+      double D_;
+      double epsilon_;
+      double kon_;
+      double kcat_;
+      double g_01_;
+      double g_10_;
+      double g_23_;
+      double g_max_;
+      double N_0_;
+      double N_2_;
+      double N_N_;
+      double N_Astr_;
+      double N_Neuron_;
+      double a_2_;
+      double a_factor_;
+      double a_max_Neuron_;
+      double DAMP_;
+    };
+
+
+    SimplestModel::Param toModelParameters(const myParameters& p)const
+    {
+      SimplestModel::Param s;
+      s.damp_=std::vector<double>(1);
+      s.damp_[0]=p.DAMP_;
+      s.Dpsi_=p.D_;
+      s.Domega_=0;
+      s.epsilon_=p.epsilon_;
+
+      s.kon_psi_=p.kon_;
+      s.kcat_psi_=p.kcat_;
+      s.kon_omega_=0;
+      s.kcat_omega_=0;
+
+       s.ksig_omega_=std::vector<double>(7,0);
+
+      s.g_left_=std::vector<double> (7,0);
+      s.g_left_[2]=p.g_10_;
+
+
+      s.g_rigth_=std::vector<double> (7,0);
+      s.g_rigth_[1]=p.g_01_;
+
+      s.g_rigth_[3]=p.g_23_;
+      s.g_rigth_[4]=p.g_23_;
+      s.g_rigth_[5]=p.g_23_;
+
+      s.g_max_omega_=std::vector<double> (7,0);
+
+
+      s.g_max_psi_=std::vector<double> (7,0);
+
+      s.g_max_psi_[2]=p.g_max_;
+
+
+      s.a_=std::vector<double> (7,0);
+      s.a_[3]=p.a_2_;
+      s.a_[4]=p.a_2_*p.a_factor_;
+      s.a_[5]=s.a_[4]*p.a_factor_;
+      s.a_[6]=s.a_[5]*p.a_factor_;
+
+      s.a_omega_=std::vector<double> (7,0);
+      s.a_psi_=std::vector<double> (7,0);
+
+      s.a_psi_[0]=p.a_max_Neuron_;
+
+
+      s.N_=std::vector<double> (7,0);
+
+      s.N_[0]=p.N_N_;
+      s.N_[1]=p.N_0_;
+      s.N_[2]=p.N_0_;
+      s.N_[3]=p.N_2_;
+      s.N_[4]=p.N_2_*1.5;
+      s.N_[5]=p.N_2_*3;
+      s.N_[6]=p.N_2_*6;
+
+
+
+      s.M_=std::vector<double> (7,0);
+
+
+
+      s.dens_Astr_=p.N_Astr_;
+
+
+
+      s.dens_Neur_=p.N_Neuron_;
+
+
+      return s;
+    }
+
+
+    myParameters p_;
+
+    // BaseModel interface
+  public:
+    Model00(){}
+    ~Model00(){}
+    virtual std::string id() const
+    {
+      return "Model 0.0";
+    }
+    static double number()
+    {
+      return 0;
+    }
+    virtual Parameters getParameters() const
+    {
+      Parameters out;
+      out.push_back("D",p_.D_);
+      out.push_back("epsilon",p_.epsilon_);
+      out.push_back("kon",p_.kon_);
+      out.push_back("kcat", p_.kcat_);
+      out.push_back("g_01",p_.g_01_);
+      out.push_back("g_10",p_.g_10_ );
+      out.push_back("g_23",p_.g_23_ );
+      out.push_back("g_max",p_.g_max_ );
+      out.push_back("N_0",p_.N_0_ );
+      out.push_back("N_2",p_.N_2_ );
+      out.push_back("N_N",p_.N_N_ );
+      out.push_back("N_Astr",p_.N_Astr_);
+      out.push_back("N_Neuron_",p_.N_Neuron_);
+      out.push_back("a_2",p_.a_2_ );
+      out.push_back("a_factor",p_.a_factor_ );
+
+      out.push_back("a_max_Neuron",p_.a_max_Neuron_ );
+      out.push_back("DAMP",p_.DAMP_);
+
+
+
+
+
+      return out;
+
+    }
+    virtual void loadParameters(const Parameters& p)
+    {
+      p_.D_=p.get("D");
+      p_.epsilon_=p.get("epsilon");
+      p_.kon_=p.get("kon");
+      p_.kcat_=p.get("kcat");
+      p_.g_01_=p.get("g_01");
+      p_.g_10_=p.get("g_10");
+      p_.g_23_=p.get("g_23");
+      p_.g_max_=p.get("g_max");
+      p_.N_0_=p.get("N_0");
+      p_.N_2_=p.get("N_2");
+      p_.N_N_=p.get("N_N");
+      p_.a_2_=p.get("a_2");
+      p_.DAMP_=p.get("DAMP");
+      p_.N_Astr_=p.get("N_Astr");
+      p_.N_Neuron_=p.get("N_Neuron");
+
+      p_.a_factor_=p.get("a_factor");
+      p_.a_max_Neuron_=p.get("a_max_Neuron");
+
+
+
+
+    }
+
+    virtual CortexSimulation run(const CortexExperiment& e,double dt) const;
+
+    Model00(const Parameters& p)
+    {
+      loadParameters(p);
+     }
 
 
   };
+
 
 
 

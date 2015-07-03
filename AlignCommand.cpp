@@ -1,4 +1,6 @@
 #include "AlignCommand.h"
+#include "read.h"
+
 #include <sstream>
 
 
@@ -109,24 +111,61 @@ void ExperimentCommand::run(const std::string line)
   std::stringstream ss(line);
   ss>>cName>>dataName;
 
-  TissueSection* s=cm_->getSection(dataName);
 
-  std::vector<double> limits;
 
-  double current=start;
-  limits.push_back(current);
-  while(current<end)
+}
+
+
+void SimulateCommand::run(const std::string line)
+{
+  std::string cName, eName, mName;
+  double dt;
+  std::stringstream ss(line);
+  ss>>cName>>eName>>mName>>dt;
+
+  std::string filename=eName;
+  std::ifstream f(filename.c_str());
+  if (!f)
     {
-      current+=dx;
-      limits.push_back(current);
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+    }
+  std::string line2;
+  safeGetline(f,line2);
+  CortexExperiment e;
+
+  e.read(line2,f);
+
+  f.close();
+
+  filename=mName;
+  f.open(filename.c_str());
+  if (!f)
+    {
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+    }
+  safeGetline(f,line2);
+  Parameters p;
+
+  p.read(line2,f);
+
+  f.close();
+
+  BaseModel*m=BaseModel::create(p);
+  if (m!=nullptr)
+    {
+    cm_->push_back(m);
+
+    CortexSimulation* s=new CortexSimulation;
+    *s=m->run(e,dt);
+    s->id_="sim_";
+    s->id_+=mName;
+    cm_->push_back(s);
 
     }
 
-  if (s!=nullptr)
-    {
-      CortexMeasure* m= s->measure(limits);
-      cm_->push_back(m);
-    }
+
 
 
 }

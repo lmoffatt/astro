@@ -32,5 +32,6 @@ DISTFILES += \
     run/7dpl.txt \
     run/sim_zero.txt \
     run/simulate_script \
-    run/parameters_zero.txt
+    run/parameters_zero.txt \
+    run/write_script
 

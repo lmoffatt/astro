@@ -88,6 +88,23 @@ private:
 
 
 
+class SimulateCommand:public CommandBase
+{
+ // CommandBase interface
+public:
+  virtual void run(const std::string line);
+  virtual std::string id() const
+  {
+    return "simulate";
+  }
+  SimulateCommand(CommandManager* cm):cm_(cm){}
+
+private:
+  CommandManager* cm_;
+
+};
+
+
 
 
 

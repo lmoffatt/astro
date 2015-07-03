@@ -1,31 +1,28 @@
-simulacion
+experiment
 
-grilla espacial
+nodes
 [um]
 0:+50:4000:*1.5:20000
 
-dt
-[s]
-1
+thickness
+[um]
+100
 
-tiempo equilibrio
+sample time
 [s]
-7200
+100
 
-tiempo total
+
+
+equilibrium time
+[s]
+1000
+
+total time
 [s]
 700000
 
-grilla numero receptores DAMP
-[number of DAMP receptors]
-0:+1:2:*1.5:1E5
+end
 
-grilla numero receptores mediadores
-[number of mediator receptors]
-0:+1:2:*1.5:1E6
-
-DAMP inyectado
-[nM]
-400  300  200  0 ...
 
 

@@ -11,6 +11,7 @@ CommandManager::CommandManager()
  cmd_["merge"]=new MergeCommand(this);
  cmd_["distances"]=new DistancesCommand(this);
  cmd_["histogram"]=new HistogramCommand(this);
+ cmd_["simulate"]=new SimulateCommand(this);
 
 
 }
@@ -46,6 +47,24 @@ TissueSection *CommandManager::getSection(std::string idSection)
  else
    return nullptr;
 }
+
+BaseModel *CommandManager::getModel(std::string idModel)
+{
+ auto it=models.find(idModel);
+ if(it!=models.end())
+   return it->second;
+ else
+   return nullptr;
+}
+CortexSimulation *CommandManager::getSimulation(std::string idSimulation)
+{
+ auto it=simulations.find(idSimulation);
+ if(it!=simulations.end())
+   return it->second;
+ else
+   return nullptr;
+}
+
 
 CortexMeasure *CommandManager::getMeasure(std::string id)
 {
