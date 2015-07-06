@@ -162,6 +162,10 @@ void SimulateCommand::run(const std::string line)
     s->id_="sim_";
     s->id_+=mName;
     cm_->push_back(s);
+    std::string c="write  ";
+    c+=s->id_;
+
+    cm_->execute(c);
 
     }
 

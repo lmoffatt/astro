@@ -311,6 +311,12 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
 
 
   CortexState out(c);
+  double maxf=0;
+
+  for (double x:dPsi)
+    if (std::abs(x)>maxf)
+      maxf=std::abs(x);
+
   if (hasOmega)
     out.omega_+=dOmega*dt;
   out.psi_+=dPsi*dt;
@@ -373,10 +379,12 @@ std::vector<double> SimplestModel::dPsi_dt(const Param &p,
           Nt+=p.N_[k]*c.rho_[x][k];
         }
 
-      double a=f/c.dx_[x]*c.psi_[x]/d*Nt;
+      double a=f/c.dx_[x]/d*Nt;
+ //    if ((c.psi_[x]>0)&&a>1)
+ //     std::cerr<<"psi ="<<c.psi_[x]<<"a="<<a<<"  dx="<<c.dx_[x]<<"\t";
 
 
-      o[x]=(Jn+Jp)/c.dx_[x]-a;
+      o[x]=(Jn+Jp)/c.dx_[x]-a*c.psi_[x];
     }
   return o;
 }
@@ -387,9 +395,9 @@ std::vector<double> SimplestModel::dOmega_dt(const Param &p,
   unsigned numX=c.rho_.size();
   unsigned numK=c.rho_.front().size();
 
-  const double NAv=6.022E-23;
+  const double NAv=6.022E23;
   std::vector<double> o(numX,0);
-  double f=p.kcat_omega_/(NAv*p.epsilon_*c.h_*c.h_)*p.kon_omega_*1000;
+  double f=p.kcat_omega_/(NAv*p.epsilon_*c.h_*c.h_)*p.kon_omega_/1000;
 
   for (unsigned x=0; x<numX; ++x)
     {
@@ -541,6 +549,7 @@ CortexSimulation SimplestModel::simulate(const SimplestModel::Param &p,
           s.omega_[i]=c.omega_;
           s.psi_[i]=c.psi_;
           s.rho_[i]=c.rho_;
+
         }
     }
 
@@ -557,6 +566,7 @@ CortexSimulation SimplestModel::simulate(const SimplestModel::Param &p,
           s.omega_[i]=c.omega_;
           s.psi_[i]=c.psi_;
           s.rho_[i]=c.rho_;
+          //std::cout<<" i ="<<i;
         }
     }
   return s;

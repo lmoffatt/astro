@@ -16,7 +16,7 @@ g_10   1E-4   [s-1]  // cell type change rate from 1 to 0
 
 g_23  2E-5   [s-1]  //   cell type change rate from 2 to 3
 
-g_max  2E-5  [s-1]  // maximal cell type change rate from 1 to 2
+g_max  2E-4  [s-1]  // maximal cell type change rate from 1 to 2
 
 N_0    1000 [receptors cell^-1] // number of DAMP/mediator receptors on resting cells
 

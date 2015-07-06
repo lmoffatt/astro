@@ -1,2 +1,2 @@
-simulate sim_zero parameters_zero 1
-write sim_parameters_zero
+simulate sim_zero parameters_zero 10
+write sim_parameters_zero psi t = 0 t = 86400 t = 172800  t = 259200  t = 345600  t = 432000  t = 518400   t = 604800

@@ -48,10 +48,6 @@ void readCommand::run(const std::string rline)
         if (sim->t_.size()>0)
           {
             cmd_->push_back(sim);
-            std::string c="write  ";
-            c+=sim->id_;
-
-            cmd_->execute(c);
           }
 
       }
