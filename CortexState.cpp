@@ -418,7 +418,9 @@ std::vector<double> SimplestModel::dOmega_dt(const Param &p,
         }
       double a=f/c.dx_[x]*c.omega_[x]/d*Mt;
 
-
+      if (c.omega_[x]>0)
+              a=a+0;
+       sig/=(NAv*p.epsilon_*c.dx_[x]*c.h_*c.h_)/1000;
       o[x]=(Jn+Jp)/c.dx_[x]+sig-a;
     }
   return o;
@@ -823,12 +825,7 @@ void Astrocyte::calculateDistances(const TissuePhoto &f)
 }
 
 
-CortexSimulation Model00::run(const CortexExperiment &e, double dt) const
-{
-  return m.simulate(toModelParameters(this->p_),e,dt);
 
-
-}
 
 
 void CortexExperiment::read(std::string &line, std::istream &s)
@@ -1005,6 +1002,7 @@ std::map<double, BaseModel *> BaseModel::getModels()
 {
   std::map<double, BaseModel *> o;
   o[Model00::number()]=new Model00;
+  o[Model10::number()]=new Model10;
 
   return o;
 

@@ -1,2 +1,2 @@
-read sim_parameters_zero_sim
-write sim_parameters_zero psi t = 0 t = 86400 t = 172800  t = 259200  t = 345600  t = 432000  t = 518400   t = 604800
+read sim_parameters_10_sim
+write sim_parameters_10 omega t = 0 t = 86400 t = 172800  t = 259200  t = 345600  t = 432000  t = 518400   t = 604800

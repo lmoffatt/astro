@@ -8,7 +8,7 @@ epsilon  5e-2  [m/m]  // fraction of extracelular space
 
 kon  1E9  [M-1 s-1]  // association constant in both cases
 
-kcat 2E-4  [s-1]  // ligand removal rate in both cases
+kcat  1  [s-1]  // ligand removal rate in both cases
 
 g_01   5E-5  [s-1] // cell type change rate from 0to 1
 
@@ -34,8 +34,8 @@ a_factor 2   [s^0]    // increase in apoptosis rate per state change
 
 a_max_Neuron  2E-5  [s^-1]  // neuron apoptosis rate at saturated DAMP
 
-DAMP  5E-17 [M] // concentration of DAMP in the first cell
+DAMP  5E-17 [M L^-1] // concentration of DAMP in the first cell
 
-k_sig  10  [molecules s^-1 cell^-1]   // mediator secreation rate
+k_sig  0.0001  [molecules s^-1 cell^-1]   // mediator secreation rate
 
 

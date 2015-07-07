@@ -889,7 +889,12 @@ private:
 
     }
 
-    virtual CortexSimulation run(const CortexExperiment& e,double dt) const;
+    virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+    {
+      return m.simulate(toModelParameters(this->p_),e,dt);
+
+
+    }
 
     Model00(const Parameters& p)
     {
@@ -928,6 +933,7 @@ private:
       double a_factor_;
       double a_max_Neuron_;
       double DAMP_;
+      double k_sig_;
     };
 
 
@@ -937,15 +943,19 @@ private:
       s.damp_=std::vector<double>(1);
       s.damp_[0]=p.DAMP_;
       s.Dpsi_=p.D_;
-      s.Domega_=0;
+      s.Domega_=p.D_;
       s.epsilon_=p.epsilon_;
 
       s.kon_psi_=p.kon_;
       s.kcat_psi_=p.kcat_;
-      s.kon_omega_=0;
-      s.kcat_omega_=0;
+      s.kon_omega_=p.kon_;
+      s.kcat_omega_=p.kcat_;
 
        s.ksig_omega_=std::vector<double>(7,0);
+       s.ksig_omega_[3]=p.k_sig_;
+       s.ksig_omega_[4]=p.k_sig_*1.5;
+       s.ksig_omega_[5]=p.k_sig_*3;
+       s.ksig_omega_[6]=p.k_sig_*6;
 
       s.g_left_=std::vector<double> (7,0);
       s.g_left_[2]=p.g_10_;
@@ -965,6 +975,7 @@ private:
 
       s.g_max_psi_[2]=p.g_max_;
 
+      s.g_max_omega_[2]=p.g_max_;
 
 
       s.a_=std::vector<double> (7,0);
@@ -992,6 +1003,15 @@ private:
 
 
       s.M_=std::vector<double> (7,0);
+      s.M_[0]=p.N_N_;
+      s.M_[1]=p.N_0_;
+      s.M_[2]=p.N_0_;
+      s.M_[3]=p.N_2_;
+      s.M_[4]=p.N_2_*1.5;
+      s.M_[5]=p.N_2_*3;
+      s.M_[6]=p.N_2_*6;
+
+
 
 
 
@@ -1041,6 +1061,8 @@ private:
 
       out.push_back("a_max_Neuron",p_.a_max_Neuron_ );
       out.push_back("DAMP",p_.DAMP_);
+      out.push_back("k_sig",p_.k_sig_);
+
 
 
 
@@ -1069,13 +1091,19 @@ private:
 
       p_.a_factor_=p.get("a_factor");
       p_.a_max_Neuron_=p.get("a_max_Neuron");
+      p_.k_sig_=p.get("k_sig");
 
 
 
 
     }
 
-    virtual CortexSimulation run(const CortexExperiment& e,double dt) const;
+    virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+    {
+      return m.simulate(toModelParameters(this->p_),e,dt);
+
+
+    }
 
     Model10(const Parameters& p)
     {
