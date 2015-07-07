@@ -33,5 +33,6 @@ DISTFILES += \
     run/sim_zero.txt \
     run/simulate_script \
     run/parameters_zero.txt \
-    run/write_script
+    run/write_script \
+    run/parameters_10
 

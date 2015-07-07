@@ -901,6 +901,190 @@ private:
 
 
 
+  class Model10:public BaseModel
+  {
+    SimplestModel m;
+
+
+
+
+    class myParameters
+    {
+    public:
+      double D_;
+      double epsilon_;
+      double kon_;
+      double kcat_;
+      double g_01_;
+      double g_10_;
+      double g_23_;
+      double g_max_;
+      double N_0_;
+      double N_2_;
+      double N_N_;
+      double N_Astr_;
+      double N_Neuron_;
+      double a_2_;
+      double a_factor_;
+      double a_max_Neuron_;
+      double DAMP_;
+    };
+
+
+    SimplestModel::Param toModelParameters(const myParameters& p)const
+    {
+      SimplestModel::Param s;
+      s.damp_=std::vector<double>(1);
+      s.damp_[0]=p.DAMP_;
+      s.Dpsi_=p.D_;
+      s.Domega_=0;
+      s.epsilon_=p.epsilon_;
+
+      s.kon_psi_=p.kon_;
+      s.kcat_psi_=p.kcat_;
+      s.kon_omega_=0;
+      s.kcat_omega_=0;
+
+       s.ksig_omega_=std::vector<double>(7,0);
+
+      s.g_left_=std::vector<double> (7,0);
+      s.g_left_[2]=p.g_10_;
+
+
+      s.g_rigth_=std::vector<double> (7,0);
+      s.g_rigth_[1]=p.g_01_;
+
+      s.g_rigth_[3]=p.g_23_;
+      s.g_rigth_[4]=p.g_23_;
+      s.g_rigth_[5]=p.g_23_;
+
+      s.g_max_omega_=std::vector<double> (7,0);
+
+
+      s.g_max_psi_=std::vector<double> (7,0);
+
+      s.g_max_psi_[2]=p.g_max_;
+
+
+
+      s.a_=std::vector<double> (7,0);
+      s.a_[3]=p.a_2_;
+      s.a_[4]=p.a_2_*p.a_factor_;
+      s.a_[5]=s.a_[4]*p.a_factor_;
+      s.a_[6]=s.a_[5]*p.a_factor_;
+
+      s.a_omega_=std::vector<double> (7,0);
+      s.a_psi_=std::vector<double> (7,0);
+
+      s.a_psi_[0]=p.a_max_Neuron_;
+
+
+      s.N_=std::vector<double> (7,0);
+
+      s.N_[0]=p.N_N_;
+      s.N_[1]=p.N_0_;
+      s.N_[2]=p.N_0_;
+      s.N_[3]=p.N_2_;
+      s.N_[4]=p.N_2_*1.5;
+      s.N_[5]=p.N_2_*3;
+      s.N_[6]=p.N_2_*6;
+
+
+
+      s.M_=std::vector<double> (7,0);
+
+
+
+      s.dens_Astr_=p.N_Astr_;
+
+
+
+      s.dens_Neur_=p.N_Neuron_;
+
+
+      return s;
+    }
+
+
+    myParameters p_;
+
+    // BaseModel interface
+  public:
+    Model10(){}
+    ~Model10(){}
+    virtual std::string id() const
+    {
+      return "Model 1.0";
+    }
+    static double number()
+    {
+      return 1;
+    }
+    virtual Parameters getParameters() const
+    {
+      Parameters out;
+      out.push_back("D",p_.D_);
+      out.push_back("epsilon",p_.epsilon_);
+      out.push_back("kon",p_.kon_);
+      out.push_back("kcat", p_.kcat_);
+      out.push_back("g_01",p_.g_01_);
+      out.push_back("g_10",p_.g_10_ );
+      out.push_back("g_23",p_.g_23_ );
+      out.push_back("g_max",p_.g_max_ );
+      out.push_back("N_0",p_.N_0_ );
+      out.push_back("N_2",p_.N_2_ );
+      out.push_back("N_N",p_.N_N_ );
+      out.push_back("N_Astr",p_.N_Astr_);
+      out.push_back("N_Neuron_",p_.N_Neuron_);
+      out.push_back("a_2",p_.a_2_ );
+      out.push_back("a_factor",p_.a_factor_ );
+
+      out.push_back("a_max_Neuron",p_.a_max_Neuron_ );
+      out.push_back("DAMP",p_.DAMP_);
+
+
+
+
+
+      return out;
+
+    }
+    virtual void loadParameters(const Parameters& p)
+    {
+      p_.D_=p.get("D");
+      p_.epsilon_=p.get("epsilon");
+      p_.kon_=p.get("kon");
+      p_.kcat_=p.get("kcat");
+      p_.g_01_=p.get("g_01");
+      p_.g_10_=p.get("g_10");
+      p_.g_23_=p.get("g_23");
+      p_.g_max_=p.get("g_max");
+      p_.N_0_=p.get("N_0");
+      p_.N_2_=p.get("N_2");
+      p_.N_N_=p.get("N_N");
+      p_.a_2_=p.get("a_2");
+      p_.DAMP_=p.get("DAMP");
+      p_.N_Astr_=p.get("N_Astr");
+      p_.N_Neuron_=p.get("N_Neuron");
+
+      p_.a_factor_=p.get("a_factor");
+      p_.a_max_Neuron_=p.get("a_max_Neuron");
+
+
+
+
+    }
+
+    virtual CortexSimulation run(const CortexExperiment& e,double dt) const;
+
+    Model10(const Parameters& p)
+    {
+      loadParameters(p);
+     }
+
+
+  };
+
 
 
 

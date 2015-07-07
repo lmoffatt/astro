@@ -522,6 +522,10 @@ CortexSimulation SimplestModel::simulate(const SimplestModel::Param &p,
 {
 
 
+  std::cout<<"starts a Simulation \n";
+  std::cout<<"dt ="<<dt<<"\n";
+
+
   CortexState c=init(p,sp);
 
   unsigned numSamples=sp.tsim_/sp.sample_time_;
@@ -566,7 +570,8 @@ CortexSimulation SimplestModel::simulate(const SimplestModel::Param &p,
           s.omega_[i]=c.omega_;
           s.psi_[i]=c.psi_;
           s.rho_[i]=c.rho_;
-          //std::cout<<" i ="<<i;
+          if (i % 50 ==0)
+            std::cerr<<"\t sample \t"<<i;
         }
     }
   return s;

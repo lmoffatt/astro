@@ -1,14 +1,14 @@
 parameters
 
-model 0.0
+model 1.0
 
-D  1E-10  [m⁻2 s-1]  // diffusion coefficient for psi
+D  1E-10  [m⁻2 s-1]  // diffusion coefficient in both cases
 
 epsilon  5e-2  [m/m]  // fraction of extracelular space
 
-kon  1E9  [M-1 s-1]  // association constant for psi
+kon  1E9  [M-1 s-1]  // association constant in both cases
 
-kcat 2E-4  [s-1]  // ligand removal rate for psi
+kcat 2E-4  [s-1]  // ligand removal rate in both cases
 
 g_01   5E-5  [s-1] // cell type change rate from 0to 1
 
@@ -18,9 +18,9 @@ g_23  2E-5   [s-1]  //   cell type change rate from 2 to 3
 
 g_max  2E-4  [s-1]  // maximal cell type change rate from 1 to 2
 
-N_0    1000 [receptors cell^-1] // number of DAMP receptors on resting cells
+N_0    1000 [receptors cell^-1] // number of DAMP/mediator receptors on resting cells
 
-N_2    10000   [receptors cell^-1] // number of DAMP receptors on reactive cells
+N_2    10000   [receptors cell^-1] // number of DAMP/mediator receptors on reactive cells
 
 N_N     10000   [receptors cell^-1] // number of DAMP receptors on neurons
 
@@ -36,6 +36,6 @@ a_max_Neuron  2E-5  [s^-1]  // neuron apoptosis rate at saturated DAMP
 
 DAMP  5E-17 [M] // concentration of DAMP in the first cell
 
-
+k_sig  10  [molecules s^-1 cell^-1]   // mediator secreation rate
 
 
