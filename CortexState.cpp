@@ -330,7 +330,7 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
 
 CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExperiment &s)const
 {
-  CortexState o(s.x_,s.dx_,s.h_,p.N_.size());
+  CortexState o(s.x_,s.dx_,s.h_,p.epsilon_,p.N_.size());
 
 
   unsigned numX=o.x_.size();

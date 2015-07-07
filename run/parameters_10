@@ -8,7 +8,7 @@ epsilon  5e-2  [m/m]  // fraction of extracelular space
 
 kon  1E9  [M-1 s-1]  // association constant in both cases
 
-kcat  1  [s-1]  // ligand removal rate in both cases
+kcat 2E-2  [s-1]  // ligand removal rate in both cases
 
 g_01   5E-5  [s-1] // cell type change rate from 0to 1
 

@@ -366,6 +366,7 @@ public:
 
   double h_;
 
+  double epsilon_;
 
   std::vector<double> psi_;
 
@@ -375,14 +376,17 @@ public:
 
 
 
+
   CortexState(const std::vector<double>& x
               ,const std::vector<double>& dx
               ,double h
+              ,double epsilon
               ,unsigned numK)
     :
       x_(x)
     ,dx_(dx)
     ,h_(h)
+    ,epsilon_(epsilon)
     ,psi_(std::vector<double>(x.size(),0))
     ,omega_(std::vector<double> (x.size(),0))
     ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
@@ -392,7 +396,7 @@ public:
   void addDamp(const std::vector<double> d)
   {
     for (unsigned i=0; i<d.size(); ++i)
-    psi_[i]+=d[i]/dx_[i]/h_/h_/1000.0;
+    psi_[i]+=d[i]/dx_[i]/h_/h_/1000.0/epsilon_;
   }
 
 };
