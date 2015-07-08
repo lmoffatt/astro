@@ -318,8 +318,8 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
       maxf=std::abs(x);
 
   if (hasOmega)
-    out.omega_+=dOmega*dt;
-  out.psi_+=dPsi*dt;
+    out.omega_T_+=dOmega*dt;
+  out.psi_T_+=dPsi*dt;
 
   out.rho_+=dRho*dt;
 
@@ -346,12 +346,33 @@ CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExper
 CortexState SimplestModel::injectDamp(const CortexState &c, double damp)const
 {
   CortexState o(c);
-  o.psi_[0]+=damp;  // TODO: correct by dx
+  o.psi_T_[0]+=damp;  // TODO: correct by dx
   return o;
 }
 
 std::vector<double> SimplestModel::dPsi_dt(const Param &p,
                                            const CortexState &c)const
+{
+  unsigned numX=c.rho_.size();
+
+  std::vector<double> o(numX,0);
+
+
+  for (unsigned x=0; x<numX; ++x)
+    {
+      double Jn=0;
+      double Jp=0;
+      if (x>0)
+        Jn=2.0*p.Dpsi_*(c.psi_T_[x-1]-c.psi_B_[x-1]-c.psi_T_[x]+c.psi_B_[x])/(c.dx_[x-1]+c.dx_[x]);
+      if (x+1<numX)
+        Jp=2.0*p.Dpsi_*(c.psi_T_[x+1]-c.psi_B_[x+1]-c.psi_T_[x]+c.psi_B_[x])/(c.dx_[x+1]+c.dx_[x]);
+
+      o[x]=(Jn+Jp)/c.dx_[x]-p.kcat_psi_*c.psi_B_[x];
+    }
+  return o;
+}
+
+std::vector<double> SimplestModel::Psi_Bound(const SimplestModel::Param &p, const CortexState &c) const
 {
   unsigned numX=c.rho_.size();
   unsigned numK=c.rho_.front().size();
@@ -361,32 +382,21 @@ std::vector<double> SimplestModel::dPsi_dt(const Param &p,
 
   std::vector<double> o(numX,0);
 
-  double f=p.kcat_psi_/(NAv*p.epsilon_*c.h_*c.h_)*p.kon_psi_/1000.0;
+  double molar_section=1.0/(NAv*p.epsilon_*c.h_*c.h_)*1000.0;
 
+  double K_psi=p.kcat_psi_/p.kon_psi_;
   for (unsigned x=0; x<numX; ++x)
     {
-      double Jn=0;
-      double Jp=0;
-      if (x>0)
-        Jn=2.0*p.Dpsi_*(c.psi_[x-1]-c.psi_[x])/(c.dx_[x-1]+c.dx_[x]);
-      if (x+1<numX)
-        Jp=2.0*p.Dpsi_*(c.psi_[x+1]-c.psi_[x])/(c.dx_[x+1]+c.dx_[x]);
-
-      double d=p.kcat_psi_+p.kon_psi_*c.psi_[x];
       double Nt=0;
       for (unsigned k=0; k<numK; ++k)
-        {
-          Nt+=p.N_[k]*c.rho_[x][k];
-        }
-
-      double a=f/c.dx_[x]/d*Nt;
- //    if ((c.psi_[x]>0)&&a>1)
- //     std::cerr<<"psi ="<<c.psi_[x]<<"a="<<a<<"  dx="<<c.dx_[x]<<"\t";
-
-
-      o[x]=(Jn+Jp)/c.dx_[x]-a*c.psi_[x];
+        Nt+=p.N_[k]*c.rho_[x][k];
+      double R_T=Nt*molar_section/c.dx_[x];
+       double b=R_T+c.psi_T_[x]+K_psi;
+      o[x]=0.5*(b)-0.5*std::sqrt(b*b-4*R_T*c.psi_T_[x]);
     }
   return o;
+
+
 }
 
 std::vector<double> SimplestModel::dOmega_dt(const Param &p,
@@ -404,11 +414,11 @@ std::vector<double> SimplestModel::dOmega_dt(const Param &p,
       double Jn=0;
       double Jp=0;
       if (x>0)
-        Jn=2.0*p.Domega_*(c.omega_[x-1]-c.omega_[x])/(c.dx_[x-1]+c.dx_[x]);
+        Jn=2.0*p.Domega_*(c.omega_T_[x-1]-c.omega_T_[x])/(c.dx_[x-1]+c.dx_[x]);
       if (x+1<numX)
-        Jp=2.0*p.Domega_*(c.omega_[x+1]-c.omega_[x])/(c.dx_[x+1]+c.dx_[x]);
+        Jp=2.0*p.Domega_*(c.omega_T_[x+1]-c.omega_T_[x])/(c.dx_[x+1]+c.dx_[x]);
 
-      double d=p.kcat_omega_+p.kon_omega_*c.omega_[x];
+      double d=p.kcat_omega_+p.kon_omega_*c.omega_T_[x];
       double sig=0;
       double Mt=0;
       for (unsigned k=0; k<numK; ++k)
@@ -416,9 +426,9 @@ std::vector<double> SimplestModel::dOmega_dt(const Param &p,
           Mt+=p.M_[k]*c.rho_[x][k];
           sig+=p.ksig_omega_[k]*c.rho_[x][k];
         }
-      double a=f/c.dx_[x]*c.omega_[x]/d*Mt;
+      double a=f/c.dx_[x]*c.omega_T_[x]/d*Mt;
 
-      if (c.omega_[x]>0)
+      if (c.omega_T_[x]>0)
               a=a+0;
        sig/=(NAv*p.epsilon_*c.dx_[x]*c.h_*c.h_)/1000;
       o[x]=(Jn+Jp)/c.dx_[x]+sig-a;
@@ -447,28 +457,28 @@ dRho_dt(const Param &p,
               if (k+1<numK)
                 Jr=p.g_left_[k+1]*c.rho_[x][k+1]
                     -(p.g_rigth_[k]
-                      +p.g_max_psi_[k]*p.kon_psi_*c.psi_[x]
-                      /(p.kcat_psi_+p.kon_psi_*c.psi_[x])
-                      +p.g_max_omega_[k]*p.kon_omega_*c.omega_[x]
-                      /(p.kcat_omega_+p.kon_omega_*c.omega_[x])
+                      +p.g_max_psi_[k]*p.kon_psi_*c.psi_T_[x]
+                      /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
+                      +p.g_max_omega_[k]*p.kon_omega_*c.omega_T_[x]
+                      /(p.kcat_omega_+p.kon_omega_*c.omega_T_[x])
                       )*c.rho_[x][k];
               else
                 Jr=0;
               if (k>0)
                 Jl=-p.g_left_[k]*c.rho_[x][k]
                     +(p.g_rigth_[k-1]
-                    +p.g_max_psi_[k-1]*p.kon_psi_*c.psi_[x]
-                    /(p.kcat_psi_+p.kon_psi_*c.psi_[x])
-                    +p.g_max_omega_[k-1]*p.kon_omega_*c.omega_[x]
-                    /(p.kcat_omega_+p.kon_omega_*c.omega_[x])
+                    +p.g_max_psi_[k-1]*p.kon_psi_*c.psi_T_[x]
+                    /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
+                    +p.g_max_omega_[k-1]*p.kon_omega_*c.omega_T_[x]
+                    /(p.kcat_omega_+p.kon_omega_*c.omega_T_[x])
                     )*c.rho_[x][k-1];
               else
                 Jl=0;
               Ja= (+p.a_[k]
-                   +p.a_psi_[k]*p.kon_psi_*c.psi_[x]
-                   /(p.kcat_psi_+p.kon_psi_*c.psi_[x])
-                   +p.a_omega_[k]*p.kon_omega_*c.omega_[x]
-                   /(p.kcat_omega_+p.kon_omega_*c.omega_[x])
+                   +p.a_psi_[k]*p.kon_psi_*c.psi_T_[x]
+                   /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
+                   +p.a_omega_[k]*p.kon_omega_*c.omega_T_[x]
+                   /(p.kcat_omega_+p.kon_omega_*c.omega_T_[x])
                    )*c.rho_[x][k];
 
 
@@ -487,22 +497,22 @@ dRho_dt(const Param &p,
               if (k+1<numK)
                 Jr=p.g_left_[k+1]*c.rho_[x][k+1]
                     -(p.g_rigth_[k]
-                      +p.g_max_psi_[k]*p.kon_psi_*c.psi_[x]
-                      /(p.kcat_psi_+p.kon_psi_*c.psi_[x])
+                      +p.g_max_psi_[k]*p.kon_psi_*c.psi_T_[x]
+                      /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
                       )*c.rho_[x][k];
               else
                 Jr=0;
               if (k>0)
                 Jl=-p.g_left_[k]*c.rho_[x][k]
                     +(p.g_rigth_[k-1]
-                    +p.g_max_psi_[k-1]*p.kon_psi_*c.psi_[x]
-                    /(p.kcat_psi_+p.kon_psi_*c.psi_[x])
+                    +p.g_max_psi_[k-1]*p.kon_psi_*c.psi_T_[x]
+                    /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
                     )*c.rho_[x][k-1];
               else
                 Jl=0;
               Ja= (p.a_[k]
-                   +p.a_psi_[k]*p.kon_psi_*c.psi_[x]
-                   /(p.kcat_psi_+p.kon_psi_*c.psi_[x])
+                   +p.a_psi_[k]*p.kon_psi_*c.psi_T_[x]
+                   /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
                    )*c.rho_[x][k];
 
               dr[x][k]=Jl+Jr-Ja;
@@ -518,13 +528,16 @@ dRho_dt(const Param &p,
 
 
 
-CortexSimulation SimplestModel::simulate(const SimplestModel::Param &p,
+CortexSimulation SimplestModel::simulate(const Parameters& par,
+    const SimplestModel::Param &p,
                                          const CortexExperiment &sp
                                          ,double dt)const
 {
 
 
-  std::cout<<"starts a Simulation \n";
+  std::cout<<"starts a Simulation on \n";
+  sp.write(std::cout);
+  par.write(std::cout);
   std::cout<<"dt ="<<dt<<"\n";
 
 
@@ -534,13 +547,14 @@ CortexSimulation SimplestModel::simulate(const SimplestModel::Param &p,
 
 
   CortexSimulation s(c,numSamples);
+  s.p_=par;
 
   double t=0;
   unsigned i=0;
   s.t_[i]=t;
   s.sdt_[i]=dt;
-  s.omega_[i]=c.omega_;
-  s.psi_[i]=c.psi_;
+  s.omega_T_[i]=c.omega_T_;
+  s.psi_T_[i]=c.psi_T_;
   s.rho_[i]=c.rho_;
 
   while (t<sp.teq_)
@@ -552,8 +566,8 @@ CortexSimulation SimplestModel::simulate(const SimplestModel::Param &p,
           ++i;
           s.t_[i]=t;
           s.sdt_[i]=dt;
-          s.omega_[i]=c.omega_;
-          s.psi_[i]=c.psi_;
+          s.omega_T_[i]=c.omega_T_;
+          s.psi_T_[i]=c.psi_T_;
           s.rho_[i]=c.rho_;
 
         }
@@ -569,8 +583,8 @@ CortexSimulation SimplestModel::simulate(const SimplestModel::Param &p,
           ++i;
           s.t_[i]=t;
           s.sdt_[i]=dt;
-          s.omega_[i]=c.omega_;
-          s.psi_[i]=c.psi_;
+          s.omega_T_[i]=c.omega_T_;
+          s.psi_T_[i]=c.psi_T_;
           s.rho_[i]=c.rho_;
           if (i % 50 ==0)
             std::cerr<<"\t sample \t"<<i;
@@ -1015,6 +1029,7 @@ std::ostream &CortexSimulation::write(std::ostream &s)
   s<<"simulation\n";
   s<<id_<<"\n";
 
+  p_.write(s);
 
   s<<"numSamples"<<"\t"<<t_.size()<<"\t";
   s<<"numNodes"<<"\t"<<x_.size()<<"\t";
@@ -1036,29 +1051,56 @@ std::ostream &CortexSimulation::write(std::ostream &s)
 
 
 
-  s<<"psi"<<"\n";
+  s<<"psi total"<<"\n";
   for (unsigned i=0; i<t_.size(); ++i)
     {
       s<<t_[i]<<"\t";
-      for (unsigned j=0; j<psi_[i].size(); ++j)
+      for (unsigned j=0; j<psi_T_[i].size(); ++j)
         {
-          s<<psi_[i][j]<<"\t";
+          s<<psi_T_[i][j]<<"\t";
         }
       s<<"\n";
     }
   s<<"\n";
 
-  s<<"omega"<<"\n";
+
+  s<<"psi bound"<<"\n";
   for (unsigned i=0; i<t_.size(); ++i)
     {
       s<<t_[i]<<"\t";
-      for (unsigned j=0; j<omega_[i].size(); ++j)
+      for (unsigned j=0; j<psi_B_[i].size(); ++j)
         {
-          s<<omega_[i][j]<<"\t";
+          s<<psi_B_[i][j]<<"\t";
         }
       s<<"\n";
     }
   s<<"\n";
+
+  s<<"omega total"<<"\n";
+  for (unsigned i=0; i<t_.size(); ++i)
+    {
+      s<<t_[i]<<"\t";
+      for (unsigned j=0; j<omega_T_[i].size(); ++j)
+        {
+          s<<omega_T_[i][j]<<"\t";
+        }
+      s<<"\n";
+    }
+  s<<"\n";
+
+  s<<"omega bound"<<"\n";
+  for (unsigned i=0; i<t_.size(); ++i)
+    {
+      s<<t_[i]<<"\t";
+      for (unsigned j=0; j<omega_B_[i].size(); ++j)
+        {
+          s<<omega_B_[i][j]<<"\t";
+        }
+      s<<"\n";
+    }
+  s<<"\n";
+
+
 
   for (unsigned k=0;k<rho_.front().front().size(); ++k)
     {
@@ -1138,13 +1180,13 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               js.push_back(jr);
             }
 
-          s<<"psi vs time at different positions"<<"\n";
+          s<<"psi total and bound vs time at different positions"<<"\n";
 
           s<<"time"<<"\t";
           for (unsigned jjs=0; jjs<js.size(); ++jjs)
             {
 
-              s<<x_[js[jjs]]<<"\t";
+              s<<x_[js[jjs]]<<"\t"<<x_[js[jjs]]<<"\t";
             }
           s<<"\n";
           for (unsigned i=0; i<t_.size(); ++i)
@@ -1153,7 +1195,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               for (unsigned jjs=0; jjs<js.size(); ++jjs)
                 {
 
-                  s<<psi_[i][js[jjs]]<<"\t";
+                  s<<psi_T_[i][js[jjs]]<<"\t"<<psi_B_[i][js[jjs]]<<"\t";
                 }
               s<<"\n";
             }
@@ -1172,13 +1214,13 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
                 ++jr;
               js.push_back(jr);
             }
-          s<<"psi vs position at different times"<<"\n";
+          s<<"psi total and bound vs position at different times"<<"\n";
 
           s<<"position"<<"\t";
           for (unsigned jjs=0; jjs<js.size(); ++jjs)
             {
 
-              s<<t_[js[jjs]]<<"\t";
+              s<<t_[js[jjs]]<<"\t"<<t_[js[jjs]]<<"\t";
             }
           s<<"\n";
 
@@ -1188,7 +1230,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               for (unsigned jjs=0; jjs<js.size(); ++jjs)
                 {
 
-                  s<<psi_[js[jjs]][i]<<"\t";
+                  s<<psi_T_[js[jjs]][i]<<"\t"<<psi_B_[js[jjs]][i]<<"\t";
                 }
               s<<"\n";
             }
@@ -1212,13 +1254,13 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               js.push_back(jr);
             }
 
-          s<<"omega vs time at different positions"<<"\n";
+          s<<"omega total and bound vs time at different positions"<<"\n";
 
           s<<"time"<<"\t";
           for (unsigned jjs=0; jjs<js.size(); ++jjs)
             {
 
-              s<<x_[js[jjs]]<<"\t";
+              s<<x_[js[jjs]]<<"\t"<<x_[js[jjs]]<<"\t";
             }
           s<<"\n";
           for (unsigned i=0; i<t_.size(); ++i)
@@ -1227,7 +1269,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               for (unsigned jjs=0; jjs<js.size(); ++jjs)
                 {
 
-                  s<<omega_[i][js[jjs]]<<"\t";
+                  s<<omega_T_[i][js[jjs]]<<"\t"<<omega_B_[i][js[jjs]]<<"\t";
                 }
               s<<"\n";
             }
@@ -1247,13 +1289,13 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               js.push_back(jr);
             }
 
-          s<<"omega vs position at different times"<<"\n";
+          s<<"omega total and bound vs position at different times"<<"\n";
 
           s<<"position"<<"\t";
           for (unsigned jjs=0; jjs<js.size(); ++jjs)
             {
 
-              s<<t_[js[jjs]]<<"\t";
+              s<<t_[js[jjs]]<<"\t"<<t_[js[jjs]]<<"\t";
             }
           s<<"\n";
 
@@ -1263,7 +1305,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               for (unsigned jjs=0; jjs<js.size(); ++jjs)
                 {
 
-                  s<<omega_[js[jjs]][i]<<"\t";
+                  s<<omega_T_[js[jjs]][i]<<"\t"<<omega_B_[js[jjs]][i]<<"\t";
                 }
               s<<"\n";
             }
@@ -1416,6 +1458,10 @@ void CortexSimulation::read(std::string& line, std::istream &s)
               name.clear();
 
             }
+          else if (name=="parameters")
+            {
+              p_.read(line,s);
+            }
           else if (name=="x")
             {
               name.clear();
@@ -1443,7 +1489,7 @@ void CortexSimulation::read(std::string& line, std::istream &s)
                   ++i;
                 }
             }
-          else if (name.find("psi")!=name.npos)
+          else if (name.find("psi total")!=name.npos)
             {
               name.clear();
               unsigned i=0;
@@ -1454,7 +1500,7 @@ void CortexSimulation::read(std::string& line, std::istream &s)
                   ss.str(line);
                   ss>>t_[i];
                   unsigned j=0;
-                  while (ss>>psi_[i][j])
+                  while (ss>>psi_T_[i][j])
                     {
                       ++j;
                     }
@@ -1464,7 +1510,7 @@ void CortexSimulation::read(std::string& line, std::istream &s)
                 }
 
             }
-          else if (name.find("omega")!=name.npos)
+          else if (name.find("psi bound")!=name.npos)
             {
               name.clear();
               unsigned i=0;
@@ -1475,7 +1521,49 @@ void CortexSimulation::read(std::string& line, std::istream &s)
                   ss.str(line);
                   ss>>t_[i];
                   unsigned j=0;
-                  while (ss>>omega_[i][j])
+                  while (ss>>psi_B_[i][j])
+                    {
+                      ++j;
+                    }
+                  if (j>0)
+                    ++i;
+                  else break;
+                }
+
+            }
+          else if (name.find("omega total")!=name.npos)
+            {
+              name.clear();
+              unsigned i=0;
+              while (true)
+                {
+                  safeGetline(s,line);
+                  ss.clear();
+                  ss.str(line);
+                  ss>>t_[i];
+                  unsigned j=0;
+                  while (ss>>omega_T_[i][j])
+                    {
+                      ++j;
+                    }
+                  if (j>0)
+                    ++i;
+                  else break;
+                }
+
+            }
+          else if (name.find("omega bound")!=name.npos)
+            {
+              name.clear();
+              unsigned i=0;
+              while (true)
+                {
+                  safeGetline(s,line);
+                  ss.clear();
+                  ss.str(line);
+                  ss>>t_[i];
+                  unsigned j=0;
+                  while (ss>>omega_B_[i][j])
                     {
                       ++j;
                     }
