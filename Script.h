@@ -18,6 +18,13 @@ private:
 
 };
 
+inline std::string& removeComments(std::string& line)
+{
+  auto pos=line.find("//");
+  if (pos!=line.npos)
+    line.erase(pos);
+  return line;
+}
 
 #endif // SCRIPT
 

@@ -13,14 +13,13 @@ sample time
 100
 
 
-
 equilibrium time
 [s]
-1000
+100
 
 total time
 [s]
-700000
+10001
 
 end
 

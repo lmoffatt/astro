@@ -6,7 +6,7 @@ D  1E-10  [m⁻2 s-1]  // diffusion coefficient for psi
 
 epsilon  5e-2  [m/m]  // fraction of extracelular space
 
-kon  1E9  [M-1 s-1]  // association constant for psi
+kon  1E-9  [M-1 s-1]  // 1E9 association constant for psi
 
 kcat 2E-4  [s-1]  // ligand removal rate for psi
 

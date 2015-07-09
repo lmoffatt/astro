@@ -319,7 +319,7 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
 
   if (hasOmega)
     {
-    out.omega_T_+=dOmega*dt;
+      out.omega_T_+=dOmega*dt;
     }
   out.psi_T_+=dPsi*dt;
 
@@ -327,7 +327,7 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
 
   out.rho_+=dRho*dt;
   if (hasOmega)
-     out.omega_B_=Omega_Bound(p,out);
+    out.omega_B_=Omega_Bound(p,out);
   out.psi_B_=Psi_Bound(p,out);
 
   return out;
@@ -395,7 +395,7 @@ std::vector<double> SimplestModel::Psi_Bound(const SimplestModel::Param &p, cons
       for (unsigned k=0; k<numK; ++k)
         Nt+=p.N_[k]*c.rho_[x][k];
       double R_T=Nt*molar_section/c.dx_[x];
-       double b=R_T+c.psi_T_[x]+K_psi;
+      double b=R_T+c.psi_T_[x]+K_psi;
       o[x]=0.5*(b)-0.5*std::sqrt(b*b-4*R_T*c.psi_T_[x]);
     }
   return o;
@@ -453,7 +453,7 @@ std::vector<double> SimplestModel::Omega_Bound(const SimplestModel::Param &p, co
       for (unsigned k=0; k<numK; ++k)
         Mt+=p.M_[k]*c.rho_[x][k];
       double R_T=Mt*molar_section/c.dx_[x];
-       double b=R_T+c.omega_T_[x]+K_omega;
+      double b=R_T+c.omega_T_[x]+K_omega;
       o[x]=0.5*(b)-0.5*std::sqrt(b*b-4*R_T*c.omega_T_[x]);
     }
   return o;
@@ -554,7 +554,7 @@ dRho_dt(const Param &p,
 
 
 CortexSimulation SimplestModel::simulate(const Parameters& par,
-    const SimplestModel::Param &p,
+                                         const SimplestModel::Param &p,
                                          const CortexExperiment &sp
                                          ,double dt)const
 {
@@ -568,13 +568,13 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
   CortexState c=init(p,sp);
 
-  unsigned numSamples=sp.tsim_/sp.sample_time_;
+  unsigned numSamples=std::ceil(sp.tsim_/sp.sample_time_)+1;
 
 
   CortexSimulation s(c,numSamples);
   s.p_=par;
 
-  double t=0;
+  double t=-sp.teq_;
   unsigned i=0;
   s.t_[i]=t;
   s.sdt_[i]=dt;
@@ -582,11 +582,11 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
   s.psi_T_[i]=c.psi_T_;
   s.rho_[i]=c.rho_;
 
-  while (t<sp.teq_)
+  while (t+dt<0)
     {
       c=nextEuler(p,c,dt);
       t+=dt;
-      if (t>sp.sample_time_*(i+1))
+      if (t+sp.teq_>=sp.sample_time_*(i+1))
         {
           ++i;
           s.t_[i]=t;
@@ -601,11 +601,11 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
     }
 
   c.addDamp(p.damp_);
-  while (t<sp.tsim_)
+  while (t+dt<sp.tsim_)
     {
       c=nextEuler(p,c,dt);
       t+=dt;
-      if (t>sp.sample_time_*(i+1))
+      if (t+sp.teq_>=sp.sample_time_*(i+1))
         {
           ++i;
           s.t_[i]=t;
@@ -619,6 +619,7 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
           if (i % 50 ==0)
             std::cerr<<"\t sample \t"<<i;
         }
+
     }
   return s;
 
@@ -1150,12 +1151,12 @@ std::ostream &CortexSimulation::write(std::ostream &s)
 
 
 
-return s;
+  return s;
 }
 
 std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, const std::string &par)
 {
-   std::vector<double> xs;
+  std::vector<double> xs;
   std::vector<double> ts;
   std::vector<double> ks;
 
@@ -1207,7 +1208,8 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               double x=xs[j];
               while ((x_[jr]<x)&&jr<x_.size())
                 ++jr;
-              js.push_back(jr);
+              if (jr<x_.size())
+                js.push_back(jr);
             }
 
           s<<"psi total and bound vs time at different positions"<<"\n";
@@ -1242,7 +1244,8 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               double t=ts[j];
               while ((t_[jr]<t)&&jr<t_.size())
                 ++jr;
-              js.push_back(jr);
+              if (jr<t_.size())
+                js.push_back(jr);
             }
           s<<"psi total and bound vs position at different times"<<"\n";
 
@@ -1281,7 +1284,8 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               double x=xs[j];
               while ((x_[jr]<x)&&jr<x_.size())
                 ++jr;
-              js.push_back(jr);
+              if (jr<x_.size())
+                js.push_back(jr);
             }
 
           s<<"omega total and bound vs time at different positions"<<"\n";
@@ -1316,7 +1320,8 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               double t=ts[j];
               while ((t_[jr]<t)&&jr<t_.size())
                 ++jr;
-              js.push_back(jr);
+              if (jr<t_.size())
+                js.push_back(jr);
             }
 
           s<<"omega total and bound vs position at different times"<<"\n";
@@ -1356,7 +1361,8 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               double x=xs[j];
               while ((x_[jr]<x)&&jr<x_.size())
                 ++jr;
-              js.push_back(jr);
+              if (jr<x_.size())
+                js.push_back(jr);
             }
 
           if (ks.empty())
@@ -1405,7 +1411,8 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
               double t=ts[j];
               while ((t_[jr]<t)&&jr<t_.size())
                 ++jr;
-              js.push_back(jr);
+              if (jr<t_.size())
+                js.push_back(jr);
             }
 
           if (ks.empty())

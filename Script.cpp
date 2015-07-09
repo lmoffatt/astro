@@ -14,7 +14,7 @@ int Script::run(char* filename)
     {
       std::string line;
       safeGetline(f,line);
-
+      removeComments(line);
       cm_->execute(line);
 
 
