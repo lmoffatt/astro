@@ -362,7 +362,7 @@ public:
 
   void read(std::string &line, std::istream &s);
 
-  std::ostream& write(std::ostream& s)
+  std::ostream& write(std::ostream& s)const
   {
     s<<"parameters \n";
     for (auto& elem:m_)
@@ -399,10 +399,10 @@ public:
   void read(std::string& line,std::istream& s);
 
 
-  void write(std::ostream& s)
+  void write(std::ostream& s)const
   {
     s<<"cortex experiment"<<"\n";
-    s<<""
+
   }
  
   
@@ -418,9 +418,13 @@ public:
 
   double epsilon_;
 
-  std::vector<double> psi_;
+  std::vector<double> psi_T_;
 
-  std::vector<double> omega_;
+  std::vector<double> psi_B_;
+
+  std::vector<double> omega_T_;
+
+  std::vector<double> omega_B_;
 
   std::vector<std::vector<double> > rho_;
 
@@ -437,8 +441,8 @@ public:
     ,dx_(dx)
     ,h_(h)
     ,epsilon_(epsilon)
-    ,psi_(std::vector<double>(x.size(),0))
-    ,omega_(std::vector<double> (x.size(),0))
+    ,psi_T_(std::vector<double>(x.size(),0))
+    ,omega_T_(std::vector<double> (x.size(),0))
     ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
   {}
 
@@ -446,7 +450,7 @@ public:
   void addDamp(const std::vector<double> d)
   {
     for (unsigned i=0; i<d.size(); ++i)
-      psi_[i]+=d[i]/dx_[i]/h_/h_/1000.0/epsilon_;
+      psi_T_[i]+=d[i]/dx_[i]/h_/h_/1000.0/epsilon_;
   }
 
 };
@@ -499,10 +503,10 @@ public:
     x_(c.x_),dx_(c.dx_),
     t_(std::vector<double>(numSamples)),
     sdt_(std::vector<double>(numSamples)),
-    psi_T_(std::vector<std::vector<double>>(numSamples,std::vector<double>(c.psi_.size()))),
-    psi_B_(std::vector<std::vector<double>>(numSamples,std::vector<double>(c.psi_.size()))),
-    omega_T_(std::vector<std::vector<double>>(numSamples,std::vector<double>(c.omega_.size()))),
-    omega_B_(std::vector<std::vector<double>>(numSamples,std::vector<double>(c.omega_.size()))),
+    psi_T_(std::vector<std::vector<double>>(numSamples,std::vector<double>(c.psi_T_.size()))),
+    psi_B_(std::vector<std::vector<double>>(numSamples,std::vector<double>(c.psi_T_.size()))),
+    omega_T_(std::vector<std::vector<double>>(numSamples,std::vector<double>(c.omega_T_.size()))),
+    omega_B_(std::vector<std::vector<double>>(numSamples,std::vector<double>(c.omega_T_.size()))),
     rho_(std::vector<std::vector<std::vector<double>>>(
                                                        numSamples,std::vector<std::vector<double>>
                                                        (c.rho_.size(),
@@ -510,8 +514,8 @@ public:
                                                           c.rho_.front().size()))))
 
   {
-    psi_T_[0]=c.psi_;
-    omega_T_[0]=c.omega_;
+    psi_T_[0]=c.psi_T_;
+    omega_T_[0]=c.omega_T_;
     rho_[0]=c.rho_;
 
   }
@@ -705,7 +709,6 @@ public:
 
   CortexState init(const Param &p, const CortexExperiment &s) const;
 
-  CortexState injectDamp(const CortexState& c, double damp)const;
 
   CortexSimulation simulate(const Parameters& par,const Param &p, const CortexExperiment &sp, double dt)const;
 
@@ -716,8 +719,13 @@ public:
 
   std::vector<double> dPsi_dt(const Param &p, const CortexState& c) const;
 
+
+  std::vector<double> Psi_Bound(const Param &p, const CortexState& c) const;
+
+
   std::vector<double> dOmega_dt(const Param &p, const CortexState &c)const;
 
+  std::vector<double> Omega_Bound(const Param &p, const CortexState& c) const;
 
 
 

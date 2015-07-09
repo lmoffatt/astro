@@ -318,10 +318,17 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
       maxf=std::abs(x);
 
   if (hasOmega)
+    {
     out.omega_T_+=dOmega*dt;
+    }
   out.psi_T_+=dPsi*dt;
 
+
+
   out.rho_+=dRho*dt;
+  if (hasOmega)
+     out.omega_B_=Omega_Bound(p,out);
+  out.psi_B_=Psi_Bound(p,out);
 
   return out;
 
@@ -340,15 +347,12 @@ CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExper
       o.rho_[x][1]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000;
 
     }
+  o.psi_B_=Psi_Bound(p,o);
+  o.omega_B_=Omega_Bound(p,o);
   return o;
 }
 
-CortexState SimplestModel::injectDamp(const CortexState &c, double damp)const
-{
-  CortexState o(c);
-  o.psi_T_[0]+=damp;  // TODO: correct by dx
-  return o;
-}
+
 
 std::vector<double> SimplestModel::dPsi_dt(const Param &p,
                                            const CortexState &c)const
@@ -382,7 +386,7 @@ std::vector<double> SimplestModel::Psi_Bound(const SimplestModel::Param &p, cons
 
   std::vector<double> o(numX,0);
 
-  double molar_section=1.0/(NAv*p.epsilon_*c.h_*c.h_)*1000.0;
+  double molar_section=1.0/(NAv*p.epsilon_*c.h_*c.h_*1000.0);
 
   double K_psi=p.kcat_psi_/p.kon_psi_;
   for (unsigned x=0; x<numX; ++x)
@@ -395,8 +399,6 @@ std::vector<double> SimplestModel::Psi_Bound(const SimplestModel::Param &p, cons
       o[x]=0.5*(b)-0.5*std::sqrt(b*b-4*R_T*c.psi_T_[x]);
     }
   return o;
-
-
 }
 
 std::vector<double> SimplestModel::dOmega_dt(const Param &p,
@@ -407,34 +409,54 @@ std::vector<double> SimplestModel::dOmega_dt(const Param &p,
 
   const double NAv=6.022E23;
   std::vector<double> o(numX,0);
-  double f=p.kcat_omega_/(NAv*p.epsilon_*c.h_*c.h_)*p.kon_omega_/1000;
+  double molar_section=1.0/(NAv*p.epsilon_*c.h_*c.h_*1000.0);
 
   for (unsigned x=0; x<numX; ++x)
     {
       double Jn=0;
       double Jp=0;
       if (x>0)
-        Jn=2.0*p.Domega_*(c.omega_T_[x-1]-c.omega_T_[x])/(c.dx_[x-1]+c.dx_[x]);
+        Jn=2.0*p.Domega_*(c.omega_T_[x-1]-c.omega_B_[x-1]-c.omega_T_[x]+c.omega_B_[x])/(c.dx_[x-1]+c.dx_[x]);
       if (x+1<numX)
-        Jp=2.0*p.Domega_*(c.omega_T_[x+1]-c.omega_T_[x])/(c.dx_[x+1]+c.dx_[x]);
+        Jp=2.0*p.Domega_*(c.omega_T_[x+1]-c.omega_B_[x+1]-c.omega_T_[x]+c.omega_B_[x])/(c.dx_[x+1]+c.dx_[x]);
 
-      double d=p.kcat_omega_+p.kon_omega_*c.omega_T_[x];
       double sig=0;
-      double Mt=0;
       for (unsigned k=0; k<numK; ++k)
         {
-          Mt+=p.M_[k]*c.rho_[x][k];
           sig+=p.ksig_omega_[k]*c.rho_[x][k];
         }
-      double a=f/c.dx_[x]*c.omega_T_[x]/d*Mt;
 
-      if (c.omega_T_[x]>0)
-              a=a+0;
-       sig/=(NAv*p.epsilon_*c.dx_[x]*c.h_*c.h_)/1000;
-      o[x]=(Jn+Jp)/c.dx_[x]+sig-a;
+      sig*=molar_section/c.dx_[x];
+      o[x]=(Jn+Jp)/c.dx_[x]+sig-p.kcat_omega_*c.omega_B_[x];
+
     }
   return o;
 
+}
+
+std::vector<double> SimplestModel::Omega_Bound(const SimplestModel::Param &p, const CortexState &c) const
+{
+  unsigned numX=c.rho_.size();
+  unsigned numK=c.rho_.front().size();
+
+  //Avogadros number
+  const double NAv=6.022E23;
+
+  std::vector<double> o(numX,0);
+
+  double molar_section=1.0/(NAv*p.epsilon_*c.h_*c.h_)*1000.0;
+
+  double K_omega=p.kcat_omega_/p.kon_omega_;
+  for (unsigned x=0; x<numX; ++x)
+    {
+      double Mt=0;
+      for (unsigned k=0; k<numK; ++k)
+        Mt+=p.M_[k]*c.rho_[x][k];
+      double R_T=Mt*molar_section/c.dx_[x];
+       double b=R_T+c.omega_T_[x]+K_omega;
+      o[x]=0.5*(b)-0.5*std::sqrt(b*b-4*R_T*c.omega_T_[x]);
+    }
+  return o;
 }
 
 
@@ -451,34 +473,36 @@ dRho_dt(const Param &p,
     {
       for (unsigned x=0; x<numX; ++x)
         {
+          double psi_F=c.psi_T_[x]-c.psi_B_[x];
+          double omega_F=c.omega_T_[x]-c.omega_B_[x];
           for (unsigned k=0; k<numK; ++k)
             {
               double Jr,Jl,Ja;
               if (k+1<numK)
                 Jr=p.g_left_[k+1]*c.rho_[x][k+1]
                     -(p.g_rigth_[k]
-                      +p.g_max_psi_[k]*p.kon_psi_*c.psi_T_[x]
-                      /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
-                      +p.g_max_omega_[k]*p.kon_omega_*c.omega_T_[x]
-                      /(p.kcat_omega_+p.kon_omega_*c.omega_T_[x])
+                      +p.g_max_psi_[k]*p.kon_psi_*psi_F
+                      /(p.kcat_psi_+p.kon_psi_*psi_F)
+                      +p.g_max_omega_[k]*p.kon_omega_*omega_F
+                      /(p.kcat_omega_+p.kon_omega_*omega_F)
                       )*c.rho_[x][k];
               else
                 Jr=0;
               if (k>0)
                 Jl=-p.g_left_[k]*c.rho_[x][k]
                     +(p.g_rigth_[k-1]
-                    +p.g_max_psi_[k-1]*p.kon_psi_*c.psi_T_[x]
-                    /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
-                    +p.g_max_omega_[k-1]*p.kon_omega_*c.omega_T_[x]
-                    /(p.kcat_omega_+p.kon_omega_*c.omega_T_[x])
+                    +p.g_max_psi_[k-1]*p.kon_psi_*psi_F
+                    /(p.kcat_psi_+p.kon_psi_*psi_F)
+                    +p.g_max_omega_[k-1]*p.kon_omega_*omega_F
+                    /(p.kcat_omega_+p.kon_omega_*omega_F)
                     )*c.rho_[x][k-1];
               else
                 Jl=0;
               Ja= (+p.a_[k]
-                   +p.a_psi_[k]*p.kon_psi_*c.psi_T_[x]
-                   /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
-                   +p.a_omega_[k]*p.kon_omega_*c.omega_T_[x]
-                   /(p.kcat_omega_+p.kon_omega_*c.omega_T_[x])
+                   +p.a_psi_[k]*p.kon_psi_*psi_F
+                   /(p.kcat_psi_+p.kon_psi_*psi_F)
+                   +p.a_omega_[k]*p.kon_omega_*omega_F
+                   /(p.kcat_omega_+p.kon_omega_*omega_F)
                    )*c.rho_[x][k];
 
 
@@ -493,26 +517,27 @@ dRho_dt(const Param &p,
         {
           for (unsigned k=0; k<numK; ++k)
             {
+              double psi_F=c.psi_T_[x]-c.psi_B_[x];
               double Jr,Jl,Ja;
               if (k+1<numK)
                 Jr=p.g_left_[k+1]*c.rho_[x][k+1]
                     -(p.g_rigth_[k]
-                      +p.g_max_psi_[k]*p.kon_psi_*c.psi_T_[x]
-                      /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
+                      +p.g_max_psi_[k]*p.kon_psi_*psi_F
+                      /(p.kcat_psi_+p.kon_psi_*psi_F)
                       )*c.rho_[x][k];
               else
                 Jr=0;
               if (k>0)
                 Jl=-p.g_left_[k]*c.rho_[x][k]
                     +(p.g_rigth_[k-1]
-                    +p.g_max_psi_[k-1]*p.kon_psi_*c.psi_T_[x]
+                    +p.g_max_psi_[k-1]*p.kon_psi_*psi_F
                     /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
                     )*c.rho_[x][k-1];
               else
                 Jl=0;
               Ja= (p.a_[k]
-                   +p.a_psi_[k]*p.kon_psi_*c.psi_T_[x]
-                   /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
+                   +p.a_psi_[k]*p.kon_psi_*psi_F
+                   /(p.kcat_psi_+p.kon_psi_*psi_F)
                    )*c.rho_[x][k];
 
               dr[x][k]=Jl+Jr-Ja;
@@ -568,6 +593,8 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
           s.sdt_[i]=dt;
           s.omega_T_[i]=c.omega_T_;
           s.psi_T_[i]=c.psi_T_;
+          s.omega_B_[i]=c.omega_B_;
+          s.psi_B_[i]=c.psi_B_;
           s.rho_[i]=c.rho_;
 
         }
@@ -585,7 +612,10 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
           s.sdt_[i]=dt;
           s.omega_T_[i]=c.omega_T_;
           s.psi_T_[i]=c.psi_T_;
+          s.omega_B_[i]=c.omega_B_;
+          s.psi_B_[i]=c.psi_B_;
           s.rho_[i]=c.rho_;
+
           if (i % 50 ==0)
             std::cerr<<"\t sample \t"<<i;
         }
