@@ -479,6 +479,8 @@ public:
 
   Parameters p_;
 
+  double dt_;
+
   std::vector<double> x_;
   std::vector<double> dx_;
 
@@ -499,7 +501,7 @@ public:
 
   CortexSimulation(const CortexState& c,unsigned numSamples):
     id_()
-  ,p_(),
+  ,p_(),dt_(),
     x_(c.x_),dx_(c.dx_),
     t_(std::vector<double>(numSamples)),
     sdt_(std::vector<double>(numSamples)),
@@ -523,7 +525,7 @@ public:
 
   CortexSimulation(const std::string& id,unsigned numSamples,unsigned numNodes,unsigned numStates):
     id_(id)
-  ,p_()
+  ,p_(),dt_()
   ,x_(std::vector<double>(numNodes)),
     dx_(std::vector<double>(numNodes)),
     t_(std::vector<double>(numSamples)),

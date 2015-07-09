@@ -568,12 +568,12 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
   CortexState c=init(p,sp);
 
-  unsigned numSamples=std::ceil(sp.tsim_/sp.sample_time_)+1;
+  unsigned numSamples=std::ceil((sp.tsim_+sp.teq_)/sp.sample_time_)+1;
 
 
   CortexSimulation s(c,numSamples);
   s.p_=par;
-
+  s.dt_=dt;
   double t=-sp.teq_;
   unsigned i=0;
   s.t_[i]=t;
@@ -1062,6 +1062,8 @@ std::ostream &CortexSimulation::write(std::ostream &s)
 
   p_.write(s);
 
+  s<<"dt simulation"<<"\t"<<dt_<<"\n";
+
   s<<"numSamples"<<"\t"<<t_.size()<<"\t";
   s<<"numNodes"<<"\t"<<x_.size()<<"\t";
   s<<"numStates"<<"\t"<<rho_.front().front().size()<<"\n"<<"\n";
@@ -1494,6 +1496,13 @@ void CortexSimulation::read(std::string& line, std::istream &s)
                 }
               name.clear();
 
+            }
+          else if (name=="dt")
+            {
+              std::string sim;
+              double dt;
+              if(ss>>sim>>dt)
+                dt_=dt;
             }
           else if (name=="parameters")
             {

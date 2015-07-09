@@ -1,5 +1,6 @@
 simulate sim_zero parameters_zero 0.5 sim_D
-write sim_D psi t = 0 t = 100 t = 200  t = 1000  t = 10000  t = 100000
+//write sim_D psi t = 0 t = 100 t = 200  t = 1000  t = 10000  t = 100000
+write sim_D psi t = 0 t = 100  t = 300  t = 1000   t =  3600  t = 12000  t = 86400 t = 172800  t = 259200  t = 345600  t = 432000  t = 518400   t = 604800
 
 
 //write sim_parameters_10 rho t = 0 t = 86400 t = 172800  t = 259200  t = 345600  t = 432000  t = 518400   t = 604800

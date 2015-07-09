@@ -2,7 +2,7 @@ experiment
 
 nodes
 [um]
-0:+50:4000:*1.5:20000
+0:+50:4000:*1.5:200000
 
 thickness
 [um]
@@ -13,13 +13,14 @@ sample time
 100
 
 
+
 equilibrium time
 [s]
-100
+1000
 
 total time
 [s]
-10001
+700000
 
 end
 
