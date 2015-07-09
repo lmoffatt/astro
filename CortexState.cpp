@@ -600,7 +600,7 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
         }
     }
 
-  c.addDamp(p.damp_);
+  addDamp(c,p);
   while (t+dt<sp.tsim_)
     {
       c=nextEuler(p,c,dt);

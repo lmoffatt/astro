@@ -447,11 +447,6 @@ public:
   {}
 
 
-  void addDamp(const std::vector<double> d)
-  {
-    for (unsigned i=0; i<d.size(); ++i)
-      psi_T_[i]+=d[i]/dx_[i]/h_/h_/1000.0/epsilon_;
-  }
 
 };
 
@@ -702,6 +697,10 @@ public:
     double dens_Astr_;
 
     double dens_Neur_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
 
 
   };
@@ -714,6 +713,20 @@ public:
 
   CortexSimulation simulate(const Parameters& par,const Param &p, const CortexExperiment &sp, double dt)const;
 
+
+
+  void addDamp(CortexState& c,const Param& p)const
+  {
+    unsigned i=0;
+    double damp=p.prot_concentration_*p.DAMP_ratio_/p.DAMP_MW_/1000;
+    while (c.x_[i]<p.inj_width_+c.x_[0])
+      {
+        double inj_size_cell=std::min(p.inj_width_+c.x_[0],c.x_[i]+c.dx_[i])-c.x_[i];
+
+        c.psi_T_[i]+=damp*inj_size_cell/c.dx_[i]/p.epsilon_;
+        ++i;
+      }
+  }
 
 
 
@@ -788,6 +801,10 @@ class Model00:public BaseModel
     double a_2_;
     double a_factor_;
     double a_max_Neuron_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
     double DAMP_;
   };
 
@@ -796,6 +813,10 @@ class Model00:public BaseModel
   {
     SimplestModel::Param s;
     s.damp_=std::vector<double>(1);
+    s.inj_width_=p.inj_width_;
+    s.DAMP_ratio_=p.DAMP_ratio_;
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
     s.damp_[0]=p.DAMP_;
     s.Dpsi_=p.D_;
     s.Domega_=0;
@@ -905,6 +926,12 @@ public:
     out.push_back("DAMP",p_.DAMP_);
 
 
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
 
 
 
@@ -925,12 +952,16 @@ public:
     p_.N_2_=p.get("N_2");
     p_.N_N_=p.get("N_N");
     p_.a_2_=p.get("a_2");
-    p_.DAMP_=p.get("DAMP");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
     p_.N_Astr_=p.get("N_Astr");
     p_.N_Neuron_=p.get("N_Neuron");
-
     p_.a_factor_=p.get("a_factor");
     p_.a_max_Neuron_=p.get("a_max_Neuron");
+
+
 
   }
 
@@ -976,6 +1007,10 @@ class Model10:public BaseModel
     double a_2_;
     double a_factor_;
     double a_max_Neuron_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
     double DAMP_;
     double k_sig_;
   };
@@ -985,6 +1020,10 @@ class Model10:public BaseModel
   {
     SimplestModel::Param s;
     s.damp_=std::vector<double>(1);
+    s.inj_width_=p.inj_width_;
+    s.DAMP_ratio_=p.DAMP_ratio_;
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
     s.damp_[0]=p.DAMP_;
     s.Dpsi_=p.D_;
     s.Domega_=p.D_;
@@ -1106,6 +1145,12 @@ public:
 
     out.push_back("a_max_Neuron",p_.a_max_Neuron_ );
     out.push_back("DAMP",p_.DAMP_);
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
     out.push_back("k_sig",p_.k_sig_);
 
 
@@ -1131,7 +1176,10 @@ public:
     p_.N_2_=p.get("N_2");
     p_.N_N_=p.get("N_N");
     p_.a_2_=p.get("a_2");
-    p_.DAMP_=p.get("DAMP");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
     p_.N_Astr_=p.get("N_Astr");
     p_.N_Neuron_=p.get("N_Neuron");
 
