@@ -118,10 +118,10 @@ void ExperimentCommand::run(const std::string line)
 
 void SimulateCommand::run(const std::string line)
 {
-  std::string cName, eName, mName;
+  std::string cName, eName, paramName,simName;
   double dt;
   std::stringstream ss(line);
-  ss>>cName>>eName>>mName>>dt;
+  ss>>cName>>eName>>paramName>>dt>>simName;
 
   std::string filename=eName;
   std::ifstream f(filename.c_str());
@@ -138,7 +138,7 @@ void SimulateCommand::run(const std::string line)
 
   f.close();
 
-  filename=mName;
+  filename=paramName;
   f.open(filename.c_str());
   if (!f)
     {
@@ -159,8 +159,14 @@ void SimulateCommand::run(const std::string line)
 
     CortexSimulation* s=new CortexSimulation;
     *s=m->run(e,dt);
+    if (simName.empty())
+      {
     s->id_="sim_";
-    s->id_+=mName;
+    s->id_+=paramName;
+      }
+    else
+      s->id_=simName;
+
     cm_->push_back(s);
     std::string c="write  ";
     c+=s->id_;

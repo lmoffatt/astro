@@ -103,19 +103,40 @@ void writeCommand::run(const std::string line)
       std::getline(ss,par);
       if (var.empty())
         {
-
+          std::string newName;
           std::string filename=dataName+"_sim.txt";
+          std::ifstream fi;
+          fi.open(filename.c_str(),std::ios_base::in);
+          if (fi)
+            {
+              unsigned num=0;
+              newName=dataName+"_"+std::to_string(num);
+              filename=newName+"_sim.txt";
+              fi.close();
+              fi.open(filename);
+              while (fi)
+                {
+                  ++num;
+                  newName=dataName+"_"+std::to_string(num);
+                  filename=newName+"_sim.txt";
+                  fi.close();
+                  fi.open(filename);
+
+                }
+            }
           std::ofstream f;
           f.open(filename.c_str(),std::ofstream::out);
-
+          sim->id_=newName;
           sim->write(f);
           f.close();
+
         }
       else
         {
+          dataName=sim->id_;
           std::string filename=dataName+"_"+var+".txt";
           std::ifstream fi;
-fi.open(filename.c_str(),std::ios_base::in);
+          fi.open(filename.c_str(),std::ios_base::in);
           if (fi)
             {
               unsigned num=0;
