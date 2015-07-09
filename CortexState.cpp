@@ -1220,7 +1220,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
           for (unsigned jjs=0; jjs<js.size(); ++jjs)
             {
 
-              s<<x_[js[jjs]]<<"\t"<<x_[js[jjs]]<<"\t";
+              s<<"T"<<x_[js[jjs]]<<"\tB"<<x_[js[jjs]]<<"\tF"<<x_[js[jjs]]<<"\t";
             }
           s<<"\n";
           for (unsigned i=0; i<t_.size(); ++i)
@@ -1230,6 +1230,8 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
                 {
 
                   s<<psi_T_[i][js[jjs]]<<"\t"<<psi_B_[i][js[jjs]]<<"\t";
+                  s<<psi_T_[i][js[jjs]]-psi_B_[i][js[jjs]]<<"\t";
+
                 }
               s<<"\n";
             }
@@ -1255,7 +1257,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
           for (unsigned jjs=0; jjs<js.size(); ++jjs)
             {
 
-              s<<t_[js[jjs]]<<"\t"<<t_[js[jjs]]<<"\t";
+              s<<"T"<<t_[js[jjs]]<<"\tB"<<t_[js[jjs]]<<"\tF"<<t_[js[jjs]]<<"\t";
             }
           s<<"\n";
 
@@ -1266,6 +1268,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
                 {
 
                   s<<psi_T_[js[jjs]][i]<<"\t"<<psi_B_[js[jjs]][i]<<"\t";
+                  s<<psi_T_[js[jjs]][i]-psi_B_[js[jjs]][i]<<"\t";
                 }
               s<<"\n";
             }
@@ -1296,7 +1299,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
           for (unsigned jjs=0; jjs<js.size(); ++jjs)
             {
 
-              s<<x_[js[jjs]]<<"\t"<<x_[js[jjs]]<<"\t";
+              s<<"T"<<x_[js[jjs]]<<"\tB"<<x_[js[jjs]]<<"\tF"<<x_[js[jjs]]<<"\t";
             }
           s<<"\n";
           for (unsigned i=0; i<t_.size(); ++i)
@@ -1306,6 +1309,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
                 {
 
                   s<<omega_T_[i][js[jjs]]<<"\t"<<omega_B_[i][js[jjs]]<<"\t";
+                  s<<omega_T_[i][js[jjs]]-omega_B_[i][js[jjs]]<<"\t";
                 }
               s<<"\n";
             }
@@ -1332,7 +1336,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
           for (unsigned jjs=0; jjs<js.size(); ++jjs)
             {
 
-              s<<t_[js[jjs]]<<"\t"<<t_[js[jjs]]<<"\t";
+              s<<"T"<<t_[js[jjs]]<<"\tB"<<t_[js[jjs]]<<"\tF"<<t_[js[jjs]]<<"\t";
             }
           s<<"\n";
 
@@ -1343,6 +1347,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
                 {
 
                   s<<omega_T_[js[jjs]][i]<<"\t"<<omega_B_[js[jjs]][i]<<"\t";
+                  s<<omega_T_[js[jjs]][i]-omega_B_[js[jjs]][i]<<"\t";
                 }
               s<<"\n";
             }

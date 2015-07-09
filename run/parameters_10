@@ -2,40 +2,46 @@ parameters
 
 model 1.0
 
-D  1E-10  [m⁻2 s-1]  // diffusion coefficient in both cases
+D  1E-10  [m⁻2 s-1]  // diffusion coefficient for psi
 
 epsilon  5e-2  [m/m]  // fraction of extracelular space
 
-kon  1E9  [M-1 s-1]  // association constant in both cases
+Keq  9E-10  [M]  // affinity constant for psi
 
-kcat 2E-4  [s-1]  // ligand removal rate in both cases
+kcat 2E-6  [s-1]  // 2E-4 ligand removal rate for psi
 
-g_01   5E-5  [s-1] // cell type change rate from 0to 1
+g_01   2E-4  [s-1] // cell type change rate from 0to 1
 
-g_10   1E-4   [s-1]  // cell type change rate from 1 to 0
+g_10   5E-3   [s-1]  // cell type change rate from 1 to 0
 
-g_23  2E-5   [s-1]  //   cell type change rate from 2 to 3
+g_23  5E-6   [s-1]  //   cell type change rate from 2 to 3
 
-g_max  2E-4  [s-1]  // maximal cell type change rate from 1 to 2
+g_max  2E-3  [s-1]  // maximal cell type change rate from 1 to 2
 
-N_0    1000 [receptors cell^-1] // number of DAMP/mediator receptors on resting cells
+N_0    1000 [receptors cell^-1] // number of DAMP receptors on resting cells
 
-N_2    10000   [receptors cell^-1] // number of DAMP/mediator receptors on reactive cells
+N_2    10000   [receptors cell^-1] // number of DAMP receptors on reactive cells
 
-N_N     10000   [receptors cell^-1] // number of DAMP receptors on neurons
+N_N     1E5    [receptors cell^-1] // number of DAMP receptors on neurons
 
-N_Astr  1E10   [cells L^-1]
+N_Astr   1E10  [cells L^-1]  //1E10
 
-N_Neuron  3.3E9  [cells L^-1]
+N_Neuron 3.3E9    [cells L^-1] //
 
 a_2    1E-9  [s-1]  // cell apoptosis rate in the state 2
 
 a_factor 2   [s^0]    // increase in apoptosis rate per state change
 
-a_max_Neuron  2E-5  [s^-1]  // neuron apoptosis rate at saturated DAMP
+a_max_Neuron  0   [s^-1]  //  2E-5 neuron apoptosis rate at saturated DAMP
 
-DAMP  5E-17 [M L^-1] // concentration of DAMP in the first cell
+inj_width   1E-6   [m]  //  width of the injury
 
-k_sig  0.0001  [molecules s^-1 cell^-1]   // mediator secreation rate
+DAMP_ratio  0.01 [ratio] // mass ratio of the cell proteins that are DAMPs
+
+prot_concentration   0.2  [mg/ml]  // protein density
+
+DAMP_MW  25   [kD] // peso molecular de las DAMPs
+
+k_sig  0.01  [molecules s^-1 cell^-1]   // mediator secreation rate
 
 

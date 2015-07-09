@@ -6,27 +6,27 @@ D  1E-10  [m⁻2 s-1]  // diffusion coefficient for psi
 
 epsilon  5e-2  [m/m]  // fraction of extracelular space
 
-kon  1E9  [M-1 s-1]  // 1E9 association constant for psi
+Keq  9E-10  [M]  // affinity constant for psi
 
-kcat 1E-14  [s-1]  // 2E-4 ligand removal rate for psi
+kcat 2E-6  [s-1]  // 2E-4 ligand removal rate for psi
 
-g_01   5E-5  [s-1] // cell type change rate from 0to 1
+g_01   2E-4  [s-1] // cell type change rate from 0to 1
 
-g_10   1E-4   [s-1]  // cell type change rate from 1 to 0
+g_10   5E-3   [s-1]  // cell type change rate from 1 to 0
 
-g_23  2E-5   [s-1]  //   cell type change rate from 2 to 3
+g_23  5E-6   [s-1]  //   cell type change rate from 2 to 3
 
-g_max  2E-4  [s-1]  // maximal cell type change rate from 1 to 2
+g_max  2E-3  [s-1]  // maximal cell type change rate from 1 to 2
 
 N_0    1000 [receptors cell^-1] // number of DAMP receptors on resting cells
 
 N_2    10000   [receptors cell^-1] // number of DAMP receptors on reactive cells
 
-N_N     10000   [receptors cell^-1] // number of DAMP receptors on neurons
+N_N     1E5    [receptors cell^-1] // number of DAMP receptors on neurons
 
-N_Astr   0  [cells L^-1]  //1E10
+N_Astr   1E10  [cells L^-1]  //1E10
 
-N_Neuron 1.3E10   [cells L^-1] // 3.3E9
+N_Neuron 3.3E9    [cells L^-1] //
 
 a_2    1E-9  [s-1]  // cell apoptosis rate in the state 2
 
@@ -34,7 +34,7 @@ a_factor 2   [s^0]    // increase in apoptosis rate per state change
 
 a_max_Neuron  0   [s^-1]  //  2E-5 neuron apoptosis rate at saturated DAMP
 
-inj_width   1E-4   [m]  //  width of the injury
+inj_width   1E-6   [m]  //  width of the injury
 
 DAMP_ratio  0.01 [ratio] // mass ratio of the cell proteins that are DAMPs
 

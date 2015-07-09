@@ -787,7 +787,7 @@ class Model00:public BaseModel
   public:
     double D_;
     double epsilon_;
-    double kon_;
+    double Keq_;
     double kcat_;
     double g_01_;
     double g_10_;
@@ -822,7 +822,7 @@ class Model00:public BaseModel
     s.Domega_=0;
     s.epsilon_=p.epsilon_;
 
-    s.kon_psi_=p.kon_;
+    s.kon_psi_=p.kcat_/p.Keq_;
     s.kcat_psi_=p.kcat_;
     s.kon_omega_=0;
     s.kcat_omega_=0;
@@ -908,7 +908,7 @@ public:
     out.push_back("model",0.0);
     out.push_back("D",p_.D_);
     out.push_back("epsilon",p_.epsilon_);
-    out.push_back("kon",p_.kon_);
+    out.push_back("Keq",p_.Keq_);
     out.push_back("kcat", p_.kcat_);
     out.push_back("g_01",p_.g_01_);
     out.push_back("g_10",p_.g_10_ );
@@ -942,7 +942,7 @@ public:
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
-    p_.kon_=p.get("kon");
+    p_.Keq_=p.get("Keq");
     p_.kcat_=p.get("kcat");
     p_.g_01_=p.get("g_01");
     p_.g_10_=p.get("g_10");
@@ -985,15 +985,12 @@ class Model10:public BaseModel
 {
   SimplestModel m;
 
-
-
-
   class myParameters
   {
   public:
     double D_;
     double epsilon_;
-    double kon_;
+    double Keq_;
     double kcat_;
     double g_01_;
     double g_10_;
@@ -1029,9 +1026,9 @@ class Model10:public BaseModel
     s.Domega_=p.D_;
     s.epsilon_=p.epsilon_;
 
-    s.kon_psi_=p.kon_;
+    s.kon_psi_=p.kcat_/p.Keq_;
     s.kcat_psi_=p.kcat_;
-    s.kon_omega_=p.kon_;
+    s.kon_omega_=p.kcat_/p.Keq_;
     s.kcat_omega_=p.kcat_;
 
     s.ksig_omega_=std::vector<double>(7,0);
@@ -1129,7 +1126,7 @@ public:
     out.push_back("model",1.0);
     out.push_back("D",p_.D_);
     out.push_back("epsilon",p_.epsilon_);
-    out.push_back("kon",p_.kon_);
+    out.push_back("Keq",p_.Keq_);
     out.push_back("kcat", p_.kcat_);
     out.push_back("g_01",p_.g_01_);
     out.push_back("g_10",p_.g_10_ );
@@ -1166,7 +1163,7 @@ public:
 
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
-    p_.kon_=p.get("kon");
+    p_.Keq_=p.get("Keq");
     p_.kcat_=p.get("kcat");
     p_.g_01_=p.get("g_01");
     p_.g_10_=p.get("g_10");
@@ -1186,10 +1183,6 @@ public:
     p_.a_factor_=p.get("a_factor");
     p_.a_max_Neuron_=p.get("a_max_Neuron");
     p_.k_sig_=p.get("k_sig");
-
-
-
-
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
