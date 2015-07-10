@@ -6,23 +6,25 @@ D  1E-10  [m⁻2 s-1]  // diffusion coefficient for psi
 
 epsilon  5e-2  [m/m]  // fraction of extracelular space
 
-Keq  9E-10  [M]  // affinity constant for psi
+Keq_psi  9E-9  [M]  // affinity constant for psi
 
-kcat 2E-5  [s-1]  // 2E-4 ligand removal rate for psi
+Keq_omega  9E-11  [M]  // affinity constant for omega
 
-g_01   2E-4  [s-1] // cell type change rate from 0to 1
+kcat 2E-4  [s-1]  // 2E-4 ligand removal rate for psi/omega clearance
 
-g_10   5E-3   [s-1]  // cell type change rate from 1 to 0
+g_01   5E-3  [s-1] // cell type change rate from 0to 1
+
+g_10   2E-3   [s-1]  // cell type change rate from 1 to 0
 
 g_23  5E-6   [s-1]  //   cell type change rate from 2 to 3
 
-g_max  2E-3  [s-1]  // maximal cell type change rate from 1 to 2
+g_max  4E-3  [s-1]  // maximal cell type change rate from 1 to 2
 
 N_0    1000 [receptors cell^-1] // number of DAMP receptors on resting cells
 
 N_2    10000   [receptors cell^-1] // number of DAMP receptors on reactive cells
 
-N_N     1E5    [receptors cell^-1] // number of DAMP receptors on neurons
+N_N     1E4    [receptors cell^-1] // number of DAMP receptors on neurons
 
 N_Astr   1E10  [cells L^-1]  //1E10
 
