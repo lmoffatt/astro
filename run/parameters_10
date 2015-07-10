@@ -8,7 +8,7 @@ epsilon  5e-2  [m/m]  // fraction of extracelular space
 
 Keq  9E-10  [M]  // affinity constant for psi
 
-kcat 2E-6  [s-1]  // 2E-4 ligand removal rate for psi
+kcat 2E-5  [s-1]  // 2E-4 ligand removal rate for psi
 
 g_01   2E-4  [s-1] // cell type change rate from 0to 1
 
@@ -42,6 +42,6 @@ prot_concentration   0.2  [mg/ml]  // protein density
 
 DAMP_MW  25   [kD] // peso molecular de las DAMPs
 
-k_sig  0.01  [molecules s^-1 cell^-1]   // mediator secreation rate
+k_sig  10  [molecules s^-1 cell^-1]   // mediator secreation rate
 
 

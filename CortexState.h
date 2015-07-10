@@ -846,6 +846,9 @@ class Model00:public BaseModel
     s.g_max_psi_=std::vector<double> (7,0);
 
     s.g_max_psi_[2]=p.g_max_;
+    s.g_max_psi_[3]=p.g_max_;
+    s.g_max_psi_[4]=p.g_max_;
+    s.g_max_psi_[5]=p.g_max_;
 
 
     s.a_=std::vector<double> (7,0);
@@ -1054,8 +1057,14 @@ class Model10:public BaseModel
     s.g_max_psi_=std::vector<double> (7,0);
 
     s.g_max_psi_[2]=p.g_max_;
+    s.g_max_psi_[3]=p.g_max_;
+    s.g_max_psi_[4]=p.g_max_;
+    s.g_max_psi_[5]=p.g_max_;
 
     s.g_max_omega_[2]=p.g_max_;
+    s.g_max_omega_[3]=p.g_max_;
+    s.g_max_omega_[4]=p.g_max_;
+    s.g_max_omega_[5]=p.g_max_;
 
 
     s.a_=std::vector<double> (7,0);
