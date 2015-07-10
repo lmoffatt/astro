@@ -995,7 +995,8 @@ class Model10:public BaseModel
     double epsilon_;
     double Keq_psi_;
     double Keq_omega_;
-    double kcat_;
+    double kcat_psi;
+    double kcat_omega_;
     double g_01_;
     double g_10_;
     double g_23_;
@@ -1030,10 +1031,10 @@ class Model10:public BaseModel
     s.Domega_=p.D_;
     s.epsilon_=p.epsilon_;
 
-    s.kon_psi_=p.kcat_/p.Keq_psi_;
-    s.kcat_psi_=p.kcat_;
-    s.kon_omega_=p.kcat_/p.Keq_omega_;
-    s.kcat_omega_=p.kcat_;
+    s.kon_psi_=p.kcat_psi/p.Keq_psi_;
+    s.kcat_psi_=p.kcat_psi;
+    s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
+    s.kcat_omega_=p.kcat_omega_;
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -1138,7 +1139,8 @@ public:
     out.push_back("epsilon",p_.epsilon_);
     out.push_back("Keq_psi",p_.Keq_psi_);
     out.push_back("Keq_omega",p_.Keq_omega_);
-    out.push_back("kcat", p_.kcat_);
+    out.push_back("kcat_psi", p_.kcat_psi);
+    out.push_back("kcat_omega", p_.kcat_omega_);
     out.push_back("g_01",p_.g_01_);
     out.push_back("g_10",p_.g_10_ );
     out.push_back("g_23",p_.g_23_ );
@@ -1176,7 +1178,8 @@ public:
     p_.epsilon_=p.get("epsilon");
     p_.Keq_psi_=p.get("Keq_psi");
     p_.Keq_omega_=p.get("Keq_omega");
-    p_.kcat_=p.get("kcat");
+    p_.kcat_psi=p.get("kcat_psi");
+    p_.kcat_omega_=p.get("kcat_omega");
     p_.g_01_=p.get("g_01");
     p_.g_10_=p.get("g_10");
     p_.g_23_=p.get("g_23");

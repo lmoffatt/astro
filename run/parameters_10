@@ -10,7 +10,9 @@ Keq_psi  9E-9  [M]  // affinity constant for psi
 
 Keq_omega  9E-11  [M]  // affinity constant for omega
 
-kcat 2E-4  [s-1]  // 2E-4 ligand removal rate for psi/omega clearance
+kcat_psi 2E-4  [s-1]  // 2E-4 ligand removal rate for psi/omega clearance
+
+kcat_omega 2E-4  [s-1]  // 2E-4 ligand removal rate for psi/omega clearance
 
 g_01   5E-3  [s-1] // cell type change rate from 0to 1
 
