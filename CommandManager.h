@@ -2,7 +2,29 @@
 #define COMMANDMANAGER
 #include <string>
 #include <map>
-#include "CortexState.h"
+#include "CortexMeasure.h"
+
+
+/*! @file CommandManager.h   Management of the commands
+ *
+ *
+ * */
+
+
+
+class BaseModel;
+class CortexSimulation;
+
+
+
+inline std::string& removeComments(std::string& line)
+{
+  auto pos=line.find("//");
+  if (pos!=line.npos)
+    line.erase(pos);
+  return line;
+}
+
 
 
 class CommandBase
@@ -16,9 +38,6 @@ public:
 
 
 };
-
-
-
 
 
 class CommandManager
@@ -37,15 +56,9 @@ public:
     sections[section->id()]=section;
   }
 
-  void push_back(BaseModel* model)
-  {
-    models[model->id()]=model;
-  }
+  void push_back(BaseModel* model);
 
-  void push_back(CortexSimulation* simulation)
-  {
-    simulations[simulation->id_]=simulation;
-  }
+  void push_back(CortexSimulation* simulation);
 
 
   void push_back(CortexMeasure* measure)
@@ -54,20 +67,7 @@ public:
   }
 
 
-  ~CommandManager()
-  {
-    for (auto elem:cmd_)
-      delete elem.second;
-    for (auto elem: sections)
-      delete elem.second;
-    for (auto elem: measures)
-      delete elem.second;
-    for (auto elem: models)
-      delete elem.second;
-    for (auto elem: simulations)
-      delete elem.second;
-
-  }
+  ~CommandManager();
 
   CortexMeasure *getMeasure(std::string id);
   BaseModel *getModel(std::string idModel);
@@ -85,6 +85,180 @@ private:
 
 
 };
+
+
+class Script
+{
+public:
+  Script(CommandManager* cm):cm_(cm){}
+
+  int run(char* filenme);
+
+  void execute (std::string line);
+
+private:
+  CommandManager* cm_;
+
+
+};
+
+
+class readCommand: public CommandBase
+{
+
+
+  // CommandBase interface
+public:
+  virtual void run(const std::string rline);
+
+  readCommand(CommandManager* cm):
+    cmd_(cm){}
+
+  virtual std::string id() const
+  {
+    return "read";
+  }
+private: CommandManager* cmd_;
+};
+
+
+
+class writeCommand: public CommandBase
+{
+
+
+  // CommandBase interface
+public:
+  virtual void run(const std::string line);
+
+  writeCommand(CommandManager* cm):
+    cmd_(cm){}
+
+  virtual std::string id() const
+  {
+    return "write";
+  }
+private:
+  CommandManager* cmd_;
+};
+
+
+std::istream& safeGetline(std::istream& is, std::string& t);
+
+
+
+
+
+class AlignCommand:public CommandBase
+{
+  // CommandBase interface
+public:
+  virtual void run(const std::string line);
+  virtual std::string id() const
+  {
+    return "align";
+  }
+  AlignCommand(CommandManager* cm):cm_(cm){}
+
+private:
+  CommandManager* cm_;
+
+};
+
+class MergeCommand:public CommandBase
+{
+ // CommandBase interface
+public:
+  virtual void run(const std::string line);
+  virtual std::string id() const
+  {
+    return "merge";
+  }
+  MergeCommand(CommandManager* cm):cm_(cm){}
+
+private:
+  CommandManager* cm_;
+
+};
+
+
+class DistancesCommand:public CommandBase
+{
+ // CommandBase interface
+public:
+  virtual void run(const std::string line);
+  virtual std::string id() const
+  {
+    return "distances";
+  }
+  DistancesCommand(CommandManager* cm):cm_(cm){}
+
+private:
+  CommandManager* cm_;
+
+};
+
+
+
+class HistogramCommand:public CommandBase
+{
+ // CommandBase interface
+public:
+  virtual void run(const std::string line);
+  virtual std::string id() const
+  {
+    return "histogram";
+  }
+  HistogramCommand(CommandManager* cm):cm_(cm){}
+
+private:
+  CommandManager* cm_;
+
+};
+
+
+class ExperimentCommand:public CommandBase
+{
+ // CommandBase interface
+public:
+  virtual void run(const std::string line);
+  virtual std::string id() const
+  {
+    return "experiment";
+  }
+  ExperimentCommand(CommandManager* cm):cm_(cm){}
+
+private:
+  CommandManager* cm_;
+
+};
+
+
+
+class SimulateCommand:public CommandBase
+{
+ // CommandBase interface
+public:
+  virtual void run(const std::string line);
+  virtual std::string id() const
+  {
+    return "simulate";
+  }
+  SimulateCommand(CommandManager* cm):cm_(cm){}
+
+private:
+  CommandManager* cm_;
+
+};
+
+
+
+
+
+
+
+
+
 
 
 #endif // COMMANDMANAGER

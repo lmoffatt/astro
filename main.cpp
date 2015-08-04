@@ -1,6 +1,5 @@
 #include <iostream>
 #include "CommandManager.h"
-#include "Script.h"
 
 int main(int argc, char **argv)
 {

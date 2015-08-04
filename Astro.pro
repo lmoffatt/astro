@@ -8,22 +8,19 @@ QMAKE_CXXFLAGS_DEBUG += -std=c++11 #-lpthread
 
 
 SOURCES += main.cpp \
-    CortexState.cpp \
-    Script.cpp \
     CommandManager.cpp \
-    read.cpp \
-    AlignCommand.cpp
+    Models.cpp \
+    CortexSimulation.cpp \
+    CortexMeasure.cpp
 
-include(deployment.pri)
-qtcAddDeployment()
+#include(deployment.pri)
+#qtcAddDeployment()
 
 HEADERS += \
-    Astrocyte.h \
-    CortexState.h \
-    Script.h \
     CommandManager.h \
-    read.h \
-    AlignCommand.h
+    Models.h \
+    CortexSimulation.h \
+    CortexMeasure.h
 
 DISTFILES += \
     run/script \
