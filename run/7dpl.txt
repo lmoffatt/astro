@@ -1,3 +1,9 @@
+experiment
+
+dia 7
+
+espesor 100 //um
+
 foto 1
 pin 1
 X (um)	Y (um)

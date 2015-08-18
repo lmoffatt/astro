@@ -6,6 +6,34 @@
 
 #include <map>
 #include <vector>
+#include <numeric>
+
+#include <iostream>
+inline
+double MultinomialLikelihood(const std::vector<double>& n, const std::vector<double>& p, double ntot=0)
+{
+  if (n.size()!=p.size())
+    return std::numeric_limits<double>::quiet_NaN();
+  if (ntot==0)
+    for (double ni:n)
+      ntot+=ni;
+  double lik=0;
+  for (unsigned i=0; i< n.size(); ++i)
+    {
+      double pLik=0;
+      if (n[i]>0)
+        pLik=n[i]*log(ntot*p[i]/n[i]);
+    //  std::cout<<"i="<<i<<" obs="<<n[i]<<" exp="<<ntot*p[i]<<" pLik="<<pLik<<"\n";
+    lik+=pLik;
+    }
+  return lik;
+}
+
+
+
+
+
+
 
 
 class SimplestModel
@@ -52,6 +80,7 @@ public:
     double DAMP_MW_;
 
 
+
   };
 
   SimplestModel() {}
@@ -61,6 +90,10 @@ public:
 
 
   CortexSimulation simulate(const Parameters& par,const Param &p, const CortexExperiment &sp, double dt)const;
+
+  CortexSimulation simulate(const Parameters& par, const Param &p, const Experiment &sp, double dt, double tequilibrio)const;
+
+
 
 
 
@@ -95,6 +128,7 @@ public:
 
 
   std::vector<std::vector<double> > dRho_dt(const Param &p, const CortexState &c, bool hasOmega)const;
+  CortexState init(const SimplestModel::Param &p, const Experiment &s) const;
 };
 
 
@@ -104,6 +138,7 @@ public:
 class BaseModel
 {public:
 
+
   virtual std::string id()const=0;
 
 
@@ -112,11 +147,67 @@ class BaseModel
   virtual void loadParameters(const Parameters& p)=0;
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const=0;
+  virtual CortexSimulation run(const Experiment& e,double dt,  double tequilibrio) const=0;
 
 
   static BaseModel* create(const Parameters& p);
 
   virtual ~BaseModel(){}
+
+  virtual std::vector<double> getObservedProbFromModel(const std::vector<double>& modelRho)const
+  {
+    std::vector<double>  v(5);
+    double n=modelRho[2]+modelRho[3]+modelRho[4]+modelRho[5]+modelRho[6];
+    v[0]=modelRho[2]/n;
+    v[1]=modelRho[3]/n;
+    v[2]=modelRho[4]/n;
+    v[3]=modelRho[5]/n;
+    v[4]=modelRho[6]/n;
+    return v;
+  }
+
+  virtual std::vector<double> getObservedNumberFromData(const std::vector<double>& modelRho)const
+  {
+    std::vector<double>  v(5);
+    v[0]=modelRho[1];
+    v[1]=modelRho[3];
+    v[2]=modelRho[4];
+    v[3]=modelRho[5];
+    v[4]=modelRho[6];
+    return v;
+  }
+
+  double likelihood(const Experiment& m, const CortexSimulation& s)const
+  {
+    unsigned is=0;
+    double sumLogLik=0;
+
+    for (unsigned ie=0; ie<m.numMeasures(); ie++)
+      {
+        const CortexMeasure* cm=m.getMeasure(ie);
+        double t=cm->dia()*24*60*60;
+        while (s.t_[is]<t
+               &&is<s.t_.size())
+          ++is;
+        std::vector<double> rho_sim;
+        std::vector<double> rho_meas;
+        for (unsigned ix=0; ix<cm->dx().size(); ++ix)
+          {
+            rho_sim=getObservedProbFromModel(s.rho_[is][ix]);
+            auto ob=cm->meanAstro(ix);
+            rho_meas=getObservedNumberFromData(ob);
+            sumLogLik+=MultinomialLikelihood(rho_meas,rho_sim);
+          }
+
+      }
+    return sumLogLik;
+
+  }
+
+
+
+
+
 
 private:
   static std::map<double,BaseModel*> models_;
@@ -322,6 +413,16 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
   }
+
+  virtual CortexSimulation run(const Experiment& e,double dt, double teq) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt,teq);
+
+  }
+
+
+
+
 
   Model00(const Parameters& p)
   {
@@ -555,6 +656,12 @@ public:
 
 
   }
+  virtual CortexSimulation run(const Experiment& e,double dt,double teq) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt,teq);
+
+  }
+
 
   Model10(const Parameters& p)
   {

@@ -61,10 +61,7 @@ public:
   void push_back(CortexSimulation* simulation);
 
 
-  void push_back(CortexMeasure* measure)
-  {
-    measures[measure->id()]=measure;
-  }
+  void push_back(CortexMeasure* measure);
 
 
   ~CommandManager();
@@ -72,11 +69,15 @@ public:
   CortexMeasure *getMeasure(std::string id);
   BaseModel *getModel(std::string idModel);
   CortexSimulation *getSimulation(std::string idSimulation);
+  Experiment *getExperiment(std::string id);
+  void push_back(Experiment *experiment);
 private:
   std::map <std::string, CommandBase*> cmd_;
   std::map <std::string,TissueSection*> sections;
+
   std::map <std::string,CortexMeasure*> measures;
 
+  std::map <std::string,Experiment*> experiments;
 
   std::map <std::string,BaseModel*> models;
 
@@ -94,9 +95,7 @@ public:
 
   int run(char* filenme);
 
-  void execute (std::string line);
-
-private:
+ private:
   CommandManager* cm_;
 
 
@@ -252,7 +251,28 @@ private:
 };
 
 
+class LikelihoodCommand:public CommandBase
+{
+ // CommandBase interface
+public:
+  virtual void run(const std::string line);
+  virtual std::string id() const
+  {
+    return "likelihood";
+  }
+  LikelihoodCommand(CommandManager* cm):cm_(cm){}
 
+private:
+  CommandManager* cm_;
+
+};
+
+inline
+std::string operator+(const std::string& one,const  std::string& two)
+{
+  return one+two;
+
+}
 
 
 

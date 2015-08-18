@@ -217,8 +217,17 @@ public:
     return id_;
   }
 
+  double dia()const
+  {
+    return dia_;
+  }
 
-  std::vector<double> dx()const
+  double h()const
+  {
+    return h_;
+  }
+
+  const std::vector<double>& dx()const
   {
     return dx_;
   }
@@ -231,6 +240,10 @@ public:
     return numAstro_[idx];
   }
 
+  const std::vector<double>& meanAstro(unsigned idx)const
+  {
+    return meanAstro_[idx];
+  }
   double meanAstro(unsigned idx,unsigned type)const
   {
     return meanAstro_[idx][type];
@@ -255,9 +268,11 @@ public:
     return covAstro_[idx];
   }
 
+
+
   std::ostream& write(std::ostream& s)
   {
-    s<<id()<<"\n";
+    s<<id()<<"\t"<<dia()<<"\n";
     s<<"limit"<<"\t"<<"tipo 1"<<"\t"<<"tipo 2"<<"\t"<<"tipo 3"<<"\t"<<"tipo 4"<<"\t";
     s<<"tipo 5"<<"\t"<<"tipo 6"<<"\t";
     s<<"se 1"<<"\t"<<"se 2"<<"\t"<<"se 3"<<"\t"<<"se 4"<<"\t"<<"se 5";
@@ -304,11 +319,14 @@ public:
 
 
 
+
   CortexMeasure(std::string id,
+                double dia,
+                double h,
                 std::vector<double> dx
                 ,std::vector<std::vector<double>> meanAstro
                 ,std::vector<std::vector<std::vector<double>>> covAstro)
-    :id_(id),dx_(dx),
+    :id_(id),dia_(dia),h_(h),dx_(dx),
       numAstro_(std::vector<double>(meanAstro.size(),0))
     ,meanAstro_(meanAstro),covAstro_(covAstro){
 
@@ -321,8 +339,12 @@ public:
 
   }
 
+
+
 private:
   std::string id_;
+  double dia_;
+  double h_; // in um
   std::vector<double> dx_;
   std::vector<double> numAstro_;
   std::vector<std::vector<double>> meanAstro_;
@@ -333,6 +355,77 @@ private:
 
 
 
+
+
+
+class Experiment
+{
+public:
+  std::string id()
+  {
+    return id_;
+  }
+
+  const std::vector<double>& dx() const
+  {
+    return m_[0]->dx();
+  }
+  std::vector<double> x_in_m() const
+  {
+    std::vector<double> o(m_[0]->dx().size());
+    for (unsigned i=0; i<o.size(); ++i)
+      o[i]=m_[0]->dx()[i]*1e-6;
+    return o;
+  }
+
+  double h() const
+  {
+    return m_[0]->h();
+  }
+
+  double numMeasures()const
+  {
+    return m_.size();
+  }
+
+  double tsim()const
+  {
+    return tsim_;
+  }
+
+  double tMeas(unsigned i)const
+  {
+    return tMeasures_[i];
+  }
+
+
+
+
+
+  Experiment(std::string ide, std::vector<CortexMeasure*> mv):
+    id_(ide),m_(mv),tMeasures_(mv.size()),tsim_(0)
+  {
+    for (unsigned i=0; i<m_.size(); ++i)
+      {
+        tMeasures_[i]=m_[i]->dia()*60*60*24;
+        if (tMeasures_[i]>tsim_) tsim_=tMeasures_[i];
+      }
+  }
+
+  const CortexMeasure* getMeasure(unsigned i)const
+  {
+    return m_[i];
+  }
+
+private:
+  std::string id_;
+  std::vector<CortexMeasure*> m_;
+  std::vector<double> tMeasures_;
+  double tsim_;
+
+
+
+};
 
 
 
@@ -359,7 +452,7 @@ public:
     s<<"cortex experiment"<<"\n";
 
   }
- 
+
   
 };
 
@@ -418,6 +511,7 @@ public:
 
   unsigned num;
   std::string id;
+  double h_;
   std::vector<Astrocyte> astr_;
 
   LimiteTejido lt_;
@@ -430,7 +524,7 @@ public:
 
 
 
-  CortexMeasure* measure(std::string id, std::vector<double> x);
+  CortexMeasure* measure(std::string id, double dia, std::vector<double> x);
 };
 
 
@@ -441,8 +535,11 @@ public:
 class TissueSection
 {
 public:
-  TissueSection (std::string name):
-    id_(name){}
+  TissueSection (std::string name,double dia):
+    id_(name),
+    dia_(dia)
+
+  {}
 
 
   std::string id()const{return id_;}
@@ -459,13 +556,14 @@ public:
 
   CortexMeasure* measure(std::vector<double> x)
   {
-    return fotos.begin()->second.measure(id(),x);
+    return fotos.begin()->second.measure(id(),dia_,x);
   }
 
 
 
 private:
   std::string id_;
+  double dia_;
 
 
 };

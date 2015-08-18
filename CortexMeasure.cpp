@@ -417,7 +417,7 @@ private:
 
 };
 
-CortexMeasure *TissuePhoto::measure(std::string id,std::vector<double> x)
+CortexMeasure *TissuePhoto::measure(std::string id,double dia,std::vector<double> x)
 {
   pointDefined p(x);
 
@@ -492,7 +492,7 @@ CortexMeasure *TissuePhoto::measure(std::string id,std::vector<double> x)
 
 
 
-  CortexMeasure* m=new CortexMeasure(id,p.limits(),numx,covar);
+  CortexMeasure* m=new CortexMeasure(id,dia,100e-6,p.limits(),numx,covar);
   return m;
 
 

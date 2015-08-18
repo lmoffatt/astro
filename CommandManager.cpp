@@ -2,12 +2,12 @@
 #include "CortexSimulation.h"
 #include "CommandManager.h"
 #include <sstream>
-
+#include <iostream>
 
 int Script::run(char* filename)
 {
   std::ifstream f(filename);
-   while (f)
+  while (f)
     {
       std::string line;
       safeGetline(f,line);
@@ -16,8 +16,8 @@ int Script::run(char* filename)
 
 
 
-     }
-   return 0;
+    }
+  return 0;
 
 }
 
@@ -25,13 +25,16 @@ int Script::run(char* filename)
 
 CommandManager::CommandManager()
 {
- cmd_["read"]=new readCommand(this);
- cmd_["align"]=new AlignCommand(this);
- cmd_["write"]=new writeCommand(this);
- cmd_["merge"]=new MergeCommand(this);
- cmd_["distances"]=new DistancesCommand(this);
- cmd_["histogram"]=new HistogramCommand(this);
- cmd_["simulate"]=new SimulateCommand(this);
+  cmd_["read"]=new readCommand(this);
+  cmd_["align"]=new AlignCommand(this);
+  cmd_["write"]=new writeCommand(this);
+  cmd_["merge"]=new MergeCommand(this);
+  cmd_["distances"]=new DistancesCommand(this);
+  cmd_["histogram"]=new HistogramCommand(this);
+  cmd_["simulate"]=new SimulateCommand(this);
+  cmd_["experiment"]=new ExperimentCommand(this);
+  cmd_["likelihood"]=new LikelihoodCommand(this);
+
 
 
 }
@@ -61,11 +64,11 @@ CommandBase *CommandManager::Command(std::string commandName)
 
 TissueSection *CommandManager::getSection(std::string idSection)
 {
- auto it=sections.find(idSection);
- if(it!=sections.end())
-   return it->second;
- else
-   return nullptr;
+  auto it=sections.find(idSection);
+  if(it!=sections.end())
+    return it->second;
+  else
+    return nullptr;
 }
 
 void CommandManager::push_back(BaseModel *model)
@@ -78,6 +81,19 @@ void CommandManager::push_back(CortexSimulation *simulation)
   simulations[simulation->id_]=simulation;
 }
 
+void CommandManager::push_back(CortexMeasure *measure)
+{
+  measures[measure->id()]=measure;
+}
+
+void CommandManager::push_back(Experiment *experiment)
+{
+  experiments[experiment->id()]=experiment;
+}
+
+
+
+
 CommandManager::~CommandManager()
 {
   for (auto elem:cmd_)
@@ -89,6 +105,8 @@ CommandManager::~CommandManager()
   for (auto elem: models)
     delete elem.second;
   for (auto elem: simulations)
+    delete elem.second;
+  for (auto elem: experiments)
     delete elem.second;
 
 }
@@ -106,18 +124,27 @@ CortexSimulation *CommandManager::getSimulation(std::string idSimulation)
   auto it=simulations.find(idSimulation);
   if(it!=simulations.end())
     return it->second;
- else
-   return nullptr;
+  else
+    return nullptr;
 }
 
 
 CortexMeasure *CommandManager::getMeasure(std::string id)
 {
- auto it=measures.find(id);
- if(it!=measures.end())
-   return it->second;
- else
-   return nullptr;
+  auto it=measures.find(id);
+  if(it!=measures.end())
+    return it->second;
+  else
+    return nullptr;
+}
+
+Experiment *CommandManager::getExperiment(std::string id)
+{
+  auto it=experiments.find(id);
+  if(it!=experiments.end())
+    return it->second;
+  else
+    return nullptr;
 }
 
 
@@ -224,16 +251,29 @@ void HistogramCommand::run(const std::string line)
 void ExperimentCommand::run(const std::string line)
 
 {
+  // experiment experiment1 0:+200:4000   3dpl 7dpl
 
-  //experiment  sim_zero
-
-
-  std::string cName, dataName;
+  std::string cName,expName, currsection;
+  std::vector<std::string> sections;
+  double start,dx,end;
+  char colon;
   std::stringstream ss(line);
-  ss>>cName>>dataName;
+  ss>>cName>>expName>>start>>colon>>dx>>colon>>end;
+  while(ss>>currsection)
+    sections.push_back(currsection);
+  std::vector<CortexMeasure*> vCM;
+  for (auto s:sections)
+    {
+      cm_->execute("read "+s);
+      cm_->execute("align "+s);
+      cm_->execute("merge "+s);
+      cm_->execute("distances "+s);
+      cm_->execute("histogram "+s+ " d_les "+std::to_string(start)+colon+std::to_string(dx)+colon+std::to_string(end) );
+      vCM.push_back(cm_->getMeasure(s));
 
-
-
+    }
+  Experiment* e=new Experiment(expName,vCM);
+  cm_->push_back(e);
 }
 
 
@@ -276,23 +316,23 @@ void SimulateCommand::run(const std::string line)
   BaseModel*m=BaseModel::create(p);
   if (m!=nullptr)
     {
-    cm_->push_back(m);
+      cm_->push_back(m);
 
-    CortexSimulation* s=new CortexSimulation;
-    *s=m->run(e,dt);
-    if (simName.empty())
-      {
-    s->id_="sim_";
-    s->id_+=paramName;
-      }
-    else
-      s->id_=simName;
+      CortexSimulation* s=new CortexSimulation;
+      *s=m->run(e,dt);
+      if (simName.empty())
+        {
+          s->id_="sim_";
+          s->id_+=paramName;
+        }
+      else
+        s->id_=simName;
 
-    cm_->push_back(s);
-    std::string c="write  ";
-    c+=s->id_;
+      cm_->push_back(s);
+      std::string c="write  ";
+      c+=s->id_;
 
-    cm_->execute(c);
+      cm_->execute(c);
 
     }
 
@@ -320,8 +360,23 @@ void readCommand::run(const std::string rline)
     }
   std::string line;
   safeGetline(f,line);
-  if (line.find("foto")!=line.npos)
-    {auto  s=new TissueSection(filename);
+  double dia=0;
+  if (line.find("experiment")!=line.npos)
+    {
+      safeGetline(f,line);
+      while (f && line.empty())
+        safeGetline(f,line);
+
+      if (line.find("dia")!=line.npos)
+        {
+          std::stringstream ss(line);
+          std::string diastr;
+
+          ss>>diastr>>dia;
+          safeGetline(f,line);
+
+        }
+      auto  s=new TissueSection(filename,dia);
 
       while (f)
         {
@@ -475,5 +530,73 @@ std::istream &safeGetline(std::istream &is, std::string &t)
   if (it!=t.npos)
     t.erase(it);
   return is;
+}
+
+
+void LikelihoodCommand::run(const std::string line)
+{
+
+  //likelihood lik experiment1 parameters_10 0.5 50 1000
+
+  std::string cName, lName, eName, paramName;
+  double dt,dx, tequilibrio;
+  std::stringstream ss(line);
+  ss>>cName>>lName>>eName>>paramName>>dt>>dx>>tequilibrio;
+
+  Experiment* e=cm_->getExperiment(eName);
+  if (e==nullptr)
+    {
+      std::cerr<<"Experiment "<<eName<<" not found\n";
+      return;
+    }
+
+  std::string filename=paramName;
+  std::fstream f;
+
+  f.open(filename.c_str());
+  if (!f)
+    {
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+    }
+  std::string line2;
+  safeGetline(f,line2);
+  Parameters p;
+
+  p.read(line2,f);
+
+  f.close();
+
+  BaseModel*m=BaseModel::create(p);
+  if (m!=nullptr)
+    {
+      cm_->push_back(m);
+
+      CortexSimulation* s=new CortexSimulation;
+      *s=m->run(*e,dt,tequilibrio);
+      //    if (simName.empty())
+      //      {
+      //    s->id_="sim_";
+      //    s->id_+=paramName;
+      //      }
+      //    else
+      //      s->id_=simName;
+
+
+      cm_->push_back(s);
+      std::string c="write  ";
+      c+=s->id_;
+
+      cm_->execute(c);
+
+      double lik=m->likelihood(*e,*s);
+      std::cout<<"likelihood= "<<lik<<"\n";
+
+
+    }
+
+
+
+
 }
 

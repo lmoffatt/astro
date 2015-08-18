@@ -9,6 +9,8 @@
 #include <string>
 #include <fstream>
 
+#include "Parameters.h"
+
 
 class CortexState
 {
@@ -48,54 +50,31 @@ public:
     ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
   {}
 
+  CortexState(const std::vector<double>& x
+              ,double h
+              ,double epsilon
+              ,unsigned numK)
+    :
+      x_(x)
+    ,dx_(x.size())
+    ,h_(h)
+    ,epsilon_(epsilon)
+    ,psi_T_(std::vector<double>(x.size(),0))
+    ,omega_T_(std::vector<double> (x.size(),0))
+    ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
+  {
+    auto n=x.size();
+    for (unsigned i=0; i<x_.size()-1; ++i)
+      dx_[i]=x_[i+1]-x_[i];
+    dx_[n-1]=dx_[n-2];
+  }
+
 
 
 };
 
 
 
-class Parameters
-{
-public:
-  double get(const std::string& name)const
-  {
-    auto it=m_.find(name);
-    if (it!=m_.end())
-      return it->second.first;
-    else
-      return std::numeric_limits<double>::quiet_NaN();
-  }
-  void push_back(const std::string& name, double val,std::string comment)
-  {
-    m_[name]=std::pair<double,std::string>(val,comment);
-  }
-  void push_back(const std::string& name, double val)
-  {
-    m_[name]=std::pair<double,std::string>(val,"");
-  }
-
-  unsigned size()const
-  {
-    return m_.size();
-  }
-
-  void read(std::string &line, std::istream &s);
-
-  std::ostream& write(std::ostream& s)const
-  {
-    s<<"parameters \n";
-    for (auto& elem:m_)
-      {
-        s<<elem.first<<"\t"<<elem.second.first<<"\t"<<elem.second.second<<"\n";
-      }
-    return s;
-  }
-
-private:
-
-  std::map<std::string, std::pair<double,std::string>> m_;
-
-};
 
 
 class CortexSimulation
@@ -180,7 +159,23 @@ public:
   void read(std::string &line, std::istream &s);
 };
 
+class Experiment;
 
+class Likelihood
+{
+public:
+  Likelihood(const Experiment* e, const CortexSimulation* s):
+    e_(e), s_(s){}
+
+
+  double total();
+  std::vector<double> partial();
+
+  private:
+   const Experiment* e_;
+   const CortexSimulation* s_;
+
+};
 
 #endif // CORTEXSIMULATION
 

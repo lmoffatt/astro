@@ -40,6 +40,7 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
 
 CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExperiment &s)const
 {
+
   CortexState o(s.x_,s.dx_,s.h_,p.epsilon_,p.N_.size());
 
 
@@ -48,6 +49,29 @@ CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExper
     {
       o.rho_[x][0]=p.dens_Neur_*std::pow(s.h_,2)*s.dx_[x]*1000;  // dens is in cells per liter
       o.rho_[x][1]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000;
+
+    }
+  o.psi_B_=Psi_Bound(p,o);
+  o.omega_B_=Omega_Bound(p,o);
+  return o;
+}
+
+
+
+
+CortexState SimplestModel::init(const SimplestModel::Param &p,
+                                const Experiment &s)const
+{
+  std::vector<double> x_grid_in_m=s.x_in_m();
+
+  CortexState o(x_grid_in_m,s.h(),p.epsilon_,p.N_.size());
+
+
+  unsigned numX=o.x_.size();
+  for (unsigned x=0; x<numX; ++x)
+    {
+      o.rho_[x][0]=p.dens_Neur_*std::pow(s.h(),2)*o.dx_[x]*1000;  // dens is in cells per liter
+      o.rho_[x][1]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000;
 
     }
   o.psi_B_=Psi_Bound(p,o);
@@ -261,13 +285,10 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
                                          const CortexExperiment &sp
                                          ,double dt)const
 {
-
-
   std::cout<<"starts a Simulation on \n";
   sp.write(std::cout);
   par.write(std::cout);
   std::cout<<"dt ="<<dt<<"\n";
-
 
   CortexState c=init(p,sp);
 
@@ -328,6 +349,65 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
 
 }
+
+
+
+
+CortexSimulation SimplestModel::simulate(const Parameters& par,
+                                         const SimplestModel::Param &p,
+                                         const Experiment &sp
+                                         ,double dt,
+                                         double tequilibrio)const
+{
+ /* std::cout<<"starts a Simulation on \n";
+  sp.write(std::cout);
+  par.write(std::cout);
+  std::cout<<"dt ="<<dt<<"\n";
+*/
+
+
+  CortexState c=init(p,sp);
+
+
+
+  CortexSimulation s(c,sp.numMeasures());
+  s.p_=par;
+  s.dt_=dt;
+  double t=-tequilibrio;
+  unsigned i=0;
+
+  while (t+dt<0)
+    {
+      c=nextEuler(p,c,dt);
+      t+=dt;
+    }
+
+  addDamp(c,p);
+  while (i<sp.numMeasures())
+    {
+      c=nextEuler(p,c,dt);
+      t+=dt;
+      if (t>=sp.tMeas(i))
+        {
+          s.t_[i]=t;
+          s.sdt_[i]=dt;
+          s.omega_T_[i]=c.omega_T_;
+          s.psi_T_[i]=c.psi_T_;
+          s.omega_B_[i]=c.omega_B_;
+          s.psi_B_[i]=c.psi_B_;
+          s.rho_[i]=c.rho_;
+          ++i;
+
+        }
+
+    }
+  return s;
+
+
+}
+
+
+
 
 
 BaseModel *BaseModel::create(const Parameters &p)

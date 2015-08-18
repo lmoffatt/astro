@@ -11,7 +11,12 @@ SOURCES += main.cpp \
     CommandManager.cpp \
     Models.cpp \
     CortexSimulation.cpp \
-    CortexMeasure.cpp
+    CortexMeasure.cpp \
+    Parameters.cpp \
+    MatrixInverse.cpp \
+    matrixCholesky.cpp \
+    LevenbergMarquardt.cpp \
+    BayesIteration.cpp
 
 #include(deployment.pri)
 #qtcAddDeployment()
@@ -20,7 +25,11 @@ HEADERS += \
     CommandManager.h \
     Models.h \
     CortexSimulation.h \
-    CortexMeasure.h
+    CortexMeasure.h \
+    Parameters.h \
+    MatrixInverse.h \
+    LevenbergMarquardt.h \
+    BayesIteration.h
 
 DISTFILES += \
     run/script \
@@ -31,5 +40,13 @@ DISTFILES += \
     run/simulate_script \
     run/parameters_zero.txt \
     run/write_script \
-    run/parameters_10
+    run/parameters_10 \
+    run/opt_script
 
+win32{
+LIBS += -L$$PWD/bin -lcygblas \
+        -L$$PWD/bin -lcyglapack
+} else {
+LIBS += -L$$PWD/bin -lblas \
+        -L$$PWD/bin -llapack
+}

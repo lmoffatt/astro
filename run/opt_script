@@ -1,0 +1,2 @@
+experiment experiment1  0:+50:4000   3dpl 7dpl
+likelihood lik experiment1 parameters_10 0.5 50 1000
