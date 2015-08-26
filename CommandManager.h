@@ -2,8 +2,8 @@
 #define COMMANDMANAGER
 #include <string>
 #include <map>
+#include "BaseClass.h"
 #include "CortexMeasure.h"
-
 
 /*! @file CommandManager.h   Management of the commands
  *
@@ -12,9 +12,13 @@
 
 
 
+
+
+
+
 class BaseModel;
 class CortexSimulation;
-
+class CortexModelLikelihood;
 
 
 inline std::string& removeComments(std::string& line)
@@ -27,15 +31,23 @@ inline std::string& removeComments(std::string& line)
 
 
 
-class CommandBase
+class CommandBase: public BaseClass
 {
 public:
-  virtual void run(const std::string line)=0;
+  static std::string ClassName(){
+    return "Command";
+  }
 
-  virtual std::string id()const=0;
+   virtual std::string myClass()const override
+  {
+    return ClassName();
+  }
+
+  CommandBase(const std::string& id){setId(id);}
+
   virtual ~CommandBase(){}
 
-
+  virtual void run(const std::string line)=0;
 
 };
 
@@ -63,6 +75,8 @@ public:
 
   void push_back(CortexMeasure* measure);
 
+  void push_back(CortexModelLikelihood* likelihood);
+
 
   ~CommandManager();
 
@@ -70,6 +84,8 @@ public:
   BaseModel *getModel(std::string idModel);
   CortexSimulation *getSimulation(std::string idSimulation);
   Experiment *getExperiment(std::string id);
+
+  CortexModelLikelihood* getLikelihood(const std::string& idLik);
   void push_back(Experiment *experiment);
 private:
   std::map <std::string, CommandBase*> cmd_;
@@ -83,6 +99,7 @@ private:
 
   std::map <std::string,CortexSimulation*> simulations;
 
+  std::map <std::string,CortexModelLikelihood*> likelihoods;
 
 
 };
@@ -111,12 +128,12 @@ public:
   virtual void run(const std::string rline);
 
   readCommand(CommandManager* cm):
+    CommandBase("read"),
     cmd_(cm){}
 
-  virtual std::string id() const
-  {
-    return "read";
-  }
+
+  ~readCommand(){}
+
 private: CommandManager* cmd_;
 };
 
@@ -131,18 +148,17 @@ public:
   virtual void run(const std::string line);
 
   writeCommand(CommandManager* cm):
+    CommandBase("write"),
     cmd_(cm){}
 
-  virtual std::string id() const
-  {
-    return "write";
-  }
+  ~writeCommand(){}
+
+
 private:
   CommandManager* cmd_;
 };
 
 
-std::istream& safeGetline(std::istream& is, std::string& t);
 
 
 
@@ -157,7 +173,11 @@ public:
   {
     return "align";
   }
-  AlignCommand(CommandManager* cm):cm_(cm){}
+  AlignCommand(CommandManager* cm):
+    CommandBase("align"),
+    cm_(cm){}
+
+  ~AlignCommand(){}
 
 private:
   CommandManager* cm_;
@@ -168,12 +188,11 @@ class MergeCommand:public CommandBase
 {
  // CommandBase interface
 public:
-  virtual void run(const std::string line);
-  virtual std::string id() const
-  {
-    return "merge";
-  }
-  MergeCommand(CommandManager* cm):cm_(cm){}
+  virtual void run(const std::string line) override;
+  MergeCommand(CommandManager* cm):
+    CommandBase("merge"),
+    cm_(cm){}
+  ~MergeCommand(){}
 
 private:
   CommandManager* cm_;
@@ -190,8 +209,10 @@ public:
   {
     return "distances";
   }
-  DistancesCommand(CommandManager* cm):cm_(cm){}
-
+  DistancesCommand(CommandManager* cm):
+    CommandBase("distances"),
+    cm_(cm){}
+  ~DistancesCommand(){}
 private:
   CommandManager* cm_;
 
@@ -204,11 +225,10 @@ class HistogramCommand:public CommandBase
  // CommandBase interface
 public:
   virtual void run(const std::string line);
-  virtual std::string id() const
-  {
-    return "histogram";
-  }
-  HistogramCommand(CommandManager* cm):cm_(cm){}
+  HistogramCommand(CommandManager* cm):
+    CommandBase("histogram"),
+    cm_(cm){}
+  ~HistogramCommand(){}
 
 private:
   CommandManager* cm_;
@@ -225,8 +245,10 @@ public:
   {
     return "experiment";
   }
-  ExperimentCommand(CommandManager* cm):cm_(cm){}
-
+  ExperimentCommand(CommandManager* cm):
+    CommandBase("experiment"),
+    cm_(cm){}
+~ExperimentCommand(){}
 private:
   CommandManager* cm_;
 
@@ -239,12 +261,12 @@ class SimulateCommand:public CommandBase
  // CommandBase interface
 public:
   virtual void run(const std::string line);
-  virtual std::string id() const
-  {
-    return "simulate";
-  }
-  SimulateCommand(CommandManager* cm):cm_(cm){}
 
+  SimulateCommand(CommandManager* cm):
+    CommandBase("simulate"),
+    cm_(cm){}
+
+  ~SimulateCommand(){}
 private:
   CommandManager* cm_;
 
@@ -256,16 +278,38 @@ class LikelihoodCommand:public CommandBase
  // CommandBase interface
 public:
   virtual void run(const std::string line);
-  virtual std::string id() const
-  {
-    return "likelihood";
-  }
-  LikelihoodCommand(CommandManager* cm):cm_(cm){}
+  virtual std::string id() const;
+  LikelihoodCommand(CommandManager* cm):
+    CommandBase("likelihood"),
+    cm_(cm){}
 
 private:
   CommandManager* cm_;
 
 };
+
+
+class OptimizeCommand:public CommandBase
+{
+ // CommandBase interface
+public:
+  virtual void run(const std::string line);
+  virtual std::string id() const
+  {
+    return "optimize";
+  }
+  OptimizeCommand(CommandManager* cm):
+    CommandBase("optimize"),
+    cm_(cm){}
+
+  ~OptimizeCommand(){}
+private:
+  CommandManager* cm_;
+
+};
+
+
+
 
 inline
 std::string operator+(const std::string& one,const  std::string& two)

@@ -4,94 +4,152 @@
 #include <vector>
 
 #include <string>
+#include <cmath>
 
-class Parameters
+
+#include "BaseClass.h"
+
+
+enum TRANSFORM {LINEAR,LOG,LOGRATIO};
+
+
+class Transformation
 {
 public:
-  double get(const std::string& name)const
+  virtual std::string myClass()const=0;
+  virtual double eval(double x)const=0;
+  virtual double inverse(double x)const=0;
+  virtual TRANSFORM myEnum()const=0;
+
+  virtual ~Transformation(){}
+
+
+};
+
+
+
+class Log10Tranformation:public Transformation
+{
+  std::string myClass()const;
+  double eval(double x)const;
+  double inverse(double x)const;
+  virtual TRANSFORM myEnum()const
   {
-    return mean(name);
+    return LOG;
   }
-  void push_back(const std::string& name, double val,std::string comment);
+
+  static std::string ClassName();
+};
+
+class Log10RatioTranformation:public Transformation
+{
+  std::string myClass()const;
+  double eval(double x)const;
+  double inverse(double x)const;
+  virtual TRANSFORM myEnum()const
+  {
+    return LOGRATIO;
+  }
+
+  static std::string ClassName();
+};
+
+class LinearTranformation:public Transformation
+{
+  std::string myClass()const;
+  double eval(double x)const;
+  double inverse(double x)const;
+  virtual TRANSFORM myEnum()const
+  {
+    return LINEAR;
+  }
+
+  static std::string ClassName();
+};
+
+
+
+
+class Parameters: public BaseObject
+{
+public:
+
+  std::string id()const
+  {
+    return id_;
+  }
+
+  double model()const;
+
+  void setModel(double mod);
+
+  double get(const std::string& name)const;
+  //void push_back(const std::string& name, double val,std::string comment);
   void push_back(const std::string& name, double val);
 
+  void push_back_dB(const std::string& name,
+                    TRANSFORM tranformation,
+                    double meanValue,
+                    const std::string &unit,
+                    double dBError,
+                    const std::vector<double>& Correlations={},
+                    const std::string& comment="");
 
-  void read(std::string &line, std::istream &s);
+  void push_back_dB(const std::string& name,
+                    const std::string &tranformation,
+                    double meanValue,
+                    const std::string &unit,
+                    double dBError,
+                    const std::vector<double>& Correlations={},
+                    const std::string& comment="");
 
-  std::ostream& write(std::ostream& s)const;
+
+
 
   double mean(const std::string& name)const;
 
   /// pMean("someParameter")=log10(mean("someParameter")
-  double pMean(const std::string& name)const;
+  double tMean(const std::string& name)const;
 
-  double mean_ratio(const std::string& name)const;
-
-
-
-  /// returns the standard deviation of the logartithm of the parameter
   double pStd(const std::string& name)const;
+
+  Transformation* getTransform(const std::string& name)const;
+
+  bool hasCovariance()const
+  {
+    return !cov_.empty();
+  }
 
   /// returns the standard deviation of the logartithm of the parameter in deciBels
   double dBStd(const std::string& name)const;
 
-
-  double residual(const std::string& name, double value)const;
-  double pResidual(const std::string& name, double log10value)const;
-
-  std::string mode()const;
-  Parameters& setMode(const std::string& mode_);
-
-  std::vector<double> residuals(const std::vector<std::string> names,const std::vector<double> log10Values);
-
-  std::vector<double> residuals(const Parameters& sample)const;
-
-
-
   bool setMeans(const std::vector<std::string> names,const std::vector<double> values);
-  bool setpMeans(const std::vector<std::string> names,const std::vector<double> log10values);
+  bool settMeans(const std::vector<std::string> names,const std::vector<double> log10values);
   bool setpStd(const std::vector<std::string> names,const std::vector<double> values);
 
-  void setpMeans(const std::vector<double> log10values);
+  void settMeans(const std::vector<double> log10values);
 
 
   std::vector<double> means(const std::vector<std::string> names)const;
 
-  std::vector<double> pMeans()const;
+  std::vector<double> trMeans()const;
 
-  std::vector<double> pStds()const;
-
-  std::vector<std::string> names()const;
+  const std::vector<double> &pStds()const;
 
 
 
-  std::vector<double> pMeans(const std::vector<std::string> names)const;
+  std::vector<std::string> names()const
+  {
+    return names_;
+  }
 
 
 
-  void push_back_dB(const std::string& name,
-                    double meanValue,
-                    const std::string &unit,
-                    double dBStdValue,
-                    const std::string& comment="");
+  std::vector<double> trMeans(const std::vector<std::string> names)const;
 
-  void push_back_1S(const std::string& name
-                    , double minValue_p34
-                    , const std::string &unit
-                    , double maxValue_p68
-                    , const std::string &comment="");
 
-  void push_back_2S(const std::string& name
-                    , double minValue_p02
-                    , const std::string& unit
-                    , double maxValue_p98
-                    , const std::string& comment="");
 
-  void push_back_3S(const std::string& name
-                    ,double minValue_p001
-                    ,const std::string& unit
-                    , double maxValue_p999
-                    , const std::string& comment="");
+
 
 
   bool setpMean(const std::string& name, double value);
@@ -120,8 +178,9 @@ public:
 
   void setCovariance(const std::vector< std::vector <double> >& cov);
 
-  std::vector< std::vector <double> > getCovariance()const;
+  const std::vector< std::vector <double> >& getCovariance()const;
 
+  const std::vector< std::vector <double> >& getInvCovariance()const;
 
   Parameters randomSample(double factor=1.0)const;
 
@@ -141,28 +200,81 @@ public:
 
   void friend swap(Parameters& one, Parameters& other);
 
-//  friend std::ostream& operator<<(std::ostream& s, const Parameters& p);
-//  friend std::istream& operator>>(std::istream& s, Parameters& p);
+  //  friend std::ostream& operator<<(std::ostream& s, const Parameters& p);
+  //  friend std::istream& operator>>(std::istream& s, Parameters& p);
 
   double chi2Distance(const Parameters& other)const;
 
-
+  double logDetCov()const;
 
   unsigned size() const;
   std::string unit(const std::string &name) const;
+
+  static Transformation* Tr(TRANSFORM tr);
+
+  static TRANSFORM toTr(const std::string& trs);
+
 private:
-  std::map<std::string, std::size_t> name_;
-  std::vector<double> pMean_;
-  std::vector<double> pStd_;  // not in dB
-  std::vector< std::vector <double> > cov_;
-  std::vector< std::vector <double> > cho_;
+  std::size_t index(const std::string& name)const;
 
-  std::string mode_;
 
+  std::vector<std::vector<double> >
+  buildCovariance(const std::vector<double>& std_of_tr,
+                const std::vector<std::vector<double>> correlations);
+
+  std::vector<std::vector<double> >
+  buildCorrelations(const std::vector<double>& std_of_tr,
+                  const std::vector<std::vector<double>> covariance);
+
+  std::vector<double> getStdDev(const std::vector<std::vector<double>>& covariance);
+
+  void update();
+
+  static std::map<TRANSFORM,Transformation*> tr_map_;
+
+  /// this variables
+
+  std::string id_;
+
+  double model_;
+
+  std::map<std::string, std::size_t> name_to_i_;
+
+  std::vector<std::string> names_;
+
+  std::vector<double> mean_of_tr_;
+  std::vector<TRANSFORM> trans_;
   std::vector<std::string> unit_;
+  std::vector<double> std_of_tr_;
+
+  std::vector<std::vector<double>> corr_;
+
   std::vector<std::string> comment_;
 
 
+
+  std::vector< std::vector <double> > cov_;
+  std::vector< std::vector <double> > cov_inv_;
+
+  std::vector< std::vector <double> > cho_;
+  double logDetCov_;
+
+
+
+  // BaseClass interface
+public:
+  static std::string ClassName(){return "parameters";}
+  virtual std::string myClass() const override {return ClassName();}
+
+  // BaseObject interface
+public:
+  virtual Parameters *create() const override
+  {
+    return new Parameters;
+  }
+  virtual std::ostream &writeBody(std::ostream &s) const override;
+  virtual void clear() override;
+  virtual bool readBody(std::string &line, std::istream &s) override;
 };
 
 //std::ostream& operator<<(std::ostream& s, const Parameters& p);
@@ -175,6 +287,7 @@ bool areTheSame(const Parameters& one, const Parameters& other);
 
 double randNormal(double mean,double stddev);
 double randNormal();
+
 
 
 #endif // PARAMETERS

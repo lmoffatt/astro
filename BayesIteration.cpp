@@ -5,21 +5,19 @@
 #include "BayesIteration.h"
 #include "MatrixInverse.h"
 
-std::vector<double> ABC_data::getDataWeigth()
-{
-  std::vector<double> w=getDataStandardError();
-  for (std::size_t i=0; i<w.size(); i++)
-    {
-      w[i]=1.0/w[i]/w[i];
-    }
-  std::vector<double> wW(w);
-  return wW;
-}
+//std::vector<double> ABC_Freq_obs::getDataWeigth()
+//{
+////  std::vector<double> w=getDataStandardError();
+////  for (std::size_t i=0; i<w.size(); i++)
+////    {
+////      w[i]=1.0/w[i]/w[i];
+////    }
+////  std::vector<double> wW(w);
+////  return wW;
+//}
 
-ABC_data::~ABC_data(){
-}
 
-ABC_model::~ABC_model(){}
+ABC_Multinomial_Model::~ABC_Multinomial_Model(){}
 
 BayesIteration::~BayesIteration(){
 }
@@ -38,9 +36,9 @@ Parameters BayesIteration::Prior(std::size_t n)const
 }
 
 
-BayesIteration::BayesIteration(const ABC_model* m,
+BayesIteration::BayesIteration(const ABC_Multinomial_Model* m,
                                Parameters prior,
-                               const ABC_data* d,
+                               const ABC_Freq_obs* d,
                                const std::string& filename):
   m_(m),
   priors_(1,prior),
@@ -53,7 +51,7 @@ BayesIteration::BayesIteration(const ABC_model* m,
 }
 
 
-BayesIteration& BayesIteration::addNewData(ABC_data* d)
+BayesIteration& BayesIteration::addNewData(ABC_Freq_obs* d)
 {
   data_.push_back(d);
   priors_.push_back(posterior_);
@@ -82,8 +80,7 @@ BayesIteration::BayesIteration(const BayesIteration& other):
 
 
 
-ABC_model& BayesIteration::setData(const ABC_data& experimentalData)
-{}
+
 
 
 BayesIteration::BayesIteration(){}
@@ -91,55 +88,50 @@ BayesIteration::BayesIteration(){}
 
 
 
-std::vector<double> BayesIteration::yfit (const std::vector<double>& param){}
-std::vector<double> BayesIteration::yfit(const Parameters& parameters)const
+std::vector<std::vector<double>> BayesIteration::p_exp(const Parameters& parameters)const
 {
 
-  std::vector<double> simulatedResults=m_->yfit(parameters);
-  std::vector<double> param=parameters.pMeans();
+  std::vector<std::vector<double>> simulatedResults=m_->p_exp(parameters);
+  std::vector<double> param=parameters.trMeans();
 
-  simulatedResults.insert(simulatedResults.end(),param.begin(),param.end());
+  //simulatedResults.insert(simulatedResults.end(),param.begin(),param.end());
   return simulatedResults;
 }
 
 
-std::vector<double> BayesIteration::getData()const
+const ABC_Freq_obs& BayesIteration::getData()const
 {
-  std::vector<double>data =data_.back()->getData();
-  std::vector<double> param=priors_.back().pMeans();
+//  std::vector<double>data =data_.back()->getData();
+//  std::vector<double> param=priors_.back().pMeans();
 
-  data.insert(data.end(),param.begin(),param.end());
-  std::vector<double> d(data);
-  return d;
+//  data.insert(data.end(),param.begin(),param.end());
+//  std::vector<double> d(data);
+//  return d;
 
 
 }
 
-std::vector<double> BayesIteration::getDataStandardError()const
-{
+//std::vector<double> BayesIteration::getDataStandardError()const
+//{
 
-  std::vector<double>se =data_.back()->getDataStandardError();
-  std::vector<double> param=priors_.back().pStds();
+//  std::vector<double>se =data_.back()->getDataStandardError();
+//  std::vector<double> param=priors_.back().pStds();
 
-  se.insert(se.end(),param.begin(),param.end());
-  std::vector<double> o(se);
-  return o;
+//  se.insert(se.end(),param.begin(),param.end());
+//  std::vector<double> o(se);
+//  return o;
 
-}
+//}
 
 BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint)
 {
-  std::vector<double> data=getData();
-  std::vector<double> w=getDataWeigth();
 
   Parameters p=priors_.back();
 
   std::size_t numIterations=1000;
 
-  LevenbergMarquardtParameters LM(this,
-                        data,
+  LevenbergMarquardtMultinomial LM(this,
                         startingPoint,
-                        w,
                         numIterations);
   LM.optimize();
   std::ofstream f;
@@ -170,13 +162,13 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint)
   f<<"--------------------------------------------------"
      "---------------------------------------------------\n";
   f<<LM;
-  f<<"SS \t"<<LM.SS()<<"\n";
+  f<<"SS \t"<<LM.LogLik()<<"\n";
   f<<"Evidence \t"<<LM.getEvidence()<<"\n";
   f<<"Posterior Likelihoo \t"<<LM.getLogPostLik()<<"\n";
   f<<"logDetPriorCov \t"<<LM.logDetPriorCov()<<"\n";
   f<<"logDetPostrCov \t"<<LM.logDetPostCov()<<"\n";
   f<<"logDetPostrStd \t"<<LM.logDetPostStd()<<"\n";
-  f<<"SSdata \t"<<LM.SSdata()<<"\n";
+  f<<"logLikelihood \t"<<LM.LogLik()<<"\n";
 
 
 
@@ -187,7 +179,7 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint)
   f<<"chi2Distance to prior\t"<<p.chi2Distance(LM.OptimParameters())<<"\n";
   f<<"dBDistance to prior\t"<<dbDistance(p,LM.OptimParameters())<<std::endl;
   put(f,LM.OptimParameters());
-  f<<"SS \t"<<LM.SS()<<"\n";
+  f<<"SS \t"<<LM.LogLik()<<"\n";
 
 
   f<<"--------------------------------------------------"
@@ -198,7 +190,7 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint)
   Parameters h=getHessian(LM.OptimParameters(),1e-5);
 
   double logDetPost=log(det(h.getCovariance()));
-  f<<"SS \t"<<LM.SS()<<"\n";
+  f<<"SS \t"<<LM.LogLik()<<"\n";
 
   f<<"Evidence \t"<<LM.getEvidence()<<"\n";
   f<<"Evidence Hess\t"<<LM.getEvidence()-0.5*LM.logDetPostCov()+0.5*logDetPost<<"\n";
@@ -219,11 +211,11 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint)
   corrMax.write(f);
   logDetPost=log(det(corrMax.getCovariance()));
   double SSc=SumWeighedSquare(corrMax);
-  f<<"SS \t"<<LM.SS()<<"\n";
+  f<<"SS \t"<<LM.LogLik()<<"\n";
   f<<"SS corr\t"<<SSc<<"\n";
 
   f<<"Evidence \t"<<LM.getEvidence()<<"\n";
-  f<<"Evidence corr SS\t"<<-0.5*LM.SS()+0.5*logDetPost<<"\n";
+  f<<"Evidence corr SS\t"<<-0.5*LM.LogLik()+0.5*logDetPost<<"\n";
   f<<"Evidence corr SSc\t"<<-0.5*SSc+0.5*logDetPost<<"\n";
 
   f<<"Posterior Likelihoo \t"<<LM.getLogPostLik()<<"\n";
@@ -253,8 +245,8 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
                                              std::size_t numSeeds,
                                              double probParChange)
 {
-  std::vector<double> data=getData();
-  std::vector<double> w=getDataWeigth();
+//  std::vector<double> data=getData();
+//  std::vector<double> w=getDataWeigth();
 
   Parameters p=priors_.back();
 
@@ -277,10 +269,8 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
 
       Parameters seed;
       seed=startingPoint.randomSample(p,factor,probParChange);
-      LevenbergMarquardtParameters LM(this,
-                            data,
+      LevenbergMarquardtMultinomial LM(this,
                             seed,
-                            w,
                             numIterations);
       LM.optimize();
 
@@ -305,16 +295,16 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
       f<<"----------Result of Levenberg Marquardt------------------\n";
       f<<"--------------------------------------------------"
          "---------------------------------------------------\n";
-      if (LM.SS()<200)
+      if (LM.LogLik()<200)
         f<<LM;
-      f<<"Suma de cuadrados"<<LM.SS();
+      f<<"Suma de cuadrados"<<LM.LogLik();
       f<<"\t numero iteraciones"<<LM.numIter()<<"\tNumero evaluaciones"<<LM.numEval()<<"\n";
       f<<"Evidence \t"<<LM.getEvidence()<<"\n";
       f<<"Posterior Likelihoo \t"<<LM.getLogPostLik()<<"\n";
       f<<"logDetPriorCov \t"<<LM.logDetPriorCov()<<"\n";
       f<<"logDetPostrCov \t"<<LM.logDetPostCov()<<"\n";
       f<<"logDetPostrStd \t"<<LM.logDetPostStd()<<"\n";
-      f<<"SSdata \t"<<LM.SSdata()<<"\n";
+      f<<"logLikelihood \t"<<LM.LogLik()<<"\n";
 
       f<<"chi2Distance to seed\t"<<startingPoint.chi2Distance(LM.OptimParameters())<<"\n";
       f<<"dBDistance to seed\t"<<dbDistance(startingPoint,LM.OptimParameters())<<"\n";
@@ -322,7 +312,7 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
       f<<"dBDistance to prior\t"<<dbDistance(p,LM.OptimParameters())<<"\n";
 
       put(f,LM.OptimParameters());
-      f<<"SS \t"<<LM.SS()<<"\n";
+      f<<"SS \t"<<LM.LogLik()<<"\n";
 
 
     }
@@ -336,9 +326,7 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
 
 BayesIteration& BayesIteration::getPosterior()
 {
-  std::vector<double> data=getData();
-  std::vector<double> w=getDataWeigth();
-  std::vector<LevenbergMarquardtParameters> LMs;
+  std::vector<LevenbergMarquardtMultinomial> LMs;
   std::vector<Parameters> Ps;
 
 
@@ -352,16 +340,14 @@ BayesIteration& BayesIteration::getPosterior()
 
   std::map<double,Parameters> friuts;
 
-  LevenbergMarquardtParameters LM(this,
-                        data,
+  LevenbergMarquardtMultinomial LM(this,
                         p,
-                        w,
                         numIterations);
   LM.optimize();
   LMs.push_back(LM);
   Ps.push_back(LM.OptimParameters());
 
-  friuts[LM.SS()]=LM.OptimParameters();
+  friuts[LM.LogLik()]=LM.OptimParameters();
   std::ofstream f;
 
   f.open(filename_.c_str(),std::ios_base::app);
@@ -393,13 +379,11 @@ BayesIteration& BayesIteration::getPosterior()
       Parameters initParam=(*it).second;
       double ss=(*it).first;
       ++it;
-      LevenbergMarquardtParameters LM(this,
-                            data,
+      LevenbergMarquardtMultinomial LM(this,
                             initParam,
-                            w,
                             numIterations);
       LM.optimize();
-      friuts[LM.SS()]=LM.OptimParameters();
+      friuts[LM.LogLik()]=LM.OptimParameters();
 
       LMs.push_back(LM);
       Ps.push_back(LM.OptimParameters());
@@ -442,13 +426,11 @@ BayesIteration& BayesIteration::getPosterior()
             }
           initParam=initParam.randomSample(errorFactor);
 
-          LevenbergMarquardtParameters LM(this,
-                                data,
+          LevenbergMarquardtMultinomial LM(this,
                                 initParam,
-                                w,
                                 numIterations);
           LM.optimize();
-          friuts[LM.SS()]=LM.OptimParameters();
+          friuts[LM.LogLik()]=LM.OptimParameters();
 
           LMs.push_back(LM);
           Ps.push_back(LM.OptimParameters());
@@ -473,7 +455,7 @@ BayesIteration& BayesIteration::getPosterior()
 
 std::ostream& BayesIteration::put(std::ostream& s,const Parameters& parameters)const
 {
-  m_->put(s,parameters);
+ // m_->put(s,parameters);
   return s;
 }
 
@@ -485,16 +467,16 @@ void BayesIteration::setFilename(const std::string filename)
 
 double BayesIteration::SumWeighedSquare(const Parameters& p)
 {
-  std::vector<double> d=this->getData();
-  std::vector<double> w=this->getDataWeigth();
+//  std::vector<double> d=this->getData();
+//  std::vector<double> w=this->getDataWeigth();
 
-  std::vector<double> y=this->yfit(p);
-  double SSW=0;
-  for (std::size_t i=0;i<d.size();i++)
-    {
-      SSW+=pow(y[i]-d[i],2)*w[i];
-    };
-  return SSW;
+//  std::vector<double> y=this->p_exp(p);
+//  double SSW=0;
+//  for (std::size_t i=0;i<d.size();i++)
+//    {
+//      SSW+=pow(y[i]-d[i],2)*w[i];
+//    };
+//  return SSW;
 }
 
 Parameters BayesIteration::getHessian(const Parameters& MAP,double eps)
@@ -607,7 +589,7 @@ Parameters BayesIteration::getEvidence(const Parameters& maximumPostLik, std::si
   double ss0=SumWeighedSquare(maximumPostLik);
   std::vector<Parameters> parvec;
   std::vector<double> parvecVal;
-  std::vector<double> m=maximumPostLik.pMeans();
+  std::vector<double> m=maximumPostLik.trMeans();
   std::vector<std::vector<double> > covinv=inv(maximumPostLik.getCovariance());
   double sumw=0;
   double sumP=0;
@@ -671,7 +653,7 @@ Parameters BayesIteration::getEvidence(const Parameters& maximumPostLik, std::si
           covout[i][j]+=(parvec[im][i]-mout[i])*(parvec[im][j]-mout[j])*
               parvecVal[im]/sumw;
     }
-  result.setpMeans(mout);
+  result.settMeans(mout);
   result.setCovariance(covout);
 
   return result;

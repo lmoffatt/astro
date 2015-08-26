@@ -13,7 +13,7 @@ write 3dpl
 
 experiment sim_zero
 model parameters_zero
-simulate sim_zero parameters_zero
+simulate sim_zero parameters_zero 10 simzero
 
 
 

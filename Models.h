@@ -4,6 +4,8 @@
 #include "CortexMeasure.h"
 #include "CortexSimulation.h"
 
+#include "BayesIteration.h"
+
 #include <map>
 #include <vector>
 #include <numeric>
@@ -28,6 +30,10 @@ double MultinomialLikelihood(const std::vector<double>& n, const std::vector<dou
     }
   return lik;
 }
+
+
+
+
 
 
 
@@ -136,11 +142,9 @@ public:
 
 
 class BaseModel
-{public:
-
-
+{
+public:
   virtual std::string id()const=0;
-
 
   virtual Parameters getParameters()const=0;
 
@@ -154,28 +158,9 @@ class BaseModel
 
   virtual ~BaseModel(){}
 
-  virtual std::vector<double> getObservedProbFromModel(const std::vector<double>& modelRho)const
-  {
-    std::vector<double>  v(5);
-    double n=modelRho[2]+modelRho[3]+modelRho[4]+modelRho[5]+modelRho[6];
-    v[0]=modelRho[2]/n;
-    v[1]=modelRho[3]/n;
-    v[2]=modelRho[4]/n;
-    v[3]=modelRho[5]/n;
-    v[4]=modelRho[6]/n;
-    return v;
-  }
+  virtual std::vector<double> getObservedProbFromModel(const std::vector<double>& modelRho)const;
 
-  virtual std::vector<double> getObservedNumberFromData(const std::vector<double>& modelRho)const
-  {
-    std::vector<double>  v(5);
-    v[0]=modelRho[1];
-    v[1]=modelRho[3];
-    v[2]=modelRho[4];
-    v[3]=modelRho[5];
-    v[4]=modelRho[6];
-    return v;
-  }
+  virtual std::vector<double> getObservedNumberFromData(const std::vector<double>& modelRho)const;
 
   double likelihood(const Experiment& m, const CortexSimulation& s)const
   {
@@ -213,6 +198,24 @@ private:
   static std::map<double,BaseModel*> models_;
   static std::map<double,BaseModel*> getModels();
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class Model00:public BaseModel

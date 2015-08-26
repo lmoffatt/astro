@@ -412,7 +412,7 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
 BaseModel *BaseModel::create(const Parameters &p)
 {
-  double modelNumeber=p.get("model");
+  double modelNumeber=p.model();
   auto it=models_.find(modelNumeber);
   if (it!=models_.end())
     {
@@ -422,6 +422,29 @@ BaseModel *BaseModel::create(const Parameters &p)
     }
   else
     return nullptr;
+}
+
+std::vector<double> BaseModel::getObservedProbFromModel(const std::vector<double> &modelRho) const
+{
+  std::vector<double>  v(5);
+  double n=modelRho[2]+modelRho[3]+modelRho[4]+modelRho[5]+modelRho[6];
+  v[0]=modelRho[2]/n;
+  v[1]=modelRho[3]/n;
+  v[2]=modelRho[4]/n;
+  v[3]=modelRho[5]/n;
+  v[4]=modelRho[6]/n;
+  return v;
+}
+
+std::vector<double> BaseModel::getObservedNumberFromData(const std::vector<double> &modelRho) const
+{
+  std::vector<double>  v(5);
+  v[0]=modelRho[0];
+  v[1]=modelRho[2];
+  v[2]=modelRho[3];
+  v[3]=modelRho[4];
+  v[4]=modelRho[5];
+  return v;
 }
 
 std::map<double, BaseModel *> BaseModel::getModels()

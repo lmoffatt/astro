@@ -1,6 +1,8 @@
 #include "Models.h"
 #include "CortexSimulation.h"
 #include "CommandManager.h"
+#include "LevenbergMarquardt.h"
+#include "CortexLikelihood.h"
 #include <sstream>
 #include <iostream>
 
@@ -34,7 +36,7 @@ CommandManager::CommandManager()
   cmd_["simulate"]=new SimulateCommand(this);
   cmd_["experiment"]=new ExperimentCommand(this);
   cmd_["likelihood"]=new LikelihoodCommand(this);
-
+  cmd_["optimize"]=new OptimizeCommand(this);
 
 
 }
@@ -91,6 +93,11 @@ void CommandManager::push_back(Experiment *experiment)
   experiments[experiment->id()]=experiment;
 }
 
+void CommandManager::push_back(CortexModelLikelihood *likelihood)
+{
+  likelihood->setCommandManager(this);
+  likelihoods[likelihood->id()]=likelihood;
+}
 
 
 
@@ -108,6 +115,9 @@ CommandManager::~CommandManager()
     delete elem.second;
   for (auto elem: experiments)
     delete elem.second;
+  for (auto elem: likelihoods)
+    delete elem.second;
+
 
 }
 
@@ -145,7 +155,18 @@ Experiment *CommandManager::getExperiment(std::string id)
     return it->second;
   else
     return nullptr;
+ }
+
+CortexModelLikelihood *CommandManager::getLikelihood(const std::string &id)
+{
+  auto it=likelihoods.find(id);
+  if(it!=likelihoods.end())
+    return it->second;
+  else
+    return nullptr;
+
 }
+
 
 
 
@@ -261,7 +282,7 @@ void ExperimentCommand::run(const std::string line)
   ss>>cName>>expName>>start>>colon>>dx>>colon>>end;
   while(ss>>currsection)
     sections.push_back(currsection);
-  std::vector<CortexMeasure*> vCM;
+  std::vector<CortexMeasure> vCM;
   for (auto s:sections)
     {
       cm_->execute("read "+s);
@@ -269,11 +290,22 @@ void ExperimentCommand::run(const std::string line)
       cm_->execute("merge "+s);
       cm_->execute("distances "+s);
       cm_->execute("histogram "+s+ " d_les "+std::to_string(start)+colon+std::to_string(dx)+colon+std::to_string(end) );
-      vCM.push_back(cm_->getMeasure(s));
+      vCM.push_back(*cm_->getMeasure(s));
 
     }
   Experiment* e=new Experiment(expName,vCM);
   cm_->push_back(e);
+
+  std::ofstream fo;
+  fo.open("out.txt");
+  e->write(fo);
+  fo.close();
+  Experiment e2;
+  std::ifstream fi;
+  fi.open("out.txt");
+  std::string line2;
+  e2.read(line2,fi);
+
 }
 
 
@@ -443,7 +475,7 @@ void writeCommand::run(const std::string line)
       std::ofstream f;
       f.open(filename.c_str(),std::ofstream::out);
 
-      m->write(f);
+      m->print(f);
       f.close();
 
     }
@@ -518,30 +550,34 @@ void writeCommand::run(const std::string line)
 
 
 
+//  CortexModelLikelihood* lik=cmd_->getLikelihood(dataName);
+//  if (lik!=nullptr)
+//    {
+//      std::string filename=lik+"_lik.txt";
+//      std::ofstream f;
+//      f.open(filename.c_str(),std::ofstream::out);
+
+
+//    }
+
+
 }
 
 
 
 
-std::istream &safeGetline(std::istream &is, std::string &t)
-{
-  std::getline(is,t);
-  auto it=t.find('\r');
-  if (it!=t.npos)
-    t.erase(it);
-  return is;
-}
+
 
 
 void LikelihoodCommand::run(const std::string line)
 {
 
-  //likelihood lik experiment1 parameters_10 0.5 50 1000
+  //likelihood lik experiment1 parameters_10 parameters_10 0.5 50 1000
 
-  std::string cName, lName, eName, paramName;
+  std::string cName, lName, eName, priorName, paramName;
   double dt,dx, tequilibrio;
   std::stringstream ss(line);
-  ss>>cName>>lName>>eName>>paramName>>dt>>dx>>tequilibrio;
+  ss>>cName>>lName>>eName>>priorName>>paramName>>dt>>dx>>tequilibrio;
 
   Experiment* e=cm_->getExperiment(eName);
   if (e==nullptr)
@@ -549,6 +585,23 @@ void LikelihoodCommand::run(const std::string line)
       std::cerr<<"Experiment "<<eName<<" not found\n";
       return;
     }
+
+  std::string filenamePrior=priorName;
+  std::ifstream fp;
+
+  fp.open(filenamePrior.c_str(),std::ios_base::in);
+  if (!fp)
+    {
+      std::string filenaExt=filenamePrior+".txt";
+      fp.open(filenaExt.c_str(),std::ios_base::in);
+    }
+  std::string line2p;
+  safeGetline(fp,line2p);
+  Parameters prior;
+
+  prior.read(line2p,fp);
+
+  fp.close();
 
   std::string filename=paramName;
   std::fstream f;
@@ -567,30 +620,101 @@ void LikelihoodCommand::run(const std::string line)
 
   f.close();
 
-  BaseModel*m=BaseModel::create(p);
+
+  CortexModelLikelihood* CL= new CortexModelLikelihood(lName,e,prior,dt,tequilibrio);
+  cm_->push_back(CL);
+
+  CortexLikelihoodEvaluation CE(*CL,p);
+  std::ofstream fo;
+  std::string fnameout=lName+"_lik.txt";
+  fo.open(fnameout.c_str());
+  CE.extract(fo);
+  fo.close();
+
+  }
+
+
+
+
+
+
+std::string LikelihoodCommand::id() const
+{
+  return "likelihood";
+}
+
+
+void OptimizeCommand::run(const std::string line)
+{
+
+  //optimize opt experiment1 parameters_10 parameters_10 10 100
+
+  std::string optimizeS, optName, experimentName, priorName, paramName;
+  double dt,dx=50, tequilibrio=1000;
+  std::size_t niter;
+  std::stringstream ss(line);
+
+  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dt>>niter;
+
+  Experiment* e=cm_->getExperiment(experimentName);
+  if (e==nullptr)
+    {
+      std::cerr<<"Experiment "<<experimentName<<" not found\n";
+      return;
+    }
+
+  std::string filename=priorName;
+  std::fstream f;
+
+  f.open(filename.c_str());
+  if (!f)
+    {
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+    }
+  std::string line2;
+  safeGetline(f,line2);
+  Parameters prior;
+
+  prior.read(line2,f);
+
+  f.close();
+
+  filename=paramName;
+  f.open(filename.c_str());
+  if (!f)
+    {
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+    }
+  safeGetline(f,line2);
+  Parameters p;
+
+  p.read(line2,f);
+
+  f.close();
+
+  BaseModel*m=BaseModel::create(prior);
   if (m!=nullptr)
     {
       cm_->push_back(m);
 
-      CortexSimulation* s=new CortexSimulation;
-      *s=m->run(*e,dt,tequilibrio);
-      //    if (simName.empty())
-      //      {
-      //    s->id_="sim_";
-      //    s->id_+=paramName;
-      //      }
-      //    else
-      //      s->id_=simName;
+      CortexModelLikelihood CL(optName+"_lik",e,prior,dt,tequilibrio);
+      LevenbergMarquardtMultinomial LM(&CL,p,niter);
+      LM.optimize();
+
+      Parameters* opt=new Parameters(LM.OptimParameters());
+      std::string optfname=opt->save(optName);
+      CortexLikelihoodEvaluation CE(CL,LM.OptimParameters());
+      std::ofstream fo;
+      std::string fnameout=optfname;
+      fnameout.insert(optfname.size()-5,"_lik.txt");
+      fo.open(fnameout.c_str());
+      CE.extract(fo);
+      fo.close();
 
 
-      cm_->push_back(s);
-      std::string c="write  ";
-      c+=s->id_;
 
-      cm_->execute(c);
-
-      double lik=m->likelihood(*e,*s);
-      std::cout<<"likelihood= "<<lik<<"\n";
 
 
     }
@@ -599,4 +723,3 @@ void LikelihoodCommand::run(const std::string line)
 
 
 }
-

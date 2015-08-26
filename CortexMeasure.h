@@ -6,8 +6,10 @@
 #include <string>
 #include <fstream>
 #include <limits>
+#include <sstream>
 
-
+#include "LevenbergMarquardt.h"
+#include "BaseClass.h"
 
 struct position
 {
@@ -209,14 +211,25 @@ public:
 };
 
 
-class CortexMeasure
+class CortexMeasure: public BaseObject
 {
 public:
-  std::string id()const
+
+  // BaseClass interface
+public:
+  static std::string ClassName(){return "CortexMeasure";}
+  virtual std::string myClass() const override
   {
-    return id_;
+    return ClassName();
   }
 
+  // BaseObject interface
+public:
+  virtual CortexMeasure *create() const override
+  {
+    return new CortexMeasure;
+  }
+  CortexMeasure(){}
   double dia()const
   {
     return dia_;
@@ -235,11 +248,21 @@ public:
   {
     return dx_[idx];
   }
+
+  const std::vector<double>& numAstro()const
+  {
+    return numAstro_;
+  }
+
   double numAstro(unsigned idx)const
   {
     return numAstro_[idx];
   }
 
+  const std::vector<std::vector<double>>& meanAstro()const
+  {
+    return meanAstro_;
+  }
   const std::vector<double>& meanAstro(unsigned idx)const
   {
     return meanAstro_[idx];
@@ -270,7 +293,7 @@ public:
 
 
 
-  std::ostream& write(std::ostream& s)
+  std::ostream& print(std::ostream& s)const
   {
     s<<id()<<"\t"<<dia()<<"\n";
     s<<"limit"<<"\t"<<"tipo 1"<<"\t"<<"tipo 2"<<"\t"<<"tipo 3"<<"\t"<<"tipo 4"<<"\t";
@@ -320,18 +343,19 @@ public:
 
 
 
+
   CortexMeasure(std::string id,
                 double dia,
                 double h,
                 std::vector<double> dx
                 ,std::vector<std::vector<double>> meanAstro
                 ,std::vector<std::vector<std::vector<double>>> covAstro)
-    :id_(id),dia_(dia),h_(h),dx_(dx),
+    :dia_(dia),h_(h),dx_(dx),
       numAstro_(std::vector<double>(meanAstro.size(),0))
     ,meanAstro_(meanAstro),covAstro_(covAstro){
 
-    for (unsigned i=0; i<meanAstro_.size(); ++i
-         )
+    setId(id);
+    for (unsigned i=0; i<meanAstro_.size(); ++i)
       {
         for (unsigned j=0; j<meanAstro_[i].size();++j)
           numAstro_[i]+=meanAstro_[i][j];
@@ -341,8 +365,16 @@ public:
 
 
 
+
+
+
+protected:
+  void update()
+  {}
+
+
+
 private:
-  std::string id_;
   double dia_;
   double h_; // in um
   std::vector<double> dx_;
@@ -350,7 +382,41 @@ private:
   std::vector<std::vector<double>> meanAstro_;
   std::vector<std::vector<std::vector<double>>> covAstro_;
 
+  // BaseObject interface
+public:
+  virtual void clear()override
+  {
+    dx_.clear();
+    numAstro_.clear();
+    meanAstro_.clear();
+    covAstro_.clear();
+  }
+  virtual std::ostream &writeBody(std::ostream &s) const override
+  {
+    writeField(s,"dia",dia_);
+    writeField(s,"tissue_width",h_);
+    writeField(s,"x_pos",dx_);
+    writeField(s,"total_number_of_Astrocytes",numAstro_);
+    writeField(s,"number_of_Astrocytes_of_each_type",meanAstro_);
+    writeField(s,"covariance_of_number_of_Astrocytes_of_each_type",covAstro_);
 
+    return s;
+  }
+  bool readBody(std::string& line,std::istream &s) override
+  {
+    if (
+        readField(line,s,"dia",dia_)&&
+        readField(line,s,"tissue_width",h_)&&
+        readField(line,s,"x_pos",dx_)&&
+        readField(line,s,"total_number_of_Astrocytes",numAstro_)&&
+        readField(line,s,"number_of_Astrocytes_of_each_type",meanAstro_)&&
+        readField(line,s,"covariance_of_number_of_Astrocytes_of_each_type",covAstro_)
+        )
+      return true;
+    else
+      return false;
+
+  }
 };
 
 
@@ -358,72 +424,91 @@ private:
 
 
 
-class Experiment
+
+class Experiment: public BaseObject
 {
+  // BaseClass interface
 public:
-  std::string id()
+  static std::string ClassName()
   {
-    return id_;
+    return "Experiment";
   }
 
-  const std::vector<double>& dx() const
+  virtual std::string myClass() const override
   {
-    return m_[0]->dx();
-  }
-  std::vector<double> x_in_m() const
-  {
-    std::vector<double> o(m_[0]->dx().size());
-    for (unsigned i=0; i<o.size(); ++i)
-      o[i]=m_[0]->dx()[i]*1e-6;
-    return o;
+    return ClassName();
   }
 
-  double h() const
+  // BaseObject interface
+public:
+  virtual Experiment *create() const override
   {
-    return m_[0]->h();
-  }
-
-  double numMeasures()const
-  {
-    return m_.size();
-  }
-
-  double tsim()const
-  {
-    return tsim_;
-  }
-
-  double tMeas(unsigned i)const
-  {
-    return tMeasures_[i];
+    return new Experiment;
   }
 
 
+  const std::vector<double>& dx() const;
+  std::vector<double> x_in_m() const;
+
+  double h() const;
+
+  std::size_t numMeasures()const;
+
+  double tsim()const;
+
+  double tMeas(unsigned i)const;
 
 
 
-  Experiment(std::string ide, std::vector<CortexMeasure*> mv):
-    id_(ide),m_(mv),tMeasures_(mv.size()),tsim_(0)
-  {
-    for (unsigned i=0; i<m_.size(); ++i)
-      {
-        tMeasures_[i]=m_[i]->dia()*60*60*24;
-        if (tMeasures_[i]>tsim_) tsim_=tMeasures_[i];
-      }
-  }
 
-  const CortexMeasure* getMeasure(unsigned i)const
-  {
-    return m_[i];
-  }
+
+  Experiment(std::string ide, std::vector<CortexMeasure> mv);
+
+  const CortexMeasure* getMeasure(unsigned i)const;
+
+  Experiment(){}
+
+
+
+
+
 
 private:
-  std::string id_;
-  std::vector<CortexMeasure*> m_;
+  std::vector<CortexMeasure> m_;
   std::vector<double> tMeasures_;
   double tsim_;
 
 
+  // BaseObject interface
+public:
+  virtual std::ostream &writeBody(std::ostream &s) const override
+  {
+    writeField(s,"simulation_time",tsim_);
+    writeField(s,"time_of_Measures",tMeasures_);
+    writeField(s,"Measures",m_);
+    return s;
+  }
+
+  void clear()override
+  {
+    m_.clear();
+    tMeasures_.clear();
+  }
+
+  virtual bool readBody(std::string& line,std::istream &s) override
+  {
+       if (!readField(line,s,"simulation_time",tsim_))
+         return false;
+        else if (!readField(line,s,"time_of_Measures",tMeasures_))
+         return false;
+       else if(!readField(line,s,"Measures",m_))
+         return false;
+       else
+      return true;
+    }
+
+protected:
+  void update(){}
 
 };
 

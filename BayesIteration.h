@@ -8,40 +8,21 @@
 #include "LevenbergMarquardt.h"
 
 
-class ABC_data
-{
-public:
-    virtual std::vector<double> getData()const=0;
-    virtual std::vector<double> getDataStandardError()const=0;
-    virtual std::vector<double> getDataWeigth();
-    virtual ~ABC_data();
-};
-
-
-class ABC_model:public ABC_function
-{
-public:
-
-    virtual ABC_model& setData(const ABC_data& experimentalData)=0;
-    virtual ~ABC_model();
-
-};
 
 
 
-
-class BayesIteration:public ABC_model, public ABC_data
+class BayesIteration:public ABC_Multinomial_Model, public ABC_Freq_obs
 {
 public:
 
     Parameters Posterior()const;
 
-    Parameters Prior(std::size_t n=0)const;
+    Parameters Prior(std::size_t n_obs=0)const;
 
 
-    BayesIteration(const ABC_model* f,
+    BayesIteration(const ABC_Multinomial_Model* f,
                    Parameters prior,
-                   const ABC_data* d,
+                   const ABC_Freq_obs* d,
                    const std::string &filename);
 
 
@@ -54,21 +35,17 @@ public:
 
 
 
-    BayesIteration& addNewData(ABC_data* d);
+    BayesIteration& addNewData(ABC_Freq_obs* d);
 
     virtual ~BayesIteration();
 
     virtual void setFilename(const std::string filename);
 
-    virtual std::vector<double> yfit (const std::vector<double>& param);
-    virtual std::vector<double> yfit(const Parameters& parameters)const;
+    virtual std::vector<std::vector<double>> p_exp (const Parameters& parameters)const;
 
-    virtual std::vector<double> getData()const;
-    virtual std::vector<double> getDataStandardError()const;
+    virtual const ABC_Freq_obs& getData()const;
 
-    virtual ABC_model& setData(const ABC_data& experimentalData);
-
-    BayesIteration(const BayesIteration& other);
+     BayesIteration(const BayesIteration& other);
     /*
 
     friend void swap(BayesIteration& one, BayesIteration& other);
@@ -96,16 +73,16 @@ public:
 
 private:
 
-    const ABC_model* m_;
+    const ABC_Multinomial_Model* m_;
 
-    std::vector<const ABC_data*> data_;
+    std::vector<const ABC_Freq_obs*> data_;
 
     std::vector<Parameters> priors_;
 
     Parameters posterior_;
     std::size_t numSeeds_;
 
-    std::vector<LevenbergMarquardtParameters> LM_;
+    std::vector<LevenbergMarquardtMultinomial> LM_;
 
     std::string filename_;
 

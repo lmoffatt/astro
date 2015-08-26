@@ -7,6 +7,7 @@
 #include <set>
 #include <algorithm>
 
+#include "Parameters.h"
 
 void TissuePhoto::read(std::string& line, std::istream &s)
 {
@@ -671,4 +672,58 @@ void CortexExperiment::read(std::string &line, std::istream &s)
 
 
 
+
+
+
+
+const std::vector<double> &Experiment::dx() const
+{
+  return m_[0].dx();
+}
+
+std::vector<double> Experiment::x_in_m() const
+{
+  std::vector<double> o(m_[0].dx().size());
+  for (unsigned i=0; i<o.size(); ++i)
+    o[i]=m_[0].dx()[i]*1e-6;
+  return o;
+}
+
+double Experiment::h() const
+{
+  return m_[0].h();
+}
+
+std::size_t Experiment::numMeasures() const
+{
+  return m_.size();
+}
+
+double Experiment::tsim() const
+{
+  return tsim_;
+}
+
+double Experiment::tMeas(unsigned i) const
+{
+  return tMeasures_[i];
+}
+
+Experiment::Experiment(std::string ide, std::vector<CortexMeasure> mv):
+  m_(mv),tMeasures_(mv.size()),tsim_(0)
+{
+  setId(ide);
+  for (unsigned i=0; i<m_.size(); ++i)
+    {
+      tMeasures_[i]=m_[i].dia()*60*60*24;
+      if (tMeasures_[i]>tsim_) tsim_=tMeasures_[i];
+    }
+
+
+}
+
+const CortexMeasure *Experiment::getMeasure(unsigned i) const
+{
+  return &m_[i];
+}
 

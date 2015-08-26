@@ -4,47 +4,6 @@
 #include <sstream>
 
 
-void Parameters::read(std::string &line, std::istream &s)
-{
-
-  std::string name;
-  std::stringstream ss(line);
-  ss>>name;
-  if (name=="parameters")
-    {
-      safeGetline(s,line);
-      while (true)
-        {
-          double val, std_in_dB;
-          std::string unit, db;
-          char sq_br;
-          ss.str(line);
-          name.clear();
-          ss.clear();
-          ss>>name;
-
-          while (name.empty()
-                 &&safeGetline(s,line))
-            {
-              ss.str(line);
-              ss.clear();
-              ss>>name;
-            }
-          if (name.empty())
-            break;
-          else
-            {
-              ss>>val>>unit>>std_in_dB>>db;
-
-              unit.erase(0,1);
-              unit.pop_back();
-
-              this->push_back_dB(name,val,unit,std_in_dB,ss.str());
-              line.clear();
-            }
-        }
-    }
-}
 
 
 

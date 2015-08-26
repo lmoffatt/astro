@@ -6,6 +6,8 @@ CONFIG -= qt
 QMAKE_CXXFLAGS_RELEASE += -std=c++11 #-lpthread
 QMAKE_CXXFLAGS_DEBUG += -std=c++11 #-lpthread
 
+QMAKE_CXX = g++-5
+
 
 SOURCES += main.cpp \
     CommandManager.cpp \
@@ -16,7 +18,8 @@ SOURCES += main.cpp \
     MatrixInverse.cpp \
     matrixCholesky.cpp \
     LevenbergMarquardt.cpp \
-    BayesIteration.cpp
+    BayesIteration.cpp \
+    CortexLikelihood.cpp
 
 #include(deployment.pri)
 #qtcAddDeployment()
@@ -29,7 +32,9 @@ HEADERS += \
     Parameters.h \
     MatrixInverse.h \
     LevenbergMarquardt.h \
-    BayesIteration.h
+    BayesIteration.h \
+    CortexLikelihood.h \
+    BaseClass.h
 
 DISTFILES += \
     run/script \
@@ -41,7 +46,8 @@ DISTFILES += \
     run/parameters_zero.txt \
     run/write_script \
     run/parameters_10 \
-    run/opt_script
+    run/opt_script \
+    run/parameters_10.txt
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
