@@ -79,6 +79,7 @@ public:
     return id_;
   }
 
+
   double model()const;
 
   void setModel(double mod);

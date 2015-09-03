@@ -6,6 +6,7 @@
 #include <sstream>
 #include <set>
 #include <algorithm>
+#include <limits>
 
 #include "Parameters.h"
 
@@ -69,7 +70,7 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                   ss2.str(line);
                   ss2.clear();
                 }
-              lf_=LimiteFoto(v);
+              limiteFoto_.push_back(LimiteFoto(v));
 
             }
           else if (line.find("limite tejido")!=std::string::npos)
@@ -204,11 +205,11 @@ void TissuePhoto::write(std::ostream &s)
         s<<e.x<<"\t"<<e.y<<"\n";
       s<<"\n";
     }
-  if (!lf_.limits().empty())
+  for (LimiteFoto v:limiteFoto_)
     {
       s<<"limite foto"<<"\n";
       s<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
-      for (auto e:lf_.limits())
+      for (auto e:v.limits())
         s<<e.x<<"\t"<<e.y<<"\n";
       s<<"\n";
     }
@@ -280,7 +281,6 @@ void TissuePhoto::correctPosition(double dx, double dy)
 {
   this->ll_.correctPosition(dx,dy);
   this->lt_.correctPosition(dx,dy);
-  this->lf_.correctPosition(dx,dy);
   for (auto& pin:pines_)
     {
       pin.second.correctPosition(dx,dy);
@@ -290,11 +290,49 @@ void TissuePhoto::correctPosition(double dx, double dy)
       v.correctPosition(dx,dy);
     }
 
+  for (auto& v:limiteFoto_)
+    {
+      v.correctPosition(dx,dy);
+    }
+
+
   for (auto& a:astr_)
     {
       a.correctPosition(dx,dy);
     }
 }
+
+double TissuePhoto::distance_to_neareast_Vaso(const position &p)const
+{
+  double d=std::numeric_limits<double>::infinity();
+  for (const LimiteVaso& v:vasos_)
+    {
+      double dn=v.distance(p);
+      if (dn<d)
+        d=dn;
+    }
+  return d;
+}
+
+void TissuePhoto::updateMinMax()
+{
+  xmin_=+std::numeric_limits<double>::infinity();
+  xmax_=-std::numeric_limits<double>::infinity();
+  ymin_=+std::numeric_limits<double>::infinity();
+  ymax_=-std::numeric_limits<double>::infinity();
+  for (const LimiteFoto& lf:limiteFoto_ )
+    {
+      if (lf.xmin_<xmin_)
+        xmin_=lf.xmin_;
+      if (lf.xmax_>xmax_)
+        xmax_=lf.xmax_;
+      if (lf.ymin_<ymin_)
+        ymin_=lf.ymin_;
+      if (lf.ymax_>ymax_)
+        ymax_=lf.ymax_;
+    }
+}
+
 
 
 
@@ -339,6 +377,7 @@ void TissueSection::merge()
     {
       foto.include(it.second);
     }
+  foto.updateMinMax();
 
 
   foto.id="Merged";
@@ -379,7 +418,9 @@ class pointDefined: public Intervaling
 public:
   virtual unsigned num() const
   {
-    return ticks_.size();
+    if (ticks_.size()>0)
+    return ticks_.size()-1;
+    else return 0;
   }
   virtual std::vector<double> limits() const
   {
@@ -397,7 +438,10 @@ public:
   {
     auto it=ticks_.lower_bound(x);
     if (it!=ticks_.end())
-      return it->second;
+      {
+        unsigned out=it->second;
+        return out-1;
+      }
     else
       return npos;
   }
@@ -407,10 +451,6 @@ public:
     std::sort(c.begin(),c.end());
     for (unsigned i=0; i<c.size(); ++i)
       ticks_[c[i]]=i;
-
-
-
-
   }
 
 private:
@@ -418,11 +458,32 @@ private:
 
 };
 
-CortexMeasure *TissuePhoto::measure(std::string id,double dia,std::vector<double> x)
+CortexMeasure *TissuePhoto::measure(std::string id,double dia,std::vector<double> x,double minimal_distance_to_tissue,double minimal_distance_to_vaso
+                                    , std::size_t maxpoints)
 {
   pointDefined p(x);
 
+  std::vector<double> area(p.num(),0);
+  updateMinMax();
+  double dArea=(xmax_-xmin_)*(ymax_-ymin_)/maxpoints;
+
+  for (std::size_t i=0; i<maxpoints; i++)
+    {
+      position pos=getRadomPosition();
+      if (IsInside(pos))
+        {
+          double distance_to_lession=ll_.distance(pos);
+          double distance_to_tissue=lt_.distance(pos);
+          double distance_to_vaso=distance_to_neareast_Vaso(pos);
+          if ((distance_to_tissue>minimal_distance_to_tissue)
+              &&(distance_to_vaso>minimal_distance_to_vaso))
+            area[p.getIndex(distance_to_lession)]+=dArea;
+        }
+    }
+
+
   std::vector<std::vector<double>> numx(p.num(),std::vector<double>(Astrocyte::numTypes(),0));
+
 
 
   std::vector<std::vector<double>> var(p.num(),std::vector<double>(Astrocyte::numTypes(),0));
@@ -430,31 +491,35 @@ CortexMeasure *TissuePhoto::measure(std::string id,double dia,std::vector<double
 
   for (Astrocyte a:astr_)
     {
-      switch (a.type()){
-        case 1:
-        case 2:
-          numx[p.getIndex(a.distance_to_lession())][a.type()-1]++;
-          break;
-        case 3:
-          numx[p.getIndex(a.distance_to_lession())][2]+=a.prob();
-          numx[p.getIndex(a.distance_to_lession())][0]+=1.0-a.prob();
-          // we only sum the variance for the landing state;
-          //we calculate the whole covariance matrix at the end
-          var[p.getIndex(a.distance_to_lession())][2]+=a.prob()*(1.0-a.prob());
-          break;
-        case 4:
-        case 5:
-        case 6:
-        case 7:
-          numx[p.getIndex(a.distance_to_lession())][a.type()-1]+=a.prob();
-          numx[p.getIndex(a.distance_to_lession())][a.type()-2]+=1.0-a.prob();
-          // we only sum the variance for the landing state;
-          //we calculate the whole covariance matrix at the end
-          var[p.getIndex(a.distance_to_lession())][a.type()-1]+=a.prob()*(1.0-a.prob());
-          break;
-        default:
-          break;
+      if ((a.distance_to_tissue()>minimal_distance_to_tissue)
+          &&(a.distance_to_vaso()>minimal_distance_to_vaso))
+            {
+          switch (a.type()){
+            case 1:
+            case 2:
+              numx[p.getIndex(a.distance_to_lession())][a.type()-1]++;
+              break;
+            case 3:
+              numx[p.getIndex(a.distance_to_lession())][2]+=a.prob();
+              numx[p.getIndex(a.distance_to_lession())][0]+=1.0-a.prob();
+              // we only sum the variance for the landing state;
+              //we calculate the whole covariance matrix at the end
+              var[p.getIndex(a.distance_to_lession())][2]+=a.prob()*(1.0-a.prob());
+              break;
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+              numx[p.getIndex(a.distance_to_lession())][a.type()-1]+=a.prob();
+              numx[p.getIndex(a.distance_to_lession())][a.type()-2]+=1.0-a.prob();
+              // we only sum the variance for the landing state;
+              //we calculate the whole covariance matrix at the end
+              var[p.getIndex(a.distance_to_lession())][a.type()-1]+=a.prob()*(1.0-a.prob());
+              break;
+            default:
+              break;
 
+            }
         }
     }
   std::vector<std::vector<std::vector<double>>>
@@ -493,7 +558,12 @@ CortexMeasure *TissuePhoto::measure(std::string id,double dia,std::vector<double
 
 
 
-  CortexMeasure* m=new CortexMeasure(id,dia,100e-6,p.limits(),numx,covar);
+  CortexMeasure* m=new CortexMeasure(id,dia,100e-6
+                                     ,minimal_distance_to_tissue
+                                     ,p.limits()
+                                     ,area
+                                     ,numx
+                                     ,covar);
   return m;
 
 
@@ -514,6 +584,64 @@ void tissueElement::correctPosition(double dx, double dy)
       pos.x+=dx;
       pos.y+=dy;
     }
+  xmin_+=dx;
+  xmax_+=dx;
+  ymin_+=dy;
+  ymax_+=dy;
+}
+
+bool lineIsAtRigth(const position& p, const position& beginLine, const position& endLine)
+{
+  double xlineCrossPoint=beginLine.x
+      +(p.y-beginLine.y)/(endLine.y-beginLine.y)
+      *(endLine.x-beginLine.x);
+  return (xlineCrossPoint>p.x);
+
+}
+
+
+
+bool tissueElement::isInside(const position &p)const
+{
+  if ((p.x<xmin_)||(p.x>xmax_)||(p.y<ymin_)||(p.y>ymax_))
+    return false;
+  std::size_t number_of_vertical_crosses=0;
+  std::size_t i=0;
+  const position* b=&limits()[i];
+  ++i;
+  const position* e=&limits()[i];
+  bool lastAbove=b->y>p.y;
+  bool nowAbove=e->y>p.y;
+  while (true)
+    {
+      while ((lastAbove==nowAbove))
+        {
+          b=e;
+          lastAbove=nowAbove;
+          if (i<limits().size()-1)
+            ++i;
+          else
+            i=0;
+          e=&limits()[i];
+          nowAbove=e->y>p.y;
+          if (i==0)
+            break;
+        }
+      if (lastAbove!=nowAbove)
+        {
+          double xlineCrossPoint=limits_[i-1].x
+              +(p.y-limits_[i-1].y)/(limits()[i].y-limits()[i-1].y)
+              *(limits()[i].x-limits()[i-1].x);
+          if (xlineCrossPoint>p.x)
+            number_of_vertical_crosses++;
+          lastAbove=nowAbove;
+        }
+      if (i==0)
+        break;
+
+    }
+  return number_of_vertical_crosses % 2==1;
+
 }
 
 
@@ -521,7 +649,8 @@ std::ostream &Astrocyte::write(std::ostream &s)
 {
   s<<id()<<"\t";
   if (distance_to_lession_<std::numeric_limits<double>::infinity())
-    s<<distance_to_lession_<<"\t"<<distance_to_tissue_<<"\t";
+    s<<distance_to_lession_<<"\t"<<distance_to_tissue_<<"\t"
+    <<distance_to_vaso_<<"\t";
   s<<pos().x<<"\t"<<pos().y<<"\t"<<type()<<"\t"<<prob()<<"\n";
   return s;
 }
@@ -532,7 +661,7 @@ std::string Astrocyte::getHeader()
   std::stringstream s(ss);
   s<<"ID"<<"\t";
   if (distance_to_lession_<std::numeric_limits<double>::infinity())
-    s<<"d_les (um)"<<"\t"<<"d_tej (um)"<<"\t";
+    s<<"d_les (um)"<<"\t"<<"d_tej (um)"<<"\t"<<"d_vaso (um)"<<"\t";
   s<<"X (um)"<<"\t"<<"Y (um)"<<"\t"<<"TIPO"<<"\t"<<"PB"<<"\n";
 
   return s.str();
@@ -542,6 +671,7 @@ void Astrocyte::calculateDistances(const TissuePhoto &f)
 {
   distance_to_lession_=f.ll_.distance(*this);
   distance_to_tissue_=f.lt_.distance(*this);
+  distance_to_vaso_=f.distance_to_neareast_Vaso(p_);
 }
 
 
@@ -676,16 +806,33 @@ void CortexExperiment::read(std::string &line, std::istream &s)
 
 
 
-const std::vector<double> &Experiment::dx() const
+const std::vector<double> &Experiment::xpos() const
 {
-  return m_[0].dx();
+  return m_[0].xpos();
 }
 
-std::vector<double> Experiment::x_in_m() const
+std::vector<double> Experiment::x_in_m(double max_lession_in_um,double sinkLength) const
 {
-  std::vector<double> o(m_[0].dx().size());
-  for (unsigned i=0; i<o.size(); ++i)
-    o[i]=m_[0].dx()[i]*1e-6;
+  double dx=(m_[0].xpos()[1]-m_[0].xpos()[0]);
+  std::size_t extraBins=std::ceil(max_lession_in_um/dx);
+  std::vector<double> o;
+  for (unsigned i=0; i<extraBins; ++i)
+    o.push_back(dx*1e-6*i);
+  for (unsigned i=extraBins; i<m_[0].xpos().size()+extraBins; ++i)
+
+    o.push_back((m_[0].xpos()[i-extraBins]+dx*extraBins)*1e-6);
+
+  double f=2; //increase factor of dt to fill the sink
+  double xend=o.back()+sinkLength;
+  dx=o[o.size()-1]-o[o.size()-2];
+
+  while (o.back()<xend)
+    {
+      dx*=f;
+      o.push_back(o.back()+dx);
+    }
+
+
   return o;
 }
 
@@ -727,3 +874,14 @@ const CortexMeasure *Experiment::getMeasure(unsigned i) const
   return &m_[i];
 }
 
+
+void updateMinMaxPos(double newx, double newy, double &xmin, double &xmax, double &ymin, double &ymax){
+  if (newx<xmin)
+    xmin=newx;
+  if (newx>xmax)
+    xmax=newx;
+  if (newy<ymin)
+    ymin=newy;
+  if (newy>ymax)
+    ymax=newy;
+}

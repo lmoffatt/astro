@@ -247,6 +247,7 @@ void Parameters::push_back(const std::string &name, double val)
 
 std::ostream &Parameters::writeBody(std::ostream &s) const
 {
+  s<<"model\t"<<model()<<"\n\n";
   for (std::size_t i=0; i<size(); i++)
     {
       s<<names_[i]<<"\t";
@@ -358,9 +359,9 @@ Transformation *Parameters::Tr(TRANSFORM tr)
 
 TRANSFORM Parameters::toTr(const std::string &trs)
 {
-  if (trs=="<LOG>")
+  if ((trs=="<LOG>")||(trs=="<Log10>"))
     return LOG;
-  else if (trs=="<LOGRATIO>")
+  else if ((trs=="<LOGRATIO>")||(trs=="<Log10Ratio>"))
     return LOGRATIO;
   else if (trs=="<LINEAR>")
     return LINEAR;
@@ -705,47 +706,23 @@ Parameters Parameters::randomSample(Parameters prior,double factor)const
 
 
 
-Parameters Parameters::randomSample(Parameters prior,double factor,double probIncludeParameter)const{
-  Parameters sample,sampleout;
+Parameters Parameters::randomSample(Parameters prior,double factor,double probIncludeParameter)const
+{
+  Parameters sample=*this;
   for (std::size_t i=0; i<mean_of_tr_.size();i++)
     {
-      std::map<std::string,std::size_t>::const_iterator it;
-      for (it=name_to_i_.begin();
-           it!=name_to_i_.end();
-           ++it)
-
-        {
-          if (it->second==i)
-            break;
-        }
-
       double r=(1.0*rand())/(1.0*RAND_MAX);
 
       if (r<probIncludeParameter)
         {
-          std::string str=it->first;
-
-          double m=tMean(it->first);
-          double s=factor*prior.pStd(it->first);
+          double m=mean_of_tr_[i];
+          double s=factor*prior.std_of_tr_[i];
           m=randNormal(m,s);
-          m=pow(10,m);
-          sample.push_back_dB(str,getTransform(it->first)->myEnum(),m,unit(it->first),0);
+          sample[i]=m;
         }
-      else
-        {
-          std::string str=it->first;
+      }
 
-          double m=tMean(it->first);
-          std::string u=unit(it->first);
-          m=pow(10,m);
-
-          sample.push_back_dB(str,getTransform(it->first)->myEnum(),m,u,0);
-        }
-    }
-
-  sampleout=sample;
-  return sampleout;
-
+  return sample;
 }
 
 

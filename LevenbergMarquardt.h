@@ -3,10 +3,19 @@
 #include "Parameters.h"
 #include <cmath>
 
+
+
+class CortexLikelihood;
+
+
+
 class ABC_Freq_obs
 {
 public:
+
   virtual const std::vector<std::vector<double>>& n_obs()const=0;
+
+  virtual const std::vector<double>& bin_dens()const=0;
 
   virtual const std::vector<double>& n_obs(unsigned i)const=0;
   virtual const std::vector<double>& ntot_obs()const=0;
@@ -30,7 +39,10 @@ public:
 };
 
 
-class ABC_Multinomial_Model
+
+
+
+class ABC_Distribution_Model
 {
 public:
 
@@ -38,11 +50,51 @@ public:
   virtual const ABC_Freq_obs& getData()const=0;
 
   virtual const Parameters& getPrior()const=0;
-  virtual  std::vector<std::vector<double>> p_exp(const Parameters& parameters)const=0;
 
-  virtual  std::vector<std::vector<double>> J(const Parameters& p,
-                                              const std::vector<std::vector<double>>& p_ex ,
-                                              double delta=1e-4)const;
+
+  virtual  std::vector<std::vector<double>> f(const Parameters& parameters)const=0;
+
+  std::vector<std::vector<double>>
+  J(const Parameters& p,
+    const std::vector<std::vector<double>>& f0 ,
+    double delta=1e-4)const;
+
+  virtual std::vector<std::vector<double>>
+  logLikCells(const std::vector<std::vector<double> > &p) const=0;
+
+  virtual std::vector<double>
+  logLikSamples(const std::vector<std::vector<double> > &p) const=0;
+
+  virtual double logLik(const std::vector<std::vector<double>>& p)const=0;
+
+  virtual double logLik(const Parameters& p)const;
+
+  virtual std::vector<double> epsilon(const std::vector<std::vector<double>>& p)const=0;
+
+  virtual const std::vector<double> weight(const std::vector<std::vector<double>>& p)const=0;
+
+  virtual double logPrior(const Parameters& p) const;
+
+  virtual std::vector<double> PriorGradient(const Parameters& p) const;
+
+
+  virtual ~ABC_Distribution_Model(){}
+};
+
+
+
+class ABC_Multinomial_Model: virtual public ABC_Distribution_Model
+{
+public:
+
+  virtual void setPrior(const Parameters& parameters)=0;
+  virtual const ABC_Freq_obs& getData()const=0;
+
+  virtual const Parameters& getPrior()const=0;
+
+
+  virtual  std::vector<std::vector<double>> f(const Parameters& parameters)const=0;
+
 
   std::vector<std::vector<double>>
   logLikCells(const std::vector<std::vector<double> > &p) const;
@@ -52,17 +104,10 @@ public:
 
   double logLik(const std::vector<std::vector<double>>& p)const;
 
-  double logLik(const Parameters& p)const;
 
   std::vector<double> epsilon(const std::vector<std::vector<double>>& p)const;
 
   const std::vector<double> weight(const std::vector<std::vector<double>>& p)const;
-
-  double logPrior(const Parameters& p) const;
-
-  std::vector<double> PriorGradient(const Parameters& p) const;
-
-
 
 
   virtual ~ABC_Multinomial_Model();
@@ -70,7 +115,44 @@ public:
 
 
 
-class LevenbergMarquardtMultinomial
+
+
+class ABC_MultiPoison_Model:virtual public ABC_Distribution_Model
+
+{
+public:
+
+  virtual void setPrior(const Parameters& parameters)=0;
+  virtual const ABC_Freq_obs& getData()const=0;
+
+  virtual const Parameters& getPrior()const=0;
+
+
+  virtual  std::vector<std::vector<double>> f(const Parameters& parameters)const=0;
+
+
+  std::vector<std::vector<double>>
+  logLikCells(const std::vector<std::vector<double> > &landa) const;
+
+  std::vector<double>
+  logLikSamples(const std::vector<std::vector<double> > &landa) const;
+
+  double logLik(const std::vector<std::vector<double>>& landa)const override;
+
+  double logLik(const Parameters& p)const;
+
+  std::vector<double> epsilon(const std::vector<std::vector<double>>& landa)const;
+
+  const std::vector<double> weight(const std::vector<std::vector<double>>& landa)const;
+
+
+
+  virtual ~ABC_MultiPoison_Model(){}
+};
+
+
+
+class LevenbergMarquardtDistribution: public BaseObject
 {
 public:
 
@@ -83,12 +165,19 @@ public:
   std::vector<double> Gradient()const;
 
 
-  LevenbergMarquardtMultinomial& optimize();
+  LevenbergMarquardtDistribution& optimize();
 
 
-  LevenbergMarquardtMultinomial(ABC_Multinomial_Model* f,
+  LevenbergMarquardtDistribution& optimize(std::string optname,
+                                           double factor,
+                                           std::size_t numSeeds,
+                                           double probParChange);
+
+
+  LevenbergMarquardtDistribution(const CortexLikelihood* f,
                                 const Parameters& initialParam,
-                                std::size_t numIterations);
+                                std::size_t numIterations,
+                                 const std::string&  name);
 
   double getEvidence()const;
 
@@ -99,24 +188,27 @@ public:
   double logDetPostStd()const;
 
 
-  LevenbergMarquardtMultinomial(const LevenbergMarquardtMultinomial& other);
+  LevenbergMarquardtDistribution(const LevenbergMarquardtDistribution& other);
 
-  friend void swap(LevenbergMarquardtMultinomial& one, LevenbergMarquardtMultinomial& other);
+  friend void swap(LevenbergMarquardtDistribution& one, LevenbergMarquardtDistribution& other);
 
-  LevenbergMarquardtMultinomial& operator=(const LevenbergMarquardtMultinomial& other);
+  LevenbergMarquardtDistribution& operator=(const LevenbergMarquardtDistribution& other);
 
-  LevenbergMarquardtMultinomial();
+  LevenbergMarquardtDistribution();
 
-  ~LevenbergMarquardtMultinomial(){}
+  ~LevenbergMarquardtDistribution(){}
   std::string report()const;
 
   // void reset(const SimParameters& sp,const Treatment& tr);
 
 
-  friend std::ostream& operator<<(std::ostream& s, LevenbergMarquardtMultinomial& LM);
+  friend std::ostream& operator<<(std::ostream& s, LevenbergMarquardtDistribution& LM);
 
 private:
-  ABC_Multinomial_Model* f_;
+  std::string fname_;
+  std::ofstream os_;
+  const CortexLikelihood* CL_;
+
 
   std::vector<double> w_;
 
@@ -125,7 +217,7 @@ private:
   std::size_t nPar_;
   std::size_t nData_;
 
- // parameters of the optimization
+  // parameters of the optimization
   /// delta x used for Jacobian approximation
   double dx_;
   std::size_t maxIter_;
@@ -153,7 +245,7 @@ private:
   double logLikNew0_;
 
 
-//logPriors
+  //logPriors
   double logPriorCurr_;
   double logPriorNew_;
   double logPriorNew0_;
@@ -214,6 +306,21 @@ private:
 
 
 
+
+  // BaseClass interface
+public:
+  static std::string ClassName(){return "LevenbergMarquardtDistribution";}
+  virtual std::string myClass() const override{return ClassName();}
+
+  // BaseObject interface
+public:
+  virtual LevenbergMarquardtDistribution *create() const override{}
+  virtual std::ostream &writeBody(std::ostream &s) const override{}
+  virtual void clear() override{}
+  virtual bool readBody(std::string &line, std::istream &s) override{}
+
+protected:
+  virtual void update() override{}
 };
 
 

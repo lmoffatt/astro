@@ -18,7 +18,7 @@
 
 class BaseModel;
 class CortexSimulation;
-class CortexModelLikelihood;
+class CortexLikelihood;
 
 
 inline std::string& removeComments(std::string& line)
@@ -75,7 +75,7 @@ public:
 
   void push_back(CortexMeasure* measure);
 
-  void push_back(CortexModelLikelihood* likelihood);
+  void push_back(CortexLikelihood* likelihood);
 
 
   ~CommandManager();
@@ -85,7 +85,7 @@ public:
   CortexSimulation *getSimulation(std::string idSimulation);
   Experiment *getExperiment(std::string id);
 
-  CortexModelLikelihood* getLikelihood(const std::string& idLik);
+  CortexLikelihood* getLikelihood(const std::string& idLik);
   void push_back(Experiment *experiment);
 private:
   std::map <std::string, CommandBase*> cmd_;
@@ -99,7 +99,7 @@ private:
 
   std::map <std::string,CortexSimulation*> simulations;
 
-  std::map <std::string,CortexModelLikelihood*> likelihoods;
+  std::map <std::string,CortexLikelihood*> likelihoods;
 
 
 };

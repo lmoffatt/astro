@@ -4,6 +4,7 @@
 #include <map>
 #include "BayesIteration.h"
 #include "MatrixInverse.h"
+#include "CortexLikelihood.h"
 
 //std::vector<double> ABC_Freq_obs::getDataWeigth()
 //{
@@ -36,7 +37,7 @@ Parameters BayesIteration::Prior(std::size_t n)const
 }
 
 
-BayesIteration::BayesIteration(const ABC_Multinomial_Model* m,
+BayesIteration::BayesIteration(const CortexLikelihood *m,
                                Parameters prior,
                                const ABC_Freq_obs* d,
                                const std::string& filename):
@@ -88,10 +89,10 @@ BayesIteration::BayesIteration(){}
 
 
 
-std::vector<std::vector<double>> BayesIteration::p_exp(const Parameters& parameters)const
+std::vector<std::vector<double>> BayesIteration::f(const Parameters& parameters)const
 {
 
-  std::vector<std::vector<double>> simulatedResults=m_->p_exp(parameters);
+  std::vector<std::vector<double>> simulatedResults=m_->f(parameters);
   std::vector<double> param=parameters.trMeans();
 
   //simulatedResults.insert(simulatedResults.end(),param.begin(),param.end());
@@ -130,9 +131,9 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint)
 
   std::size_t numIterations=1000;
 
-  LevenbergMarquardtMultinomial LM(this,
+  LevenbergMarquardtDistribution LM(m_,
                         startingPoint,
-                        numIterations);
+                        numIterations,"");
   LM.optimize();
   std::ofstream f;
 
@@ -269,9 +270,9 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
 
       Parameters seed;
       seed=startingPoint.randomSample(p,factor,probParChange);
-      LevenbergMarquardtMultinomial LM(this,
+      LevenbergMarquardtDistribution LM(m_,
                             seed,
-                            numIterations);
+                            numIterations,"");
       LM.optimize();
 
 
@@ -326,7 +327,7 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
 
 BayesIteration& BayesIteration::getPosterior()
 {
-  std::vector<LevenbergMarquardtMultinomial> LMs;
+  std::vector<LevenbergMarquardtDistribution> LMs;
   std::vector<Parameters> Ps;
 
 
@@ -340,9 +341,9 @@ BayesIteration& BayesIteration::getPosterior()
 
   std::map<double,Parameters> friuts;
 
-  LevenbergMarquardtMultinomial LM(this,
+  LevenbergMarquardtDistribution LM(m_,
                         p,
-                        numIterations);
+                        numIterations,"");
   LM.optimize();
   LMs.push_back(LM);
   Ps.push_back(LM.OptimParameters());
@@ -379,9 +380,9 @@ BayesIteration& BayesIteration::getPosterior()
       Parameters initParam=(*it).second;
       double ss=(*it).first;
       ++it;
-      LevenbergMarquardtMultinomial LM(this,
+      LevenbergMarquardtDistribution LM(m_,
                             initParam,
-                            numIterations);
+                            numIterations,"");
       LM.optimize();
       friuts[LM.LogLik()]=LM.OptimParameters();
 
@@ -426,9 +427,9 @@ BayesIteration& BayesIteration::getPosterior()
             }
           initParam=initParam.randomSample(errorFactor);
 
-          LevenbergMarquardtMultinomial LM(this,
+          LevenbergMarquardtDistribution LM(m_,
                                 initParam,
-                                numIterations);
+                                numIterations,"");
           LM.optimize();
           friuts[LM.LogLik()]=LM.OptimParameters();
 

@@ -268,7 +268,7 @@ public:
     return s;
   }
 
-  std::string save(std::string name)const
+  std::string getSaveName(std::string name)
   {
     std::string filename=myClass()+"_"+name+".txt";
     std::ifstream fi;
@@ -287,7 +287,15 @@ public:
             fi.open(filename);
           }
       }
+    setId(filename.erase(filename.size()-4));
+    return filename;
+
+  }
+
+  std::string save(std::string name)
+  {
     std::ofstream f;
+    std::string filename=getSaveName(name);
     f.open(filename.c_str());
     write(f);
     f.close();

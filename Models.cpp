@@ -22,13 +22,13 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
 
   if (hasOmega)
     {
-      out.omega_T_+=dOmega*dt;
+      addStep(out.omega_T_,dOmega,dt);
     }
-  out.psi_T_+=dPsi*dt;
+  addStep(out.psi_T_,dPsi,dt);
 
 
 
-  out.rho_+=dRho*dt;
+  addMStep(out.rho_,dRho,dt);
   if (hasOmega)
     out.omega_B_=Omega_Bound(p,out);
   out.psi_B_=Psi_Bound(p,out);
@@ -43,13 +43,16 @@ CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExper
 
   CortexState o(s.x_,s.dx_,s.h_,p.epsilon_,p.N_.size());
 
+  double r0=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
 
   unsigned numX=o.x_.size();
   for (unsigned x=0; x<numX; ++x)
     {
       o.rho_[x][0]=p.dens_Neur_*std::pow(s.h_,2)*s.dx_[x]*1000;  // dens is in cells per liter
-      o.rho_[x][1]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000;
 
+
+      o.rho_[x][1]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000*r0;
+      o.rho_[x][2]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000*(1-r0);
     }
   o.psi_B_=Psi_Bound(p,o);
   o.omega_B_=Omega_Bound(p,o);
@@ -60,18 +63,23 @@ CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExper
 
 
 CortexState SimplestModel::init(const SimplestModel::Param &p,
-                                const Experiment &s)const
+                                const Experiment &s
+                                ,double maxLessionWidth_um)const
 {
-  std::vector<double> x_grid_in_m=s.x_in_m();
+  std::vector<double> x_grid_in_m=s.x_in_m(maxLessionWidth_um);
 
   CortexState o(x_grid_in_m,s.h(),p.epsilon_,p.N_.size());
 
+  double r0=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
 
   unsigned numX=o.x_.size();
   for (unsigned x=0; x<numX; ++x)
     {
+
       o.rho_[x][0]=p.dens_Neur_*std::pow(s.h(),2)*o.dx_[x]*1000;  // dens is in cells per liter
-      o.rho_[x][1]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000;
+
+      o.rho_[x][1]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000*r0;
+      o.rho_[x][2]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000*(1-r0);
 
     }
   o.psi_B_=Psi_Bound(p,o);
@@ -123,7 +131,8 @@ std::vector<double> SimplestModel::Psi_Bound(const SimplestModel::Param &p, cons
         Nt+=p.N_[k]*c.rho_[x][k];
       double R_T=Nt*molar_section/c.dx_[x];
       double b=R_T+c.psi_T_[x]+K_psi;
-      o[x]=0.5*(b)-0.5*std::sqrt(b*b-4*R_T*c.psi_T_[x]);
+      double Det=std::sqrt(b*b-4*R_T*c.psi_T_[x]);
+      o[x]=2*R_T*c.psi_T_[x]/(b+Det);
     }
   return o;
 }
@@ -136,24 +145,38 @@ std::vector<double> SimplestModel::dOmega_dt(const Param &p,
 
   const double NAv=6.022E23;
   std::vector<double> o(numX,0);
+
+  /// esto de abajo indica que para uso un espesor y ancho c.h_ para el numero rho de celulas
   double molar_section=1.0/(NAv*p.epsilon_*c.h_*c.h_*1000.0);
 
   for (unsigned x=0; x<numX; ++x)
     {
       double Jn=0;
       double Jp=0;
+      double Dfn,Dfp;
       if (x>0)
-        Jn=2.0*p.Domega_*(c.omega_T_[x-1]-c.omega_B_[x-1]-c.omega_T_[x]+c.omega_B_[x])/(c.dx_[x-1]+c.dx_[x]);
+        {
+          Dfn=2.0*p.Domega_/(c.dx_[x-1]+c.dx_[x]);
+          Jn=(c.omega_T_[x-1]-c.omega_B_[x-1]-c.omega_T_[x]+c.omega_B_[x]);
+          Jn=Dfn*Jn;
+        }
       if (x+1<numX)
-        Jp=2.0*p.Domega_*(c.omega_T_[x+1]-c.omega_B_[x+1]-c.omega_T_[x]+c.omega_B_[x])/(c.dx_[x+1]+c.dx_[x]);
-
+        {
+          Dfp=2.0*p.Domega_/(c.dx_[x+1]+c.dx_[x]);
+          Jp=(c.omega_T_[x+1]-c.omega_B_[x+1]-c.omega_T_[x]+c.omega_B_[x]);
+          Jp=Dfp*Jp;
+        }
       double sig=0;
       for (unsigned k=0; k<numK; ++k)
         {
           sig+=p.ksig_omega_[k]*c.rho_[x][k];
         }
 
+      /// esto de abajo indica que para uso un espesor y ancho c.h_ para el numero rho de celulas, el largo de la ///
+      ///celda es variable, es dx_[x]
+      // por otro lado
       sig*=molar_section/c.dx_[x];
+
       o[x]=(Jn+Jp)/c.dx_[x]+sig-p.kcat_omega_*c.omega_B_[x];
 
     }
@@ -181,7 +204,8 @@ std::vector<double> SimplestModel::Omega_Bound(const SimplestModel::Param &p, co
         Mt+=p.M_[k]*c.rho_[x][k];
       double R_T=Mt*molar_section/c.dx_[x];
       double b=R_T+c.omega_T_[x]+K_omega;
-      o[x]=0.5*(b)-0.5*std::sqrt(b*b-4*R_T*c.omega_T_[x]);
+      double Det=std::sqrt(b*b-4*R_T*c.omega_T_[x]);
+      o[x]=2*R_T*c.omega_T_[x]/(b+Det);
     }
   return o;
 }
@@ -290,6 +314,8 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
   par.write(std::cout);
   std::cout<<"dt ="<<dt<<"\n";
 
+
+
   CortexState c=init(p,sp);
 
   unsigned numSamples=std::ceil((sp.tsim_+sp.teq_)/sp.sample_time_)+1;
@@ -359,16 +385,21 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
                                          ,double dt,
                                          double tequilibrio)const
 {
- /* std::cout<<"starts a Simulation on \n";
+  /* std::cout<<"starts a Simulation on \n";
   sp.write(std::cout);
   par.write(std::cout);
   std::cout<<"dt ="<<dt<<"\n";
 */
 
+//  find inj_width information in parameters
 
-  CortexState c=init(p,sp);
 
 
+  double inj_wMax=par.get("inj_width_1")+par.get("inj_width_0");
+
+
+
+  CortexState c=init(p,sp,inj_wMax);
 
   CortexSimulation s(c,sp.numMeasures());
   s.p_=par;
@@ -434,6 +465,18 @@ std::vector<double> BaseModel::getObservedProbFromModel(const std::vector<double
   v[3]=modelRho[5]/n;
   v[4]=modelRho[6]/n;
   return v;
+}
+
+std::vector<double> BaseModel::getObservedNumberFromModel(const std::vector<double> &modelRho) const
+{
+  std::vector<double>  v(5);
+  v[0]=modelRho[2];
+  v[1]=modelRho[3];
+  v[2]=modelRho[4];
+  v[3]=modelRho[5];
+  v[4]=modelRho[6];
+  return v;
+
 }
 
 std::vector<double> BaseModel::getObservedNumberFromData(const std::vector<double> &modelRho) const

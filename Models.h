@@ -134,7 +134,7 @@ public:
 
 
   std::vector<std::vector<double> > dRho_dt(const Param &p, const CortexState &c, bool hasOmega)const;
-  CortexState init(const SimplestModel::Param &p, const Experiment &s) const;
+  CortexState init(const SimplestModel::Param &p, const Experiment &s, double maxLessionWidth_um) const;
 };
 
 
@@ -160,34 +160,37 @@ public:
 
   virtual std::vector<double> getObservedProbFromModel(const std::vector<double>& modelRho)const;
 
+  virtual std::vector<double> getObservedNumberFromModel(const std::vector<double>& modelRho)const;
+
+
   virtual std::vector<double> getObservedNumberFromData(const std::vector<double>& modelRho)const;
 
-  double likelihood(const Experiment& m, const CortexSimulation& s)const
-  {
-    unsigned is=0;
-    double sumLogLik=0;
+//  double likelihood(const Experiment& m, const CortexSimulation& s)const
+//  {
+//    unsigned is=0;
+//    double sumLogLik=0;
 
-    for (unsigned ie=0; ie<m.numMeasures(); ie++)
-      {
-        const CortexMeasure* cm=m.getMeasure(ie);
-        double t=cm->dia()*24*60*60;
-        while (s.t_[is]<t
-               &&is<s.t_.size())
-          ++is;
-        std::vector<double> rho_sim;
-        std::vector<double> rho_meas;
-        for (unsigned ix=0; ix<cm->dx().size(); ++ix)
-          {
-            rho_sim=getObservedProbFromModel(s.rho_[is][ix]);
-            auto ob=cm->meanAstro(ix);
-            rho_meas=getObservedNumberFromData(ob);
-            sumLogLik+=MultinomialLikelihood(rho_meas,rho_sim);
-          }
+//    for (unsigned ie=0; ie<m.numMeasures(); ie++)
+//      {
+//        const CortexMeasure* cm=m.getMeasure(ie);
+//        double t=cm->dia()*24*60*60;
+//        while (s.t_[is]<t
+//               &&is<s.t_.size())
+//          ++is;
+//        std::vector<double> rho_sim;
+//        std::vector<double> rho_meas;
+//        for (unsigned ix=0; ix<cm->dx().size(); ++ix)
+//          {
+//            rho_sim=getObservedProbFromModel(s.rho_[is][ix]);
+//            auto ob=cm->meanAstro(ix);
+//            rho_meas=getObservedNumberFromData(ob);
+//            sumLogLik+=MultinomialLikelihood(rho_meas,rho_sim);
+//          }
 
-      }
-    return sumLogLik;
+//      }
+//    return sumLogLik;
 
-  }
+//  }
 
 
 
@@ -249,7 +252,10 @@ class Model00:public BaseModel
     double prot_concentration_;
     double DAMP_MW_;
     double DAMP_;
-  };
+    double inj_width_0_;
+    double inj_width_1_;
+
+   };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
@@ -377,6 +383,10 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
+    out.push_back("inj_width_0",p_.inj_width_0_);
+    out.push_back("inj_width_1",p_.inj_width_1_);
+
+
 
 
 
@@ -388,8 +398,8 @@ public:
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
-    p_.Keq_=p.get("Keq");
-    p_.kcat_=p.get("kcat");
+    p_.Keq_=p.get("Keq_psi");
+    p_.kcat_=p.get("kcat_psi");
     p_.g_01_=p.get("g_01");
     p_.g_10_=p.get("g_10");
     p_.g_23_=p.get("g_23");
@@ -406,7 +416,8 @@ public:
     p_.N_Neuron_=p.get("N_Neuron");
     p_.a_factor_=p.get("a_factor");
     p_.a_max_Neuron_=p.get("a_max_Neuron");
-
+    p_.inj_width_0_=p.get("inj_width_0");
+    p_.inj_width_1_=p.get("inj_width_1");
 
 
   }
@@ -468,6 +479,8 @@ class Model10:public BaseModel
     double DAMP_MW_;
     double DAMP_;
     double k_sig_;
+    double inj_width_0_;
+    double inj_width_1_;
   };
 
 
@@ -615,6 +628,9 @@ public:
 
 
     out.push_back("k_sig",p_.k_sig_);
+    out.push_back("inj_width_0",p_.inj_width_0_);
+    out.push_back("inj_width_1",p_.inj_width_1_);
+
 
 
 
@@ -651,6 +667,9 @@ public:
     p_.a_factor_=p.get("a_factor");
     p_.a_max_Neuron_=p.get("a_max_Neuron");
     p_.k_sig_=p.get("k_sig");
+
+    p_.inj_width_0_=p.get("inj_width_0");
+    p_.inj_width_1_=p.get("inj_width_1");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const

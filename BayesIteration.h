@@ -20,7 +20,7 @@ public:
     Parameters Prior(std::size_t n_obs=0)const;
 
 
-    BayesIteration(const ABC_Multinomial_Model* f,
+    BayesIteration(const CortexLikelihood *f,
                    Parameters prior,
                    const ABC_Freq_obs* d,
                    const std::string &filename);
@@ -41,7 +41,7 @@ public:
 
     virtual void setFilename(const std::string filename);
 
-    virtual std::vector<std::vector<double>> p_exp (const Parameters& parameters)const;
+    virtual std::vector<std::vector<double>> f (const Parameters& parameters)const;
 
     virtual const ABC_Freq_obs& getData()const;
 
@@ -73,7 +73,7 @@ public:
 
 private:
 
-    const ABC_Multinomial_Model* m_;
+    const CortexLikelihood* m_;
 
     std::vector<const ABC_Freq_obs*> data_;
 
@@ -82,7 +82,7 @@ private:
     Parameters posterior_;
     std::size_t numSeeds_;
 
-    std::vector<LevenbergMarquardtMultinomial> LM_;
+    std::vector<LevenbergMarquardtDistribution> LM_;
 
     std::string filename_;
 

@@ -1,9 +1,12 @@
 #include <iostream>
+#include <stdlib.h>
+#include <time.h>
 #include "CommandManager.h"
 
 int main(int argc, char **argv)
 {
 
+  srand (time(NULL));
   CommandManager cm;
 
   switch (argc) {

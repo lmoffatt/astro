@@ -11,19 +11,13 @@ epsilon <LOGRATIO> 5e-2  [m/m] 1.08  [dB]// fraction of extracelular space
 Keq_psi  <LOG> 2.38E-6  [M] 5.91  [dB]// affinity constant for psi
 
 
-Keq_omega  <LOG> 2.17E-8  [M] 4.8 <LOG> [dB]// affinity constant for omega
-
-
 kcat_psi  <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
 
 
-kcat_omega <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
+g_01 <LOG>  5E-6  [s-1] 10 [dB]// cell type change rate from 0to 1
 
 
-g_01 <LOG>  5E-3  [s-1] 10 [dB]// cell type change rate from 0to 1
-
-
-g_10  <LOG> 2E-3   [s-1] 10 [dB]// cell type change rate from 1 to 0
+g_10  <LOG> 2E-6   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
 
 g_23 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
@@ -66,6 +60,11 @@ prot_concentration <LOG>  200  [g/ml]  2.12 [dB]// protein density
 
 
 DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
+
+
+inj_width_0 <LOG> 50 [um] 3 [dB] // ancho de la injuria a tres dias
+
+inj_width_1 <LOG> 1000 [um] 3 [dB] // ancho de la injuria a siete dias
 
 
 

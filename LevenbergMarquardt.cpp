@@ -1,5 +1,6 @@
 #include "LevenbergMarquardt.h"
 #include "MatrixInverse.h"
+#include "CortexLikelihood.h"
 
 #include <vector>
 #include <limits>
@@ -7,14 +8,18 @@
 #include <sstream>
 
 
-LevenbergMarquardtMultinomial::LevenbergMarquardtMultinomial(ABC_Multinomial_Model *f,
-                                                             const Parameters& initialParam, std::size_t numIterations):
-  f_(f),
+LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(const CortexLikelihood *f,
+    const Parameters& initialParam
+    , std::size_t numIterations
+    , const std::string& name):
+  fname_(name),
+  os_(),
+  CL_(f),
   w_(),
   ParamInitial_(initialParam),
   nPar_(ParamInitial_.size()),
   nData_(f->getData().numCells()),
-  dx_(1e-9),
+  dx_(std::sqrt(std::numeric_limits<double>::epsilon())),
   maxIter_(numIterations),
   maxFeval_(10000),
   ParamChangeMin_(1e-9),
@@ -47,13 +52,21 @@ LevenbergMarquardtMultinomial::LevenbergMarquardtMultinomial(ABC_Multinomial_Mod
   GradNormPost_(ParamChange_),
   smallParamChange_(false),
   smallSSChange_(false),
-  smallGradient_(false){}
+  smallGradient_(false)
+{
+  fname_=getSaveName(fname_);
+  os_.open(fname_);
+
+
+}
 
 
 
-LevenbergMarquardtMultinomial::LevenbergMarquardtMultinomial(){}
+LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(){}
 
-LevenbergMarquardtMultinomial::LevenbergMarquardtMultinomial (const LevenbergMarquardtMultinomial& other):
+LevenbergMarquardtDistribution::LevenbergMarquardtDistribution (const LevenbergMarquardtDistribution& other):
+  os_(),
+  fname_(other.fname_),
   w_(other.w_),
   ParamInitial_(other.ParamInitial_),
   nPar_(other.nPar_),
@@ -107,19 +120,20 @@ LevenbergMarquardtMultinomial::LevenbergMarquardtMultinomial (const LevenbergMar
 
 
 
-LevenbergMarquardtMultinomial&
-LevenbergMarquardtMultinomial::operator=(const LevenbergMarquardtMultinomial& other)
+LevenbergMarquardtDistribution&
+LevenbergMarquardtDistribution::operator=(const LevenbergMarquardtDistribution& other)
 {
   if (this!=&other)
     {
-      LevenbergMarquardtMultinomial tmp(other);
+      LevenbergMarquardtDistribution tmp(other);
       swap(*this,tmp);
     }
   return *this;
 }
 
-void swap(LevenbergMarquardtMultinomial& one, LevenbergMarquardtMultinomial& other)
+void swap(LevenbergMarquardtDistribution& one, LevenbergMarquardtDistribution& other)
 {
+  std::swap(one.os_,other.os_);
   std::swap(one.w_,other.w_);
 
   std::swap(one.ParamInitial_,other.ParamInitial_);
@@ -173,42 +187,74 @@ void swap(LevenbergMarquardtMultinomial& one, LevenbergMarquardtMultinomial& oth
 
 }
 
-LevenbergMarquardtMultinomial& LevenbergMarquardtMultinomial::optimize()
+LevenbergMarquardtDistribution& LevenbergMarquardtDistribution::optimize()
 {
-  std::cout<<"num DF="<<f_->getData().numDF()<<"\n";
+  std::cout<<"num DF="<<CL_->getData().numDF()<<"\n";
   std::cout<<"nIter"<<"\t"<<"PostLogLik"<<"\t"<<"LogPrior"<<"\t"<<"landa"<<"\t";
   std::cout<<"ParamChange"<<"\t"<<"PostLogLikChange"<<"\t"<<"NormGrad"<<"\n";
+  if (os_.is_open())
+    {
+      os_<<"num DF="<<CL_->getData().numDF()<<"\n";
+      os_<<"nIter"<<"\t"<<"PostLogLik"<<"\t"<<"LogPrior"<<"\t"<<"landa"<<"\t";
+      os_<<"ParamChange"<<"\t"<<"PostLogLikChange"<<"\t"<<"NormGrad"<<"\n";
+    }
   initialize();
   while (!meetConvergenceCriteria())
     iterate();
 
-  std::cout<<report();
+  std::cout<<*this;
+  if (os_.is_open())
+    {
+      os_<<this;
+      os_.flush();
+    }
   JTWJinv_=inv(JTWJ_);
   ParamCurr_.setCovariance(JTWJinv_);
   return *this;
 }
 
-double LevenbergMarquardtMultinomial::getEvidence()const
+LevenbergMarquardtDistribution &LevenbergMarquardtDistribution::optimize(std::string optname,
+                                                                         double factor, std::size_t numSeeds,double probParChange)
+{
+
+  for (std::size_t i=0;i<numSeeds;i++)
+    {
+
+      ParamCurr_=CL_->getPrior().randomSample(ParamInitial_,factor,probParChange);
+      optimize();
+      std::string optfname=OptimParameters().save(optname+"_"+std::to_string(i));
+      CortexMultinomialLikelihoodEvaluation CE(*CL_,OptimParameters());
+      std::ofstream fo;
+      std::string fnameout=optfname.substr(0,optfname.size()-3)+"_lik.txt";
+      fo.open(fnameout.c_str());
+      CE.extract(fo);
+      fo.close();
+
+    }
+  return *this;
+}
+
+double LevenbergMarquardtDistribution::getEvidence()const
 {
 
   return logPostLikCurr_-0.5*ParamCurr_.logDetCov();
 }
-double LevenbergMarquardtMultinomial::getLogPostLik()const
+double LevenbergMarquardtDistribution::getLogPostLik()const
 {
 
   return logPostLikCurr_;
 }
 
-double LevenbergMarquardtMultinomial::logDetPriorCov()const
+double LevenbergMarquardtDistribution::logDetPriorCov()const
 {
-  return f_->getPrior().logDetCov();
+  return CL_->getPrior().logDetCov();
 }
-double LevenbergMarquardtMultinomial::logDetPostCov()const
+double LevenbergMarquardtDistribution::logDetPostCov()const
 {
   return ParamCurr_.logDetCov();
 }
 
-double LevenbergMarquardtMultinomial::logDetPostStd()const
+double LevenbergMarquardtDistribution::logDetPostStd()const
 {
   double d=0;
   for (std::size_t i=0; i<ParamCurr_.size(); ++i)
@@ -216,18 +262,25 @@ double LevenbergMarquardtMultinomial::logDetPostStd()const
   return 2*d;
 }
 
-void LevenbergMarquardtMultinomial::iterate()
+void LevenbergMarquardtDistribution::iterate()
 {
   computeJacobian();
   computeSearchDirection();
   updateLanda();
   std::cout<<nIter_<<"\t"<<logPostLikCurr_<<"\t"<<logPriorCurr_<<"\t"<<landa_<<"\t";
   std::cout<<ParamChange_<<"\t"<<PostlogLikChange_<<"\t"<<GradNormPost_<<"\n";
+  if (os_.is_open())
+    {
+      os_<<nIter_<<"\t"<<logPostLikCurr_<<"\t"<<logPriorCurr_<<"\t"<<landa_<<"\t";
+      os_<<ParamChange_<<"\t"<<PostlogLikChange_<<"\t"<<GradNormPost_<<"\n";
+      os_.flush();
+
+    }
   nIter_++;
 }
 
 
-void update_Jacobian(const ABC_Multinomial_Model* f,
+void update_Jacobian(const ABC_Distribution_Model* f,
                      const Parameters& ParamCurr,
                      const std::vector<std::vector<double>>&P_expCurr,std::size_t nPar,
                      std::vector<std::vector<double>>& J,
@@ -282,10 +335,10 @@ void update_JTWJ(std::vector<std::vector<double>>& JTWJ
 
 
 
-void LevenbergMarquardtMultinomial::computeJacobian()
+void LevenbergMarquardtDistribution::computeJacobian()
 {
 
-  update_Jacobian(f_,ParamCurr_,P_expCurr_,nPar_,J_,w_,epsilon_,prior_G_,nFeval_,dx_);
+  update_Jacobian(CL_,ParamCurr_,P_expCurr_,nPar_,J_,w_,epsilon_,prior_G_,nFeval_,dx_);
 
   update_Gradient(G_,prior_G_,epsilon_,J_);
 
@@ -293,14 +346,14 @@ void LevenbergMarquardtMultinomial::computeJacobian()
 
 }
 
-void update_Likelihoods(const ABC_Multinomial_Model* f
+void update_Likelihoods(const ABC_Distribution_Model* f
                         ,const Parameters& ParamNew
                         ,std::vector<std::vector<double>>& P_exp_New
                         ,double& logLikNew,double& logPriorNew
                         , double& logPostLogLikNew
                         ,std::size_t& NFeval)
 {
-  P_exp_New=f->p_exp(ParamNew);
+  P_exp_New=f->f(ParamNew);
   logLikNew=f->logLik(P_exp_New);
   logPriorNew=f->logPrior(ParamNew);
   logPostLogLikNew=logLikNew+logPriorNew;
@@ -337,22 +390,22 @@ void update_Search_Direction(std::vector<double>& d
     }
 
 }
-void LevenbergMarquardtMultinomial::initialize()
+void LevenbergMarquardtDistribution::initialize()
 {
   nIter_=0;
   nFeval_=0;
-  nDF_=f_->getData().numDF();
+  nDF_=CL_->getData().numDF();
   ParamChange_=std::numeric_limits<double>::infinity();
   PostlogLikChange_=std::numeric_limits<double>::infinity();
   GradNormPost_=std::numeric_limits<double>::infinity();
-  ParamCurr_=ParamInitial_;
+  //ParamCurr_=ParamInitial_;
 
-  update_Likelihoods(f_,ParamCurr_,P_expCurr_,logLikCurr_,logPriorCurr_,logPostLikCurr_
+  update_Likelihoods(CL_,ParamCurr_,P_expCurr_,logLikCurr_,logPriorCurr_,logPostLikCurr_
                      ,nFeval_);
 }
 
 
-void LevenbergMarquardtMultinomial::computeSearchDirection()
+void LevenbergMarquardtDistribution::computeSearchDirection()
 {
 
   landaMult_JTWJ(JTWJ_landa_,JTWJ_,landa_);
@@ -367,7 +420,7 @@ void LevenbergMarquardtMultinomial::computeSearchDirection()
   for (std::size_t i=0; i<nPar_; ++i)
     ParamNew_[i]-=d_[i];
 
-  update_Likelihoods(f_,ParamNew_,P_exp_New_,logLikNew_,logPriorNew_,logPostLogLikNew_,nFeval_);
+  update_Likelihoods(CL_,ParamNew_,P_exp_New_,logLikNew_,logPriorNew_,logPostLogLikNew_,nFeval_);
 }
 
 
@@ -375,16 +428,20 @@ void LevenbergMarquardtMultinomial::computeSearchDirection()
 
 
 
-void LevenbergMarquardtMultinomial::updateLanda()
+void LevenbergMarquardtDistribution::updateLanda()
 {
   std::size_t ifevalLoop=0;
+
+  /// no es mejor
   if ((logPostLogLikNew_<=logPostLikCurr_)
-      ||(logPostLogLikNew_!=logPostLogLikNew_))
+      ||std::isnan(logPostLogLikNew_))
     {
+      /// mientras no sea mejor
       while(((logPostLogLikNew_<=logPostLikCurr_)
              &&(nFeval_<maxFeval_)
-             )||(logPostLogLikNew_!=logPostLogLikNew_))
+             )||isnan(logPostLogLikNew_))
         {
+          /// si me paso freno...
           if (landa_*v_>=maxLanda_) break;
           landa0_=landa_;
           landa_=landa0_*v_;
@@ -398,9 +455,11 @@ void LevenbergMarquardtMultinomial::updateLanda()
           //   std::cerr<<landa_<<" ";
         }
 
+      /// de aca sali porque cosegui algo mejor o porque el landa es muy grande
     }
   else
     {
+      /// aqui ya tengo un candidato
       landa0_=landa_;
       landa_=landa_/v_;
       logLikNew0_=logLikNew_;
@@ -411,7 +470,8 @@ void LevenbergMarquardtMultinomial::updateLanda()
 
       computeSearchDirection();
       ifevalLoop++;
-      while((logPostLogLikNew_>logPostLikeNew0_)&&(!logPostLogLikNew_!=logPostLogLikNew_)
+      /// mientras pueda mejorar
+      while((logPostLogLikNew_>logPostLikeNew0_)&&(!std::isnan(logPostLogLikNew_))
             &&(landa_>0.5))
         {
           landa0_=landa_;
@@ -425,7 +485,8 @@ void LevenbergMarquardtMultinomial::updateLanda()
           ifevalLoop++;
         }
 
-      if ((logPostLogLikNew_<=logPostLikeNew0_)||(logPostLogLikNew_!=logPostLogLikNew_))
+      /// si me pase, recupero el anterior
+      if ((logPostLogLikNew_<=logPostLikeNew0_)||std::isnan(logPostLogLikNew_))
         {
           landa_=landa0_;
           ParamNew_=ParamNew0_;
@@ -435,11 +496,10 @@ void LevenbergMarquardtMultinomial::updateLanda()
           P_exp_New_=P_exp_New0_;
         }
     }
-  if (logPostLogLikNew_<=logPostLikCurr_)
+  if ((logPostLogLikNew_<=logPostLikCurr_)|| std::isnan(logPostLogLikNew_))
     {
       ParamChange_=0;
       PostlogLikChange_=0;
-
     }
   else
     {
@@ -461,7 +521,7 @@ void LevenbergMarquardtMultinomial::updateLanda()
 }
 
 
-bool LevenbergMarquardtMultinomial::meetConvergenceCriteria()
+bool LevenbergMarquardtDistribution::meetConvergenceCriteria()
 {
   surpassIter_=nIter_>=maxIter_;
   surpassFeval_=nFeval_>=maxFeval_;
@@ -469,7 +529,7 @@ bool LevenbergMarquardtMultinomial::meetConvergenceCriteria()
   smallParamChange_=ParamChange_<ParamChangeMin_;
   smallSSChange_=(PostlogLikChange_)<PostLogLikChangeMin_;
   smallGradient_=GradNormPost_<GradientNormPostMin_;
-  isNanLogPostLik_=logPostLikCurr_!=logPostLikCurr_;
+  isNanLogPostLik_=std::isnan(logPostLikCurr_);
 
 
   return surpassIter_||
@@ -483,33 +543,33 @@ bool LevenbergMarquardtMultinomial::meetConvergenceCriteria()
 
 
 
-Parameters LevenbergMarquardtMultinomial::OptimParameters()const
+Parameters LevenbergMarquardtDistribution::OptimParameters()const
 {
   return ParamCurr_;
 }
 
-std::size_t LevenbergMarquardtMultinomial::numEval()const
+std::size_t LevenbergMarquardtDistribution::numEval()const
 {
   return nFeval_;
 }
-std::size_t LevenbergMarquardtMultinomial::numIter()const
+std::size_t LevenbergMarquardtDistribution::numIter()const
 {
   return nIter_;
 }
-double LevenbergMarquardtMultinomial::LogLik()const
+double LevenbergMarquardtDistribution::LogLik()const
 {
   return logLikCurr_;
 }
 
-double LevenbergMarquardtMultinomial::PostLogLik() const
+double LevenbergMarquardtDistribution::PostLogLik() const
 {
   return logPostLikCurr_;
 }
-std::vector<double> LevenbergMarquardtMultinomial::Gradient()const
+std::vector<double> LevenbergMarquardtDistribution::Gradient()const
 {
   return G_;
 }
-std::string LevenbergMarquardtMultinomial::report()const{
+std::string LevenbergMarquardtDistribution::report()const{
   std::stringstream output;
 
   output<<"Convergence critera: \t";
@@ -533,7 +593,7 @@ std::string LevenbergMarquardtMultinomial::report()const{
 }
 
 
-std::ostream& operator<<(std::ostream& s, LevenbergMarquardtMultinomial& LM)
+std::ostream& operator<<(std::ostream& s, LevenbergMarquardtDistribution& LM)
 {
   s<<"LevenbergMarquardtParameters\n";
   s<<"Number of iterations \t"<<LM.numIter()<<"\t";
@@ -563,10 +623,51 @@ unsigned ABC_Freq_obs::numCells() const
   else return 0;
 }
 
+
+double ABC_Distribution_Model::logPrior(const Parameters &p)const
+{
+
+  double sumL=0;
+  if (!getPrior().hasCovariance())
+    {
+      for (unsigned i=0; i<p.size(); ++i)
+        sumL+=std::pow(p[i]-getPrior()[i],2)/std::pow(getPrior().pStds()[i],2);
+    }
+  else
+    {
+      for (unsigned i=0; i<p.size(); ++i)
+        for (unsigned j=0; j<p.size(); ++j)
+          sumL+=(p[i]-getPrior()[i])*(p[j]-getPrior()[j])*getPrior().getInvCovariance()[i][j];
+    }
+  return 0.5*(-sumL);
+  //+getPrior().logDetCov());
+}
+
+std::vector<double> ABC_Distribution_Model::PriorGradient(const Parameters &p)const
+{
+  std::vector<double> out(p.size(),0);
+  if (!getPrior().hasCovariance())
+    {
+      for (unsigned i=0; i<p.size(); ++i)
+        out[i]=(p[i]-getPrior()[i])/std::pow(getPrior().pStds()[i],2);
+    }
+  else
+    {
+      for (unsigned i=0; i<p.size(); ++i)
+        for (unsigned j=0; j<p.size(); ++j)
+          out[i]+=(p[j]-getPrior()[j])*getPrior().getInvCovariance()[i][j];
+    }
+  return out;
+}
+
+
+
+
+
 std::vector<std::vector<double> >
-ABC_Multinomial_Model::J(const Parameters &p,
-                         const std::vector<std::vector<double> > &p_ex
-                         , double delta) const
+ABC_Distribution_Model::J(const Parameters &p,
+                          const std::vector<std::vector<double> > &f0
+                          , double delta) const
 {
 
 
@@ -575,16 +676,21 @@ ABC_Multinomial_Model::J(const Parameters &p,
   for (std::size_t i=0; i< p.size(); ++i)
     {
       unsigned ic=0;
-      double dp=delta/getPrior().pStds()[i];
+      double dp=delta*(1/getPrior().pStds()[i]+p[i]);
       Parameters pr(p);
       pr[i]=p[i]+dp;
-      std::vector<std::vector<double>> p_exp_d=p_exp(pr);
+      std::vector<std::vector<double>> f_delta=f(pr);
       for (unsigned ii=0; ii<getData().ntot_obs().size(); ++ii)
         {
           for (unsigned j=0; j<getData().n_obs(ii).size(); ++j)
             {
-              double dpdbeta=(log(p_exp_d[ii][j])-log(p_ex[ii][j]))/dp;
-              out[ic][i]=dpdbeta;
+              if (f0[ii][j]>0)
+                {
+                  double dpdbeta=(log(f_delta[ii][j])-log(f0[ii][j]))/dp;
+                  out[ic][i]=dpdbeta;
+                }
+              else
+                out[ic][i]=0;
               ++ic;
             }
         }
@@ -594,6 +700,13 @@ ABC_Multinomial_Model::J(const Parameters &p,
 
 
 }
+
+double ABC_Distribution_Model::logLik(const Parameters &p) const
+{
+  return logLik(f(p));
+}
+
+
 
 std::vector<std::vector<double> >
 ABC_Multinomial_Model::logLikCells(const std::vector<std::vector<double> > &p) const
@@ -619,17 +732,17 @@ ABC_Multinomial_Model::logLikCells(const std::vector<std::vector<double> > &p) c
 std::vector<double> ABC_Multinomial_Model::logLikSamples(const std::vector<std::vector<double> > &p) const
 {
   std::vector<double>  cL(p.size(),0);
-   for (unsigned i=0; i<getData().ntot_obs().size(); ++i)
-     {
-       double n=getData().ntot_obs()[i];
-       for (unsigned j=0; j<getData().n_obs(i).size(); ++j)
-         {
-           double nj=getData().n_obs(i)[j];
-           if (nj>0)
-             cL[i]+=nj*log(n*p[i][j]/nj);
-         }
-     }
-   return cL;
+  for (unsigned i=0; i<getData().ntot_obs().size(); ++i)
+    {
+      double n=getData().ntot_obs()[i];
+      for (unsigned j=0; j<getData().n_obs(i).size(); ++j)
+        {
+          double nj=getData().n_obs(i)[j];
+          if (nj>0)
+            cL[i]+=nj*log(n*p[i][j]/nj);
+        }
+    }
+  return cL;
 }
 
 double ABC_Multinomial_Model::logLik(const std::vector<std::vector<double> > &p) const
@@ -650,10 +763,6 @@ double ABC_Multinomial_Model::logLik(const std::vector<std::vector<double> > &p)
   return sumL;
 }
 
-double ABC_Multinomial_Model::logLik(const Parameters &p) const
-{
-  return logLik(p_exp(p));
-}
 
 std::vector<double> ABC_Multinomial_Model::epsilon(const std::vector<std::vector<double> > &p) const
 {
@@ -690,38 +799,104 @@ const std::vector<double> ABC_Multinomial_Model::weight(const std::vector<std::v
 
 }
 
-double ABC_Multinomial_Model::logPrior(const Parameters &p)const
-{
 
-  double sumL=0;
-  if (!getPrior().hasCovariance())
+std::vector<std::vector<double> >
+ABC_MultiPoison_Model::logLikCells(const std::vector<std::vector<double> > &landa) const
+{
+  std::vector<std::vector<double> > cL(landa.size(),std::vector<double>(landa[0].size(),0));
+  for (unsigned i=0; i<getData().ntot_obs().size(); ++i)
     {
-      for (unsigned i=0; i<p.size(); ++i)
-        sumL+=std::pow(p[i]-getPrior()[i],2)/std::pow(getPrior().pStds()[i],2);
+      for (unsigned j=0; j<getData().n_obs(i).size(); ++j)
+        {
+          double k=getData().n_obs()[i][j];
+          double landav=landa[i][j];
+          if (k>0)
+            cL[i][j]=+k*log(landav)-landav-lgamma(k+1);
+        }
     }
-  else
-    {
-      for (unsigned i=0; i<p.size(); ++i)
-        for (unsigned j=0; j<p.size(); ++j)
-          sumL+=(p[i]-getPrior()[i])*(p[j]-getPrior()[j])*getPrior().getInvCovariance()[i][j];
-    }
-  return 0.5*(-sumL);
-  //+getPrior().logDetCov());
+  return cL;
+
 }
 
-std::vector<double> ABC_Multinomial_Model::PriorGradient(const Parameters &p)const
+std::vector<double> ABC_MultiPoison_Model::logLikSamples(const std::vector<std::vector<double> > &landa) const
 {
-  std::vector<double> out(p.size(),0);
-  if (!getPrior().hasCovariance())
+  std::vector<double>  cL(landa.size(),0);
+  for (unsigned i=0; i<getData().ntot_obs().size(); ++i)
     {
-      for (unsigned i=0; i<p.size(); ++i)
-        out[i]=(p[i]-getPrior()[i])/std::pow(getPrior().pStds()[i],2);
+      for (unsigned j=0; j<getData().n_obs(i).size(); ++j)
+        {
+          double k=getData().n_obs()[i][j];
+          double landav=landa[i][j];
+          if (landav>0)
+            cL[i]+=k*log(landav)-landav-lgamma(k+1);
+        }
     }
-  else
+  return cL;
+
+
+}
+
+
+double ABC_MultiPoison_Model::logLik(const std::vector<std::vector<double> > &landa) const
+{
+  double sumL=0;
+  for (unsigned i=0; i<getData().ntot_obs().size(); ++i)
     {
-      for (unsigned i=0; i<p.size(); ++i)
-        for (unsigned j=0; j<p.size(); ++j)
-          out[i]+=(p[j]-getPrior()[j])*getPrior().getInvCovariance()[i][j];
+      for (unsigned j=0; j<getData().n_obs(i).size(); ++j)
+        {
+          double k=getData().n_obs(i)[j];
+          double landav=landa[i][j];
+          if (std::isnan(landav))
+            return landav;
+          else if (landav!=0)
+            {
+              double logL=k*log(landav)-landav-lgamma(k+1);
+
+              sumL+=logL;
+            }
+        }
+    }
+  return sumL;
+}
+
+
+double ABC_MultiPoison_Model::logLik(const Parameters &p) const
+{
+  return logLik(f(p));
+}
+
+std::vector<double> ABC_MultiPoison_Model::epsilon(const std::vector<std::vector<double> > &landa) const
+{
+  std::vector<double> out(getData().numCells());
+  unsigned ic=0;
+  for (unsigned i=0; i<getData().ntot_obs().size(); ++i)
+    {
+      double n=getData().ntot_obs()[i];
+      for (unsigned j=0; j<getData().n_obs(i).size(); ++j)
+        {
+          double k=getData().n_obs(i)[j];
+          double landav=landa[i][j];
+          out[ic]=landav-k;
+          ++ic;
+        }
     }
   return out;
+
 }
+
+const std::vector<double> ABC_MultiPoison_Model::weight(const std::vector<std::vector<double> > &landa) const
+{
+  std::vector<double> out(getData().numCells());
+  unsigned ic=0;
+  for (unsigned i=0; i<getData().ntot_obs().size(); ++i)
+    {
+      for (unsigned j=0; j<getData().n_obs(i).size(); ++j)
+        {
+          out[ic]=landa[i][j];
+          ++ic;
+        }
+    }
+  return out;
+
+}
+

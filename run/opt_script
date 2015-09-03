@@ -1,4 +1,6 @@
-experiment experiment1  0:+250:4000   3dpl 7dpl1
+experiment experiment1  0:+250:4000   3dpl 7dpl2
 //likelihood lik_05 experiment1 parameters_10 parameters_10 20 200 1000
 //optimize opt_zero_100 experiment1 parameters_zero parameters_zero 5 200 1000
-optimize opt_10_100 experiment1 parameters_10 opt_10_100_1 20 200 1000
+optimize opt_zero_inj experiment1 parameters_zero parameters_zero 10 100 0.5 10 1
+optimize opt_10_2000_inj experiment1 parameters_10 parameters_10 10 100 1 10 1
+
