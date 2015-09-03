@@ -34,8 +34,7 @@ HEADERS += \
     LevenbergMarquardt.h \
     BayesIteration.h \
     CortexLikelihood.h \
-    BaseClass.h \
-    Polygon.h
+    BaseClass.h
 
 DISTFILES += \
     run/script \
