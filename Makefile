@@ -236,8 +236,6 @@ $(TARGET):  $(OBJECTS)
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
 
-qmake_all: FORCE
-
 
 all: Makefile $(TARGET)
 
