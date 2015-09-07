@@ -11,7 +11,7 @@ MAKEFILE      = Makefile
 ####### Compiler, tools and options
 
 CC            = gcc
-CXX           = g++-5
+CXX           = g++
 DEFINES       = 
 CFLAGS        = -pipe -O2 -Wall -W -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -O2 -std=c++11 -Wall -W -fPIC $(DEFINES)
