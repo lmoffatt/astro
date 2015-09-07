@@ -9,9 +9,9 @@
 
 
 LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(const CortexLikelihood *f,
-    const Parameters& initialParam
-    , std::size_t numIterations
-    , const std::string& name):
+                                                               const Parameters& initialParam
+                                                               , std::size_t numIterations
+                                                               , const std::string& name):
   fname_(name),
   os_(),
   CL_(f),
@@ -55,7 +55,7 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(const CortexLikel
   smallGradient_(false)
 {
   fname_=getSaveName(fname_);
-  os_.open(fname_);
+  os_.open(fname_,std::ofstream::out);
 
 
 }
@@ -205,7 +205,7 @@ LevenbergMarquardtDistribution& LevenbergMarquardtDistribution::optimize()
   std::cout<<*this;
   if (os_.is_open())
     {
-      os_<<this;
+      os_<<*this;
       os_.flush();
     }
   JTWJinv_=inv(JTWJ_);
@@ -214,15 +214,31 @@ LevenbergMarquardtDistribution& LevenbergMarquardtDistribution::optimize()
 }
 
 LevenbergMarquardtDistribution &LevenbergMarquardtDistribution::optimize(std::string optname,
-                                                                         double factor, std::size_t numSeeds,double probParChange)
+                                                                         double factor, std::size_t numSeeds, double probParChange, unsigned int initseed)
 {
-
+  if (initseed!=0)
+    {
+      srand (initseed);
+      std::cout<<"Seed for random generator provided="<<initseed<<std::endl;
+      numSeeds=1;
+      if (os_.is_open())
+        os_<<"Seed for random generator provided="<<initseed<<std::endl;
+  }
   for (std::size_t i=0;i<numSeeds;i++)
     {
+      if (initseed==0)
+        {
+          unsigned int seed=time(NULL);
+          srand (seed);
+          std::cout<<"Seed of random generator="<<seed<<std::endl;
+          if (os_.is_open())
+            os_<<"Seed of random generator="<<seed<<std::endl;
+        }
+
 
       ParamCurr_=CL_->getPrior().randomSample(ParamInitial_,factor,probParChange);
       optimize();
-      std::string optfname=OptimParameters().save(optname+"_"+std::to_string(i));
+      std::string optfname=OptimParameters().save(optname+"_"+std::to_string(PostLogLik()));
       CortexMultinomialLikelihoodEvaluation CE(*CL_,OptimParameters());
       std::ofstream fo;
       std::string fnameout=optfname.substr(0,optfname.size()-3)+"_lik.txt";

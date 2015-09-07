@@ -34,7 +34,8 @@ HEADERS += \
     LevenbergMarquardt.h \
     BayesIteration.h \
     CortexLikelihood.h \
-    BaseClass.h
+    BaseClass.h \
+    MCMC.h
 
 DISTFILES += \
     run/script \
@@ -47,7 +48,19 @@ DISTFILES += \
     run/write_script \
     run/parameters_10 \
     run/opt_script \
-    run/parameters_10.txt
+    run/parameters_10.txt \
+    run/opt_modelzero \
+    run/opt_model10 \
+    run/parameters_011.txt \
+    run/parameters_012.txt \
+    run/parameters_013.txt \
+    run/.txt \
+    run/parameters_013.txt \
+    run/parameters_111.txt \
+    run/parameters_112.txt \
+    run/parameters_113.txt \
+    run/parameters_114.txt \
+    run/parameters_116.txt
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

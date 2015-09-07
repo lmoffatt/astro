@@ -171,7 +171,7 @@ public:
   LevenbergMarquardtDistribution& optimize(std::string optname,
                                            double factor,
                                            std::size_t numSeeds,
-                                           double probParChange);
+                                           double probParChange, unsigned int initseed=0);
 
 
   LevenbergMarquardtDistribution(const CortexLikelihood* f,

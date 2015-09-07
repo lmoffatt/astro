@@ -652,11 +652,11 @@ void OptimizeCommand::run(const std::string line)
   std::string optimizeS, optName, experimentName, priorName, paramName;
   double dt,dx=50, tequilibrio=100000;
   double factor=0,probParChange=1;
-
+  unsigned int initseed=0;
   std::size_t niter,nseeds=0;
   std::stringstream ss(line);
 
-  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dt>>niter>>factor>>nseeds>>probParChange;
+  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dt>>niter>>factor>>nseeds>>probParChange>>initseed;
 
   Experiment* e=cm_->getExperiment(experimentName);
   if (e==nullptr)
@@ -708,10 +708,7 @@ void OptimizeCommand::run(const std::string line)
       LevenbergMarquardtDistribution LM(&CL,p,niter,optName);
 
 
-      if (factor>0)
-        LM.optimize(optName,factor,nseeds,probParChange);
-      else
-        LM.optimize();
+      LM.optimize(optName,factor,nseeds,probParChange,initseed);
 
       Parameters* opt=new Parameters(LM.OptimParameters());
       std::string optfname=opt->save(optName);

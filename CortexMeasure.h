@@ -719,7 +719,7 @@ public:
 
   }
 
-  CortexMeasure* measure(std::string id, double dia, std::vector<double> x, double minimal_distance_to_tissue=250, double minimal_distance_to_vaso=0, std::size_t maxpoints=1E6);
+  CortexMeasure* measure(std::string id, double dia, std::vector<double> x, double minimal_distance_to_tissue=0, double minimal_distance_to_vaso=0, std::size_t maxpoints=1E7);
 };
 
 

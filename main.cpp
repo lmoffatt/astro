@@ -6,8 +6,7 @@
 int main(int argc, char **argv)
 {
 
-  srand (time(NULL));
-  CommandManager cm;
+ CommandManager cm;
 
   switch (argc) {
     case 1:

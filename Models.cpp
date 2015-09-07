@@ -494,7 +494,20 @@ std::map<double, BaseModel *> BaseModel::getModels()
 {
   std::map<double, BaseModel *> o;
   o[Model00::number()]=new Model00;
+  o[Model011::number()]=new Model011;
+  o[Model012::number()]=new Model012;
+  o[Model013::number()]=new Model013;
+
   o[Model10::number()]=new Model10;
+  o[Model111::number()]=new Model111;
+
+  o[Model112::number()]=new Model112;
+
+
+  o[Model114::number()]=new Model114;
+
+  o[Model116::number()]=new Model116;
+
 
   return o;
 

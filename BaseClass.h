@@ -270,26 +270,10 @@ public:
 
   std::string getSaveName(std::string name)
   {
-    std::string filename=myClass()+"_"+name+".txt";
-    std::ifstream fi;
-    fi.open(filename.c_str(),std::ios_base::in);
-    if (fi)
-      {
-        unsigned num=0;
-        filename=name+"_"+std::to_string(num)+".txt";
-        fi.close();
-        fi.open(filename);
-        while (fi)
-          {
-            ++num;
-            filename=name+"_"+std::to_string(num)+".txt";
-            fi.close();
-            fi.open(filename);
-          }
-      }
-    setId(filename.erase(filename.size()-4));
-    return filename;
-
+    unsigned int t=time(NULL);
+    std::string filename=myClass()+"_"+name+"_"+std::to_string(t);
+    setId(filename);
+    return filename+".txt";
   }
 
   std::string save(std::string name)
