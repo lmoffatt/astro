@@ -477,7 +477,12 @@ CortexMeasure *TissuePhoto::measure(std::string id,double dia,std::vector<double
           double distance_to_vaso=distance_to_neareast_Vaso(pos);
           if ((distance_to_tissue>minimal_distance_to_tissue)
               &&(distance_to_vaso>minimal_distance_to_vaso))
-            area[p.getIndex(distance_to_lession)]+=dArea;
+            {
+              auto i=p.getIndex(distance_to_lession);
+              if (i!=p.npos)
+                area[i]+=dArea;
+            }
+
         }
     }
 
