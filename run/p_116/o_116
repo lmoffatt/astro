@@ -12,4 +12,4 @@
 # Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/opt/gcc-5.2.0/lib64/
 
-/home/lmoffatt.inquimae/Astro/release/Astro /home/lmoffatt.inquimae/Astro/run/opt_script LABEL parameters_116
+/home/lmoffatt.inquimae/Astro/release/Astro /home/lmoffatt.inquimae/Astro/Astro/run/opt_script LABEL parameters_116

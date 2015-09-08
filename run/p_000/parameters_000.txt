@@ -1,6 +1,6 @@
 parameters parameters_zero
 
-model 0.11
+model 0.0
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
 
@@ -21,12 +21,6 @@ g_10  <LOG> 2E-4   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
 
 g_23 <LOG> 5E-5   [s-1] 10 [dB]//   cell type change rate from 2 to 3
-
-
-g_34 <LOG> 5E-5   [s-1] 10 [dB]//   cell type change rate from 2 to 3
-
-
-g_45 <LOG> 5E-5   [s-1] 10 [dB]//   cell type change rate from 2 to 3
 
 
 g_max <LOG> 4E-4  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2

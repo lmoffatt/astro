@@ -68,11 +68,11 @@ DISTFILES += \
     run/p_111/o_111 \
     run/p_112/o_112 \
     run/p_114/o_114 \
-    run/p_000/o_011 \
-    run/p_000/parameters_011.txt \
-    run/p_011/parameters_000.txt \
-    run/p_011/o_000 \
-    run/opt_script
+    run/opt_script \
+    run/p_011/o_011 \
+    run/p_011/parameters_011.txt \
+    run/p_000/parameters_000.txt \
+    run/p_000/o_000
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
