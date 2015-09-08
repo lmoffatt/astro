@@ -19,8 +19,7 @@ QMAKE         = /home/luciano/Qt5.5.0/5.5/gcc_64/bin/qmake
 DEL_FILE      = rm -f
 
 LFLAGS        = -Wl,-O1 -Wl,-rpath,/home/luciano/Qt5.5.0/5.5/gcc_64
-LIBS          = $(SUBLIBS) -L/home/luciano/Data/celulas/Astro/Astro/bin -lblas -llapack
-LINK          = ~/opt/gcc-4.8.0/bin/g++
+LINK          = ~/opt/gcc-5.2.0/bin/g++
 
 LIBS          = $(SUBLIBS)   -lblas -llapack
 
