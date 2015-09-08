@@ -9,11 +9,11 @@
 MAKEFILE      = Makefile
 
 ####### Compiler, tools and options
-CC            = ~/opt/gcc-4.8.0/bin/gcc
-CXX           = ~/opt/gcc-4.8.0/bin/g++
+CC            = ~/opt/gcc-5.2.0/bin/gcc
+CXX           = ~/opt/gcc-5.2.0/bin/g++
 DEFINES       =
 CFLAGS        = -m64 -pipe -O2 -Wall -W $(DEFINES)
-CXXFLAGS      = -m64 -pipe -std=c++11 -lpthread -fopenmp  -L/home/lmoffatt.inquimae/opt/mpc-1.0.1/lib -O3 -Wall -W $(DEFINES)
+CXXFLAGS      = -m64 -pipe -std=c++11 -O2 -Wall -W $(DEFINES)
 INCPATH       = -I../Astro -I. -I../../../../Qt5.5.0/5.5/gcc_64/mkspecs/linux-g++
 QMAKE         = /home/luciano/Qt5.5.0/5.5/gcc_64/bin/qmake
 DEL_FILE      = rm -f
