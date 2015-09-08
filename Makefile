@@ -18,7 +18,7 @@ INCPATH       = -I../Astro -I. -I../../../../Qt5.5.0/5.5/gcc_64/mkspecs/linux-g+
 QMAKE         = /home/luciano/Qt5.5.0/5.5/gcc_64/bin/qmake
 DEL_FILE      = rm -f
 
-LFLAGS        = -Wl,-O1 -Wl,-rpath=/home/lmoffatt.inquimae/opt/gcc-5.2.0/lib/
+LFLAGS        = -Wl,-O1 -Wl,-rpath=/home/lmoffatt.inquimae/opt/gcc-5.2.0/lib/ ../lib64
 LINK          = ~/opt/gcc-5.2.0/bin/g++
 
 LIBS          = $(SUBLIBS)   -lblas -llapack

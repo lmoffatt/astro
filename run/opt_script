@@ -1,3 +1,6 @@
 experiment experiment1  0:+250:4000   3dpl 7dpl2
-optimize opt_112_1E7points experiment1 parameters_112 parameters_112 100 1  0 1 1
+//   ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>
+//dt>>niter>>factor>>nseeds>>probParChange>>initseed;
+optimize opt_112_1E7points experiment1 parameters_112 parameters_112 100 100 0 1 0 0
+
 
