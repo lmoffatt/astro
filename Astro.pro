@@ -61,7 +61,8 @@ DISTFILES += \
     run/parameters_113.txt \
     run/parameters_114.txt \
     run/parameters_116.txt \
-    Makefile
+    Makefile \
+    run/7dpl2.txt
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
