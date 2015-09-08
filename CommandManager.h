@@ -30,6 +30,18 @@ inline std::string& removeComments(std::string& line)
 }
 
 
+inline std::string& replaceLabel(std::string& line,
+                                 const std::string& label,
+                                 const std::string& replacement)
+{
+  std::size_t i=0;
+  while (i!=line.npos)
+    {
+         i=line.find(label,i);
+         line.replace(i,label.size(),replacement);
+    }
+  return line;
+}
 
 class CommandBase: public BaseClass
 {
@@ -111,6 +123,10 @@ public:
   Script(CommandManager* cm):cm_(cm){}
 
   int run(char* filenme);
+
+  int runDefine(const std::string& filename,
+          const std::string& label,
+                const std::string& valueInplace);
 
  private:
   CommandManager* cm_;
@@ -294,6 +310,7 @@ class OptimizeCommand:public CommandBase
  // CommandBase interface
 public:
   virtual void run(const std::string line);
+
   virtual std::string id() const
   {
     return "optimize";

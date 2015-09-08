@@ -14,11 +14,23 @@ int Script::run(char* filename)
       std::string line;
       safeGetline(f,line);
       removeComments(line);
-    cm_->execute(line);
+      cm_->execute(line);
+     }
+  return 0;
 
+}
 
-
-    }
+int Script::runDefine(const std::string &filename, const std::string &label, const std::string &valueInplace)
+{
+  std::ifstream f(filename);
+  while (f)
+    {
+      std::string line;
+      safeGetline(f,line);
+      removeComments(line);
+      replaceLabel(line,label,valueInplace);
+      cm_->execute(line);
+     }
   return 0;
 
 }

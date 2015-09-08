@@ -6,7 +6,7 @@ CONFIG -= qt
 QMAKE_CXXFLAGS_RELEASE += -std=c++11 #-lpthread
 QMAKE_CXXFLAGS_DEBUG += -std=c++11 #-lpthread
 
-QMAKE_CXX = g++-5
+QMAKE_CXX = g++
 
 
 SOURCES += main.cpp \
@@ -63,7 +63,8 @@ DISTFILES += \
     run/parameters_116.txt \
     Makefile \
     run/7dpl2.txt \
-    run/o.sh
+    run/o.sh \
+    run/o_zero
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
