@@ -38,6 +38,7 @@ inline std::string& replaceLabel(std::string& line,
   while (i!=line.npos)
     {
          i=line.find(label,i);
+         if (i!=line.npos)
          line.replace(i,label.size(),replacement);
     }
   return line;
