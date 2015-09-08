@@ -401,6 +401,12 @@ void readCommand::run(const std::string rline)
     {
       std::string filenaExt=filename+".txt";
       f.open(filenaExt.c_str());
+      if (!f)
+        {
+          f.close();
+          std::string below="../"+filenaExt;
+          f.open(below);
+        }
     }
   std::string line;
   safeGetline(f,line);

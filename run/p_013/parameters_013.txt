@@ -1,6 +1,6 @@
 parameters parameters_zero
 
-model 0.12
+model 0.13
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
 
@@ -73,9 +73,9 @@ prot_concentration <LOG>  200  [g/ml]  2.12 [dB]// protein density
 DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
 
 
-inj_width_0 <LOG> 50 [um] 3 [dB] // ancho de la injuria a tres dias
+inj_width_0 <LOG> 50 [um] 0.3 [dB] // ancho de la injuria a tres dias
 
-inj_width_1 <LOG> 1000 [um] 3 [dB] // ancho de la injuria a siete dias
+inj_width_1 <LOG> 1000 [um] 0.3 [dB] // ancho de la injuria a siete dias
 
 
 

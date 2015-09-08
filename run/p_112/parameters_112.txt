@@ -1,6 +1,6 @@
-parameters parameters_10
+parameters parameters_112
 
-model 1.0
+model 1.12
 
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
@@ -30,7 +30,17 @@ g_10  <LOG> 2E-4   [s-1] 10 [dB]// cell type change rate from 1 to 0
 g_23 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
 
 
-g_max <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+g_max_2 <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_3 <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_4 <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+
+g_max_5 <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
 
 
 N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
@@ -71,9 +81,9 @@ DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
 
 k_sig <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
 
-inj_width_0 <LOG> 50 [um] 3 [dB] // ancho de la injuria a tres dias
+inj_width_0 <LOG> 50 [um] 0.3 [dB] // ancho de la injuria a tres dias
 
-inj_width_1 <LOG> 1000 [um] 3 [dB] // ancho de la injuria a siete dias
+inj_width_1 <LOG> 1000 [um] 0.3 [dB] // ancho de la injuria a siete dias
 
 
 
@@ -81,7 +91,7 @@ inj_width_1 <LOG> 1000 [um] 3 [dB] // ancho de la injuria a siete dias
 
 REFERENCIAS
 
-•	D  1E-10  [m⁻2 s-1]  // diffusion coefficient for psi 
+•	D  1E-10  [m⁻2 s-1]  // diffusion coefficient for psi
 Para proteinas entre 13.3  a 67 kd 1.1 E-10 a 5.9 E-11 m2 s-1[1]
 PSI
 Familia de proteínas S100  9-12 KDa  [2]
@@ -89,7 +99,7 @@ HMGB1 aprox 25KDa [3,4]
 HSP60 aprox 60 KDa
 Varios damps  [5]
 ATP???
-Glutamato??? 
+Glutamato???
 QUE PASO CON EL INESPECIFICO???? [6]
 
 •	epsilon  5e-2  [m/m]  // fraction of extracelular space
@@ -109,7 +119,7 @@ S100A + TLR-4 KD =   86 nM [14]
 TNF + TNFR1 1E-7M [15]
 IL-1α + R IL-1α  4.6 E-9M
 IL-1 + R IL-1  1.3 E-9M[16]
-IL-6 + RIL-6  2.5E-11M  y 2.5E-9M [17] 
+IL-6 + RIL-6  2.5E-11M  y 2.5E-9M [17]
 
 •	kcat_psi 2E-4  [s-1]  // 2E-4 ligand removal rate for psi/omega clearance
 
@@ -145,7 +155,7 @@ en artritis rematoidea se encontro que la concentracion de HMGB1 en liquid synov
 4. 	Xiao M, Dai X, Zhou R, Liu J, Zhang B, Zhao S, et al. Purification and identification of HMGB1 secreted by liver cells and immune cells. Zhong Nan Da Xue Xue Bao Yi Xue Ban. 2011;36: 1065–1070. doi:10.3969/j.issn.1672-7347.2011.11.006
 5. 	Burda JE, Sofroniew M V. Reactive gliosis and the multicellular response to CNS damage and disease. Neuron. 2014/01/28 ed. 2014;81: 229–248. doi:10.1016/j.neuron.2013.12.034
 6. 	Abeyama K, Stern DM, Ito Y, Kawahara K, Yoshimoto Y, Tanaka M, et al. The N-terminal domain of thrombomodulin sequesters high-mobility group-B1 protein, a novel antiinflammatory mechanism. J Clin Invest. 2005/04/21 ed. 2005;115: 1267–1274. doi:10.1172/JCI22782
-7. 	Izquierdo RJM, Barbera J. Fisiología de la barrera hematoencefálica. El edema cerebral. In: Prof. Dr. Gomez U, editor. Lecciones de neurocirugía. Oviedo, España: Universidad de Oviedo; 1993. pp. 85–92. 
+7. 	Izquierdo RJM, Barbera J. Fisiología de la barrera hematoencefálica. El edema cerebral. In: Prof. Dr. Gomez U, editor. Lecciones de neurocirugía. Oviedo, España: Universidad de Oviedo; 1993. pp. 85–92.
 8. 	LeBlanc PM, Doggett TA, Choi J, Hancock MA, Durocher Y, Frank F, et al. An immunogenic peptide in the A-box of HMGB1 protein reverses apoptosis-induced tolerance through RAGE receptor. J Biol Chem. 2014/01/30 ed. 2014;289: 7777–7786. doi:10.1074/jbc.M113.541474
 9. 	Xu D, Young JH, Krahn JM, Song D, Corbett KD, Chazin WJ, et al. Stable RAGE-heparan sulfate complexes are essential for signal transduction. ACS Chem Biol. American Chemical Society; 2013;8: 1611–20. doi:10.1021/cb4001553
 10. 	Yang H, Hreggvidsdottir HS, Palmblad K, Wang H, Ochani M, Li J, et al. A critical cysteine is required for HMGB1 binding to Toll-like receptor 4 and activation of macrophage cytokine release. Proc Natl Acad Sci U S A. 2010/06/16 ed. 2010;107: 11942–11947. doi:10.1073/pnas.1003893107
@@ -157,7 +167,7 @@ en artritis rematoidea se encontro que la concentracion de HMGB1 en liquid synov
 16. 	Chin J, Rupp E, Cameron PM, MacNaul KL, Lotke PA, Tocci MJ, et al. Identification of a high-affinity receptor for interleukin 1 alpha and interleukin 1 beta on cultured human rheumatoid synovial cells. J Clin Invest. 1988;82: 420–6. doi:10.1172/JCI113614
 17. 	Coulie PG, Stevens M, Van Snick J. High- and low-affinity receptors for murine interleukin 6. Distinct distribution on B and T cells. Eur J Immunol. 1989;19: 2107–14. doi:10.1002/eji.1830191121
 18. 	Milo R. What is the total number of protein molecules per cell volume? A call to rethink some published values. Bioessays. 2013;35: 1050–5. doi:10.1002/bies.201300066
-19. 	Kokkola R, Sundberg E, Ulfgren AK, Palmblad K, Li J, Wang H, et al. High mobility group box chromosomal protein 1: a novel proinflammatory mediator in synovitis. Arthritis Rheum. 2002/10/18 ed. 2002;46: 2598–2603. doi:10.1002/art.10540 
+19. 	Kokkola R, Sundberg E, Ulfgren AK, Palmblad K, Li J, Wang H, et al. High mobility group box chromosomal protein 1: a novel proinflammatory mediator in synovitis. Arthritis Rheum. 2002/10/18 ed. 2002;46: 2598–2603. doi:10.1002/art.10540
 
 1.	Izquierdo, R. and J. Barbera, Fisiología de la barrera hematoencefálica. El edema cerebral., in Lecciones de neurocirugía, U. Prof. Dr. Gomez, Editor 1993, Universidad de Oviedo: Oviedo, España. p. 85-92.
 

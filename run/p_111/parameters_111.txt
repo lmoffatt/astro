@@ -1,6 +1,6 @@
-parameters parameters_112
+parameters parameters_111
 
-model 1.12
+model 1.11
 
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
@@ -21,26 +21,22 @@ kcat_psi  <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega cle
 kcat_omega <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
 
 
-g_01 <LOG>  5E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
+g_01 <LOG>  5E-6  [s-1] 10 [dB]// cell type change rate from 0to 1
 
 
-g_10  <LOG> 2E-4   [s-1] 10 [dB]// cell type change rate from 1 to 0
+g_10  <LOG> 2E-6   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
 
 g_23 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
 
 
-g_max_2 <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+g_34 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
 
 
-g_max_3 <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+g_45 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
 
 
-g_max_4 <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
-
-
-
-g_max_5 <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+g_max <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
 
 
 N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
@@ -81,9 +77,9 @@ DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
 
 k_sig <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
 
-inj_width_0 <LOG> 50 [um] 0.03 [dB] // ancho de la injuria a tres dias
+inj_width_0 <LOG> 50 [um] 0.3 [dB] // ancho de la injuria a tres dias
 
-inj_width_1 <LOG> 1000 [um] 0.03 [dB] // ancho de la injuria a siete dias
+inj_width_1 <LOG> 1000 [um] 0.3 [dB] // ancho de la injuria a siete dias
 
 
 

@@ -51,20 +51,27 @@ DISTFILES += \
     run/parameters_10.txt \
     run/opt_modelzero \
     run/opt_model10 \
-    run/parameters_011.txt \
-    run/parameters_012.txt \
-    run/parameters_013.txt \
-    run/.txt \
-    run/parameters_013.txt \
-    run/parameters_111.txt \
-    run/parameters_112.txt \
-    run/parameters_113.txt \
-    run/parameters_114.txt \
-    run/parameters_116.txt \
     Makefile \
     run/7dpl2.txt \
-    run/o.sh \
-    run/o_zero
+    run/p_100/o_100 \
+    run/p_100/parameters_10.txt \
+    run/p_011/parameters_111.txt \
+    run/p_112/parameters_112.txt \
+    run/p_116/parameters_116.txt \
+    run/p_116/o_116 \
+    run/p_013/o_013 \
+    run/p_013/parameters_013.txt \
+    run/p_114/parameters_114.txt \
+    run/p_012/o_012 \
+    run/p_012/parameters_012.txt \
+    run/p_111/parameters_111.txt \
+    run/p_111/o_111 \
+    run/p_112/o_112 \
+    run/p_114/o_114 \
+    run/p_000/o_011 \
+    run/p_000/parameters_011.txt \
+    run/p_011/parameters_000.txt \
+    run/p_011/o_000
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

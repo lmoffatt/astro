@@ -1,2 +1,0 @@
-experiment experiment1  0:+250:4000   3dpl 7dpl2
-optimize opt_100s_zero experiment1 parameters_zero parameters_zero 100 100 0 100 1
