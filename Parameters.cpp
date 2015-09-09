@@ -7,6 +7,8 @@
 #include <iostream>
 #include "MatrixInverse.h"
 
+#include <random>
+
 std::istream &safeGetline(std::istream &is, std::string &t)
 {
   is.clear();
@@ -647,8 +649,10 @@ std::vector<std::string> Parameters::commonNames(const Parameters& other)const
 
 
 
-Parameters Parameters::randomSample(double factor)const
+Parameters Parameters::randomSample(std::mt19937& mt,double factor)const
 {
+
+
   Parameters sample(*this);
   if (cho_.empty())
     {
@@ -656,7 +660,7 @@ Parameters Parameters::randomSample(double factor)const
 
         {
 
-          sample.mean_of_tr_[i]=randNormal(mean_of_tr_[i],std_of_tr_[i]*factor);
+          sample.mean_of_tr_[i]=randNormal(mt,mean_of_tr_[i],std_of_tr_[i]*factor);
           sample.std_of_tr_[i]=0;
         }
     }
@@ -665,7 +669,7 @@ Parameters Parameters::randomSample(double factor)const
       std::vector<double> z(mean_of_tr_.size());
       for (std::size_t i=0; i<mean_of_tr_.size();i++)
         {
-          z[i]=randNormal()*factor;
+          z[i]=randNormal(mt)*factor;
         }
       for (std::size_t i=0; i<mean_of_tr_.size();i++)
         {
@@ -683,47 +687,48 @@ Parameters Parameters::randomSample(double factor)const
 
 }
 
-Parameters Parameters::randomSample(Parameters prior,double factor)const
+Parameters Parameters::randomSample(std::mt19937& mt,Parameters prior,double factor)const
+
 {
-  Parameters sample;
-  for (std::map<std::string,std::size_t>::const_iterator it=name_to_i_.begin();
-       it!=name_to_i_.end();
-       ++it)
-
+  Parameters sample(*this);
+  if (cho_.empty())
     {
-      double m=pow(10,randNormal(tMean(it->first),factor*prior.pStd(it->first)));
-      TRANSFORM tr=getTransform(it->first)->myEnum();
-      sample.push_back_dB(it->first,tr,
-                          m,unit(it->first),0,{},"");
+      for (std::size_t i=0; i<mean_of_tr_.size();i++)
 
-    }
-  return sample;
-
-}
-
-
-
-
-
-
-Parameters Parameters::randomSample(Parameters prior,double factor,double probIncludeParameter)const
-{
-  Parameters sample=*this;
-  for (std::size_t i=0; i<mean_of_tr_.size();i++)
-    {
-      double r=(1.0*rand())/(1.0*RAND_MAX);
-
-      if (r<probIncludeParameter)
         {
-          double m=mean_of_tr_[i];
-          double s=factor*prior.std_of_tr_[i];
-          m=randNormal(m,s);
-          sample[i]=m;
-        }
-      }
 
-  return sample;
+          sample.mean_of_tr_[i]=randNormal(mt,mean_of_tr_[i],prior.std_of_tr_[i]*factor);
+          sample.std_of_tr_[i]=0;
+        }
+    }
+  else
+    {
+      std::vector<double> z(mean_of_tr_.size());
+      for (std::size_t i=0; i<mean_of_tr_.size();i++)
+        {
+          z[i]=randNormal(mt)*factor;
+        }
+      for (std::size_t i=0; i<mean_of_tr_.size();i++)
+        {
+
+          sample.mean_of_tr_[i]=mean_of_tr_[i];
+          sample.std_of_tr_[i]=0;
+          for (std::size_t j=0; j<i+1;j++)
+            {
+              sample.mean_of_tr_[i]+=prior.cho_[i][j]*z[j];
+            }
+        }
+    }
+  Parameters s(sample);
+  return s;
+
 }
+
+
+
+
+
+
 
 
 unsigned Parameters::size()const
@@ -734,21 +739,16 @@ unsigned Parameters::size()const
 
 
 
-double randNormal(double mean,double stddev)
+double randNormal(std::mt19937& mt,double mean,double stddev)
 {
-  return randNormal()*stddev+mean;
+  std::normal_distribution<> nd(mean,stddev);
+  return nd(mt);
 }
-double randNormal()
+double randNormal(std::mt19937& mt)
 {
 
-  //Box-Muller method http://en.wikipedia.org/wiki/Normal_distribution#Generating_values_from_normal_distribution
-  double U=(1.0*rand())/RAND_MAX;
-  double V=(1.0*rand())/RAND_MAX;
-  const double PI=3.1415926;
-
-  double r=sqrt(-2*log(U))*cos(2*PI*V);
-  return r;
-
+  std::normal_distribution<> nd(0,1);
+  return nd(mt);
 }
 
 Parameters& Parameters::applyParameters(const Parameters& other)

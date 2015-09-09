@@ -15,7 +15,7 @@ int Script::run(char* filename)
       safeGetline(f,line);
       removeComments(line);
       cm_->execute(line);
-     }
+    }
   return 0;
 
 }
@@ -30,7 +30,7 @@ int Script::runDefine(const std::string &filename, const std::string &label, con
       removeComments(line);
       replaceLabel(line,label,valueInplace);
       cm_->execute(line);
-     }
+    }
   return 0;
 
 }
@@ -167,7 +167,7 @@ Experiment *CommandManager::getExperiment(std::string id)
     return it->second;
   else
     return nullptr;
- }
+}
 
 CortexLikelihood *CommandManager::getLikelihood(const std::string &id)
 {
@@ -568,15 +568,15 @@ void writeCommand::run(const std::string line)
 
 
 
-//  CortexModelLikelihood* lik=cmd_->getLikelihood(dataName);
-//  if (lik!=nullptr)
-//    {
-//      std::string filename=lik+"_lik.txt";
-//      std::ofstream f;
-//      f.open(filename.c_str(),std::ofstream::out);
+  //  CortexModelLikelihood* lik=cmd_->getLikelihood(dataName);
+  //  if (lik!=nullptr)
+  //    {
+  //      std::string filename=lik+"_lik.txt";
+  //      std::ofstream f;
+  //      f.open(filename.c_str(),std::ofstream::out);
 
 
-//    }
+  //    }
 
 
 }
@@ -649,7 +649,7 @@ void LikelihoodCommand::run(const std::string line)
   CE.extract(fo);
   fo.close();
 
-  }
+}
 
 
 
@@ -670,7 +670,7 @@ void OptimizeCommand::run(const std::string line)
   std::string optimizeS, optName, experimentName, priorName, paramName;
   double dt,dx=50, tequilibrio=100000;
   double factor=0,probParChange=1;
-  unsigned int initseed=0;
+  std::mt19937::result_type initseed=0;
   std::size_t niter,nseeds=0;
   std::stringstream ss(line);
 
@@ -691,12 +691,23 @@ void OptimizeCommand::run(const std::string line)
     {
       std::string filenaExt=filename+".txt";
       f.open(filenaExt.c_str());
+      if (!f)
+        {
+          std::cerr<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
+          f.close();
+          return;
+        }
     }
   std::string line2;
   safeGetline(f,line2);
   Parameters prior;
 
-  prior.read(line2,f);
+  if (!prior.read(line2,f))
+    {
+      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      f.close();
+      return;
+    }
 
   f.close();
 
@@ -707,10 +718,23 @@ void OptimizeCommand::run(const std::string line)
       std::string filenaExt=filename+".txt";
       f.open(filenaExt.c_str());
     }
+  if (!f)
+    {
+      std::cerr<<"Parameters file "<<filename<<" not found"<<std::endl;
+      f.close();
+      return;
+    }
+
+
   safeGetline(f,line2);
   Parameters p;
 
-  p.read(line2,f);
+  if (!p.read(line2,f))
+    {
+      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      f.close();
+      return;
+    }
 
   f.close();
 
@@ -726,7 +750,7 @@ void OptimizeCommand::run(const std::string line)
       LevenbergMarquardtDistribution LM(&CL,p,niter,optName);
 
 
-      LM.optimize(optName,factor,nseeds,probParChange,initseed);
+      LM.optimize(optName,factor,nseeds,initseed);
 
       Parameters* opt=new Parameters(LM.OptimParameters());
       std::string optfname=opt->save(optName);
@@ -748,3 +772,4 @@ void OptimizeCommand::run(const std::string line)
 
 
 }
+

@@ -391,14 +391,18 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
   std::cout<<"dt ="<<dt<<"\n";
 */
 
-//  find inj_width information in parameters
+  //  find inj_width information in parameters
+
 
 
 
   double inj_wMax=par.get("inj_width_1")+par.get("inj_width_0");
 
-
-
+  if (std::isnan(inj_wMax))
+    {
+      std::cerr<<"injwMax es nan"<<std::endl;
+      return {};
+    }
   CortexState c=init(p,sp,inj_wMax);
 
   CortexSimulation s(c,sp.numMeasures());

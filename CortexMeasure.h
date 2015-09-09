@@ -11,6 +11,8 @@
 #include "LevenbergMarquardt.h"
 #include "BaseClass.h"
 
+
+#include <random>
 struct position
 {
   position(double xpos,double ypos):
@@ -694,6 +696,8 @@ public:
   std::vector<LimiteFoto> limiteFoto_;
   double xmin_,xmax_,ymin_,ymax_;
 
+  std::uniform_real_distribution<double> xud_, yud_;
+
   std::vector<LimiteVaso> vasos_;
 
   std::map<unsigned,Pin> pines_;
@@ -710,14 +714,6 @@ public:
     return false;
   }
 
-  position getRadomPosition()
-  {
-    double rx=(1.0*rand())/(1.0*RAND_MAX);
-    double ry=(1.0*rand())/(1.0*RAND_MAX);
-
-    return position(xmin_+(xmax_-xmin_)*rx,ymin_+(ymax_-ymin_)*ry);
-
-  }
 
   CortexMeasure* measure(std::string id, double dia, std::vector<double> x, double minimal_distance_to_tissue=0, double minimal_distance_to_vaso=0, std::size_t maxpoints=1E7);
 };

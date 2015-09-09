@@ -461,15 +461,23 @@ private:
 CortexMeasure *TissuePhoto::measure(std::string id,double dia,std::vector<double> x,double minimal_distance_to_tissue,double minimal_distance_to_vaso
                                     , std::size_t maxpoints)
 {
+
+
+  std::mt19937 mt;
   pointDefined p(x);
 
   std::vector<double> area(p.num(),0);
   updateMinMax();
   double dArea=(xmax_-xmin_)*(ymax_-ymin_)/maxpoints;
+  xud_=std::uniform_real_distribution<double>(xmin_,xmax_);
+  yud_=std::uniform_real_distribution<double>(ymin_,ymax_);
 
   for (std::size_t i=0; i<maxpoints; i++)
     {
-      position pos=getRadomPosition();
+      position pos;
+      pos.x=xud_(mt);
+      pos.y=yud_(mt);
+
       if (IsInside(pos))
         {
           double distance_to_lession=ll_.distance(pos);
@@ -819,6 +827,8 @@ const std::vector<double> &Experiment::xpos() const
 std::vector<double> Experiment::x_in_m(double max_lession_in_um,double sinkLength) const
 {
   double dx=(m_[0].xpos()[1]-m_[0].xpos()[0]);
+  if (std::isnan(max_lession_in_um))
+    max_lession_in_um=0;
   std::size_t extraBins=std::ceil(max_lession_in_um/dx);
   std::vector<double> o;
   for (unsigned i=0; i<extraBins; ++i)

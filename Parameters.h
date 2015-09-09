@@ -5,7 +5,7 @@
 
 #include <string>
 #include <cmath>
-
+#include <random>
 
 #include "BaseClass.h"
 
@@ -183,13 +183,12 @@ public:
 
   const std::vector< std::vector <double> >& getInvCovariance()const;
 
-  Parameters randomSample(double factor=1.0)const;
+  Parameters randomSample(std::mt19937 &mt, double factor=1)const;
 
 
 
 
-  Parameters randomSample(Parameters prior,double factor,double probIncludeParameter)const;
-  Parameters randomSample(Parameters prior,double factor)const;
+  Parameters randomSample(std::mt19937 &mt, Parameters prior, double factor)const;
 
 
 
@@ -286,8 +285,8 @@ double dbDistance(const Parameters& one,const Parameters& other);
 bool areTheSame(const Parameters& one, const Parameters& other);
 
 
-double randNormal(double mean,double stddev);
-double randNormal();
+double randNormal(std::mt19937 &mt, double mean, double stddev);
+double randNormal(std::mt19937 &mt);
 
 
 

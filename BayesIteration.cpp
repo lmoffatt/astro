@@ -243,11 +243,13 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint)
 
 BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
                                              double factor,
-                                             std::size_t numSeeds,
-                                             double probParChange)
+                                             std::size_t numSeeds)
 {
 //  std::vector<double> data=getData();
 //  std::vector<double> w=getDataWeigth();
+
+  std::random_device rd;
+  std::mt19937 mt(rd());
 
   Parameters p=priors_.back();
 
@@ -269,7 +271,7 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
     {
 
       Parameters seed;
-      seed=startingPoint.randomSample(p,factor,probParChange);
+      seed=startingPoint.randomSample(mt,p,factor);
       LevenbergMarquardtDistribution LM(m_,
                             seed,
                             numIterations,"");
@@ -327,6 +329,8 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
 
 BayesIteration& BayesIteration::getPosterior()
 {
+  std::random_device rd;
+  std::mt19937 mt (rd());
   std::vector<LevenbergMarquardtDistribution> LMs;
   std::vector<Parameters> Ps;
 
@@ -337,7 +341,7 @@ BayesIteration& BayesIteration::getPosterior()
   std::size_t factor=2;
   std::size_t numIterations=30;
   std::size_t numSeeds=10;
-  std::map<double,Parameters> seeds=getRandomParameters(numSeeds*factor,1);
+  std::map<double,Parameters> seeds=getRandomParameters(mt,numSeeds*factor,1);
 
   std::map<double,Parameters> friuts;
 
@@ -425,7 +429,7 @@ BayesIteration& BayesIteration::getPosterior()
               initParam=(*it).second;
               j=0;
             }
-          initParam=initParam.randomSample(errorFactor);
+          initParam=initParam.randomSample(mt,errorFactor);
 
           LevenbergMarquardtDistribution LM(m_,
                                 initParam,
@@ -587,6 +591,9 @@ Parameters BayesIteration::getHessianInterpol(const Parameters& MAP, double mind
 
 Parameters BayesIteration::getEvidence(const Parameters& maximumPostLik, std::size_t num)
 {
+  std::random_device rd;
+  std::mt19937 mt(rd());
+
   double ss0=SumWeighedSquare(maximumPostLik);
   std::vector<Parameters> parvec;
   std::vector<double> parvecVal;
@@ -601,7 +608,7 @@ Parameters BayesIteration::getEvidence(const Parameters& maximumPostLik, std::si
       double factor=1.0;
       double  dss;
       double sampLogLik=0;
-      p=maximumPostLik.randomSample(factor);
+      p=maximumPostLik.randomSample(mt,factor);
       dss=SumWeighedSquare(p)-ss0;
       std::vector<double> d=m;
       for (std::size_t i0=0;i0<p.size(); i0++ )
@@ -667,14 +674,15 @@ Parameters BayesIteration::getEvidence(const Parameters& maximumPostLik, std::si
 
 
 
-std::map<double,Parameters> BayesIteration::getRandomParameters(const Parameters& per,
+std::map<double,Parameters> BayesIteration::getRandomParameters(std::mt19937& mt,
+                                                                const Parameters& per,
                                                                 std::size_t num,
                                                                 double factor)
 {
   std::map<double,Parameters> myMap;
   for (std::size_t i=0; i<num; i++)
     {
-      Parameters p=per.randomSample(factor);
+      Parameters p=per.randomSample(mt,factor);
       double ss=SumWeighedSquare(p);
 
       std::cout<<ss<<"\n";
@@ -695,13 +703,13 @@ std::map<double,Parameters> BayesIteration::getRandomParameters(const Parameters
   return myMap;
 }
 
-std::map<double,Parameters> BayesIteration::getRandomParameters(std::size_t num,
+std::map<double,Parameters> BayesIteration::getRandomParameters(std::mt19937 &mt, std::size_t num,
                                                                 double factor)
 {
   std::map<double,Parameters> myMap;
   for (std::size_t i=0; i<num; i++)
     {
-      Parameters p=priors_.back().randomSample(factor);
+      Parameters p=priors_.back().randomSample(mt,factor);
       double ss=SumWeighedSquare(p);
 
       std::cout<<ss<<"\n";

@@ -208,35 +208,44 @@ LevenbergMarquardtDistribution& LevenbergMarquardtDistribution::optimize()
       os_<<*this;
       os_.flush();
     }
-  JTWJinv_=inv(JTWJ_);
-  ParamCurr_.setCovariance(JTWJinv_);
+  if (!isNanLogPostLik_)
+    {
+      JTWJinv_=inv(JTWJ_);
+      ParamCurr_.setCovariance(JTWJinv_);
+    }
   return *this;
 }
 
-LevenbergMarquardtDistribution &LevenbergMarquardtDistribution::optimize(std::string optname,
-                                                                         double factor, std::size_t numSeeds, double probParChange, unsigned int initseed)
+LevenbergMarquardtDistribution &LevenbergMarquardtDistribution::
+optimize(std::string optname,
+         double factor,
+         std::size_t numSeeds,
+         std::mt19937::result_type initseed)
 {
+  std::mt19937 mt;
+  std::random_device rd;
+
   if (initseed!=0)
     {
-      srand (initseed);
+      mt.seed(initseed);
       std::cout<<"Seed for random generator provided="<<initseed<<std::endl;
       numSeeds=1;
       if (os_.is_open())
         os_<<"Seed for random generator provided="<<initseed<<std::endl;
-  }
+    }
   for (std::size_t i=0;i<numSeeds;i++)
     {
       if (initseed==0)
         {
-          unsigned int seed=time(NULL);
-          srand (seed);
+          std::mt19937::result_type seed=rd();
+          mt.seed(seed);
           std::cout<<"Seed of random generator="<<seed<<std::endl;
           if (os_.is_open())
             os_<<"Seed of random generator="<<seed<<std::endl;
         }
 
 
-      ParamCurr_=CL_->getPrior().randomSample(ParamInitial_,factor,probParChange);
+      ParamCurr_=CL_->getPrior().randomSample(mt,ParamInitial_,factor);
       optimize();
       std::string optfname=OptimParameters().save(optname+"_"+std::to_string(PostLogLik()));
       CortexMultinomialLikelihoodEvaluation CE(*CL_,OptimParameters());
