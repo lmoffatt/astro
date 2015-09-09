@@ -669,12 +669,12 @@ void OptimizeCommand::run(const std::string line)
 
   std::string optimizeS, optName, experimentName, priorName, paramName;
   double dt,dx=50, tequilibrio=100000;
-  double factor=0,probParChange=1;
+  double factor=0;
   std::mt19937::result_type initseed=0;
   std::size_t niter,nseeds=0;
   std::stringstream ss(line);
 
-  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dt>>niter>>factor>>nseeds>>probParChange>>initseed;
+  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dt>>niter>>factor>>nseeds>>initseed;
 
   Experiment* e=cm_->getExperiment(experimentName);
   if (e==nullptr)

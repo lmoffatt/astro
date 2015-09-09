@@ -208,7 +208,7 @@ LevenbergMarquardtDistribution& LevenbergMarquardtDistribution::optimize()
       os_<<*this;
       os_.flush();
     }
-  if (!isNanLogPostLik_)
+  if (!isNanLogPostLik_&& !isJacobianInvalid_)
     {
       JTWJinv_=inv(JTWJ_);
       ParamCurr_.setCovariance(JTWJinv_);
@@ -290,6 +290,8 @@ double LevenbergMarquardtDistribution::logDetPostStd()const
 void LevenbergMarquardtDistribution::iterate()
 {
   computeJacobian();
+  if (J_.empty())
+    return;
   computeSearchDirection();
   updateLanda();
   std::cout<<nIter_<<"\t"<<logPostLikCurr_<<"\t"<<logPriorCurr_<<"\t"<<landa_<<"\t";
@@ -317,6 +319,8 @@ void update_Jacobian(const ABC_Distribution_Model* f,
                      )
 {
   J=f->J(ParamCurr, P_expCurr,dx);
+  if (J.empty())
+    return;
   nFeval+=nPar;
   w=f->weight(P_expCurr);
   priorG=f->PriorGradient(ParamCurr);
@@ -364,6 +368,8 @@ void LevenbergMarquardtDistribution::computeJacobian()
 {
 
   update_Jacobian(CL_,ParamCurr_,P_expCurr_,nPar_,J_,w_,epsilon_,prior_G_,nFeval_,dx_);
+  if (J_.empty())
+    return;
 
   update_Gradient(G_,prior_G_,epsilon_,J_);
 
@@ -379,7 +385,10 @@ void update_Likelihoods(const ABC_Distribution_Model* f
                         ,std::size_t& NFeval)
 {
   P_exp_New=f->f(ParamNew);
-  logLikNew=f->logLik(P_exp_New);
+  if (P_exp_New.empty())
+    logLikNew=std::numeric_limits<double>::quiet_NaN();
+  else
+    logLikNew=f->logLik(P_exp_New);
   logPriorNew=f->logPrior(ParamNew);
   logPostLogLikNew=logLikNew+logPriorNew;
   NFeval++;
@@ -555,6 +564,8 @@ bool LevenbergMarquardtDistribution::meetConvergenceCriteria()
   smallSSChange_=(PostlogLikChange_)<PostLogLikChangeMin_;
   smallGradient_=GradNormPost_<GradientNormPostMin_;
   isNanLogPostLik_=std::isnan(logPostLikCurr_);
+  isJacobianInvalid_=J_.empty();
+
 
 
   return surpassIter_||
@@ -563,7 +574,8 @@ bool LevenbergMarquardtDistribution::meetConvergenceCriteria()
       smallSSChange_||
       smallGradient_||
       surpassLanda_||
-      isNanLogPostLik_;
+      isNanLogPostLik_||
+      isJacobianInvalid_;
 }
 
 
@@ -612,6 +624,12 @@ std::string LevenbergMarquardtDistribution::report()const{
     output<<GradNormPost_<<" surpass minium gradient norm value="<<GradientNormPostMin_<<"\t";
   if (logPostLikCurr_!=logPostLikCurr_)
     output<<logPostLikCurr_<<" invalid value of the square sum"<<"\t";
+  if (isNanLogPostLik_)
+    output<<" cannot calculate a valid Likelihood "<<"\t";
+
+  if (isJacobianInvalid_)
+    output<<" cannot calculate a valid Jacobian "<<"\t";
+
 
 
   return output.str();
@@ -651,6 +669,7 @@ unsigned ABC_Freq_obs::numCells() const
 
 double ABC_Distribution_Model::logPrior(const Parameters &p)const
 {
+
 
   double sumL=0;
   if (!getPrior().hasCovariance())
@@ -705,6 +724,8 @@ ABC_Distribution_Model::J(const Parameters &p,
       Parameters pr(p);
       pr[i]=p[i]+dp;
       std::vector<std::vector<double>> f_delta=f(pr);
+      if (f_delta.empty())
+        return {};
       for (unsigned ii=0; ii<getData().ntot_obs().size(); ++ii)
         {
           for (unsigned j=0; j<getData().n_obs(ii).size(); ++j)
@@ -712,6 +733,8 @@ ABC_Distribution_Model::J(const Parameters &p,
               if (f0[ii][j]>0)
                 {
                   double dpdbeta=(log(f_delta[ii][j])-log(f0[ii][j]))/dp;
+                  if (std::isnan(dpdbeta))
+                    return{};
                   out[ic][i]=dpdbeta;
                 }
               else

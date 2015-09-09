@@ -295,6 +295,8 @@ private:
   bool smallGradient_;
   bool isNanLogPostLik_;
 
+  bool isJacobianInvalid_;
+
   bool meetConvergenceCriteria();
 
   void initialize();

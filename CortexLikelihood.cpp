@@ -146,6 +146,8 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
   m_->loadParameters(parameters);
 
   CortexSimulation s=m_->run(*e_,dt_,tequilibrio_);
+  if (s.dx_.empty())
+    return {};
   std::size_t ic=0;
   unsigned is=0;
   for (unsigned ie=0; ie<e_->numMeasures(); ie++)
@@ -185,6 +187,8 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
   m_->loadParameters(parameters);
 
   CortexSimulation s=m_->run(*e_,dt_,tequilibrio_);
+  if (s.x_.empty())
+    return{};
   std::size_t ic=0;
   unsigned is=0;
   double width_lesion=0;
