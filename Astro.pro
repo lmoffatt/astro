@@ -72,7 +72,8 @@ DISTFILES += \
     run/p_011/o_011 \
     run/p_011/parameters_011.txt \
     run/p_000/parameters_000.txt \
-    run/p_000/o_000
+    run/p_000/o_000 \
+    run/experiment_0_1
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

@@ -6,7 +6,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-
+#include <limits>
 
 std::istream& safeGetline(std::istream& is, std::string& t);
 
@@ -286,6 +286,17 @@ public:
     return filename;
   }
 
+  void store(std::string name)
+  {
+    std::ofstream f;
+    f.open(name.c_str());
+    write(f);
+    f.close();
+  }
+
+
+
+
   std::string load(const std::string& name)
   {
     std::string filename=name;
@@ -419,9 +430,49 @@ bool readValue(std::string& line,
                double& val){
   std::stringstream ss(line);
   bool o=bool(ss>>val);
-  safeGetline(ss,line);
-  return o;
+  if (!o)  //check for inf nan and -nan values
+    {
+      auto i0=line.find_first_not_of(" \t");
+      if (i0==line.npos)
+        {
+          safeGetline(ss,line);
+          return false;
+        }
+      auto ie=line.find_first_of(" \t",i0);
+      std::string sv=line.substr(i0,ie-i0);
+      if (sv=="nan")
+        {
+          val=std::numeric_limits<double>::quiet_NaN();
+          line=line.substr(ie);
+          return true;
+        }
+      else if (sv=="-nan")
+        {
+          val=-std::numeric_limits<double>::quiet_NaN();
+          line=line.substr(ie);
+          return true;
 
+        }
+      else if (sv=="inf")
+        {
+          val=-std::numeric_limits<double>::infinity();
+          line=line.substr(ie);
+          return true;
+
+        }
+      else if (sv=="-inf")
+        {
+          val=-std::numeric_limits<double>::infinity();
+          line=line.substr(ie);
+          return true;
+
+        }
+    }
+  else
+    {
+      safeGetline(ss,line);
+      return o;
+    }
 }
 
 

@@ -21,7 +21,7 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(const CortexLikel
   nData_(f->getData().numCells()),
   dx_(std::sqrt(std::numeric_limits<double>::epsilon())),
   maxIter_(numIterations),
-  maxFeval_(10000),
+  maxFeval_(numIterations*initialParam.size()*2),
   ParamChangeMin_(1e-9),
   PostLogLikChangeMin_(1e-9),
   GradientNormPostMin_(0.0000001),
@@ -245,7 +245,7 @@ optimize(std::string optname,
         }
 
 
-      ParamCurr_=CL_->getPrior().randomSample(mt,ParamInitial_,factor);
+      ParamCurr_=ParamInitial_.randomSample(mt,CL_->getPrior(),factor);
       optimize();
       std::string optfname=OptimParameters().save(optname+"_"+std::to_string(PostLogLik()));
       CortexMultinomialLikelihoodEvaluation CE(*CL_,OptimParameters());

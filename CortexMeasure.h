@@ -485,20 +485,52 @@ public:
   }
   bool readBody(std::string& line,std::istream &s) override
   {
-    if (
-        readField(line,s,"dia",dia_)&&
-        readField(line,s,"tissue_width",h_)&&
-        readField(line,s,"minimal_tissue_distance",minimalTissueDistance_)&&
-        readField(line,s,"x_pos",x_)&&
-        readField(line,s,"area_covered_by_Astrocytes",measAreaAstro_)&&
-        readField(line,s,"total_number_of_Astrocytes",numAstro_)&&
-        readField(line,s,"number_of_Astrocytes_of_each_type",meanAstro_)&&
-        readField(line,s,"density_of_Astrocytes_of_each_type",densAstro_)&&
-        readField(line,s,"covariance_of_number_of_Astrocytes_of_each_type",covAstro_)
-        )
-      return true;
-    else
-      return false;
+    if (!readField(line,s,"dia",dia_))
+      {
+        std::cerr<<"dia expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"tissue_width",h_))
+      {
+        std::cerr<<"tissue_width expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"minimal_tissue_distance",minimalTissueDistance_))
+      {
+        std::cerr<<"minimal_tissue_distance expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"x_pos",x_))
+      {
+        std::cerr<<"x_pos expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"area_covered_by_Astrocytes",measAreaAstro_))
+      {
+        std::cerr<<"area_covered_by_Astrocytes expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"total_number_of_Astrocytes",numAstro_))
+      {
+        std::cerr<<"total_number_of_Astrocytes expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"number_of_Astrocytes_of_each_type",meanAstro_))
+      {
+        std::cerr<<"number_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"density_of_Astrocytes_of_each_type",densAstro_))
+      {
+        std::cerr<<"density_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"covariance_of_number_of_Astrocytes_of_each_type",covAstro_))
+      {
+        std::cerr<<"covariance_of_number_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else  return true;
 
   }
 };
@@ -715,7 +747,7 @@ public:
   }
 
 
-  CortexMeasure* measure(std::string id, double dia, std::vector<double> x, double minimal_distance_to_tissue=0, double minimal_distance_to_vaso=0, std::size_t maxpoints=1E7);
+  CortexMeasure* measure(std::mt19937 &mt, std::string id, double dia, std::vector<double> x, double minimal_distance_to_tissue=0, double minimal_distance_to_vaso=0, std::size_t maxpoints=1E4);
 };
 
 
@@ -744,9 +776,9 @@ public:
   void distances();
 
 
-  CortexMeasure* measure(std::vector<double> x)
+  CortexMeasure* measure(std::mt19937& mt,std::vector<double> x,double minimalDistanceTissue,double minimalDistanceVaso,std::size_t maxpoints)
   {
-    return fotos.begin()->second.measure(id(),dia_,x);
+    return fotos.begin()->second.measure(mt,id(),dia_,x,minimalDistanceTissue,minimalDistanceVaso,maxpoints);
   }
 
 

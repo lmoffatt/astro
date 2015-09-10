@@ -251,16 +251,42 @@ void HistogramCommand::run(const std::string line)
 {
 
   //histogram 3dpl d_les  0:+100:3000
+  // histogram 3dpl d_les 1E7 1 0  0 0:+100:4000   3dpl 7dpl
+
+  std::size_t maxnumpoints,initseed;
+  double minDistance_Tissue, minDistance_Vaso;
 
   std::string cName, dataName,kind;
   double start,dx,end;
   char colon;
   std::stringstream ss(line);
-  ss>>cName>>dataName>>kind>>start>>colon>>dx>>colon>>end;
+  ss>>cName>>dataName>>kind>>maxnumpoints>>initseed
+      >>minDistance_Tissue>>minDistance_Vaso>>start>>colon>>dx>>colon>>end;
 
   TissueSection* s=cm_->getSection(dataName);
 
   std::vector<double> limits;
+
+  std::mt19937 mt;
+  if (initseed==0)
+    {
+      std::random_device rd;
+      auto seed=rd();
+      mt.seed(seed);
+      std::cout<<"experiment uses seed="<<seed<<std::endl;
+    }
+  else if (initseed==1)
+    {
+      mt.seed();
+      std::cout<<"experiment uses default seed"<<std::endl;
+    }
+  else
+    {
+      mt.seed(initseed);
+      std::cout<<"experiment uses provided seed="<<initseed<<std::endl;
+
+    }
+
 
   double current=start;
   limits.push_back(current);
@@ -273,7 +299,7 @@ void HistogramCommand::run(const std::string line)
 
   if (s!=nullptr)
     {
-      CortexMeasure* m= s->measure(limits);
+      CortexMeasure* m= s->measure(mt,limits,minDistance_Tissue, minDistance_Vaso,maxnumpoints);
       cm_->push_back(m);
     }
 
@@ -284,16 +310,27 @@ void HistogramCommand::run(const std::string line)
 void ExperimentCommand::run(const std::string line)
 
 {
-  // experiment experiment1 0:+200:4000   3dpl 7dpl
+  // experiment experiment1 1E7 seed  0  0 0:+100:4000   3dpl 7dpl
 
+  std::size_t maxnumpoints, initseed;
+  double minDistance_Tissue, minDistance_Vaso;
   std::string cName,expName, currsection;
   std::vector<std::string> sections;
   double start,dx,end;
   char colon;
   std::stringstream ss(line);
-  ss>>cName>>expName>>start>>colon>>dx>>colon>>end;
+  ss>>cName>>expName>>maxnumpoints>>initseed>>minDistance_Tissue>>minDistance_Vaso>>start>>colon>>dx>>colon>>end;
   while(ss>>currsection)
     sections.push_back(currsection);
+
+  if (initseed==0)
+    {
+      std::random_device dv;
+      initseed=dv();
+
+    }
+
+
   std::vector<CortexMeasure> vCM;
   for (auto s:sections)
     {
@@ -301,22 +338,20 @@ void ExperimentCommand::run(const std::string line)
       cm_->execute("align "+s);
       cm_->execute("merge "+s);
       cm_->execute("distances "+s);
-      cm_->execute("histogram "+s+ " d_les "+std::to_string(start)+colon+std::to_string(dx)+colon+std::to_string(end) );
+      cm_->execute("histogram "+s+ " d_les "
+                   +std::to_string(maxnumpoints)+"  "
+                   +std::to_string(initseed)+"  "
+                   +std::to_string(minDistance_Tissue)+"  "
+                   +std::to_string(minDistance_Vaso)+"  "
+                   +std::to_string(start)+colon+std::to_string(dx)+colon+std::to_string(end) );
       vCM.push_back(*cm_->getMeasure(s));
 
     }
+
   Experiment* e=new Experiment(expName,vCM);
   cm_->push_back(e);
 
-  std::ofstream fo;
-  fo.open("out.txt");
-  e->write(fo);
-  fo.close();
-  Experiment e2;
-  std::ifstream fi;
-  fi.open("out.txt");
-  std::string line2;
-  e2.read(line2,fi);
+  e->store(expName+"_"+std::to_string(initseed));
 
 }
 
@@ -676,8 +711,9 @@ void OptimizeCommand::run(const std::string line)
 
   ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dt>>niter>>factor>>nseeds>>initseed;
 
-  Experiment* e=cm_->getExperiment(experimentName);
-  if (e==nullptr)
+  Experiment *e=new Experiment;
+  e->load(experimentName);
+  if (e->numMeasures()==0)
     {
       std::cerr<<"Experiment "<<experimentName<<" not found\n";
       return;

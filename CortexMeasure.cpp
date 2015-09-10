@@ -458,12 +458,11 @@ private:
 
 };
 
-CortexMeasure *TissuePhoto::measure(std::string id,double dia,std::vector<double> x,double minimal_distance_to_tissue,double minimal_distance_to_vaso
+CortexMeasure *TissuePhoto::measure(std::mt19937& mt,std::string id,double dia,std::vector<double> x,double minimal_distance_to_tissue,double minimal_distance_to_vaso
                                     , std::size_t maxpoints)
 {
 
 
-  std::mt19937 mt;
   pointDefined p(x);
 
   std::vector<double> area(p.num(),0);
