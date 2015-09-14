@@ -114,19 +114,19 @@ DIST          = ../Astro/run/script \
 		BayesIteration.h \
 		CortexLikelihood.h \
 		BaseClass.h \
-                MCMC.h \
-                Splines.h ../Astro/main.cpp \
-                ../Astro/CommandManager.cpp \
-                ../Astro/Models.cpp \
-                ../Astro/CortexSimulation.cpp \
-                ../Astro/CortexMeasure.cpp \
-                ../Astro/Parameters.cpp \
-                ../Astro/MatrixInverse.cpp \
-                ../Astro/matrixCholesky.cpp \
-                ../Astro/LevenbergMarquardt.cpp \
-                ../Astro/BayesIteration.cpp \
-                ../Astro/CortexLikelihood.cpp \
-                ../Astro/Splines.cpp
+		MCMC.h \
+		Splines.h ../Astro/main.cpp \
+		../Astro/CommandManager.cpp \
+		../Astro/Models.cpp \
+		../Astro/CortexSimulation.cpp \
+		../Astro/CortexMeasure.cpp \
+		../Astro/Parameters.cpp \
+		../Astro/MatrixInverse.cpp \
+		../Astro/matrixCholesky.cpp \
+		../Astro/LevenbergMarquardt.cpp \
+		../Astro/BayesIteration.cpp \
+		../Astro/CortexLikelihood.cpp \
+		../Astro/Splines.cpp
 QMAKE_TARGET  = Astro
 DESTDIR       = #avoid trailing-slash linebreak
 TARGET        = Astro
