@@ -64,9 +64,9 @@ CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExper
 
 CortexState SimplestModel::init(const SimplestModel::Param &p,
                                 const Experiment &s
-                                ,double maxLessionWidth_um)const
+                                ,double dx)const
 {
-  std::vector<double> x_grid_in_m=s.x_in_m(maxLessionWidth_um);
+  std::vector<double> x_grid_in_m=s.x_in_m(dx);
 
   CortexState o(x_grid_in_m,s.h(),p.epsilon_,p.N_.size());
 
@@ -382,6 +382,7 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 CortexSimulation SimplestModel::simulate(const Parameters& par,
                                          const SimplestModel::Param &p,
                                          const Experiment &sp
+                                         ,double dx
                                          ,double dt,
                                          double tequilibrio)const
 {
@@ -396,14 +397,7 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
 
 
-  double inj_wMax=par.get("inj_width_1")+par.get("inj_width_0");
-
-  if (std::isnan(inj_wMax))
-    {
-      std::cerr<<"injwMax es nan"<<std::endl;
-      return {};
-    }
-  CortexState c=init(p,sp,inj_wMax);
+  CortexState c=init(p,sp,dx);
 
   CortexSimulation s(c,sp.numMeasures());
   s.p_=par;
@@ -493,6 +487,18 @@ std::vector<double> BaseModel::getObservedNumberFromData(const std::vector<doubl
   v[4]=modelRho[5];
   return v;
 }
+
+std::size_t BaseModel::getNumberOfObservedStates()const
+{
+  return 5;
+}
+
+std::size_t BaseModel::getNumberOfSimulatedStates()const
+{
+  return 7;
+}
+
+
 
 std::map<double, BaseModel *> BaseModel::getModels()
 {

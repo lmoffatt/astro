@@ -674,7 +674,7 @@ void LikelihoodCommand::run(const std::string line)
   f.close();
 
 
-  CortexLikelihood* CL= new CortexPoisonLikelihood(lName,e,prior,dt,tequilibrio);
+  CortexLikelihood* CL= new CortexPoisonLikelihood(lName,e,prior,dx,dt,tequilibrio);
   cm_->push_back(CL);
 
   CortexMultinomialLikelihoodEvaluation CE(*CL,p);
@@ -703,13 +703,13 @@ void OptimizeCommand::run(const std::string line)
   //optimize opt experiment1 parameters_10 parameters_10 10 100
 
   std::string optimizeS, optName, experimentName, priorName, paramName;
-  double dt,dx=50, tequilibrio=100000;
+  double dt, dx, tequilibrio=100000;
   double factor=0;
   std::mt19937::result_type initseed=0;
   std::size_t niter,nseeds=0;
   std::stringstream ss(line);
 
-  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dt>>niter>>factor>>nseeds>>initseed;
+  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dx>>dt>>niter>>factor>>nseeds>>initseed;
 
   Experiment *e=new Experiment;
   e->load(experimentName);
@@ -779,7 +779,7 @@ void OptimizeCommand::run(const std::string line)
     {
       cm_->push_back(m);
 
-      CortexPoisonLikelihood  CL(optName+"_lik",e,prior,dt,tequilibrio);
+      CortexPoisonLikelihood  CL(optName+"_lik",e,prior,dx,dt,tequilibrio);
 
 
 

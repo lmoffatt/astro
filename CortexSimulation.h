@@ -112,6 +112,9 @@ public:
 
   std::vector<std::vector<std::vector<double>>> rho_;
 
+
+
+
   CortexSimulation(const CortexState& c,unsigned numSamples):
     id_()
   ,p_(),dt_(),

@@ -316,10 +316,10 @@ public:
 
   // BaseObject interface
 public:
-  virtual LevenbergMarquardtDistribution *create() const override{}
-  virtual std::ostream &writeBody(std::ostream &s) const override{}
+  virtual LevenbergMarquardtDistribution *create() const override{ return nullptr;}
+  virtual std::ostream &writeBody(std::ostream &s) const override{ return s;}
   virtual void clear() override{}
-  virtual bool readBody(std::string &line, std::istream &s) override{}
+  virtual bool readBody(std::string &, std::istream &) override{ return false;}
 
 protected:
   virtual void update() override{}

@@ -1,5 +1,4 @@
 //experiment experiment_0 10000000 1 0  0  0:+250:4000   3dpl 7dpl2
 //   ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>
-//dt>>niter>>factor>>nseeds>>initseed;
-optimize opt_ex0_LABEL ../experiment_0_1 LABEL LABEL 100 500 1 100 0
-
+//dx>>dt>>niter>>factor>>nseeds>>initseed;
+optimize opt_ex0_LABEL ../experiment_0_1 LABEL LABEL 250 100 20 0 1 0

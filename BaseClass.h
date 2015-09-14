@@ -427,7 +427,8 @@ bool readValue(std::string& line,
 inline
 bool readValue(std::string& line,
                std::istream&,
-               double& val){
+               double& val)
+{
   std::stringstream ss(line);
   bool o=bool(ss>>val);
   if (!o)  //check for inf nan and -nan values
@@ -451,27 +452,26 @@ bool readValue(std::string& line,
           val=-std::numeric_limits<double>::quiet_NaN();
           line=line.substr(ie);
           return true;
-
         }
       else if (sv=="inf")
         {
           val=-std::numeric_limits<double>::infinity();
           line=line.substr(ie);
           return true;
-
         }
       else if (sv=="-inf")
         {
           val=-std::numeric_limits<double>::infinity();
           line=line.substr(ie);
           return true;
-
         }
+      else
+        return false;
     }
   else
     {
       safeGetline(ss,line);
-      return o;
+      return true;
     }
 }
 

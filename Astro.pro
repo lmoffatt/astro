@@ -19,7 +19,8 @@ SOURCES += main.cpp \
     matrixCholesky.cpp \
     LevenbergMarquardt.cpp \
     BayesIteration.cpp \
-    CortexLikelihood.cpp
+    CortexLikelihood.cpp \
+    Splines.cpp
 
 #include(deployment.pri)
 #qtcAddDeployment()
@@ -35,7 +36,8 @@ HEADERS += \
     BayesIteration.h \
     CortexLikelihood.h \
     BaseClass.h \
-    MCMC.h
+    MCMC.h \
+    Splines.h
 
 DISTFILES += \
     run/script \

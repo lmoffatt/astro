@@ -148,7 +148,14 @@ void TissuePhoto::read(std::string& line, std::istream &s)
               pines_[pinNum]=Pin(v);
 
             }
+          else if (line.find("ancho lesion")!=line.npos)
+            {
+              std::stringstream ss(line);
+              std::string ancho,lesion;
+               ss>>ancho>>lesion>>injury_Width_;
+               safeGetline(s,line);
 
+            }
           else break;
 
         }
@@ -493,6 +500,14 @@ CortexMeasure *TissuePhoto::measure(std::mt19937& mt,std::string id,double dia,s
         }
     }
 
+  double injlength=0;
+
+  for (std::size_t i=0; i<ll_.limits().size()-1; ++i)
+    {
+      position p=ll_.limits()[i];
+      injlength+=p.distance(ll_.limits()[i+1]);
+    }
+
 
   std::vector<std::vector<double>> numx(p.num(),std::vector<double>(Astrocyte::numTypes(),0));
 
@@ -570,8 +585,13 @@ CortexMeasure *TissuePhoto::measure(std::mt19937& mt,std::string id,double dia,s
 
 
 
-  CortexMeasure* m=new CortexMeasure(id,dia,100e-6
+  CortexMeasure* m=new CortexMeasure(id,
+                                     dia,
+                                     100e-6
                                      ,minimal_distance_to_tissue
+                                     ,minimal_distance_to_vaso
+                                     ,injury_Width_
+                                     ,injlength
                                      ,p.limits()
                                      ,area
                                      ,numx
@@ -823,30 +843,26 @@ const std::vector<double> &Experiment::xpos() const
   return m_[0].xpos();
 }
 
-std::vector<double> Experiment::x_in_m(double max_lession_in_um,double sinkLength) const
+std::vector<double> Experiment::x_in_m(double dx,double sinkLength) const
 {
-  double dx=(m_[0].xpos()[1]-m_[0].xpos()[0]);
-  if (std::isnan(max_lession_in_um))
-    max_lession_in_um=0;
-  std::size_t extraBins=std::ceil(max_lession_in_um/dx);
+  double xmax=m_[0].xpos().back()*1e-6;
   std::vector<double> o;
-  for (unsigned i=0; i<extraBins; ++i)
-    o.push_back(dx*1e-6*i);
-  for (unsigned i=extraBins; i<m_[0].xpos().size()+extraBins; ++i)
-
-    o.push_back((m_[0].xpos()[i-extraBins]+dx*extraBins)*1e-6);
-
-  double f=2; //increase factor of dt to fill the sink
-  double xend=o.back()+sinkLength;
-  dx=o[o.size()-1]-o[o.size()-2];
-
-  while (o.back()<xend)
+  double xpos=0;
+  dx=dx*1e-6;
+  while (xpos<xmax)
     {
-      dx*=f;
-      o.push_back(o.back()+dx);
+      o.push_back(xpos);
+      xpos+=dx;
     }
 
-
+  double f=2; //increase factor of dt to fill the sink
+  double xend=xmax+sinkLength;
+  while (xpos<xend)
+    {
+      o.push_back(xpos);
+      dx*=f;
+      xpos+=dx;
+    }
   return o;
 }
 

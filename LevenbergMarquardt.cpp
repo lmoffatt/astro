@@ -65,8 +65,8 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(const CortexLikel
 LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(){}
 
 LevenbergMarquardtDistribution::LevenbergMarquardtDistribution (const LevenbergMarquardtDistribution& other):
-  os_(),
   fname_(other.fname_),
+  os_(),
   w_(other.w_),
   ParamInitial_(other.ParamInitial_),
   nPar_(other.nPar_),
@@ -763,7 +763,6 @@ ABC_Multinomial_Model::logLikCells(const std::vector<std::vector<double> > &p) c
   for (unsigned i=0; i<getData().ntot_obs().size(); ++i)
     {
       double n=getData().ntot_obs()[i];
-      double pL=0;
       for (unsigned j=0; j<getData().n_obs(i).size(); ++j)
         {
           double nj=getData().n_obs(i)[j];
@@ -919,7 +918,6 @@ std::vector<double> ABC_MultiPoison_Model::epsilon(const std::vector<std::vector
   unsigned ic=0;
   for (unsigned i=0; i<getData().ntot_obs().size(); ++i)
     {
-      double n=getData().ntot_obs()[i];
       for (unsigned j=0; j<getData().n_obs(i).size(); ++j)
         {
           double k=getData().n_obs(i)[j];

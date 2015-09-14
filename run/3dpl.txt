@@ -4,7 +4,12 @@ dia 3
 
 espesor 100 //um
 
+
+
 foto 3
+
+ancho lesion  50 // um
+
 pin 1
 X (um)	Y (um)
 619.33	613.33

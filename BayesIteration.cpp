@@ -42,8 +42,8 @@ BayesIteration::BayesIteration(const CortexLikelihood *m,
                                const ABC_Freq_obs* d,
                                const std::string& filename):
   m_(m),
-  priors_(1,prior),
   data_(1,d),
+  priors_(1,prior),
   posterior_(),
   numSeeds_(20),
   filename_(filename)

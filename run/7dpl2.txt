@@ -4,7 +4,11 @@ dia 7
 
 espesor 100 //um
 
+
 foto 1
+
+ancho lesion 1000 //um
+
 pin 1
 X (um)	Y (um)
 369.667	637.333

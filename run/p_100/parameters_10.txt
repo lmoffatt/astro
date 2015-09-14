@@ -71,9 +71,9 @@ DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
 
 k_sig <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
 
-inj_width_0 <LOG> 50 [um] 0.3 [dB] // ancho de la injuria a tres dias
+inj_width_3dpl <LOG> 50 [um] 3 [dB] // ancho de la injuria a tres dias
 
-inj_width_1 <LOG> 1000 [um] 0.3 [dB] // ancho de la injuria a siete dias
+inj_width_7dpl2 <LOG> 1000 [um] 3 [dB] // ancho de la injuria a siete dias
 
 
 

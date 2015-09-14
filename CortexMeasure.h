@@ -294,6 +294,16 @@ public:
     return h_;
   }
 
+  double inj_Width() const
+  {
+    return injWidth_;
+  }
+
+  double inj_Area()const
+  {
+    return inj_Width()*injLength_;
+  }
+
   const std::vector<double>& xpos()const
   {
     return x_;
@@ -409,12 +419,18 @@ public:
                 double dia,
                 double h
                 ,double minimalTissueDistance
+                ,double minimalVasoDistance
+                ,double injWidth
+                ,double injLength
                 ,std::vector<double> dx
                 ,std::vector<double> measAreaAstro
                 ,std::vector<std::vector<double>> meanAstro
                 ,std::vector<std::vector<std::vector<double>>> covAstro)
-    :dia_(dia),h_(h),
-      minimalTissueDistance_(minimalTissueDistance)
+    :dia_(dia),h_(h)
+    ,minimalTissueDistance_(minimalTissueDistance)
+    ,minimalVasoDistance_(minimalVasoDistance)
+    ,injWidth_(injWidth)
+    ,injLength_(injLength)
     ,x_(dx)
       ,measAreaAstro_(measAreaAstro)
     ,numAstro_(std::vector<double>(meanAstro.size(),0))
@@ -449,6 +465,9 @@ private:
   double dia_;
   double h_; // in um
   double minimalTissueDistance_;
+  double minimalVasoDistance_;
+  double injWidth_;
+  double injLength_;
   std::vector<double> x_;
   std::vector<double> measAreaAstro_;
   std::vector<double> numAstro_;
@@ -472,7 +491,11 @@ public:
   {
     writeField(s,"dia",dia_);
     writeField(s,"tissue_width",h_);
+    writeField(s,"inj_width",injWidth_);
+    writeField(s,"inj_length",injLength_);
     writeField(s,"minimal_tissue_distance",minimalTissueDistance_);
+    writeField(s,"minimal_vaso_distance",minimalVasoDistance_);
+
     writeField(s,"x_pos",x_);
     writeField(s,"area_covered_by_Astrocytes",measAreaAstro_);
     writeField(s,"total_number_of_Astrocytes",numAstro_);
@@ -495,9 +518,24 @@ public:
         std::cerr<<"tissue_width expected; found: "<<line<<std::endl;
         return false;
       }
+    else if (!readField(line,s,"inj_width",injWidth_))
+      {
+        std::cerr<<"inj_width expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"inj_length",injLength_))
+      {
+        std::cerr<<"inj_length expected; found: "<<line<<std::endl;
+        return false;
+      }
     else if (!readField(line,s,"minimal_tissue_distance",minimalTissueDistance_))
       {
         std::cerr<<"minimal_tissue_distance expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"minimal_vaso_distance",minimalVasoDistance_))
+      {
+        std::cerr<<"minimal_vaso_distance expected; found: "<<line<<std::endl;
         return false;
       }
     else if (!readField(line,s,"x_pos",x_))
@@ -564,7 +602,7 @@ public:
 
 
   const std::vector<double>& xpos() const;
-  std::vector<double> x_in_m(double lession_in_um, double sinkLength=10e-2) const;
+  std::vector<double> x_in_m(double dx, double sinkLength=10e-2) const;
 
   double h() const;
 
@@ -699,6 +737,9 @@ public:
 
     vasos_.insert(vasos_.end(),other.vasos_.begin(),other.vasos_.end());
     pines_.insert(other.pines_.begin(),other.pines_.end());
+
+    if (other.injury_Width_>0)
+      injury_Width_=other.injury_Width_;
   }
 
 
@@ -729,6 +770,9 @@ public:
   double xmin_,xmax_,ymin_,ymax_;
 
   std::uniform_real_distribution<double> xud_, yud_;
+
+  double injury_Width_=0;
+
 
   std::vector<LimiteVaso> vasos_;
 
@@ -823,6 +867,9 @@ std::vector<double>& operator+=(
 }
 
 
+
+
+
 inline
 std::vector<double>& addStep(
     std::vector<double> & x
@@ -854,6 +901,44 @@ std::vector<double> operator+(
 
   return o;
 }
+
+
+inline
+std::vector<double>& operator-=(
+    std::vector<double> & x
+    ,const std::vector<double> & y
+    )
+{
+
+  for (unsigned i=0; i<x.size(); ++i)
+    x[i]-=y[i];
+
+  return x;
+}
+
+
+
+inline
+std::vector<double> operator-(
+    const std::vector<double> & x
+    ,const std::vector<double> & y
+    )
+{
+  std::vector<double> o(x);
+  o-=y;
+
+  return o;
+}
+
+
+
+
+
+
+
+
+
+
 inline
 std::vector<double>& operator*=(
     std::vector<double> & x

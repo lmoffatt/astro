@@ -57,27 +57,29 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = ../Astro/main.cpp \
-		../Astro/CommandManager.cpp \
-		../Astro/Models.cpp \
-		../Astro/CortexSimulation.cpp \
-		../Astro/CortexMeasure.cpp \
-		../Astro/Parameters.cpp \
-		../Astro/MatrixInverse.cpp \
-		../Astro/matrixCholesky.cpp \
-		../Astro/LevenbergMarquardt.cpp \
-		../Astro/BayesIteration.cpp \
-		../Astro/CortexLikelihood.cpp 
+                ../Astro/CommandManager.cpp \
+                ../Astro/Models.cpp \
+                ../Astro/CortexSimulation.cpp \
+                ../Astro/CortexMeasure.cpp \
+                ../Astro/Parameters.cpp \
+                ../Astro/MatrixInverse.cpp \
+                ../Astro/matrixCholesky.cpp \
+                ../Astro/LevenbergMarquardt.cpp \
+                ../Astro/BayesIteration.cpp \
+                ../Astro/CortexLikelihood.cpp \
+                ../Astro/Splines.cpp
 OBJECTS       = main.o \
-		CommandManager.o \
-		Models.o \
-		CortexSimulation.o \
-		CortexMeasure.o \
-		Parameters.o \
-		MatrixInverse.o \
-		matrixCholesky.o \
-		LevenbergMarquardt.o \
-		BayesIteration.o \
-		CortexLikelihood.o
+                CommandManager.o \
+                Models.o \
+                CortexSimulation.o \
+                CortexMeasure.o \
+                Parameters.o \
+                MatrixInverse.o \
+                matrixCholesky.o \
+                LevenbergMarquardt.o \
+                BayesIteration.o \
+                CortexLikelihood.o \
+                Splines.o
 DIST          = ../Astro/run/script \
 		../Astro/run/3dpl.txt \
 		../Astro/run/minimal_prior.txt \
@@ -112,17 +114,19 @@ DIST          = ../Astro/run/script \
 		BayesIteration.h \
 		CortexLikelihood.h \
 		BaseClass.h \
-		MCMC.h ../Astro/main.cpp \
-		../Astro/CommandManager.cpp \
-		../Astro/Models.cpp \
-		../Astro/CortexSimulation.cpp \
-		../Astro/CortexMeasure.cpp \
-		../Astro/Parameters.cpp \
-		../Astro/MatrixInverse.cpp \
-		../Astro/matrixCholesky.cpp \
-		../Astro/LevenbergMarquardt.cpp \
-		../Astro/BayesIteration.cpp \
-		../Astro/CortexLikelihood.cpp
+                MCMC.h \
+                Splines.h ../Astro/main.cpp \
+                ../Astro/CommandManager.cpp \
+                ../Astro/Models.cpp \
+                ../Astro/CortexSimulation.cpp \
+                ../Astro/CortexMeasure.cpp \
+                ../Astro/Parameters.cpp \
+                ../Astro/MatrixInverse.cpp \
+                ../Astro/matrixCholesky.cpp \
+                ../Astro/LevenbergMarquardt.cpp \
+                ../Astro/BayesIteration.cpp \
+                ../Astro/CortexLikelihood.cpp \
+                ../Astro/Splines.cpp
 QMAKE_TARGET  = Astro
 DESTDIR       = #avoid trailing-slash linebreak
 TARGET        = Astro
@@ -192,90 +196,96 @@ compiler_clean:
 ####### Compile
 
 main.o: ../Astro/main.cpp ../Astro/CommandManager.h \
-		../Astro/BaseClass.h \
-		../Astro/CortexMeasure.h \
-		../Astro/LevenbergMarquardt.h \
-		../Astro/Parameters.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../Astro/main.cpp
+                ../Astro/BaseClass.h \
+                ../Astro/CortexMeasure.h \
+                ../Astro/LevenbergMarquardt.h \
+                ../Astro/Parameters.h
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../Astro/main.cpp
 
 CommandManager.o: ../Astro/CommandManager.cpp ../Astro/Models.h \
-		../Astro/CortexMeasure.h \
-		../Astro/LevenbergMarquardt.h \
-		../Astro/Parameters.h \
-		../Astro/BaseClass.h \
-		../Astro/CortexSimulation.h \
-		../Astro/BayesIteration.h \
-		../Astro/CommandManager.h \
-		../Astro/CortexLikelihood.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CommandManager.o ../Astro/CommandManager.cpp
+                ../Astro/CortexMeasure.h \
+                ../Astro/LevenbergMarquardt.h \
+                ../Astro/Parameters.h \
+                ../Astro/BaseClass.h \
+                ../Astro/CortexSimulation.h \
+                ../Astro/BayesIteration.h \
+                ../Astro/CommandManager.h \
+                ../Astro/CortexLikelihood.h
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o CommandManager.o ../Astro/CommandManager.cpp
 
 Models.o: ../Astro/Models.cpp ../Astro/Models.h \
-		../Astro/CortexMeasure.h \
-		../Astro/LevenbergMarquardt.h \
-		../Astro/Parameters.h \
-		../Astro/BaseClass.h \
-		../Astro/CortexSimulation.h \
-		../Astro/BayesIteration.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Models.o ../Astro/Models.cpp
+                ../Astro/CortexMeasure.h \
+                ../Astro/LevenbergMarquardt.h \
+                ../Astro/Parameters.h \
+                ../Astro/BaseClass.h \
+                ../Astro/CortexSimulation.h \
+                ../Astro/BayesIteration.h
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o Models.o ../Astro/Models.cpp
 
 CortexSimulation.o: ../Astro/CortexSimulation.cpp ../Astro/CortexSimulation.h \
-		../Astro/Parameters.h \
-		../Astro/BaseClass.h \
-		../Astro/CommandManager.h \
-		../Astro/CortexMeasure.h \
-		../Astro/LevenbergMarquardt.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexSimulation.o ../Astro/CortexSimulation.cpp
+                ../Astro/Parameters.h \
+                ../Astro/BaseClass.h \
+                ../Astro/CommandManager.h \
+                ../Astro/CortexMeasure.h \
+                ../Astro/LevenbergMarquardt.h
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexSimulation.o ../Astro/CortexSimulation.cpp
 
 CortexMeasure.o: ../Astro/CortexMeasure.cpp ../Astro/CommandManager.h \
-		../Astro/BaseClass.h \
-		../Astro/CortexMeasure.h \
-		../Astro/LevenbergMarquardt.h \
-		../Astro/Parameters.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexMeasure.o ../Astro/CortexMeasure.cpp
+                ../Astro/BaseClass.h \
+                ../Astro/CortexMeasure.h \
+                ../Astro/LevenbergMarquardt.h \
+                ../Astro/Parameters.h
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexMeasure.o ../Astro/CortexMeasure.cpp
 
 Parameters.o: ../Astro/Parameters.cpp ../Astro/Parameters.h \
-		../Astro/BaseClass.h \
-		../Astro/MatrixInverse.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Parameters.o ../Astro/Parameters.cpp
+                ../Astro/BaseClass.h \
+                ../Astro/MatrixInverse.h
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o Parameters.o ../Astro/Parameters.cpp
 
 MatrixInverse.o: ../Astro/MatrixInverse.cpp ../Astro/MatrixInverse.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o MatrixInverse.o ../Astro/MatrixInverse.cpp
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o MatrixInverse.o ../Astro/MatrixInverse.cpp
 
 matrixCholesky.o: ../Astro/matrixCholesky.cpp ../Astro/MatrixInverse.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o matrixCholesky.o ../Astro/matrixCholesky.cpp
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o matrixCholesky.o ../Astro/matrixCholesky.cpp
 
 LevenbergMarquardt.o: ../Astro/LevenbergMarquardt.cpp ../Astro/LevenbergMarquardt.h \
-		../Astro/Parameters.h \
-		../Astro/BaseClass.h \
-		../Astro/MatrixInverse.h \
-		../Astro/CortexLikelihood.h \
-		../Astro/Models.h \
-		../Astro/CortexMeasure.h \
-		../Astro/CortexSimulation.h \
-		../Astro/BayesIteration.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o LevenbergMarquardt.o ../Astro/LevenbergMarquardt.cpp
+                ../Astro/Parameters.h \
+                ../Astro/BaseClass.h \
+                ../Astro/MatrixInverse.h \
+                ../Astro/CortexLikelihood.h \
+                ../Astro/Models.h \
+                ../Astro/CortexMeasure.h \
+                ../Astro/CortexSimulation.h \
+                ../Astro/BayesIteration.h
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o LevenbergMarquardt.o ../Astro/LevenbergMarquardt.cpp
 
 BayesIteration.o: ../Astro/BayesIteration.cpp ../Astro/BayesIteration.h \
-		../Astro/LevenbergMarquardt.h \
-		../Astro/Parameters.h \
-		../Astro/BaseClass.h \
-		../Astro/MatrixInverse.h \
-		../Astro/CortexLikelihood.h \
-		../Astro/Models.h \
-		../Astro/CortexMeasure.h \
-		../Astro/CortexSimulation.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o BayesIteration.o ../Astro/BayesIteration.cpp
+                ../Astro/LevenbergMarquardt.h \
+                ../Astro/Parameters.h \
+                ../Astro/BaseClass.h \
+                ../Astro/MatrixInverse.h \
+                ../Astro/CortexLikelihood.h \
+                ../Astro/Models.h \
+                ../Astro/CortexMeasure.h \
+                ../Astro/CortexSimulation.h
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o BayesIteration.o ../Astro/BayesIteration.cpp
 
 CortexLikelihood.o: ../Astro/CortexLikelihood.cpp ../Astro/CortexLikelihood.h \
-		../Astro/Models.h \
-		../Astro/CortexMeasure.h \
-		../Astro/LevenbergMarquardt.h \
-		../Astro/Parameters.h \
-		../Astro/BaseClass.h \
-		../Astro/CortexSimulation.h \
-		../Astro/BayesIteration.h \
-		../Astro/CommandManager.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexLikelihood.o ../Astro/CortexLikelihood.cpp
+                ../Astro/Models.h \
+                ../Astro/CortexMeasure.h \
+                ../Astro/LevenbergMarquardt.h \
+                ../Astro/Parameters.h \
+                ../Astro/BaseClass.h \
+                ../Astro/CortexSimulation.h \
+                ../Astro/BayesIteration.h \
+                ../Astro/CommandManager.h \
+                ../Astro/Splines.h \
+                ../Astro/MatrixInverse.h
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexLikelihood.o ../Astro/CortexLikelihood.cpp
+
+Splines.o: ../Astro/Splines.cpp ../Astro/Splines.h \
+                ../Astro/MatrixInverse.h
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o Splines.o ../Astro/Splines.cpp
 
 ####### Install
 

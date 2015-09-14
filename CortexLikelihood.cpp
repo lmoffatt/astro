@@ -1,5 +1,44 @@
 #include "CortexLikelihood.h"
 #include "CommandManager.h"
+#include "Splines.h"
+
+/// x indica los intervalos de la simulacion
+/// y indica el promedio dentro de estos intervalos
+/// xint indica los intervalos interpolados
+/// @return una matriz de una fila menos que xint con los promedios en los
+/// intervalos xint a partir de x e y
+
+std::vector<std::vector<double>> interpolateInjury(const std::vector<double>&x,
+                                                   const std::vector<std::vector<double> >& y,
+                                                   const std::vector<double> xint,
+                                                   double injLenth)
+{
+  std::vector<std::vector<double>> cumY(x.size(),std::vector<double>(y[0].size(),0));
+
+
+  std::vector<std::vector<double>> o(xint.size());
+
+  for (std::size_t i=0; i<x.size()-1; ++i)
+    for (std::size_t j=0; j<y[0].size(); ++j)
+      cumY[i+1][j]=cumY[i][j]+y[i][j];
+  MSpline sp(x,cumY);
+
+  std::vector<double> cumrho0(y[0].size(),0);
+  std::vector<double> cumrho;
+  double currx;
+  for (std::size_t i=0; i<xint.size(); ++i)
+    {
+      currx=xint[i]+injLenth;
+      cumrho=sp.eval(currx);
+      o[i]=(cumrho-cumrho0);
+      cumrho0=cumrho;
+    }
+  return o;
+
+  
+}
+
+
 
 
 
@@ -13,10 +52,11 @@ const Parameters &CortexLikelihood::getPrior() const
 
 
 
-CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dt, double tequilibrio):
+CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx,double dt, double tequilibrio):
   prior_(prior)
 ,m_()
 ,e_(e)
+,dx_(dx)
 ,dt_(dt)
 ,tequilibrio_(tequilibrio)
 ,nstate_()
@@ -52,7 +92,7 @@ const std::vector<double> &CortexLikelihood::ntot_obs() const
 
 std::ostream &CortexLikelihood::put(std::ostream &s) const
 {
-
+  return s;
 }
 
 std::ostream &CortexLikelihood::write(std::ostream &s) const
@@ -62,7 +102,7 @@ std::ostream &CortexLikelihood::write(std::ostream &s) const
   s<<"Experiment \t"<<e_->id()<<"\n";
   s<<"Prior  \t" <<getPrior().id();
 
-
+  return s;
 }
 
 std::vector<std::vector<double> > CortexLikelihood::getstate(const Experiment *e)
@@ -71,7 +111,11 @@ std::vector<std::vector<double> > CortexLikelihood::getstate(const Experiment *e
   for (unsigned ie=0; ie<e->numMeasures(); ie++)
     {
       const CortexMeasure* cm=e->getMeasure(ie);
-      std::vector<double> rho_meas;
+      std::vector<double> rho_meas(m_->getNumberOfObservedStates(),0);
+      for (std::size_t i=0; i<m_->getNumberOfSimulatedStates(); ++i)
+        o.push_back(rho_meas);
+
+
       for (unsigned ix=0; ix<cm->meanAstro().size(); ++ix)
         {
           auto ob=cm->meanAstro(ix);
@@ -89,6 +133,7 @@ std::vector<double>  CortexLikelihood::getNBins(const Experiment *e)
   for (unsigned ie=0; ie<e->numMeasures(); ie++)
     {
       const CortexMeasure* cm=e->getMeasure(ie);
+      o.insert(o.end(),getModel()->getNumberOfSimulatedStates(),cm->inj_Area());
       o.insert(o.end(),cm->areaAstro().begin(),cm->areaAstro().end());
     }
   return o;
@@ -112,6 +157,7 @@ bool CortexLikelihood::readBody(std::string &line, std::istream &s)
   if (!readField(line,s,"experimental_results",experimentName)) return false;
   else
     e_=cm_->getExperiment(experimentName);
+  if (!readField(line,s,"grid_length",dx_)) return false;
   if (!readField(line,s,"sample_time",dt_)) return false;
   if (!readField(line,s,"tiempo_equilibrio",tequilibrio_)) return false;
   if (!readField(line,s,"num_Astrocitos_cada_estado",nstate_)) return false;
@@ -145,7 +191,7 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
 
   m_->loadParameters(parameters);
 
-  CortexSimulation s=m_->run(*e_,dt_,tequilibrio_);
+  CortexSimulation s=m_->run(*e_,dx_,dt_,tequilibrio_);
   if (s.dx_.empty())
     return {};
   std::size_t ic=0;
@@ -185,13 +231,12 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
   double h=1e-5;
 
   m_->loadParameters(parameters);
-
-  CortexSimulation s=m_->run(*e_,dt_,tequilibrio_);
+  CortexSimulation s=m_->run(*e_,dx_,dt_,tequilibrio_);
   if (s.x_.empty())
     return{};
   std::size_t ic=0;
   unsigned is=0;
-  double width_lesion=0;
+
   for (unsigned ie=0; ie<e_->numMeasures(); ie++)
     {
       const CortexMeasure* cm=e_->getMeasure(ie);
@@ -199,37 +244,41 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
       while (s.t_[is]<t
              &&is<s.t_.size())
         ++is;
-      std::vector<double> rho_sim;
-      std::vector<double> rho_sim_0;
-      std::vector<double> rho_sim_00;
-      // esto es un hack desesperado que solo sirve para un experimento de dos dias nomas.
-      // lo que hace es descartar todos los bines anteriores a la lesion, la cual es un parametro del modelo
 
-      width_lesion+=parameters.get("inj_width_"+std::to_string(ie));
-      double landa;
 
-      std::size_t numExtraBins=std::ceil(width_lesion/(e_->xpos()[1]-e_->xpos()[0]));
-      if (numExtraBins>0)
+      double currInjury=parameters.get("inj_width_"+cm->id());
+
+
+      // voy a interpolar los resultados de la medicion a partir de la simulacion.
+      // la simulacion pasa a ser independiente de la medicion
+
+      // rho debe estar en celulas por litro
+      auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury*1e-6);
+
+      ///horrible hack for the lession:
+      /// dedico una fila para la probabilidad de cada estado antes de la lesion
+
+      double injVolume_liters=cm->inj_Area()*1e-12*h*1000;
+      double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
+      double f=injVolume_liters/simVol_liters;
+
+      for (std::size_t istate=0; istate<rho[0].size(); ++istate)
         {
-          rho_sim_0=m_->getObservedNumberFromModel(s.rho_[is][numExtraBins-1])
-              *(1.0/cm->h()/cm->h()/s.dx_[numExtraBins-1]);
+          o[ic]=std::vector<double>(5,rho[0][istate]/5.0*f);
 
-           landa=(s.x_[numExtraBins]-width_lesion*1e-6)/s.dx_[numExtraBins-1];
+          ++ic;
         }
-      for (unsigned ix=numExtraBins; ix<cm->meanAstro().size()+numExtraBins; ++ix)
+
+      for (std::size_t ix=0; ix<rho.size()-1;++ix)
         {
-          /// en celulas por cuadrado de h (100 micrones) por dx
-          rho_sim=m_->getObservedNumberFromModel(s.rho_[is][ix])*(1.0/cm->h()/cm->h()/s.dx_[ix]); // c->h() es una variable de la simulacion, creo que esta alpedo.
-          if (!rho_sim_0.empty())
-            {
-              rho_sim_00=rho_sim;
-              rho_sim=rho_sim*(1-landa)+rho_sim_0*landa;
-              rho_sim_0=rho_sim_00;
-            }
+          /// en celulas por litro
+          auto rho_sim=m_->getObservedNumberFromModel(rho[ix+1]);
 
-            double measuredArea=cm->areaAstro()[ix-numExtraBins]*1e-12*h; // en um cuadrados  h indica el espesor del corte
+          double measuredVolume_inLiters=cm->areaAstro()[ix]*1e-12*h*1000; // en um cuadrados  h indica el espesor del corte
+          simVol_liters=cm->h()*cm->h()*(cm->xpos()[ix+1]-cm->xpos()[ix])*1e-6*1000;
+          f=measuredVolume_inLiters/simVol_liters;
 
-          o[ic]=rho_sim*measuredArea;
+          o[ic]=rho_sim*f;
           ++ic;
         }
 
@@ -269,16 +318,18 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::writeBody(std::ostream &s) 
 
 }
 
-std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, const std::string &s1, const std::string &s2) const
+std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, const std::string &, const std::string &) const
 {
 
   std::size_t numMeasures=CL_->getExperiment()->numMeasures();
 
   std::vector<double> x;
   for (std::size_t i=0; i<numMeasures; ++i)
-    x.insert(x.begin(),++CL_->getExperiment()->getMeasure(i)->xpos().begin(),
-             CL_->getExperiment()->getMeasure(i)->xpos().end());
-
+    {
+      x.insert(x.end(),this->CL_->getModel()->getNumberOfSimulatedStates(),0);
+      x.insert(x.end(),++CL_->getExperiment()->getMeasure(i)->xpos().begin(),
+               CL_->getExperiment()->getMeasure(i)->xpos().end());
+    }
   std::vector<std::vector<double>> f=CL_->f(p_);
 
 
@@ -356,7 +407,8 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
   for (std::size_t ime=0; ime<numMeasures; ++ime)
     {
       i0=ie;
-      ie=i0+CL_->getExperiment()->getMeasure(ime)->meanAstro().size();
+      ie=i0+CL_->getExperiment()->getMeasure(ime)->meanAstro().size()
+          +CL_->getModel()->getNumberOfSimulatedStates();
       std::string title=CL_->getExperiment()->getMeasure(ime)->id()+"_predicted_measured_Likelihdood";
       writeTable(s,title,xtitle,x,ytitles,ytable,i0,ie);
     }
@@ -364,7 +416,7 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
   return s;
 }
 
-std::ostream &CortexPoisonLikelihoodEvaluation::extract(std::ostream &s, const std::string &s1, const std::string &s2) const
+std::ostream &CortexPoisonLikelihoodEvaluation::extract(std::ostream &s, const std::string &, const std::string &) const
 {
 
   std::size_t numMeasures=CL_->getExperiment()->numMeasures();

@@ -16,10 +16,10 @@ public:
 
 
   CortexLikelihood(std::string id,
-                        const Experiment* e,
-                        const Parameters& prior
-                        ,double dt
-                        ,double tequilibrio);
+                   const Experiment* e,
+                   const Parameters& prior
+                   , double dx, double dt
+                   , double tequilibrio);
 
   // ABC_Freq_obs interface
   virtual const std::vector<std::vector<double>> & n_obs()const override;
@@ -36,6 +36,7 @@ public:
 
   const Experiment* getExperiment()const{return e_;}
 
+  const BaseModel* getModel()const {return m_;}
 
 protected:
   std::vector<std::vector<double>> getstate(const Experiment* e);
@@ -45,6 +46,7 @@ protected:
   Parameters prior_;
   BaseModel* m_;
   const Experiment* e_;
+  double dx_;
   double dt_;
   double tequilibrio_;
   std::vector<std::vector<double> > nstate_;
@@ -65,7 +67,9 @@ public:
   {
     writeField(s,"prior",prior_);
     writeField(s,"experimental_results",e_->id());
+    writeField(s,"grid_legth",dx_);
     writeField(s,"sample_time",dt_);
+
     writeField(s,"tiempo_equilibrio",tequilibrio_);
     return s;
   }
@@ -98,11 +102,12 @@ class CortexMultinomialLikelihood:public ABC_Multinomial_Model, virtual public C
 public:
 
   CortexMultinomialLikelihood(std::string id,
-                        const Experiment* e,
-                        const Parameters& prior
-                        ,double dt
-                        ,double tequilibrio):
-    CortexLikelihood(id,e,prior,dt,tequilibrio){}
+                              const Experiment* e,
+                              const Parameters& prior
+                              ,double dx
+                              ,double dt
+                              ,double tequilibrio):
+    CortexLikelihood(id,e,prior,dx,dt,tequilibrio){}
 
   static std::string ClassName(){return "CortexMultinomialLikelihood";}
   virtual std::string myClass() const override{return ClassName();}
@@ -168,22 +173,23 @@ public:
 
 
   // ABC_Multinomial_Model interface
-   std::vector<std::vector<double> > f(const Parameters &parameters) const override;
+  std::vector<std::vector<double> > f(const Parameters &parameters) const override;
 
 
 
   CortexPoisonLikelihood(std::string id,
-                        const Experiment* e,
-                        const Parameters& prior
-                        ,double dt
-                        ,double tequilibrio):
-    CortexLikelihood(id,e,prior,dt,tequilibrio){}
+                         const Experiment* e,
+                         const Parameters& prior
+                         ,double dx
+                         ,double dt
+                         ,double tequilibrio):
+    CortexLikelihood(id,e,prior,dx,dt,tequilibrio){}
 
   // ABC_Freq_obs interface
 
   ~CortexPoisonLikelihood(){}
 
-  public:
+public:
   static std::string ClassName(){return "CortexPoisonLikelihood";}
   virtual std::string myClass() const override {return ClassName();}
 
@@ -256,15 +262,15 @@ public:
   }
   virtual std::ostream &writeBody(std::ostream &s) const override;
   virtual void clear() override{}
-  virtual std::ostream &extract(std::ostream &s, const std::string & s1="" ,
-                                const std::string& s2="") const override;
+  virtual std::ostream &extract(std::ostream &s, const std::string & ="",
+                                const std::string& ="") const override;
 
 
 
-  virtual bool readBody(std::string &line, std::istream &s) override{}
+  virtual bool readBody(std::string &, std::istream &) override{return false;}
 
   CortexMultinomialLikelihoodEvaluation(const CortexLikelihood& CL,
-                             const Parameters& p)
+                                        const Parameters& p)
     :
       CL_(&CL)
     ,p_(p)
@@ -304,15 +310,15 @@ public:
   }
   virtual std::ostream &writeBody(std::ostream &s) const override;
   virtual void clear() override{}
-  virtual std::ostream &extract(std::ostream &s, const std::string & s1="" ,
-                                const std::string& s2="") const override;
+  virtual std::ostream &extract(std::ostream &s, const std::string & ="",
+                                const std::string& ="") const override;
 
 
 
-  virtual bool readBody(std::string &line, std::istream &s) override{}
+  virtual bool readBody(std::string &, std::istream &) override{return false;}
 
   CortexPoisonLikelihoodEvaluation(const CortexPoisonLikelihood& CL,
-                             const Parameters& p)
+                                   const Parameters& p)
     :
       CL_(&CL)
     ,p_(p)
