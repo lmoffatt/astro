@@ -201,7 +201,7 @@ main.o: ../Astro/main.cpp ../Astro/CommandManager.h \
                 ../Astro/CortexMeasure.h \
                 ../Astro/LevenbergMarquardt.h \
                 ../Astro/Parameters.h
-        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../Astro/main.cpp
+    $(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../Astro/main.cpp
 
 CommandManager.o: ../Astro/CommandManager.cpp ../Astro/Models.h \
                 ../Astro/CortexMeasure.h \
