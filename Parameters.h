@@ -203,8 +203,9 @@ public:
   //  friend std::ostream& operator<<(std::ostream& s, const Parameters& p);
   //  friend std::istream& operator>>(std::istream& s, Parameters& p);
 
-  double chi2Distance(const Parameters& other)const;
+  double chi2Distance(const Parameters& one,const Parameters& other)const;
 
+  double chi2Distance(const Parameters &other) const;
   double logDetCov()const;
 
   unsigned size() const;

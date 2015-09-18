@@ -21,20 +21,43 @@ kcat_psi  <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega cle
 kcat_omega <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
 
 
-g_01 <LOG>  5E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
+g_01 <LOG>  1E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
 
 
-g_10  <LOG> 2E-4   [s-1] 10 [dB]// cell type change rate from 1 to 0
+g_10  <LOG> 3E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+
+
+g_12  <LOG> 1E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+
+
+g_21  <LOG> 3E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
 
 g_23 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
 
 
-g_max_psi <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
-
-g_max_omega <LOG> 4E-3  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+g_max_psi_2 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
 
 
+g_max_psi_3 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_psi_4 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_psi_5 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_omega_2 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_omega_3 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_omega_4 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_omega_5 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
 
 N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
 
@@ -51,19 +74,22 @@ N_Astr <LOG>  1E10  [cells L^-1] 3 [dB]//1E10
 N_Neuron <LOG> 3.3E9    [cells L^-1] 3 [dB]//
 
 
-a_2  <LOG>  1E-9  [s-1] 10 [dB]// cell apoptosis rate in the state 2
+a_2  <LOG>  1E-7  [s-1] 10 [dB]// cell apoptosis rate in the state 2
 
 
 a_factor <LOG> 2   [s^0]  10  [dB]// increase in apoptosis rate per state change
 
 
-a_max_Neuron <LOG> 1E-6   [s^-1] 1 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+a_max_Neuron <LOG> 2E-5   [s^-1]  10  [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+
+a_max <LOG>  5E-7 [s-1] 10 [dB]// 1E-6 cell apoptosis rate at saturated DAMP
 
 
 inj_width <LOG>  1E-6   [m] 3 [dB]//  width of the injury
 
 
-DAMP_ratio <LOGRATIO> 0.0001 [ratio] 10 [dB]// mass ratio of the cell proteins that are DAMPs
+DAMP_ratio <LOGRATIO> 0.001 [ratio] 10 [dB]// mass ratio of the cell proteins that are DAMPs
 
 
 prot_concentration <LOG>  200  [g/ml]  2.12 [dB]// protein density
@@ -74,9 +100,12 @@ DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
 
 k_sig <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
 
-inj_width_3dpl <LOG> 50 [um] 0.3 [dB] // ancho de la injuria a tres dias
 
-inj_width_7dpl2 <LOG> 1000 [um] 0.3 [dB] // ancho de la injuria a siete dias
+k_sig_max <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
+
+inj_width_3dpl <LOG> 50 [um] 1 [dB] // ancho de la injuria a tres dias
+
+inj_width_7dpl2 <LOG> 1000 [um]  1  [dB] // ancho de la injuria a siete dias
 
 
 

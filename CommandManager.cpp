@@ -6,6 +6,41 @@
 #include <sstream>
 #include <iostream>
 
+
+std::vector<double> label_to_sequence(std::string s)
+{
+
+
+  std::stringstream ss(s);
+
+  std::vector<double> o;
+  double val;
+  double dx;
+  char ch;
+   while (ss>>val)
+    {
+      o.push_back(val);
+      ss>>ch;
+      if ((ch>='0')&&(ch<='9'))
+        {
+          ss.putback(ch);
+         }
+      else if (ch==':')
+        {
+          ss>>dx>>ch>>val;
+          while (o.back()<val)
+            o.push_back(o.back()+dx);
+        }
+
+    }
+
+   return o;
+
+
+}
+
+
+
 int Script::run(char* filename)
 {
   std::ifstream f(filename);
@@ -251,21 +286,25 @@ void HistogramCommand::run(const std::string line)
 {
 
   //histogram 3dpl d_les  0:+100:3000
-  // histogram 3dpl d_les 1E7 1 0  0 0:+100:4000   3dpl 7dpl
+  // histogram 3dpl d_les 1E7 1 0  0 [0 25 50 100 200 500:500:4000]   3dpl 7dpl
 
   std::size_t maxnumpoints,initseed;
   double minDistance_Tissue, minDistance_Vaso;
 
   std::string cName, dataName,kind;
-  double start,dx,end;
-  char colon;
   std::stringstream ss(line);
   ss>>cName>>dataName>>kind>>maxnumpoints>>initseed
-      >>minDistance_Tissue>>minDistance_Vaso>>start>>colon>>dx>>colon>>end;
+      >>minDistance_Tissue>>minDistance_Vaso;
+
+  std::string ch;
+  while ((ss>>ch)&&(ch!="[")){}
+  std::string interval;
+  while ((ss>>ch)&&(ch!="]"))
+    interval+=ch+" ";
 
   TissueSection* s=cm_->getSection(dataName);
 
-  std::vector<double> limits;
+  std::vector<double> limits=label_to_sequence(interval);
 
   std::mt19937 mt;
   if (initseed==0)
@@ -288,16 +327,7 @@ void HistogramCommand::run(const std::string line)
     }
 
 
-  double current=start;
-  limits.push_back(current);
-  while(current<end)
-    {
-      current+=dx;
-      limits.push_back(current);
-
-    }
-
-  if (s!=nullptr)
+   if (s!=nullptr)
     {
       CortexMeasure* m= s->measure(mt,limits,minDistance_Tissue, minDistance_Vaso,maxnumpoints);
       cm_->push_back(m);
@@ -310,16 +340,24 @@ void HistogramCommand::run(const std::string line)
 void ExperimentCommand::run(const std::string line)
 
 {
-  // experiment experiment1 1E7 seed  0  0 0:+100:4000   3dpl 7dpl
+  // experiment experiment1 1E7 seed  0  0 [0 25 50 100 250 500:500:4000]   3dpl 7dpl
 
   std::size_t maxnumpoints, initseed;
   double minDistance_Tissue, minDistance_Vaso;
   std::string cName,expName, currsection;
   std::vector<std::string> sections;
-  double start,dx,end;
-  char colon;
   std::stringstream ss(line);
-  ss>>cName>>expName>>maxnumpoints>>initseed>>minDistance_Tissue>>minDistance_Vaso>>start>>colon>>dx>>colon>>end;
+//  experiment experiment_0 10000000 1 0  0  [0 25 50 100 250 500:500:4000]  3dplCL 3dpl 7dpl2
+
+
+  ss>>cName>>expName>>maxnumpoints>>initseed>>minDistance_Tissue>>minDistance_Vaso;
+
+  std::string ch;
+  while ((ss>>ch)&&(ch!="[")){}
+  std::string interval;
+  while ((ss>>ch)&&(ch!="]"))
+    interval+=ch+" ";
+
   while(ss>>currsection)
     sections.push_back(currsection);
 
@@ -342,8 +380,8 @@ void ExperimentCommand::run(const std::string line)
                    +std::to_string(maxnumpoints)+"  "
                    +std::to_string(initseed)+"  "
                    +std::to_string(minDistance_Tissue)+"  "
-                   +std::to_string(minDistance_Vaso)+"  "
-                   +std::to_string(start)+colon+std::to_string(dx)+colon+std::to_string(end) );
+                   +std::to_string(minDistance_Vaso)+"  [ "
+                   +interval +" ]");
       vCM.push_back(*cm_->getMeasure(s));
 
     }
@@ -628,9 +666,10 @@ void LikelihoodCommand::run(const std::string line)
   //likelihood lik experiment1 parameters_10 parameters_10 0.5 50 1000
 
   std::string cName, lName, eName, priorName, paramName;
-  double dt,dx, tequilibrio;
+  std::size_t nPoints_per_decade;
+  double dtmin,dtmax,dx, tequilibrio;
   std::stringstream ss(line);
-  ss>>cName>>lName>>eName>>priorName>>paramName>>dt>>dx>>tequilibrio;
+  ss>>cName>>lName>>eName>>priorName>>paramName>>dtmin>>nPoints_per_decade>>dtmax>>dx>>tequilibrio;
 
   Experiment* e=cm_->getExperiment(eName);
   if (e==nullptr)
@@ -674,7 +713,7 @@ void LikelihoodCommand::run(const std::string line)
   f.close();
 
 
-  CortexLikelihood* CL= new CortexPoisonLikelihood(lName,e,prior,dx,dt,tequilibrio);
+  CortexLikelihood* CL= new CortexPoisonLikelihood(lName,e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
   cm_->push_back(CL);
 
   CortexMultinomialLikelihoodEvaluation CE(*CL,p);
@@ -703,13 +742,13 @@ void OptimizeCommand::run(const std::string line)
   //optimize opt experiment1 parameters_10 parameters_10 10 100
 
   std::string optimizeS, optName, experimentName, priorName, paramName;
-  double dt, dx, tequilibrio=100000;
+  double dtmin,dtmax, dx, tequilibrio=100000;
   double factor=0;
   std::mt19937::result_type initseed=0;
-  std::size_t niter,nseeds=0;
+  std::size_t nPoints_per_decade,niter,nseeds=0;
   std::stringstream ss(line);
 
-  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dx>>dt>>niter>>factor>>nseeds>>initseed;
+  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>factor>>nseeds>>initseed;
 
   Experiment *e=new Experiment;
   e->load(experimentName);
@@ -779,7 +818,7 @@ void OptimizeCommand::run(const std::string line)
     {
       cm_->push_back(m);
 
-      CortexPoisonLikelihood  CL(optName+"_lik",e,prior,dx,dt,tequilibrio);
+      CortexPoisonLikelihood  CL(optName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
 
 

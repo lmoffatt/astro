@@ -208,10 +208,7 @@ private:
   std::string fname_;
   std::ofstream os_;
   const CortexLikelihood* CL_;
-
-
   std::vector<double> w_;
-
   Parameters ParamInitial_;
 
   std::size_t nPar_;

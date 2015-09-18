@@ -19,7 +19,7 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(const CortexLikel
   ParamInitial_(initialParam),
   nPar_(ParamInitial_.size()),
   nData_(f->getData().numCells()),
-  dx_(std::sqrt(std::numeric_limits<double>::epsilon())),
+  dx_(std::sqrt(std::numeric_limits<double>::epsilon())/100),
   maxIter_(numIterations),
   maxFeval_(numIterations*initialParam.size()*2),
   ParamChangeMin_(1e-9),
@@ -233,7 +233,8 @@ optimize(std::string optname,
       if (os_.is_open())
         os_<<"Seed for random generator provided="<<initseed<<std::endl;
     }
-  for (std::size_t i=0;i<numSeeds;i++)
+
+  for (std::size_t i=0;i<numSeeds;)
     {
       if (initseed==0)
         {
@@ -246,14 +247,24 @@ optimize(std::string optname,
 
 
       ParamCurr_=ParamInitial_.randomSample(mt,CL_->getPrior(),factor);
+      std::cout<<"chi 2 of random seed="<<CL_->getPrior().chi2Distance(ParamInitial_,ParamCurr_)<<" \n";
+      if (os_.is_open())
+        {
+        os_<<"chi 2 of random seed="<<CL_->getPrior().chi2Distance(ParamInitial_,ParamCurr_)<<" \n";
+        os_<<ParamCurr_;
+        }
       optimize();
-      std::string optfname=OptimParameters().save(optname+"_"+std::to_string(PostLogLik()));
-      CortexMultinomialLikelihoodEvaluation CE(*CL_,OptimParameters());
-      std::ofstream fo;
-      std::string fnameout=optfname.substr(0,optfname.size()-3)+"_lik.txt";
-      fo.open(fnameout.c_str());
-      CE.extract(fo);
-      fo.close();
+      if ((!isNanLogPostLik_)&&(!J_.empty()))
+        {
+          std::string optfname=OptimParameters().save(optname+"_"+std::to_string(PostLogLik()));
+          CortexMultinomialLikelihoodEvaluation CE(*CL_,OptimParameters());
+          std::ofstream fo;
+          std::string fnameout=optfname.substr(0,optfname.size()-3)+"_lik.txt";
+          fo.open(fnameout.c_str());
+          CE.extract(fo);
+          fo.close();
+          ++i;
+        }
 
     }
   return *this;
@@ -291,7 +302,12 @@ void LevenbergMarquardtDistribution::iterate()
 {
   computeJacobian();
   if (J_.empty())
+    {
+      isJacobianInvalid_=true;
     return;
+    }
+  else
+    isJacobianInvalid_=false;
   computeSearchDirection();
   updateLanda();
   std::cout<<nIter_<<"\t"<<logPostLikCurr_<<"\t"<<logPriorCurr_<<"\t"<<landa_<<"\t";
@@ -309,7 +325,8 @@ void LevenbergMarquardtDistribution::iterate()
 
 void update_Jacobian(const ABC_Distribution_Model* f,
                      const Parameters& ParamCurr,
-                     const std::vector<std::vector<double>>&P_expCurr,std::size_t nPar,
+                     const std::vector<std::vector<double>>&P_expCurr,
+                     std::size_t nPar,
                      std::vector<std::vector<double>>& J,
                      std::vector<double>& w,
                      std::vector<double>& epsilon,
@@ -369,8 +386,14 @@ void LevenbergMarquardtDistribution::computeJacobian()
 
   update_Jacobian(CL_,ParamCurr_,P_expCurr_,nPar_,J_,w_,epsilon_,prior_G_,nFeval_,dx_);
   if (J_.empty())
+    {
+    isJacobianInvalid_=true;
     return;
-
+     }
+  else
+    {
+      isJacobianInvalid_=false;
+    }
   update_Gradient(G_,prior_G_,epsilon_,J_);
 
   update_JTWJ(JTWJ_,JTWJ_landa_,ParamCurr_,J_,w_,nPar_,nData_);
@@ -380,7 +403,8 @@ void LevenbergMarquardtDistribution::computeJacobian()
 void update_Likelihoods(const ABC_Distribution_Model* f
                         ,const Parameters& ParamNew
                         ,std::vector<std::vector<double>>& P_exp_New
-                        ,double& logLikNew,double& logPriorNew
+                        ,double& logLikNew,
+                        double& logPriorNew
                         , double& logPostLogLikNew
                         ,std::size_t& NFeval)
 {
@@ -432,8 +456,9 @@ void LevenbergMarquardtDistribution::initialize()
   ParamChange_=std::numeric_limits<double>::infinity();
   PostlogLikChange_=std::numeric_limits<double>::infinity();
   GradNormPost_=std::numeric_limits<double>::infinity();
-  //ParamCurr_=ParamInitial_;
-
+  landa_=1000;
+  isNanLogPostLik_=false;
+  isJacobianInvalid_=false;
   update_Likelihoods(CL_,ParamCurr_,P_expCurr_,logLikCurr_,logPriorCurr_,logPostLikCurr_
                      ,nFeval_);
 }
@@ -564,7 +589,6 @@ bool LevenbergMarquardtDistribution::meetConvergenceCriteria()
   smallSSChange_=(PostlogLikChange_)<PostLogLikChangeMin_;
   smallGradient_=GradNormPost_<GradientNormPostMin_;
   isNanLogPostLik_=std::isnan(logPostLikCurr_);
-  isJacobianInvalid_=J_.empty();
 
 
 
@@ -720,7 +744,7 @@ ABC_Distribution_Model::J(const Parameters &p,
   for (std::size_t i=0; i< p.size(); ++i)
     {
       unsigned ic=0;
-      double dp=delta*(1/getPrior().pStds()[i]+p[i]);
+      double dp=delta;//*(1/getPrior().pStds()[i]+p[i]);
       Parameters pr(p);
       pr[i]=p[i]+dp;
       std::vector<std::vector<double>> f_delta=f(pr);

@@ -92,7 +92,8 @@ std::string LinearTranformation::ClassName()
 
 
 Parameters::Parameters(const Parameters& other):
-  model_(other.model_)
+  id_(other.id_)
+  ,model_(other.model_)
 ,name_to_i_(other.name_to_i_)
 , names_(other.names_)
 ,mean_of_tr_(other.mean_of_tr_)
@@ -202,6 +203,7 @@ Parameters& Parameters::operator=(const Parameters& other)
 
 void swap(Parameters& one, Parameters& other)
 {
+  std::swap(one.id_,other.id_);
   std::swap(one.model_,other.model_);
   std::swap(one.name_to_i_,other.name_to_i_);
   std::swap(one.names_,other.names_);
@@ -691,13 +693,14 @@ Parameters Parameters::randomSample(std::mt19937& mt,Parameters prior,double fac
 
 {
   Parameters sample(*this);
-  if (cho_.empty())
+  if (prior.cho_.empty())
     {
       for (std::size_t i=0; i<mean_of_tr_.size();i++)
 
         {
 
-          sample.mean_of_tr_[i]=randNormal(mt,mean_of_tr_[i],prior.std_of_tr_[i]*factor);
+          sample.mean_of_tr_[i]=randNormal(mt,mean_of_tr_[i]
+                                           ,prior.std_of_tr_[i]*factor);
           sample.std_of_tr_[i]=0;
         }
     }
@@ -855,16 +858,24 @@ double dbDistance(const Parameters& one,const Parameters& other)
 }
 
 
-double Parameters::chi2Distance(const Parameters &other)const
+double Parameters::chi2Distance(const Parameters &one, const Parameters &other)const
 {
   double result=0;
 
   for (std::size_t i=0;i<size();i++)
     {
-      result+=pow((other.tMean(other.indexToName(i))-tMean(indexToName(i))/pStd(indexToName(i))),2);
+       double e=one.trMeans()[i]-other.trMeans()[i];
+       double s=std_of_tr_[i];
+       result+=std::pow(e/s,2)/2.0;
     }
   // result=sqrt(result/one.size())*10;
   return result;
+
+}
+
+double Parameters::chi2Distance(const Parameters &other) const
+{
+  return chi2Distance(*this,other);
 
 }
 

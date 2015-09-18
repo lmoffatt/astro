@@ -167,9 +167,18 @@ std::vector<double> SimplestModel::dOmega_dt(const Param &p,
           Jp=Dfp*Jp;
         }
       double sig=0;
+      double psi_F=c.psi_T_[x]-c.psi_B_[x];
+      double omega_F=c.omega_T_[x]-c.omega_B_[x];
+
       for (unsigned k=0; k<numK; ++k)
         {
-          sig+=p.ksig_omega_[k]*c.rho_[x][k];
+          sig+=(p.ksig_omega_[k]
+                +p.ksig_max_omega_[k]*p.kon_omega_*omega_F
+                /(p.kcat_omega_+p.kon_omega_*omega_F)
+                +p.ksig_max_psi_[k]*p.kon_psi_*psi_F
+                /(p.kcat_psi_+p.kon_psi_*psi_F)
+                )*c.rho_[x][k];
+
         }
 
       /// esto de abajo indica que para uso un espesor y ancho c.h_ para el numero rho de celulas, el largo de la ///
@@ -382,8 +391,11 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 CortexSimulation SimplestModel::simulate(const Parameters& par,
                                          const SimplestModel::Param &p,
                                          const Experiment &sp
-                                         ,double dx
-                                         ,double dt,
+                                         , double dx
+
+                                         , double dtmin,
+                                         std::size_t nPoints_per_decade,
+                                         double dtmax,
                                          double tequilibrio)const
 {
   /* std::cout<<"starts a Simulation on \n";
@@ -394,6 +406,7 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
   //  find inj_width information in parameters
 
+  double dtprod=std::pow(10,1.0/nPoints_per_decade);
 
 
 
@@ -401,25 +414,28 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
   CortexSimulation s(c,sp.numMeasures());
   s.p_=par;
-  s.dt_=dt;
+  s.dt_=dtmax;
   double t=-tequilibrio;
   unsigned i=0;
 
-  while (t+dt<0)
+  while (t+dtmax<=0)
     {
-      c=nextEuler(p,c,dt);
-      t+=dt;
+      c=nextEuler(p,c,dtmax);
+      t+=dtmax;
     }
 
   addDamp(c,p);
+  double dt_run=dtmin;
   while (i<sp.numMeasures())
     {
-      c=nextEuler(p,c,dt);
-      t+=dt;
+      t+=dt_run;
+
+      c=nextEuler(p,c,dt_run);
+
       if (t>=sp.tMeas(i))
         {
           s.t_[i]=t;
-          s.sdt_[i]=dt;
+          s.sdt_[i]=dt_run;
           s.omega_T_[i]=c.omega_T_;
           s.psi_T_[i]=c.psi_T_;
           s.omega_B_[i]=c.omega_B_;
@@ -428,6 +444,15 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
           ++i;
 
         }
+
+      if (dt_run<dtmax)
+        {
+          dt_run*=dtprod;
+          if (dt_run>dtmax)
+            dt_run=dtmax;
+        }
+      else
+        dt_run=dtmax;
 
     }
   return s;
@@ -506,18 +531,46 @@ std::map<double, BaseModel *> BaseModel::getModels()
   o[Model00::number()]=new Model00;
   o[Model011::number()]=new Model011;
   o[Model012::number()]=new Model012;
+
+  o[Model012_22::number()]=new Model012_22;
+
   o[Model013::number()]=new Model013;
+
+  o[Model013_23_31::number()]=new Model013_23_31;
+
+  o[Model021::number()]=new Model021;
+  o[Model022::number()]=new Model022;
+  o[Model023::number()]=new Model023;
+  o[Model031::number()]=new Model031;
+
 
   o[Model10::number()]=new Model10;
   o[Model111::number()]=new Model111;
 
   o[Model112::number()]=new Model112;
+  o[Model112_22::number()]=new Model112_22;
+
+
+
 
 
   o[Model114::number()]=new Model114;
 
-  o[Model116::number()]=new Model116;
+  o[Model114_24_32_44::number()]=new Model114_24_32_44;
 
+  o[Model114_24_44::number()]=new Model114_24_44;
+
+
+
+  o[Model121::number()]=new Model121;
+  o[Model122::number()]=new Model122;
+  o[Model123::number()]=new Model123;
+  o[Model124::number()]=new Model124;
+  o[Model131::number()]=new Model131;
+  o[Model132::number()]=new Model132;
+  o[Model141::number()]=new Model141;
+  o[Model142::number()]=new Model142;
+  o[Model144::number()]=new Model144;
 
   return o;
 

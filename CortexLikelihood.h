@@ -18,7 +18,10 @@ public:
   CortexLikelihood(std::string id,
                    const Experiment* e,
                    const Parameters& prior
-                   , double dx, double dt
+                   , double dx
+                   , double dtmin,
+                   std::size_t nPoints_per_decade,
+                   double dtmax
                    , double tequilibrio);
 
   // ABC_Freq_obs interface
@@ -47,7 +50,9 @@ protected:
   BaseModel* m_;
   const Experiment* e_;
   double dx_;
-  double dt_;
+  double dtmin_;
+  std::size_t nPoints_per_decade_;
+  double dtmax_;
   double tequilibrio_;
   std::vector<std::vector<double> > nstate_;
   std::vector<double> ntot_;
@@ -68,7 +73,10 @@ public:
     writeField(s,"prior",prior_);
     writeField(s,"experimental_results",e_->id());
     writeField(s,"grid_legth",dx_);
-    writeField(s,"sample_time",dt_);
+    writeField(s,"min_sample_time",dtmin_);
+    writeField(s,"prod_sample_time",nPoints_per_decade_);
+
+    writeField(s,"max_sample_time",dtmax_);
 
     writeField(s,"tiempo_equilibrio",tequilibrio_);
     return s;
@@ -105,9 +113,11 @@ public:
                               const Experiment* e,
                               const Parameters& prior
                               ,double dx
-                              ,double dt
+                              ,double dtmin
+                              ,std::size_t nPoints_per_decade
+                              ,double dtmax
                               ,double tequilibrio):
-    CortexLikelihood(id,e,prior,dx,dt,tequilibrio){}
+    CortexLikelihood(id,e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio){}
 
   static std::string ClassName(){return "CortexMultinomialLikelihood";}
   virtual std::string myClass() const override{return ClassName();}
@@ -181,9 +191,11 @@ public:
                          const Experiment* e,
                          const Parameters& prior
                          ,double dx
-                         ,double dt
+                         ,double dtmin
+                         ,std::size_t nPoints_per_decade
+                         ,double dtmax
                          ,double tequilibrio):
-    CortexLikelihood(id,e,prior,dx,dt,tequilibrio){}
+    CortexLikelihood(id,e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio){}
 
   // ABC_Freq_obs interface
 

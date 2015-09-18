@@ -1,0 +1,272 @@
+parameters parameters_114_24_32_44
+
+model 1.14024032044
+
+
+D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
+
+
+epsilon <LOGRATIO> 5e-2  [m/m] 1.08  [dB]// fraction of extracelular space
+
+
+Keq_psi  <LOG> 2.38E-6  [M] 5.91  [dB]// affinity constant for psi
+
+
+Keq_omega  <LOG> 2.17E-8  [M] 4.8 <LOG> [dB]// affinity constant for omega
+
+
+kcat_psi  <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
+
+
+kcat_omega <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
+
+
+g_01 <LOG>  1E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
+
+
+g_10  <LOG> 3E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+
+
+g_12  <LOG> 1E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+
+
+g_21  <LOG> 3E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+
+
+
+
+
+g_23 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
+
+
+g_max_psi_2 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_psi_3 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_psi_4 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+
+g_max_psi_5 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_omega_2 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_omega_3 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_omega_4 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+
+g_max_omega_5 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
+
+
+N_1  <LOG>  10000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+N_2  <LOG>  20000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+N_3  <LOG>  30000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+
+N_4  <LOG>  50000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+
+N_5  <LOG>  70000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+
+N_N  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of DAMP receptors on neurons
+
+
+M_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
+
+
+M_1  <LOG>  10000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+M_2  <LOG>  20000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+M_3  <LOG>  30000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+
+M_4  <LOG>  50000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+
+M_5  <LOG>  70000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+
+M_N  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of DAMP receptors on neurons
+
+
+
+N_Astr <LOG>  1E10  [cells L^-1] 3 [dB]//1E10
+
+
+N_Neuron <LOG> 3.3E9    [cells L^-1] 3 [dB]//
+
+
+a_2  <LOG>  1E-7  [s-1] 10 [dB]// cell apoptosis rate in the state 2
+
+
+a_factor <LOG> 2   [s^0]  10  [dB]// increase in apoptosis rate per state change
+
+
+a_max_psi_Neuron <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_1 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_2 <LOG> 2E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_3 <LOG> 5E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_4 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_5 <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_Neuron <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_1 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_2 <LOG> 2E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_3 <LOG> 5E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_4 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_5 <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+
+
+
+inj_width <LOG>  1E-6   [m] 3 [dB]//  width of the injury
+
+
+DAMP_ratio <LOGRATIO> 0.001 [ratio] 10 [dB]// mass ratio of the cell proteins that are DAMPs
+
+
+prot_concentration <LOG>  200  [g/ml]  2.12 [dB]// protein density
+
+
+DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
+
+
+k_sig <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
+
+
+k_sig_max_omega_1 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
+
+k_sig_max_omega_2 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
+
+k_sig_max_omega_3 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
+
+k_sig_max_omega_4 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
+
+k_sig_max_omega_5 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
+
+k_sig_max_psi_1 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
+
+k_sig_max_psi_2 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
+
+k_sig_max_psi_3 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
+
+k_sig_max_psi_4 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
+
+k_sig_max_psi_5 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
+
+
+
+inj_width_3dpl <LOG> 50 [um] 1 [dB] // ancho de la injuria a tres dias
+
+inj_width_7dpl2 <LOG> 1000 [um]  1  [dB] // ancho de la injuria a siete dias
+
+
+
+------------------------------------------------------------------------------------------
+
+REFERENCIAS
+
+•	D  1E-10  [m⁻2 s-1]  // diffusion coefficient for psi
+Para proteinas entre 13.3  a 67 kd 1.1 E-10 a 5.9 E-11 m2 s-1[1]
+PSI
+Familia de proteínas S100  9-12 KDa  [2]
+HMGB1 aprox 25KDa [3,4]
+HSP60 aprox 60 KDa
+Varios damps  [5]
+ATP???
+Glutamato???
+QUE PASO CON EL INESPECIFICO???? [6]
+
+•	epsilon  5e-2  [m/m]  // fraction of extracelular space
+4-6% del volumen cerebral es espacio extracellular segun “lecciones de neurocirugia” lección 6 pag 86 [1] [7]
+
+•	Keq_psi  9E-9  [M]  // affinity constant for psi
+HMGB1 (Dominio A) + RAGE KD =30-50 nM [8] / 10 nM [9]
+HMGB1 (Dominio B) + TLR-4 KD 1.5-22 µM [10]
+HMGB1-MD2 + TLR-4 KD=12 nM (ojo que el binding aca es entre MD2 y HMGB1 que es el que reconoce entre las distintas isoformas de HMGB! Con distintas cys reducidas. Reconoce a la HMGB1 con puente disulfuro entre las cys 23 y 45 y con la cys 106 oxidada) [11]
+MD2 + TLR-4 KD= 65 nM [12]
+H4 + TLR-4 KD = 6.0±3.7 nM  Ademas  H4 + TLR-2 KD = 4.2 ± 1.7 nM. [13] Ademas H4 + RAGE KD =  1 nM -23 pM [9]
+
+S100B + RAGE KD = 83 nM [9]
+S100A + TLR-4 KD =   86 nM [14]
+
+•	Keq_omega  9E-11  [M]  // affinity constant for omega
+TNF + TNFR1 1E-7M [15]
+IL-1α + R IL-1α  4.6 E-9M
+IL-1 + R IL-1  1.3 E-9M[16]
+IL-6 + RIL-6  2.5E-11M  y 2.5E-9M [17]
+
+•	kcat_psi 2E-4  [s-1]  // 2E-4 ligand removal rate for psi/omega clearance
+
+•	kcat_omega 2E-4  [s-1]  // 2E-4 ligand removal rate for psi/omega clearance
+
+•	g_01   5E-3  [s-1] // cell type change rate from 0to 1
+•	g_10   2E-3   [s-1]  // cell type change rate from 1 to 0
+•	g_23  5E-6   [s-1]  //   cell type change rate from 2 to 3
+•	g_max  4E-3  [s-1]  // maximal cell type change rate from 1 to 2
+•	N_0    1000 [receptors cell^-1] // number of DAMP receptors on resting cells
+•	N_2    10000   [receptors cell^-1] // number of DAMP receptors on reactive cells
+•	N_N     1E4    [receptors cell^-1] // number of DAMP receptors on neurons
+•	N_Astr   1E10  [cells L^-1]  //1E10
+•	N_Neuron 3.3E9    [cells L^-1] //
+•	a_2    1E-9  [s-1]  // cell apoptosis rate in the state 2
+•	a_factor 2   [s^0]    // increase in apoptosis rate per state change
+•	a_max_Neuron  0   [s^-1]  //  2E-5 neuron apoptosis rate at saturated DAMP
+•	inj_width   1E-6   [m]  //  width of the injury
+•	DAMP_ratio  0.01 [ratio] // mass ratio of the cell proteins that are DAMPs
+•	prot_concentration   0.2  [mg/ml]  // protein density
+0.2g/ml por espectroscopia de masa (2-4 millones de proteinas por micron  cubico) y células de mamífero con baja densidad de proteínas 60mg/ml [18]. Ademas compara con la medición con levaduras y bacterias
+•	DAMP_MW  25   [kD] // peso molecular de las DAMPs
+Ver mas arriba
+•	k_sig  10  [molecules s^-1 cell^-1]   // mediator secreation rate
+en artritis rematoidea se encontro que la concentracion de HMGB1 en liquid synovial es de 1.8 a 10.4 ug/ml[19]
+
+
+
+
+1. 	Young ME, Carroad PA, Bell RL. ESTIMATION OF DIFFUSION-COEFFICIENTS OF PROTEINS. Biotechnol Bioeng. 1980;22: 947–955. doi:10.1002/bit.260220504
+2. 	Schafer BW, Wicki R, Engelkamp D, Mattei MG, Heizmann CW. ISOLATION IF A YAC CLONE COVERING A CLUSTER OF 9 S100 GENES ON HUMAN-CHROMOSOME-1Q21 - RATIONALE FOR A NEW NOMENCLATURE OF THE S100 CALCIUM-BINDING PROTEIN FAMILY. Genomics. 1995;25: 638–643. doi:10.1016/0888-7543(95)80005-7
+3. 	Messmer M, Klein C, Boniface R, Gnaedig NF, Lecerf M, Barnay-Verdier S, et al. DsRed-mediated oligomerization stabilizes HMGB1 on chromatin in vivo and on DNA in vitro. Biochimie. 2013;95: 962–966. doi:10.1016/j.biochi.2012.11.001
+4. 	Xiao M, Dai X, Zhou R, Liu J, Zhang B, Zhao S, et al. Purification and identification of HMGB1 secreted by liver cells and immune cells. Zhong Nan Da Xue Xue Bao Yi Xue Ban. 2011;36: 1065–1070. doi:10.3969/j.issn.1672-7347.2011.11.006
+5. 	Burda JE, Sofroniew M V. Reactive gliosis and the multicellular response to CNS damage and disease. Neuron. 2014/01/28 ed. 2014;81: 229–248. doi:10.1016/j.neuron.2013.12.034
+6. 	Abeyama K, Stern DM, Ito Y, Kawahara K, Yoshimoto Y, Tanaka M, et al. The N-terminal domain of thrombomodulin sequesters high-mobility group-B1 protein, a novel antiinflammatory mechanism. J Clin Invest. 2005/04/21 ed. 2005;115: 1267–1274. doi:10.1172/JCI22782
+7. 	Izquierdo RJM, Barbera J. Fisiología de la barrera hematoencefálica. El edema cerebral. In: Prof. Dr. Gomez U, editor. Lecciones de neurocirugía. Oviedo, España: Universidad de Oviedo; 1993. pp. 85–92.
+8. 	LeBlanc PM, Doggett TA, Choi J, Hancock MA, Durocher Y, Frank F, et al. An immunogenic peptide in the A-box of HMGB1 protein reverses apoptosis-induced tolerance through RAGE receptor. J Biol Chem. 2014/01/30 ed. 2014;289: 7777–7786. doi:10.1074/jbc.M113.541474
+9. 	Xu D, Young JH, Krahn JM, Song D, Corbett KD, Chazin WJ, et al. Stable RAGE-heparan sulfate complexes are essential for signal transduction. ACS Chem Biol. American Chemical Society; 2013;8: 1611–20. doi:10.1021/cb4001553
+10. 	Yang H, Hreggvidsdottir HS, Palmblad K, Wang H, Ochani M, Li J, et al. A critical cysteine is required for HMGB1 binding to Toll-like receptor 4 and activation of macrophage cytokine release. Proc Natl Acad Sci U S A. 2010/06/16 ed. 2010;107: 11942–11947. doi:10.1073/pnas.1003893107
+11. 	Yang H, Wang H, Ju Z, Ragab AA, Lundback P, Long W, et al. MD-2 is required for disulfide HMGB1-dependent TLR4 signaling. J Exp Med. 2015/01/07 ed. 2015;212: 5–14. doi:10.1084/jem.20141318
+12. 	O’Neill LAJ, Bryant CE, Doyle SL. Therapeutic targeting of Toll-like receptors for infectious and inflammatory diseases and cancer. Pharmacol Rev. 2009;61: 177–97. doi:10.1124/pr.109.001073
+13. 	Allam R, Scherbaum CR, Darisipudi MN, Mulay SR, Hagele H, Lichtnekert J, et al. Histones from dying renal cells aggravate kidney injury via TLR2 and TLR4. J Am Soc Nephrol. 2012/06/09 ed. 2012;23: 1375–1388. doi:10.1681/ASN.2011111077
+14. 	S100A9 interaction screening method [Internet]. 2014. Available: https://www.google.com/patents/US8841421
+15. 	MacEwan DJ. TNF ligands and receptors--a matter of life and death. Br J Pharmacol. 2002;135: 855–75. doi:10.1038/sj.bjp.0704549
+16. 	Chin J, Rupp E, Cameron PM, MacNaul KL, Lotke PA, Tocci MJ, et al. Identification of a high-affinity receptor for interleukin 1 alpha and interleukin 1 beta on cultured human rheumatoid synovial cells. J Clin Invest. 1988;82: 420–6. doi:10.1172/JCI113614
+17. 	Coulie PG, Stevens M, Van Snick J. High- and low-affinity receptors for murine interleukin 6. Distinct distribution on B and T cells. Eur J Immunol. 1989;19: 2107–14. doi:10.1002/eji.1830191121
+18. 	Milo R. What is the total number of protein molecules per cell volume? A call to rethink some published values. Bioessays. 2013;35: 1050–5. doi:10.1002/bies.201300066
+19. 	Kokkola R, Sundberg E, Ulfgren AK, Palmblad K, Li J, Wang H, et al. High mobility group box chromosomal protein 1: a novel proinflammatory mediator in synovitis. Arthritis Rheum. 2002/10/18 ed. 2002;46: 2598–2603. doi:10.1002/art.10540
+
+1.	Izquierdo, R. and J. Barbera, Fisiología de la barrera hematoencefálica. El edema cerebral., in Lecciones de neurocirugía, U. Prof. Dr. Gomez, Editor 1993, Universidad de Oviedo: Oviedo, España. p. 85-92.
+
+

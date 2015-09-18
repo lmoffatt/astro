@@ -52,12 +52,14 @@ const Parameters &CortexLikelihood::getPrior() const
 
 
 
-CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx,double dt, double tequilibrio):
+CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx, double dtmin, std::size_t nPoints_per_decade,double dtmax, double tequilibrio):
   prior_(prior)
 ,m_()
 ,e_(e)
 ,dx_(dx)
-,dt_(dt)
+,dtmin_(dtmin)
+,nPoints_per_decade_(nPoints_per_decade)
+,dtmax_(dtmax)
 ,tequilibrio_(tequilibrio)
 ,nstate_()
 ,ntot_()
@@ -112,9 +114,11 @@ std::vector<std::vector<double> > CortexLikelihood::getstate(const Experiment *e
     {
       const CortexMeasure* cm=e->getMeasure(ie);
       std::vector<double> rho_meas(m_->getNumberOfObservedStates(),0);
-      for (std::size_t i=0; i<m_->getNumberOfSimulatedStates(); ++i)
-        o.push_back(rho_meas);
-
+      if (cm->inj_Width()>0)
+        {
+          for (std::size_t i=0; i<m_->getNumberOfSimulatedStates(); ++i)
+            o.push_back(rho_meas);
+        }
 
       for (unsigned ix=0; ix<cm->meanAstro().size(); ++ix)
         {
@@ -133,7 +137,8 @@ std::vector<double>  CortexLikelihood::getNBins(const Experiment *e)
   for (unsigned ie=0; ie<e->numMeasures(); ie++)
     {
       const CortexMeasure* cm=e->getMeasure(ie);
-      o.insert(o.end(),getModel()->getNumberOfSimulatedStates(),cm->inj_Area());
+      if (cm->inj_Width()>0)
+        o.insert(o.end(),getModel()->getNumberOfSimulatedStates(),cm->inj_Area());
       o.insert(o.end(),cm->areaAstro().begin(),cm->areaAstro().end());
     }
   return o;
@@ -158,7 +163,10 @@ bool CortexLikelihood::readBody(std::string &line, std::istream &s)
   else
     e_=cm_->getExperiment(experimentName);
   if (!readField(line,s,"grid_length",dx_)) return false;
-  if (!readField(line,s,"sample_time",dt_)) return false;
+  if (!readField(line,s,"min_sample_time",dtmin_)) return false;
+  if (!readField(line,s,"prod_sample_time",nPoints_per_decade_)) return false;
+
+  if (!readField(line,s,"max_sample_time",dtmax_)) return false;
   if (!readField(line,s,"tiempo_equilibrio",tequilibrio_)) return false;
   if (!readField(line,s,"num_Astrocitos_cada_estado",nstate_)) return false;
   if (!readField(line,s,"num_total_Astrocitos",ntot_)) return false;
@@ -191,7 +199,7 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
 
   m_->loadParameters(parameters);
 
-  CortexSimulation s=m_->run(*e_,dx_,dt_,tequilibrio_);
+  CortexSimulation s=m_->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
   if (s.dx_.empty())
     return {};
   std::size_t ic=0;
@@ -231,7 +239,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
   double h=1e-5;
 
   m_->loadParameters(parameters);
-  CortexSimulation s=m_->run(*e_,dx_,dt_,tequilibrio_);
+  CortexSimulation s=m_->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
   if (s.x_.empty())
     return{};
   std::size_t ic=0;
@@ -247,6 +255,8 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
 
 
       double currInjury=parameters.get("inj_width_"+cm->id());
+      if (std::isnan(currInjury))
+        currInjury=0;
 
 
       // voy a interpolar los resultados de la medicion a partir de la simulacion.
@@ -258,25 +268,30 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
       ///horrible hack for the lession:
       /// dedico una fila para la probabilidad de cada estado antes de la lesion
 
-      double injVolume_liters=cm->inj_Area()*1e-12*h*1000;
-      double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
-      double f=injVolume_liters/simVol_liters;
-
-      for (std::size_t istate=0; istate<rho[0].size(); ++istate)
+      if (cm->inj_Width()>0)
         {
-          o[ic]=std::vector<double>(5,rho[0][istate]/5.0*f);
+          double injVolume_liters=cm->inj_Area()*1e-12*h*1000;
+          double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
+          double f=injVolume_liters/simVol_liters;
 
-          ++ic;
+
+
+          for (std::size_t istate=0; istate<rho[0].size(); ++istate)
+            {
+              o[ic]=std::vector<double>(5,rho[0][istate]/5.0*f);
+
+              ++ic;
+            }
+
         }
-
       for (std::size_t ix=0; ix<rho.size()-1;++ix)
         {
           /// en celulas por litro
           auto rho_sim=m_->getObservedNumberFromModel(rho[ix+1]);
 
           double measuredVolume_inLiters=cm->areaAstro()[ix]*1e-12*h*1000; // en um cuadrados  h indica el espesor del corte
-          simVol_liters=cm->h()*cm->h()*(cm->xpos()[ix+1]-cm->xpos()[ix])*1e-6*1000;
-          f=measuredVolume_inLiters/simVol_liters;
+          double simVol_liters=cm->h()*cm->h()*(cm->xpos()[ix+1]-cm->xpos()[ix])*1e-6*1000;
+          double f=measuredVolume_inLiters/simVol_liters;
 
           o[ic]=rho_sim*f;
           ++ic;
@@ -326,7 +341,11 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
   std::vector<double> x;
   for (std::size_t i=0; i<numMeasures; ++i)
     {
-      x.insert(x.end(),this->CL_->getModel()->getNumberOfSimulatedStates(),0);
+      if (CL_->getExperiment()->getMeasure(i)->inj_Width()>0)
+        {
+          double injW=this->p_.get("inj_width_"+CL_->getExperiment()->getMeasure(i)->id());
+        x.insert(x.end(),this->CL_->getModel()->getNumberOfSimulatedStates(),-injW);
+        }
       x.insert(x.end(),++CL_->getExperiment()->getMeasure(i)->xpos().begin(),
                CL_->getExperiment()->getMeasure(i)->xpos().end());
     }
@@ -407,13 +426,27 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
   for (std::size_t ime=0; ime<numMeasures; ++ime)
     {
       i0=ie;
-      ie=i0+CL_->getExperiment()->getMeasure(ime)->meanAstro().size()
-          +CL_->getModel()->getNumberOfSimulatedStates();
+      if (CL_->getExperiment()->getMeasure(ime)->inj_Width()>0)
+        ie=i0+CL_->getExperiment()->getMeasure(ime)->meanAstro().size()
+            +CL_->getModel()->getNumberOfSimulatedStates();
+      else
+        ie=i0+CL_->getExperiment()->getMeasure(ime)->meanAstro().size();
+
       std::string title=CL_->getExperiment()->getMeasure(ime)->id()+"_predicted_measured_Likelihdood";
       writeTable(s,title,xtitle,x,ytitles,ytable,i0,ie);
     }
 
-  return s;
+
+  s<<"//---------------------Parameters------------------------//\n";
+  s<<"model"<<this->p_.model()<<"\n";
+
+  s<<"name \t fitmean \t dBfit \t prior mean \t dB prior\n";
+  for (std::size_t i=0; i<p_.size(); ++i)
+    {
+      std::string name=p_.names()[i];
+      s<<name<<"\t"<<p_.mean(name)<<"\t"<<p_.pStd(name)<<"\t"<<CL_->getPrior().mean(name)<<"\t"<<CL_->getPrior().pStd(name)<<"\n";
+    }
+return s;
 }
 
 std::ostream &CortexPoisonLikelihoodEvaluation::extract(std::ostream &s, const std::string &, const std::string &) const
