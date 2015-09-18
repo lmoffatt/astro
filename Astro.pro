@@ -116,7 +116,9 @@ DISTFILES += \
     run/p_132/o_132 \
     run/p_141/o_141 \
     run/p_142/o_142 \
-    run/p_144/o_144
+    run/p_144/o_144 \
+    run/runModel_0.sh \
+    run/runModel_1.sh
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
