@@ -9278,6 +9278,7 @@ public:
     p_.a_max_Neuron_=p.get("a_max_Neuron");
     p_.a_max_=p.get("a_max");
 
+    p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_1=p.get("k_sig_max_1");
     p_.k_sig_max_2=p.get("k_sig_max_2");
     p_.k_sig_max_3=p.get("k_sig_max_3");
@@ -9604,6 +9605,7 @@ public:
     p_.a_factor_=p.get("a_factor");
     p_.a_max_Neuron_=p.get("a_max_Neuron");
     p_.a_max_=p.get("a_max");
+    p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_omega_1=p.get("k_sig_max_omega_1");
     p_.k_sig_max_omega_2=p.get("k_sig_max_omega_2");
     p_.k_sig_max_omega_3=p.get("k_sig_max_omega_3");
