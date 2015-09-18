@@ -1,6 +1,6 @@
 parameters parameters_115
 
-model 1.15
+model 1.15022
 
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
@@ -89,7 +89,16 @@ a_factor <LOG> 2   [s^0]  10  [dB]// increase in apoptosis rate per state change
 a_max_Neuron <LOG> 2E-5   [s^-1]  10  [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
 
-a_max <LOG>  5E-7 [s-1] 10 [dB]// 1E-6 cell apoptosis rate at saturated DAMP
+a_max_1 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_2 <LOG> 2E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_3 <LOG> 5E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_4 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_5 <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
 
 
 inj_width <LOG>  1E-6   [m] 3 [dB]//  width of the injury
