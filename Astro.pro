@@ -86,7 +86,6 @@ DISTFILES += \
     run/p_132/parameters_132.txt \
     run/p_141/parameters_141.txt \
     run/3dplCL.txt \
-    run/p_114_24/parameters_114024.txt \
     run/p_112_22/parameters_112_22.txt \
     run/experiment_log_250_1 \
     run/experiment_log_50_1 \
@@ -120,7 +119,13 @@ DISTFILES += \
     run/runModel_0.sh \
     run/runModel_1.sh \
     run/p_013_23/parameters_013_23.txt \
-    run/p_013_23/o_13_23
+    run/p_013_23/o_13_23 \
+    run/p_113/parameters_113.txt \
+    run/p_115/parameters_115.txt \
+    run/p_113/o_113 \
+    run/p_115/o_115 \
+    run/runModelNew.sh \
+    run/p_114_24/parameters_114_24.txt
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
