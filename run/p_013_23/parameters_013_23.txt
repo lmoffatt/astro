@@ -1,6 +1,6 @@
-parameters parameters_013_23_31
+parameters parameters_013_23
 
-model 0.13023031
+model 0.13023
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
 
@@ -49,18 +49,7 @@ g_max_5 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
 N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
 
 
-N_1  <LOG>  10000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
-
 N_2  <LOG>  20000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
-
-N_3  <LOG>  30000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
-
-
-N_4  <LOG>  50000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
-
-
-N_5  <LOG>  70000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
-
 
 
 N_N  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of DAMP receptors on neurons

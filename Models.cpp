@@ -536,6 +536,7 @@ std::map<double, BaseModel *> BaseModel::getModels()
 
   o[Model013::number()]=new Model013;
 
+  o[Model013_23::number()]=new Model013_23;
   o[Model013_23_31::number()]=new Model013_23_31;
 
   o[Model021::number()]=new Model021;

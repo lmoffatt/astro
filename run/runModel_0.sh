@@ -3,6 +3,10 @@
 cd /home/lmoffatt.inquimae/Astro/Astro/run/p_000
 qsub o_000
 
+cd /home/lmoffatt.inquimae/Astro/Astro/run/p_011
+qsub o_011
+
+
 cd /home/lmoffatt.inquimae/Astro/Astro/run/p_012
 qsub o_012
 
