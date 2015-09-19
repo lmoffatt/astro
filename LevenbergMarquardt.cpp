@@ -209,13 +209,14 @@ LevenbergMarquardtDistribution& LevenbergMarquardtDistribution::optimize()
   std::cout<<"num DF="<<CL_->getData().numDF()<<"\n";
   std::cout<<"t(min)"<<"\t"<<"dt(s)"<<"\t";
   std::cout<<"nIter"<<"\t"<<"PostLogLik"<<"\t"<<"LogPrior"<<"\t"<<"landa"<<"\t";
-  std::cout<<"ParamChange"<<"\t"<<"PostLogLikChange"<<"\t"<<"NormGrad"<<"\n";
+  std::cout<<"ParamChange"<<"\t"<<"PostLogLikChange"<<"\t"<<"NormGrad"<<std::endl;
   if (os_.is_open())
     {
       os_<<"num DF="<<CL_->getData().numDF()<<"\n";
       os_<<"t(min)"<<"\t"<<"dt(s)"<<"\t";
       os_<<"nIter"<<"\t"<<"PostLogLik"<<"\t"<<"LogPrior"<<"\t"<<"landa"<<"\t";
       os_<<"ParamChange"<<"\t"<<"PostLogLikChange"<<"\t"<<"NormGrad"<<"\n";
+      os_.flush();
     }
   initialize();
   while (!meetConvergenceCriteria())
@@ -337,7 +338,7 @@ void LevenbergMarquardtDistribution::iterate()
 
   std::cout<<timeOpt_<<"\t"<<timeIter_<<"\t"<<nIter_<<"\t"<<logPostLikCurr_
           <<"\t"<<logPriorCurr_<<"\t"<<landa_<<"\t";
-  std::cout<<ParamChange_<<"\t"<<PostlogLikChange_<<"\t"<<GradNormPost_<<"\n";
+  std::cout<<ParamChange_<<"\t"<<PostlogLikChange_<<"\t"<<GradNormPost_<<std::endl;
   if (os_.is_open())
     {
       os_<<timeOpt_<<"\t"<<timeIter_<<"\t"<<nIter_<<"\t";
