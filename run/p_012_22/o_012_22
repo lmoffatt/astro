@@ -4,9 +4,9 @@
 #
 
 # Opciones SGE
-#$ -l h_rt=10:00:00 # Setea 2 horas de wall clock time
+#$ -l h_rt=11:59:00 # Setea 2 horas de wall clock time
 #$ -V  # Exporta las variables de entorno
-#$ -N p50u_012  # El nombre del job
+#$ -N p50u5s_012  # El nombre del job
 #$ -cwd # Cambia al directorio actual
 
 # Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
