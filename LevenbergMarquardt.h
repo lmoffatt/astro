@@ -177,6 +177,7 @@ public:
   LevenbergMarquardtDistribution(const CortexLikelihood* f,
                                 const Parameters& initialParam,
                                 std::size_t numIterations,
+                                 double maxDuration_mins,
                                  const std::string&  name);
 
   double getEvidence()const;
@@ -205,6 +206,8 @@ public:
   friend std::ostream& operator<<(std::ostream& s, LevenbergMarquardtDistribution& LM);
 
 private:
+  std::chrono::steady_clock::time_point startTime_;
+
   std::string fname_;
   std::ofstream os_;
   const CortexLikelihood* CL_;
@@ -217,6 +220,7 @@ private:
   // parameters of the optimization
   /// delta x used for Jacobian approximation
   double dx_;
+  double maxDur_in_min_;
   std::size_t maxIter_;
   std::size_t maxFeval_;
 
@@ -232,6 +236,8 @@ private:
   double landa0_;
   double v_;
 
+  double timeOpt_;
+  double timeIter_;
   std::size_t nIter_;
   std::size_t nFeval_;
   std::size_t nDF_;
@@ -276,7 +282,7 @@ private:
 
   std::vector<double> d_;
 
-
+  bool surpassDuration_;
   bool surpassIter_;
   bool surpassFeval_;
   bool surpassLanda_;

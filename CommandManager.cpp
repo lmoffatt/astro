@@ -742,13 +742,13 @@ void OptimizeCommand::run(const std::string line)
   //optimize opt experiment1 parameters_10 parameters_10 10 100
 
   std::string optimizeS, optName, experimentName, priorName, paramName;
-  double dtmin,dtmax, dx, tequilibrio=100000;
+  double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
   double factor=0;
   std::mt19937::result_type initseed=0;
   std::size_t nPoints_per_decade,niter,nseeds=0;
   std::stringstream ss(line);
 
-  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>factor>>nseeds>>initseed;
+  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>factor>>nseeds>>initseed;
 
   Experiment *e=new Experiment;
   e->load(experimentName);
@@ -822,7 +822,7 @@ void OptimizeCommand::run(const std::string line)
 
 
 
-      LevenbergMarquardtDistribution LM(&CL,p,niter,optName);
+      LevenbergMarquardtDistribution LM(&CL,p,niter,maxduration,optName);
 
 
       LM.optimize(optName,factor,nseeds,initseed);

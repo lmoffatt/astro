@@ -11,7 +11,9 @@
 LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(const CortexLikelihood *f,
                                                                const Parameters& initialParam
                                                                , std::size_t numIterations
+                                                               , double maxDuration_mins
                                                                , const std::string& name):
+  startTime_(std::chrono::steady_clock::now()),
   fname_(name),
   os_(),
   CL_(f),
@@ -20,6 +22,7 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(const CortexLikel
   nPar_(ParamInitial_.size()),
   nData_(f->getData().numCells()),
   dx_(std::sqrt(std::numeric_limits<double>::epsilon())/100),
+  maxDur_in_min_(maxDuration_mins),
   maxIter_(numIterations),
   maxFeval_(numIterations*initialParam.size()*2),
   ParamChangeMin_(1e-9),
@@ -28,6 +31,8 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(const CortexLikel
   maxLanda_(1e11),
   landa_(1000),
   v_(3),
+  timeOpt_(0),
+  timeIter_(0),
   nIter_(0),
   nFeval_(0),
   nDF_(0),
@@ -45,6 +50,7 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution(const CortexLikel
   JTWJ_landa_(std::vector< std::vector<double> > (nPar_,std::vector<double>(nPar_))),
   JTWJinv_(JTWJ_),
   d_(ParamCurr_.size()),
+  surpassDuration_(false),
   surpassIter_(false),
   surpassFeval_(false),
   ParamChange_(std::numeric_limits<double>::infinity()),
@@ -70,6 +76,7 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution (const LevenbergM
   w_(other.w_),
   ParamInitial_(other.ParamInitial_),
   nPar_(other.nPar_),
+  maxDur_in_min_(other.maxDur_in_min_),
   nData_(other.nData_),
   dx_(other.dx_),
   maxIter_(other.maxIter_),
@@ -81,6 +88,8 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution (const LevenbergM
   landa_(other.landa_),
   landa0_(other.landa0_),
   v_(other.v_),
+  timeOpt_(other.timeOpt_),
+  timeIter_(other.timeIter_),
   nIter_(other.nIter_),
   nFeval_(other.nFeval_),
   nDF_(other.nDF_),
@@ -103,6 +112,7 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution (const LevenbergM
   d_(other.d_),
 
 
+  surpassDuration_(other.surpassDuration_),
   surpassIter_(other.surpassIter_),
   surpassFeval_(other.surpassFeval_),
 
@@ -138,6 +148,8 @@ void swap(LevenbergMarquardtDistribution& one, LevenbergMarquardtDistribution& o
 
   std::swap(one.ParamInitial_,other.ParamInitial_);
   std::swap(one.nPar_,other.nPar_);
+  std::swap(one.maxDur_in_min_,other.maxDur_in_min_);
+
   std::swap(one.nData_,other.nData_);
   std::swap(one.dx_,other.dx_);
   std::swap(one.maxIter_,other.maxIter_);
@@ -149,6 +161,10 @@ void swap(LevenbergMarquardtDistribution& one, LevenbergMarquardtDistribution& o
   std::swap(one.landa_,other.landa_);
   std::swap(one.landa0_,other.landa0_);
   std::swap(one.v_,other.v_);
+
+  std::swap(one.timeIter_,other.timeIter_);
+  std::swap(one.timeOpt_,other.timeOpt_);
+
   std::swap(one.nIter_,other.nIter_);
   std::swap(one.nFeval_,other.nFeval_);
 
@@ -170,6 +186,7 @@ void swap(LevenbergMarquardtDistribution& one, LevenbergMarquardtDistribution& o
 
   std::swap(one.d_,other.d_);
 
+  std::swap(one.surpassDuration_,other.surpassDuration_);
   std::swap(one.ParamCurr_,other.ParamCurr_);
 
   std::swap(one.surpassIter_,other.surpassIter_);
@@ -190,11 +207,13 @@ void swap(LevenbergMarquardtDistribution& one, LevenbergMarquardtDistribution& o
 LevenbergMarquardtDistribution& LevenbergMarquardtDistribution::optimize()
 {
   std::cout<<"num DF="<<CL_->getData().numDF()<<"\n";
+  std::cout<<"t(min)"<<"\t"<<"dt(s)"<<"\t";
   std::cout<<"nIter"<<"\t"<<"PostLogLik"<<"\t"<<"LogPrior"<<"\t"<<"landa"<<"\t";
   std::cout<<"ParamChange"<<"\t"<<"PostLogLikChange"<<"\t"<<"NormGrad"<<"\n";
   if (os_.is_open())
     {
       os_<<"num DF="<<CL_->getData().numDF()<<"\n";
+      os_<<"t(min)"<<"\t"<<"dt(s)"<<"\t";
       os_<<"nIter"<<"\t"<<"PostLogLik"<<"\t"<<"LogPrior"<<"\t"<<"landa"<<"\t";
       os_<<"ParamChange"<<"\t"<<"PostLogLikChange"<<"\t"<<"NormGrad"<<"\n";
     }
@@ -310,11 +329,19 @@ void LevenbergMarquardtDistribution::iterate()
     isJacobianInvalid_=false;
   computeSearchDirection();
   updateLanda();
-  std::cout<<nIter_<<"\t"<<logPostLikCurr_<<"\t"<<logPriorCurr_<<"\t"<<landa_<<"\t";
+  auto tnow=std::chrono::steady_clock::now();
+  auto d=tnow-startTime_;
+  double t0=timeOpt_;
+  timeOpt_=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
+  timeIter_=60*(timeOpt_-t0);
+
+  std::cout<<timeOpt_<<"\t"<<timeIter_<<"\t"<<nIter_<<"\t"<<logPostLikCurr_
+          <<"\t"<<logPriorCurr_<<"\t"<<landa_<<"\t";
   std::cout<<ParamChange_<<"\t"<<PostlogLikChange_<<"\t"<<GradNormPost_<<"\n";
   if (os_.is_open())
     {
-      os_<<nIter_<<"\t"<<logPostLikCurr_<<"\t"<<logPriorCurr_<<"\t"<<landa_<<"\t";
+      os_<<timeOpt_<<"\t"<<timeIter_<<"\t"<<nIter_<<"\t";
+      os_<<logPostLikCurr_<<"\t"<<logPriorCurr_<<"\t"<<landa_<<"\t";
       os_<<ParamChange_<<"\t"<<PostlogLikChange_<<"\t"<<GradNormPost_<<"\n";
       os_.flush();
 
@@ -450,6 +477,7 @@ void update_Search_Direction(std::vector<double>& d
 }
 void LevenbergMarquardtDistribution::initialize()
 {
+  startTime_=std::chrono::steady_clock::now();
   nIter_=0;
   nFeval_=0;
   nDF_=CL_->getData().numDF();
@@ -582,6 +610,7 @@ void LevenbergMarquardtDistribution::updateLanda()
 
 bool LevenbergMarquardtDistribution::meetConvergenceCriteria()
 {
+  surpassDuration_=timeOpt_+timeIter_/60.0>=maxDur_in_min_;
   surpassIter_=nIter_>=maxIter_;
   surpassFeval_=nFeval_>=maxFeval_;
   surpassLanda_=landa_>=maxLanda_;
@@ -593,6 +622,7 @@ bool LevenbergMarquardtDistribution::meetConvergenceCriteria()
 
 
   return surpassIter_||
+      surpassDuration_||
       surpassFeval_||
       smallParamChange_||
       smallSSChange_||
@@ -634,6 +664,8 @@ std::string LevenbergMarquardtDistribution::report()const{
   std::stringstream output;
 
   output<<"Convergence critera: \t";
+  if (surpassDuration_)
+    output<<timeOpt_<<" surpassed time limit of ="<<maxDur_in_min_<<" mins "<<"\t";
   if (surpassIter_)
     output<<nIter_<<" surpass number of iterations="<<maxIter_<<"\t";
   if (surpassFeval_)

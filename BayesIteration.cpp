@@ -130,10 +130,12 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint)
   Parameters p=priors_.back();
 
   std::size_t numIterations=1000;
+  double maxDuration=120;
 
   LevenbergMarquardtDistribution LM(m_,
                         startingPoint,
-                        numIterations,"");
+                        numIterations,maxDuration,
+                                    "");
   LM.optimize();
   std::ofstream f;
 
@@ -255,6 +257,8 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
 
   std::size_t numIterations=1000;
 
+  double maxDuration=120;
+
   std::ofstream f;
 
   f.open(filename_.c_str(),std::ios_base::app);
@@ -274,7 +278,8 @@ BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
       seed=startingPoint.randomSample(mt,p,factor);
       LevenbergMarquardtDistribution LM(m_,
                             seed,
-                            numIterations,"");
+                            numIterations,maxDuration,
+                                        "");
       LM.optimize();
 
 
@@ -340,6 +345,7 @@ BayesIteration& BayesIteration::getPosterior()
 
   std::size_t factor=2;
   std::size_t numIterations=30;
+  double maxDuration=60;
   std::size_t numSeeds=10;
   std::map<double,Parameters> seeds=getRandomParameters(mt,numSeeds*factor,1);
 
@@ -347,7 +353,8 @@ BayesIteration& BayesIteration::getPosterior()
 
   LevenbergMarquardtDistribution LM(m_,
                         p,
-                        numIterations,"");
+                        numIterations,maxDuration,
+                                    "");
   LM.optimize();
   LMs.push_back(LM);
   Ps.push_back(LM.OptimParameters());
@@ -386,7 +393,8 @@ BayesIteration& BayesIteration::getPosterior()
       ++it;
       LevenbergMarquardtDistribution LM(m_,
                             initParam,
-                            numIterations,"");
+                            numIterations,maxDuration,
+                                        "");
       LM.optimize();
       friuts[LM.LogLik()]=LM.OptimParameters();
 
@@ -433,7 +441,7 @@ BayesIteration& BayesIteration::getPosterior()
 
           LevenbergMarquardtDistribution LM(m_,
                                 initParam,
-                                numIterations,"");
+                                numIterations,maxDuration,"");
           LM.optimize();
           friuts[LM.LogLik()]=LM.OptimParameters();
 
