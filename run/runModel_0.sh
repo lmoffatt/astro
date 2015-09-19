@@ -16,6 +16,9 @@ qsub o_012_22
 cd /home/lmoffatt.inquimae/Astro/Astro/run/p_013
 qsub o_013
 
+cd /home/lmoffatt.inquimae/Astro/Astro/run/p_013_23
+qsub o_013_23
+
 cd /home/lmoffatt.inquimae/Astro/Astro/run/p_013_23_31
 qsub o_013_23_31
 

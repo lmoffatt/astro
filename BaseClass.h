@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <limits>
+#include <chrono>
 
 std::istream& safeGetline(std::istream& is, std::string& t);
 
@@ -270,8 +271,8 @@ public:
 
   std::string getSaveName(std::string name)
   {
-    unsigned int t=time(NULL);
-    std::string filename=myClass()+"_"+name+"_"+std::to_string(t);
+    auto t=std::chrono::system_clock::now().time_since_epoch().count();
+    std::string filename=myClass()+"_"+name+"_"+std::to_string(t%100000);
     setId(filename);
     return filename+".txt";
   }
