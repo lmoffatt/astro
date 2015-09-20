@@ -119,7 +119,6 @@ DISTFILES += \
     run/runModel_0.sh \
     run/runModel_1.sh \
     run/p_013_23/parameters_013_23.txt \
-    run/p_013_23/o_13_23 \
     run/p_113/parameters_113.txt \
     run/p_115/parameters_115.txt \
     run/p_113/o_113 \
@@ -135,7 +134,8 @@ DISTFILES += \
     run/p_113_42/parameters_113_42 \
     run/p_112_22_31/parameters_112_22_31 \
     run/p_112_22_31/o_112_22_31 \
-    run/p_113_42/o_113_42
+    run/p_113_42/o_113_42 \
+    run/p_013_23/o_013_23
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
