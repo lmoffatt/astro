@@ -220,7 +220,7 @@ private:
   // parameters of the optimization
   /// delta x used for Jacobian approximation
   double dx_;
-  double maxDurMin_;
+  double maxDur_in_min_;
   std::size_t maxIter_;
   std::size_t maxFeval_;
 

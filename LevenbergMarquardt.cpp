@@ -228,7 +228,7 @@ LevenbergMarquardtDistribution& LevenbergMarquardtDistribution::optimize()
       os_<<*this;
       os_.flush();
     }
-  if (!isNanLogPostLik_&& !isJacobianInvalid_)
+  if (!isNanLogPostLik_&& !J_.empty())
     {
       JTWJinv_=inv(JTWJ_);
       ParamCurr_.setCovariance(JTWJinv_);
@@ -270,8 +270,8 @@ optimize(std::string optname,
       std::cout<<"chi 2 of random seed="<<CL_->getPrior().chi2Distance(ParamInitial_,ParamCurr_)<<" \n";
       if (os_.is_open())
         {
-        os_<<"chi 2 of random seed="<<CL_->getPrior().chi2Distance(ParamInitial_,ParamCurr_)<<" \n";
-        os_<<ParamCurr_;
+          os_<<"chi 2 of random seed="<<CL_->getPrior().chi2Distance(ParamInitial_,ParamCurr_)<<" \n";
+          os_<<ParamCurr_;
         }
       optimize();
       if ((!isNanLogPostLik_)&&(!J_.empty()))
@@ -322,15 +322,11 @@ double LevenbergMarquardtDistribution::logDetPostStd()const
 void LevenbergMarquardtDistribution::iterate()
 {
   computeJacobian();
-  if (J_.empty())
-    {
-      isJacobianInvalid_=true;
-    return;
+  if (!isJacobianInvalid_)
+  {
+      computeSearchDirection();
+      updateLanda();
     }
-  else
-    isJacobianInvalid_=false;
-  computeSearchDirection();
-  updateLanda();
   auto tnow=std::chrono::steady_clock::now();
   auto d=tnow-startTime_;
   double t0=timeOpt_;
@@ -357,6 +353,7 @@ void update_Jacobian(const ABC_Distribution_Model* f,
                      const std::vector<std::vector<double>>&P_expCurr,
                      std::size_t nPar,
                      std::vector<std::vector<double>>& J,
+                     bool& invalidJ,
                      std::vector<double>& w,
                      std::vector<double>& epsilon,
                      std::vector<double>& priorG,
@@ -364,15 +361,21 @@ void update_Jacobian(const ABC_Distribution_Model* f,
                      double dx
                      )
 {
-  J=f->J(ParamCurr, P_expCurr,dx);
-  if (J.empty())
-    return;
-  nFeval+=nPar;
-  w=f->weight(P_expCurr);
-  priorG=f->PriorGradient(ParamCurr);
-  epsilon=f->epsilon(P_expCurr);
+  auto J0=f->J(ParamCurr, P_expCurr,dx);
+  if (J0.empty())
+    {
+      invalidJ=true;
+    }
+  else
+    {
+      J=J0;
+      invalidJ=false;
+      nFeval+=nPar;
+      w=f->weight(P_expCurr);
+      priorG=f->PriorGradient(ParamCurr);
+      epsilon=f->epsilon(P_expCurr);
+    }
 }
-
 void update_Gradient(std::vector<double>& G,
                      const std::vector<double>& prior_G,
                      const std::vector<double>& epsilon,
@@ -413,20 +416,13 @@ void update_JTWJ(std::vector<std::vector<double>>& JTWJ
 void LevenbergMarquardtDistribution::computeJacobian()
 {
 
-  update_Jacobian(CL_,ParamCurr_,P_expCurr_,nPar_,J_,w_,epsilon_,prior_G_,nFeval_,dx_);
-  if (J_.empty())
-    {
-    isJacobianInvalid_=true;
-    return;
-     }
-  else
-    {
-      isJacobianInvalid_=false;
+  update_Jacobian(CL_,ParamCurr_,P_expCurr_,nPar_,J_
+                  ,isJacobianInvalid_,w_,epsilon_,prior_G_,nFeval_,dx_);
+  if (!isJacobianInvalid_)
+    {update_Gradient(G_,prior_G_,epsilon_,J_);
+
+      update_JTWJ(JTWJ_,JTWJ_landa_,ParamCurr_,J_,w_,nPar_,nData_);
     }
-  update_Gradient(G_,prior_G_,epsilon_,J_);
-
-  update_JTWJ(JTWJ_,JTWJ_landa_,ParamCurr_,J_,w_,nPar_,nData_);
-
 }
 
 void update_Likelihoods(const ABC_Distribution_Model* f
@@ -490,6 +486,7 @@ void LevenbergMarquardtDistribution::initialize()
   landa_=1000;
   isNanLogPostLik_=false;
   isJacobianInvalid_=false;
+  J_.clear();
   update_Likelihoods(CL_,ParamCurr_,P_expCurr_,logLikCurr_,logPriorCurr_,logPostLikCurr_
                      ,nFeval_);
 }
