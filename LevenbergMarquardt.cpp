@@ -479,6 +479,7 @@ void update_Search_Direction(std::vector<double>& d
 void LevenbergMarquardtDistribution::initialize()
 {
   startTime_=std::chrono::steady_clock::now();
+  timeOpt_=0;
   nIter_=0;
   nFeval_=0;
   nDF_=CL_->getData().numDF();
