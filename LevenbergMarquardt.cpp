@@ -280,7 +280,7 @@ optimize(std::string optname,
               (optname+"_"+std::to_string(PostLogLik())+"_"+std::to_string(nIter_));
           CortexMultinomialLikelihoodEvaluation CE(*CL_,OptimParameters());
           std::ofstream fo;
-          std::string fnameout=optfname.substr(0,optfname.size()-3)+"_lik.txt";
+          std::string fnameout=optfname.substr(0,optfname.size()-3)+"_lik.txt ";
           fo.open(fnameout.c_str());
           CE.extract(fo);
           fo.close();
@@ -521,14 +521,14 @@ void LevenbergMarquardtDistribution::computeSearchDirection()
 void LevenbergMarquardtDistribution::updateLanda()
 {
   std::size_t ifevalLoop=0;
-
+  std::size_t maxFealLoop=10;
   /// no es mejor
   if ((logPostLogLikNew_<=logPostLikCurr_)
       ||std::isnan(logPostLogLikNew_))
     {
       /// mientras no sea mejor
       while(((logPostLogLikNew_<=logPostLikCurr_)
-             &&(nFeval_<maxFeval_)
+             &&(ifevalLoop<maxFealLoop)
              )||isnan(logPostLogLikNew_))
         {
           /// si me paso freno...
@@ -546,6 +546,7 @@ void LevenbergMarquardtDistribution::updateLanda()
         }
 
       /// de aca sali porque cosegui algo mejor o porque el landa es muy grande
+      /// o porque hice muchas evaluaciones
     }
   else
     {
