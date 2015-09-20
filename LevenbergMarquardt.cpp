@@ -276,7 +276,8 @@ optimize(std::string optname,
       optimize();
       if ((!isNanLogPostLik_)&&(!J_.empty()))
         {
-          std::string optfname=OptimParameters().save(optname+"_"+std::to_string(PostLogLik()));
+          std::string optfname=OptimParameters().save
+              (optname+"_"+std::to_string(PostLogLik())+"_"+std::to_string(nIter_));
           CortexMultinomialLikelihoodEvaluation CE(*CL_,OptimParameters());
           std::ofstream fo;
           std::string fnameout=optfname.substr(0,optfname.size()-3)+"_lik.txt";
