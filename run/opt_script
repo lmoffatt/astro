@@ -1,4 +1,4 @@
 //experiment experiment_log_250 10000000 1 0  0  [ 0  250 500 : 500 : 4000  ]  3dplCL 3dpl 7dpl2
 //   ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>
 //dx>>dtmin>>nPointsPerDecade>>dtmax>>niter>>maxmin>>factor>>nseeds>>initseed;
-optimize opt_log_50u_5_LABEL ../experiment_log_50_1 LABEL LABEL 50  0.1 10 5  500  600 1 100 0
+optimize opt_log_25u_5_LABEL ../experiment_log_25_1 LABEL LABEL 25  0.1 10 2  500  1200 1 100 0
