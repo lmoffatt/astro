@@ -1275,6 +1275,289 @@ public:
 
 
 
+class Model012_51:public BaseModel
+{
+  SimplestModel m;
+
+
+
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_;
+    double kcat_;
+
+    double Kg_2_;
+    double Kg_3_;
+    double Kg_4_;
+    double Kg_5_;
+
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+    double g_23_;
+    double g_max_2_;
+    double g_max_3_;
+    double g_max_4_;
+    double g_max_5_;
+    double N_0_;
+    double N_2_;
+    double N_N_;
+    double N_Astr_;
+    double N_Neuron_;
+    double a_2_;
+    double a_factor_;
+   double a_max_Neuron_;
+    double a_max_;
+
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+    double inj_width_3dpl_;
+    double inj_width_7dpl2_;
+
+   };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+    s.DAMP_ratio_=p.DAMP_ratio_;
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=0;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_/p.Keq_;
+    s.kcat_psi_=p.kcat_;
+    s.kon_omega_=0;
+    s.kcat_omega_=0;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+    s.Keq_gmax_psi_[2]=p.Kg_2_;
+    s.Keq_gmax_psi_[3]=p.Kg_3_;
+    s.Keq_gmax_psi_[4]=p.Kg_4_;
+    s.Keq_gmax_psi_[5]=p.Kg_5_;
+
+
+    s.ksig_omega_=std::vector<double>(7,0);
+    s.ksig_max_omega_=std::vector<double>(7,0);
+    s.ksig_max_psi_=std::vector<double>(7,0);
+
+    s.g_left_=std::vector<double> (7,0);
+    s.g_left_[2]=p.g_10_;
+    s.g_left_[3]=p.g_21_;
+
+
+
+    s.g_rigth_=std::vector<double> (7,0);
+    s.g_rigth_[1]=p.g_01_;
+    s.g_rigth_[2]=p.g_12_;
+
+
+    s.g_rigth_[3]=p.g_23_;
+    s.g_rigth_[4]=p.g_23_;
+    s.g_rigth_[5]=p.g_23_;
+
+    s.g_max_omega_=std::vector<double> (7,0);
+
+
+    s.g_max_psi_=std::vector<double> (7,0);
+
+    s.g_max_psi_[2]=p.g_max_2_;
+    s.g_max_psi_[3]=p.g_max_3_;
+    s.g_max_psi_[4]=p.g_max_4_;
+    s.g_max_psi_[5]=p.g_max_5_;
+
+
+    s.a_=std::vector<double> (7,0);
+    s.a_[3]=p.a_2_;
+    s.a_[4]=p.a_2_*p.a_factor_;
+    s.a_[5]=s.a_[4]*p.a_factor_;
+    s.a_[6]=s.a_[5]*p.a_factor_;
+
+    s.a_omega_=std::vector<double> (7,0);
+    s.a_psi_=std::vector<double> (7,0);
+
+    s.a_psi_[0]=p.a_max_Neuron_;
+    s.a_psi_[3]=p.a_max_;
+    s.a_psi_[4]=p.a_max_*p.a_factor_;
+    s.a_psi_[5]=s.a_psi_[4]*p.a_factor_;
+    s.a_psi_[6]=s.a_psi_[5]*p.a_factor_;
+
+
+
+
+    s.N_=std::vector<double> (7,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_0_;
+    s.N_[2]=p.N_0_;
+    s.N_[3]=p.N_2_;
+    s.N_[4]=p.N_2_*1.5;
+    s.N_[5]=p.N_2_*3;
+    s.N_[6]=p.N_2_*6;
+
+
+
+    s.M_=std::vector<double> (7,0);
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+
+    return s;
+  }
+
+
+  myParameters p_;
+
+
+  // BaseModel interface
+public:
+  Model012_51(){}
+  ~Model012_51(){}
+  virtual std::string id() const
+  {
+    return "Model 0.12051";
+  }
+  static double number()
+  {
+    return 0.12051;
+  }
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq",p_.Keq_);
+    out.push_back("kcat", p_.kcat_);
+    out.push_back("Kg_2",p_.Kg_2_);
+    out.push_back("Kg_3",p_.Kg_3_);
+    out.push_back("Kg_4",p_.Kg_4_);
+    out.push_back("Kg_5",p_.Kg_5_);
+
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_max_2",p_.g_max_2_ );
+    out.push_back("g_max_3",p_.g_max_3_ );
+    out.push_back("g_max_4",p_.g_max_4_ );
+    out.push_back("g_max_5",p_.g_max_5_ );
+    out.push_back("N_0",p_.N_0_ );
+    out.push_back("N_2",p_.N_2_ );
+    out.push_back("N_N",p_.N_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron_",p_.N_Neuron_);
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_factor",p_.a_factor_ );
+
+    out.push_back("a_max_Neuron",p_.a_max_Neuron_ );
+    out.push_back("a_max",p_.a_max_ );
+
+
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_=p.get("Keq_psi");
+    p_.kcat_=p.get("kcat_psi");
+    p_.Kg_2_=p.get("Kg_2");
+    p_.Kg_3_=p.get("Kg_3");
+    p_.Kg_4_=p.get("Kg_4");
+    p_.Kg_5_=p.get("Kg_5");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+
+    p_.g_23_=p.get("g_23");
+    p_.g_max_2_=p.get("g_max_2");
+    p_.g_max_3_=p.get("g_max_3");
+    p_.g_max_4_=p.get("g_max_4");
+    p_.g_max_5_=p.get("g_max_5");
+    p_.N_0_=p.get("N_0");
+    p_.N_2_=p.get("N_2");
+    p_.N_N_=p.get("N_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.a_factor_=p.get("a_factor");
+    p_.a_max_Neuron_=p.get("a_max_Neuron");
+    p_.a_max_=p.get("a_max");
+
+
+    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
+    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+
+
+  }
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+  }
+
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+
+
+
+  Model012_51(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
+
+
 
 class Model013:public BaseModel
 {
@@ -2170,6 +2453,298 @@ public:
 
 };
 
+
+
+class Model013_51:public BaseModel
+{
+  SimplestModel m;
+
+
+
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_;
+    double kcat_;
+
+    double Kg_2_;
+    double Kg_3_;
+    double Kg_4_;
+    double Kg_5_;
+
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+
+    double g_23_;
+    double g_34_;
+    double g_45_;
+
+    double g_max_2_;
+    double g_max_3_;
+    double g_max_4_;
+    double g_max_5_;
+    double N_0_;
+    double N_2_;
+    double N_N_;
+    double N_Astr_;
+    double N_Neuron_;
+    double a_2_;
+    double a_factor_;
+   double a_max_Neuron_;
+    double a_max_;
+
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+    double inj_width_3dpl_;
+    double inj_width_7dpl2_;
+
+   };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+    s.DAMP_ratio_=p.DAMP_ratio_;
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=0;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_/p.Keq_;
+    s.kcat_psi_=p.kcat_;
+    s.kon_omega_=0;
+    s.kcat_omega_=0;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+    s.Keq_gmax_psi_[2]=p.Kg_2_;
+    s.Keq_gmax_psi_[3]=p.Kg_3_;
+    s.Keq_gmax_psi_[4]=p.Kg_4_;
+    s.Keq_gmax_psi_[5]=p.Kg_5_;
+
+
+    s.ksig_omega_=std::vector<double>(7,0);
+    s.ksig_max_omega_=std::vector<double>(7,0);
+    s.ksig_max_psi_=std::vector<double>(7,0);
+
+    s.g_left_=std::vector<double> (7,0);
+    s.g_left_[2]=p.g_10_;
+    s.g_left_[3]=p.g_21_;
+
+
+
+    s.g_rigth_=std::vector<double> (7,0);
+    s.g_rigth_[1]=p.g_01_;
+    s.g_rigth_[2]=p.g_12_;
+
+
+    s.g_rigth_[3]=p.g_23_;
+    s.g_rigth_[4]=p.g_34_;
+    s.g_rigth_[5]=p.g_45_;
+
+    s.g_max_omega_=std::vector<double> (7,0);
+
+
+    s.g_max_psi_=std::vector<double> (7,0);
+
+    s.g_max_psi_[2]=p.g_max_2_;
+    s.g_max_psi_[3]=p.g_max_3_;
+    s.g_max_psi_[4]=p.g_max_4_;
+    s.g_max_psi_[5]=p.g_max_5_;
+
+
+    s.a_=std::vector<double> (7,0);
+    s.a_[3]=p.a_2_;
+    s.a_[4]=p.a_2_*p.a_factor_;
+    s.a_[5]=s.a_[4]*p.a_factor_;
+    s.a_[6]=s.a_[5]*p.a_factor_;
+
+    s.a_omega_=std::vector<double> (7,0);
+    s.a_psi_=std::vector<double> (7,0);
+
+    s.a_psi_[0]=p.a_max_Neuron_;
+    s.a_psi_[3]=p.a_max_;
+    s.a_psi_[4]=p.a_max_*p.a_factor_;
+    s.a_psi_[5]=s.a_psi_[4]*p.a_factor_;
+    s.a_psi_[6]=s.a_psi_[5]*p.a_factor_;
+
+
+
+
+    s.N_=std::vector<double> (7,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_0_;
+    s.N_[2]=p.N_0_;
+    s.N_[3]=p.N_2_;
+    s.N_[4]=p.N_2_*1.5;
+    s.N_[5]=p.N_2_*3;
+    s.N_[6]=p.N_2_*6;
+
+
+
+    s.M_=std::vector<double> (7,0);
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+
+    return s;
+  }
+
+
+  myParameters p_;
+
+
+  // BaseModel interface
+public:
+  Model013_51(){}
+  ~Model013_51(){}
+  virtual std::string id() const
+  {
+    return "Model 0.13051";
+  }
+  static double number()
+  {
+    return 0.13051;
+  }
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq",p_.Keq_);
+    out.push_back("kcat", p_.kcat_);
+
+    out.push_back("Kg_2",p_.Kg_2_);
+    out.push_back("Kg_3",p_.Kg_3_);
+    out.push_back("Kg_4",p_.Kg_4_);
+    out.push_back("Kg_5",p_.Kg_5_);
+
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_34",p_.g_34_ );
+    out.push_back("g_45",p_.g_45_ );
+    out.push_back("g_max_2",p_.g_max_2_ );
+    out.push_back("g_max_3",p_.g_max_3_ );
+    out.push_back("g_max_4",p_.g_max_4_ );
+    out.push_back("g_max_5",p_.g_max_5_ );
+    out.push_back("N_0",p_.N_0_ );
+    out.push_back("N_2",p_.N_2_ );
+    out.push_back("N_N",p_.N_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron_",p_.N_Neuron_);
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_factor",p_.a_factor_ );
+
+    out.push_back("a_max_Neuron",p_.a_max_Neuron_ );
+    out.push_back("a_max",p_.a_max_ );
+
+
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_=p.get("Keq_psi");
+    p_.kcat_=p.get("kcat_psi");
+    p_.Kg_2_=p.get("Kg_2");
+    p_.Kg_3_=p.get("Kg_3");
+    p_.Kg_4_=p.get("Kg_4");
+    p_.Kg_5_=p.get("Kg_5");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+
+    p_.g_23_=p.get("g_23");
+    p_.g_34_=p.get("g_34");
+    p_.g_45_=p.get("g_45");
+    p_.g_max_2_=p.get("g_max_2");
+    p_.g_max_3_=p.get("g_max_3");
+    p_.g_max_4_=p.get("g_max_4");
+    p_.g_max_5_=p.get("g_max_5");
+    p_.N_0_=p.get("N_0");
+    p_.N_2_=p.get("N_2");
+    p_.N_N_=p.get("N_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.a_factor_=p.get("a_factor");
+    p_.a_max_Neuron_=p.get("a_max_Neuron");
+    p_.a_max_=p.get("a_max");
+
+
+    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
+    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+
+
+  }
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+  }
+
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+
+
+
+  Model013_51(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
 
 
 class Model021:public BaseModel
@@ -3271,6 +3846,277 @@ public:
 };
 
 
+class Model051:public BaseModel
+{
+  SimplestModel m;
+
+
+
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_;
+    double kcat_;
+
+    double Kg_2_;
+    double Kg_3_;
+    double Kg_4_;
+    double Kg_5_;
+
+
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+
+    double g_23_;
+    double g_max_;
+    double N_0_;
+    double N_2_;
+    double N_N_;
+    double N_Astr_;
+    double N_Neuron_;
+    double a_2_;
+    double a_factor_;
+    double a_max_Neuron_;
+    double a_max_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+    double inj_width_3dpl_;
+    double inj_width_7dpl2_;
+
+   };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+    s.DAMP_ratio_=p.DAMP_ratio_;
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=0;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_/p.Keq_;
+    s.kcat_psi_=p.kcat_;
+    s.kon_omega_=0;
+    s.kcat_omega_=0;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+
+    s.Keq_gmax_psi_[2]=p.Kg_2_;
+    s.Keq_gmax_psi_[3]=p.Kg_3_;
+    s.Keq_gmax_psi_[4]=p.Kg_4_;
+    s.Keq_gmax_psi_[5]=p.Kg_5_;
+
+
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
+    s.ksig_omega_=std::vector<double>(7,0);
+    s.ksig_max_omega_=std::vector<double>(7,0);
+    s.ksig_max_psi_=std::vector<double>(7,0);
+
+    s.g_left_=std::vector<double> (7,0);
+    s.g_left_[2]=p.g_10_;
+    s.g_left_[3]=p.g_21_;
+
+
+
+    s.g_rigth_=std::vector<double> (7,0);
+    s.g_rigth_[1]=p.g_01_;
+    s.g_rigth_[2]=p.g_12_;
+
+
+    s.g_rigth_[3]=p.g_23_;
+    s.g_rigth_[4]=p.g_23_;
+    s.g_rigth_[5]=p.g_23_;
+
+    s.g_max_omega_=std::vector<double> (7,0);
+
+
+    s.g_max_psi_=std::vector<double> (7,0);
+
+    s.g_max_psi_[2]=p.g_max_;
+    s.g_max_psi_[3]=p.g_max_;
+    s.g_max_psi_[4]=p.g_max_;
+    s.g_max_psi_[5]=p.g_max_;
+
+
+    s.a_=std::vector<double> (7,0);
+    s.a_[3]=p.a_2_;
+    s.a_[4]=p.a_2_*p.a_factor_;
+    s.a_[5]=s.a_[4]*p.a_factor_;
+    s.a_[6]=s.a_[5]*p.a_factor_;
+
+    s.a_omega_=std::vector<double> (7,0);
+    s.a_psi_=std::vector<double> (7,0);
+
+    s.a_psi_[0]=p.a_max_Neuron_;
+    s.a_psi_[3]=p.a_max_;
+    s.a_psi_[4]=p.a_max_*p.a_factor_;
+    s.a_psi_[5]=s.a_psi_[4]*p.a_factor_;
+    s.a_psi_[6]=s.a_psi_[5]*p.a_factor_;
+
+
+    s.N_=std::vector<double> (7,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_0_;
+    s.N_[2]=p.N_0_;
+    s.N_[3]=p.N_2_;
+    s.N_[4]=p.N_2_*1.5;
+    s.N_[5]=p.N_2_*3;
+    s.N_[6]=p.N_2_*6;
+
+
+
+    s.M_=std::vector<double> (7,0);
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    return s;
+  }
+
+
+  myParameters p_;
+
+
+  // BaseModel interface
+public:
+  Model051(){}
+  ~Model051(){}
+  virtual std::string id() const
+  {
+    return "Model 0.51";
+  }
+  static double number()
+  {
+    return 0.51;
+  }
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq",p_.Keq_);
+    out.push_back("kcat", p_.kcat_);
+
+    out.push_back("Kg_2",p_.Kg_2_);
+    out.push_back("Kg_3",p_.Kg_3_);
+    out.push_back("Kg_4",p_.Kg_4_);
+    out.push_back("Kg_5",p_.Kg_5_);
+
+
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_max",p_.g_max_ );
+    out.push_back("N_0",p_.N_0_ );
+    out.push_back("N_2",p_.N_2_ );
+    out.push_back("N_N",p_.N_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron_",p_.N_Neuron_);
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_factor",p_.a_factor_ );
+
+    out.push_back("a_max_Neuron",p_.a_max_Neuron_ );
+    out.push_back("a_max",p_.a_max_ );
+
+
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_=p.get("Keq_psi");
+    p_.kcat_=p.get("kcat_psi");
+    p_.Kg_2_=p.get("Kg_2");
+    p_.Kg_3_=p.get("Kg_3");
+    p_.Kg_4_=p.get("Kg_4");
+    p_.Kg_5_=p.get("Kg_5");
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+
+
+    p_.g_23_=p.get("g_23");
+    p_.g_max_=p.get("g_max");
+    p_.N_0_=p.get("N_0");
+    p_.N_2_=p.get("N_2");
+    p_.N_N_=p.get("N_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.a_factor_=p.get("a_factor");
+    p_.a_max_Neuron_=p.get("a_max_Neuron");
+    p_.a_max_=p.get("a_max");
+    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
+    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+
+
+  }
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+  }
+
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+
+
+
+  Model051(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
 
 
 

@@ -135,7 +135,13 @@ DISTFILES += \
     run/p_112_22_31/parameters_112_22_31 \
     run/p_112_22_31/o_112_22_31 \
     run/p_113_42/o_113_42 \
-    run/p_013_23/o_013_23
+    run/p_013_23/o_013_23 \
+    run/p_051/parameters_051.txt \
+    run/p_012_51/parameters_012_51.txt \
+    run/p_013_51/parameters_013_51.txt \
+    run/p_051/o_051 \
+    run/p_013_51/o_013_51 \
+    run/p_012_51/o_012_51
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
