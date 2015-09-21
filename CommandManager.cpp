@@ -376,6 +376,8 @@ void ExperimentCommand::run(const std::string line)
       cm_->execute("align "+s);
       cm_->execute("merge "+s);
       cm_->execute("distances "+s);
+      cm_->execute("write "+s);
+
       cm_->execute("histogram "+s+ " d_les "
                    +std::to_string(maxnumpoints)+"  "
                    +std::to_string(initseed)+"  "

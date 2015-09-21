@@ -241,20 +241,20 @@ dRho_dt(const Param &p,
               if (k+1<numK)
                 Jr=p.g_left_[k+1]*c.rho_[x][k+1]
                     -(p.g_rigth_[k]
-                      +p.g_max_psi_[k]*p.kon_psi_*psi_F
-                      /(p.kcat_psi_+p.kon_psi_*psi_F)
-                      +p.g_max_omega_[k]*p.kon_omega_*omega_F
-                      /(p.kcat_omega_+p.kon_omega_*omega_F)
+                      +p.g_max_psi_[k]*psi_F
+                      /(p.Keq_gmax_psi_[k]+psi_F)
+                      +p.g_max_omega_[k]*omega_F
+                      /(p.Keq_gmax_omega_[k]+omega_F)
                       )*c.rho_[x][k];
               else
                 Jr=0;
               if (k>0)
                 Jl=-p.g_left_[k]*c.rho_[x][k]
                     +(p.g_rigth_[k-1]
-                    +p.g_max_psi_[k-1]*p.kon_psi_*psi_F
-                    /(p.kcat_psi_+p.kon_psi_*psi_F)
-                    +p.g_max_omega_[k-1]*p.kon_omega_*omega_F
-                    /(p.kcat_omega_+p.kon_omega_*omega_F)
+                    +p.g_max_psi_[k-1]*psi_F
+                    /(p.Keq_gmax_psi_[k-1]+psi_F)
+                    +p.g_max_omega_[k-1]*omega_F
+                    /(p.Keq_gmax_omega_[k-1]+omega_F)
                     )*c.rho_[x][k-1];
               else
                 Jl=0;
@@ -282,16 +282,16 @@ dRho_dt(const Param &p,
               if (k+1<numK)
                 Jr=p.g_left_[k+1]*c.rho_[x][k+1]
                     -(p.g_rigth_[k]
-                      +p.g_max_psi_[k]*p.kon_psi_*psi_F
-                      /(p.kcat_psi_+p.kon_psi_*psi_F)
+                      +p.g_max_psi_[k]*psi_F
+                      /(p.Keq_gmax_psi_[k]+psi_F)
                       )*c.rho_[x][k];
               else
                 Jr=0;
               if (k>0)
                 Jl=-p.g_left_[k]*c.rho_[x][k]
                     +(p.g_rigth_[k-1]
-                    +p.g_max_psi_[k-1]*p.kon_psi_*psi_F
-                    /(p.kcat_psi_+p.kon_psi_*c.psi_T_[x])
+                    +p.g_max_psi_[k-1]*psi_F
+                    /(p.Keq_gmax_psi_[k-1]+psi_F)
                     )*c.rho_[x][k-1];
               else
                 Jl=0;

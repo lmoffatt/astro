@@ -51,6 +51,11 @@ public:
     double kon_omega_;
     double kcat_omega_;
 
+    std::vector<double> Keq_gmax_psi_;
+    std::vector<double> Keq_gmax_omega_;
+
+
+
     std::vector<double> ksig_omega_;
 
     std::vector<double> ksig_max_omega_;
@@ -273,6 +278,9 @@ class Model00:public BaseModel
     s.kcat_psi_=p.kcat_;
     s.kon_omega_=0;
     s.kcat_omega_=0;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
@@ -520,6 +528,10 @@ class Model011:public BaseModel
     s.kcat_psi_=p.kcat_;
     s.kon_omega_=0;
     s.kcat_omega_=0;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
@@ -779,6 +791,10 @@ class Model012:public BaseModel
     s.kcat_psi_=p.kcat_;
     s.kon_omega_=0;
     s.kcat_omega_=0;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
@@ -1043,6 +1059,10 @@ class Model012_22:public BaseModel
     s.kcat_psi_=p.kcat_;
     s.kon_omega_=0;
     s.kcat_omega_=0;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
@@ -1320,6 +1340,10 @@ class Model013:public BaseModel
     s.kon_omega_=0;
     s.kcat_omega_=0;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
     s.ksig_max_psi_=std::vector<double>(7,0);
@@ -1595,6 +1619,10 @@ class Model013_23:public BaseModel
     s.kcat_psi_=p.kcat_;
     s.kon_omega_=0;
     s.kcat_omega_=0;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
@@ -1903,6 +1931,10 @@ class Model013_23_31:public BaseModel
     s.kon_omega_=0;
     s.kcat_omega_=0;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
     s.ksig_max_psi_=std::vector<double>(7,0);
@@ -2201,6 +2233,10 @@ class Model021:public BaseModel
     s.kon_omega_=0;
     s.kcat_omega_=0;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
     s.ksig_max_psi_=std::vector<double>(7,0);
@@ -2474,6 +2510,10 @@ class Model022:public BaseModel
     s.kon_omega_=0;
     s.kcat_omega_=0;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
     s.ksig_max_psi_=std::vector<double>(7,0);
@@ -2744,6 +2784,10 @@ class Model023:public BaseModel
     s.kcat_psi_=p.kcat_;
     s.kon_omega_=0;
     s.kcat_omega_=0;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
@@ -3022,6 +3066,10 @@ class Model031:public BaseModel
     s.kon_omega_=0;
     s.kcat_omega_=0;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(7,0);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_max_omega_=std::vector<double>(7,0);
     s.ksig_max_psi_=std::vector<double>(7,0);
@@ -3284,6 +3332,10 @@ class Model10:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -3587,6 +3639,10 @@ class Model111:public BaseModel
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
     s.ksig_omega_[4]=p.k_sig_*1.5;
@@ -3886,6 +3942,10 @@ class Model112:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -4193,6 +4253,10 @@ class Model112_22:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -4504,6 +4568,10 @@ class Model112_22_31:public BaseModel
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
     s.ksig_omega_[4]=p.k_sig_*1.5;
@@ -4811,6 +4879,10 @@ class Model113:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -5123,6 +5195,10 @@ class Model113_42:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -5442,6 +5518,10 @@ class Model114:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -5774,6 +5854,10 @@ class Model114_24_44:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -6169,6 +6253,10 @@ class Model114_24_32_44:public BaseModel
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
     s.ksig_omega_[4]=p.k_sig_*1.5;
@@ -6554,6 +6642,10 @@ class Model115:public BaseModel
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
     s.ksig_omega_[4]=p.k_sig_*1.5;
@@ -6873,6 +6965,10 @@ class Model115_22:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -7212,6 +7308,10 @@ class Model115_25:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -7554,6 +7654,10 @@ class Model121:public BaseModel
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
     s.ksig_omega_[4]=p.k_sig_*1.5;
@@ -7858,6 +7962,10 @@ class Model122:public BaseModel
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
     s.ksig_omega_[4]=p.k_sig_*1.5;
@@ -8161,6 +8269,10 @@ class Model123:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -8476,6 +8588,10 @@ class Model124:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -8806,6 +8922,10 @@ class Model125:public BaseModel
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
     s.ksig_omega_[4]=p.k_sig_*1.5;
@@ -9132,6 +9252,10 @@ class Model131:public BaseModel
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
     s.ksig_omega_[4]=p.k_sig_*1.5;
@@ -9439,6 +9563,10 @@ class Model132:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -9758,6 +9886,10 @@ class Model141:public BaseModel
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
 
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
+
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[2]=p.k_sig_1_;
     s.ksig_omega_[3]=p.k_sig_2_;
@@ -10075,6 +10207,10 @@ class Model142:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
@@ -10397,6 +10533,10 @@ class Model144:public BaseModel
     s.kcat_psi_=p.kcat_psi;
     s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
     s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(7,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(7,p.Keq_omega_);
+
 
     s.ksig_omega_=std::vector<double>(7,0);
     s.ksig_omega_[3]=p.k_sig_;
