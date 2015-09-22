@@ -115,6 +115,7 @@ public:
         c.psi_T_[i]+=damp*inj_size_cell/c.dx_[i]/p.epsilon_;
         ++i;
       }
+    i=0;
     if (p.DAMP_omega_ratio_>0)
       {
     double damp2=p.prot_concentration_*p.DAMP_omega_ratio_/p.DAMP_MW_/1000;
