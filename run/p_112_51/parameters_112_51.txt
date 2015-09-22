@@ -1,6 +1,6 @@
-parameters parameters_142
+parameters parameters_112
 
-model 1.42
+model 1.12
 
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
@@ -12,13 +12,22 @@ epsilon <LOGRATIO> 5e-2  [m/m] 1.08  [dB]// fraction of extracelular space
 Keq_psi  <LOG> 2.38E-6  [M] 5.91  [dB]// affinity constant for psi
 
 
-Keq_omega  <LOG> 2.17E-8  [M] 4.8  [dB]// affinity constant for omega
+Keq_omega  <LOG> 2.17E-8  [M] 4.8 <LOG> [dB]// affinity constant for omega
 
 
 kcat_psi  <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
 
 
 kcat_omega <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
+
+
+Kg_2 <LOG> 2.38E-6  [M] 5.91  [dB]// affinity constant for psi in gmax 2
+
+Kg_3 <LOG> 2.38E-6  [M] 5.91  [dB]// affinity constant for psi in gmax 2
+
+Kg_4 <LOG> 2.38E-6  [M] 5.91  [dB]// affinity constant for psi in gmax 2
+
+Kg_5 <LOG> 2.38E-6  [M] 5.91  [dB]// affinity constant for psi in gmax 2
 
 
 g_01 <LOG>  1E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
@@ -39,7 +48,17 @@ g_21  <LOG> 3E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
 g_23 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
 
 
-g_max <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+g_max_2 <LOG>  5E-5 [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_3 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_4 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+
+g_max_5 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
 
 
 N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
@@ -82,17 +101,7 @@ DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
 
 k_sig <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
 
-
-k_sig_max_1 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
-
-k_sig_max_2 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
-
-k_sig_max_3 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
-
-k_sig_max_4 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
-
-k_sig_max_5 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
-
+k_sig_max <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
 
 inj_width_3dpl <LOG> 50 [um] 1 [dB] // ancho de la injuria a tres dias
 

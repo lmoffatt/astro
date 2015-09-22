@@ -170,15 +170,17 @@ std::vector<double> SimplestModel::dOmega_dt(const Param &p,
       double psi_F=c.psi_T_[x]-c.psi_B_[x];
       double omega_F=c.omega_T_[x]-c.omega_B_[x];
 
-      for (unsigned k=0; k<numK; ++k)
-        {
-          sig+=(p.ksig_omega_[k]
-                +p.ksig_max_omega_[k]*p.kon_omega_*omega_F
-                /(p.kcat_omega_+p.kon_omega_*omega_F)
-                +p.ksig_max_psi_[k]*p.kon_psi_*psi_F
-                /(p.kcat_psi_+p.kon_psi_*psi_F)
-                )*c.rho_[x][k];
+      if (p.DAMP_omega_ratio_==0)
+        {for (unsigned k=0; k<numK; ++k)
+            {
+              sig+=(p.ksig_omega_[k]
+                    +p.ksig_max_omega_[k]*p.kon_omega_*omega_F
+                    /(p.kcat_omega_+p.kon_omega_*omega_F)
+                    +p.ksig_max_psi_[k]*p.kon_psi_*psi_F
+                    /(p.kcat_psi_+p.kon_psi_*psi_F)
+                    )*c.rho_[x][k];
 
+            }
         }
 
       /// esto de abajo indica que para uso un espesor y ancho c.h_ para el numero rho de celulas, el largo de la ///
@@ -560,6 +562,9 @@ std::map<double, BaseModel *> BaseModel::getModels()
 
   o[Model112_22_31::number()]=new Model112_22_31;
 
+  o[Model112_51::number()]=new Model112_51;
+
+  o[Model112_52::number()]=new Model112_52;
 
   o[Model113::number()]=new Model113;
 
@@ -591,6 +596,19 @@ std::map<double, BaseModel *> BaseModel::getModels()
   o[Model141::number()]=new Model141;
   o[Model142::number()]=new Model142;
   o[Model144::number()]=new Model144;
+
+  o[Model151::number()]=new Model151;
+
+  o[Model152::number()]=new Model152;
+
+  o[Model20::number()]=new Model20;
+
+  o[Model211::number()]=new Model211;
+  o[Model212::number()]=new Model212;
+  o[Model213::number()]=new Model213;
+
+  o[Model214::number()]=new Model214;
+  o[Model215::number()]=new Model215;
 
   return o;
 
