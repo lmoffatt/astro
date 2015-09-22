@@ -166,7 +166,8 @@ DISTFILES += \
     run/p_152/o_152 \
     run/p_213_52/parameters_213_52.txt \
     run/p_213_51/parameters_213_51 \
-    run/p_213_23/parameters_213_23
+    run/p_213_23/parameters_213_23 \
+    run/local_script
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
