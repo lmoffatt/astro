@@ -144,7 +144,7 @@ DISTFILES += \
     run/p_012_51/o_012_51 \
     run/p_151/parameters_151.txt \
     run/p_112_51/parameters_112_51.txt \
-    run/P_152/parameters_152.txt \
+    run/p_152/parameters_152.txt \
     run/p_200/parameters_200.txt \
     run/p_212/parameters_212.txt \
     run/p_214/parameters_214.txt \
