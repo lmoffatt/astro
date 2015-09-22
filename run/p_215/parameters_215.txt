@@ -1,6 +1,6 @@
-parameters parameters_115
+parameters parameters_215
 
-model 1.15
+model 2.15
 
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
