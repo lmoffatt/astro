@@ -15,6 +15,12 @@ qsub o_112_22
 cd /home/lmoffatt.inquimae/Astro/Astro/run/p_112_22_31
 qsub o_112_22_31
 
+cd /home/lmoffatt.inquimae/Astro/Astro/run/p_112_51
+qsub o_112_51
+
+cd /home/lmoffatt.inquimae/Astro/Astro/run/p_112_52
+qsub o_112_52
+
 
 cd /home/lmoffatt.inquimae/Astro/Astro/run/p_113
 qsub o_113
@@ -43,6 +49,14 @@ qsub o_115_22
 
 cd /home/lmoffatt.inquimae/Astro/Astro/run/p_115_25
 qsub o_115_25
+
+
+
+cd /home/lmoffatt.inquimae/Astro/Astro/run/p_151
+qsub o_151
+
+cd /home/lmoffatt.inquimae/Astro/Astro/run/p_152
+qsub o_152
 
 cd /home/lmoffatt.inquimae/Astro/Astro/run/p_121
 qsub o_121
@@ -74,13 +88,13 @@ qsub o_142
 cd /home/lmoffatt.inquimae/Astro/Astro/run/p_144
 qsub o_144
 
+cd /home/lmoffatt.inquimae/Astro/Astro/run/p_144
+qsub o_151
+
+
+cd /home/lmoffatt.inquimae/Astro/Astro/run/p_144
+qsub o_152
 
 
 
-
-cd /home/lmoffatt.inquimae/Astro/Astro/run/p_115_25
-qsub o_115_25
-
-cd /home/lmoffatt.inquimae/Astro/Astro/run/p_125
-qsub o_125
 
