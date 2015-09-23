@@ -518,7 +518,7 @@ void LevenbergMarquardtDistribution::computeSearchDirection()
 void LevenbergMarquardtDistribution::updateLanda()
 {
   std::size_t ifevalLoop=0;
-  std::size_t maxFealLoop=10;
+  std::size_t maxFealLoop=200;
   /// no es mejor
   if ((logPostLogLikNew_<=logPostLikCurr_)
       ||std::isnan(logPostLogLikNew_))
