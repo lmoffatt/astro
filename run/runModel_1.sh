@@ -88,11 +88,11 @@ qsub o_142
 cd /home/lmoffatt.inquimae/Astro/Astro/run/p_144
 qsub o_144
 
-cd /home/lmoffatt.inquimae/Astro/Astro/run/p_144
+cd /home/lmoffatt.inquimae/Astro/Astro/run/p_151
 qsub o_151
 
 
-cd /home/lmoffatt.inquimae/Astro/Astro/run/p_144
+cd /home/lmoffatt.inquimae/Astro/Astro/run/p_152
 qsub o_152
 
 
