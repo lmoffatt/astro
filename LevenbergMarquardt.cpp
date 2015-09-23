@@ -274,14 +274,14 @@ optimize(std::string optname,
           os_<<ParamCurr_;
         }
       optimize();
-      if ((!isNanLogPostLik_)&&(!J_.empty()))
+      if ((!isNanLogPostLik_)&&((!J_.empty())||(this->nIter_==0)))
         {
           std::string optfname=OptimParameters().save
               (optname+"_"+std::to_string(PostLogLik())+"_"+std::to_string(nIter_));
           CortexMultinomialLikelihoodEvaluation CE(*CL_,OptimParameters());
           std::ofstream fo;
-          std::string fnameout=optfname.substr(0,optfname.size()-3)+"_lik.txt ";
-          fo.open(fnameout.c_str());
+          std::string fnameout=optfname.substr(0,optfname.size()-4)+"_lik ";
+          fo.open(fnameout.c_str(), std::ofstream::out | std::ofstream::app);
           CE.extract(fo);
           fo.close();
           ++i;

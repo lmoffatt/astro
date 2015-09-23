@@ -21,7 +21,7 @@ std::vector<std::vector<double>> interpolateInjury(const std::vector<double>&x,
   for (std::size_t i=0; i<x.size()-1; ++i)
     for (std::size_t j=0; j<y[0].size(); ++j)
       cumY[i+1][j]=cumY[i][j]+y[i][j];
-  MInterpol sp(x,cumY);
+  MQSpline sp(x,cumY);
 
   std::vector<double> cumrho0(y[0].size(),0);
   std::vector<double> cumrho;
@@ -447,6 +447,9 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
     }
 return s;
 }
+
+
+
 
 std::ostream &CortexPoisonLikelihoodEvaluation::extract(std::ostream &s, const std::string &, const std::string &) const
 {

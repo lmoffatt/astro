@@ -829,21 +829,7 @@ void OptimizeCommand::run(const std::string line)
 
       LM.optimize(optName,factor,nseeds,initseed);
 
-      Parameters* opt=new Parameters(LM.OptimParameters());
-      std::string optfname=opt->save(optName);
-      CortexMultinomialLikelihoodEvaluation CE(CL,LM.OptimParameters());
-      std::ofstream fo;
-      std::string fnameout=optfname;
-      fnameout.insert(optfname.size()-5,"_lik.txt");
-      fo.open(fnameout.c_str());
-      CE.extract(fo);
-      fo.close();
-
-
-
-
-
-    }
+      }
 
 
 

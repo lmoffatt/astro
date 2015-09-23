@@ -199,7 +199,7 @@ public:
   , kM_(getKs(x,y,NotAKnot))
   , aM_(std::vector<std::vector<double>>(n_knots_,std::vector<double>(n_cols_)))
   , bM_(std::vector<std::vector<double>>(n_knots_,std::vector<double>(n_cols_)))
-   ,notAKnot_(NotAKnot)
+  ,notAKnot_(NotAKnot)
   {
 
     for (std::size_t i=0; i<n_knots_; ++i)
@@ -376,11 +376,11 @@ private:
     else
       for(std::size_t j=0; j<m; ++j)
 
-      {
-        o[0][j]=3.0*(y[1][j]-y[0][j])/std::pow(x[1]-x[0],2);
-        o[n-1][j]=3.0*(y[n-1][j]-y[n-2][j])/std::pow(x[n-1]-x[n-2],2);
+        {
+          o[0][j]=3.0*(y[1][j]-y[0][j])/std::pow(x[1]-x[0],2);
+          o[n-1][j]=3.0*(y[n-1][j]-y[n-2][j])/std::pow(x[n-1]-x[n-2],2);
 
-      }
+        }
     for (std::size_t i=1;i<n-1; ++i)
       for(std::size_t j=0; j<m; ++j)
         {
@@ -452,7 +452,7 @@ public:
       return std::vector<double>(n_cols_,upper_default_);
   }
 
-    std::vector<std::vector<double>> eval(const std::vector<double> x)
+  std::vector<std::vector<double>> eval(const std::vector<double> x)
   {
     std::vector<std::vector<double>> o(x.size());
     for (std::size_t i=0; i<x.size(); ++i)
@@ -506,6 +506,115 @@ private:
   double upper_default_;
 };
 
+class MQSpline
+{
+public:
+  MQSpline(const std::vector<double>& x, const std::vector<std::vector<double>>& y):
+    x_map_()
+  ,n_knots_(x.size()-1)
+  ,n_cols_(y[0].size())
+  , x_(x)
+  , yM_(y)
+  , mM_(getMs(x,y))
+  {
+    for (std::size_t i=0; i<x.size(); ++i)
+      x_map_[x[i]]=i;
+
+  }
+
+
+  std::vector<double> eval( double x)const
+  {
+    std::vector<double> o(n_cols_);
+    std::size_t i; double t,s;
+    if (get_index(x,i,t,s))
+      {
+        --i;
+        for (std::size_t j=0; j<n_cols_; ++j)
+          o[j]= i_eval(i,j,t,s);
+        return o;
+      }
+    else if (i==0)
+      return std::vector<double>(n_cols_,lower_default_);
+    else
+      return std::vector<double>(n_cols_,upper_default_);
+  }
+
+
+  std::vector<std::vector<double>> eval(const std::vector<double> x)
+  {
+    std::vector<std::vector<double>> o(x.size());
+    for (std::size_t i=0; i<x.size(); ++i)
+      o[i]=eval(x[i]);
+    return o;
+  }
+
+
+
+private:
+  double i_eval(std::size_t i, std::size_t j,double t, double s)const
+  {
+    return s*yM_[i][j]+t*yM_[i+1][j]+t*s*(mM_[i][j]);
+  }
+
+  bool get_index(double x,std::size_t& i, double& t, double& s)const
+  {
+    auto it=x_map_.lower_bound(x);
+    if (it!=x_map_.end())
+      {
+        i=it->second;
+        if (i>0)
+          {
+            t=(x-x_[i-1])/(x_[i]-x_[i-1]);
+            s=1-t;
+            return true;
+          }
+        else if (x==x_[i])
+          {
+            i=i+1;
+            t=0;
+            s=1;
+            return true;
+          }
+        else return false;
+      }
+    else
+      return false;
+  }
+
+
+  std::vector<std::vector<double>> getMs(const std::vector<double>& x, const std::vector<std::vector<double>>& y)
+  {
+
+    std::vector<std::vector<double>> o(x.size(),std::vector<double> (y[0].size()));
+    double v1=1.0/(x_[1]-x_[0]);
+    double v2=1.0/(x_[2]-x_[1]);
+
+    for (std::size_t j=0; j<n_cols_; ++j)
+      o[0][j]=y[1][j]-v1/(v1+v2)*y[0][j]-v2/(v1+v2)*y[2][j];
+    for (std::size_t i=1; i<n_knots_; i++)
+      {
+        v1=v2;
+        v2=1.0/(x_[i+1]-x_[i]);
+        for (std::size_t j=0; j<n_cols_; ++j)
+          o[i][j]=((v1+v2)*y[i][j]-v1*(y[i-1][j]+o[i-1][j]))/v2-y[i+1][j];
+
+      }
+    return o;
+
+  }
+
+
+
+  std::map<double,std::size_t> x_map_;
+  std::size_t n_knots_;
+  std::size_t n_cols_;
+  std::vector<double> x_;
+  std::vector<std::vector<double>> yM_;
+  std::vector<std::vector<double>> mM_;
+  double lower_default_;
+  double upper_default_;
+};
 
 
 #endif // SPLINES
