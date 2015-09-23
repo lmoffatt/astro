@@ -6,7 +6,7 @@
 # Opciones SGE
 #$ -l h_rt=23:59:00 # Setea 1 horas de wall clock time
 #$ -V  # Exporta las variables de entorno
-#$ -N Q250115_22  # El nombre del job
+#$ -N Q50115_22  # El nombre del job
 #$ -cwd # Cambia al directorio actual
 
 # Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
