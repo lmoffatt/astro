@@ -21,3 +21,9 @@ Spline::Spline(std::vector<double> x, std::vector<double> y):
   for (std::size_t i=0; i<x.size(); ++i)
     x_map_[x[i]]=i;
 }
+
+
+
+
+inverse MIExpSpline::inv_=getInv();
+

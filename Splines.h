@@ -8,6 +8,151 @@
 #include <map>
 #include <cmath>
 #include <iostream>
+# include <limits>
+
+
+inline
+double bisect(double (*f)(double),double targetf,double xpos,double xneg, std::size_t maxIter)
+{
+  double ypos, yneg;
+  ypos=f(xpos)-targetf;
+  if (ypos==0)
+    return xpos;
+  else if(ypos<0)
+    {
+      std::swap(xpos,xneg);
+      yneg=ypos;
+    }
+  yneg=f(xneg)-targetf;
+  if (yneg==0)
+    return xneg;
+  else if (yneg>0)
+    return std::numeric_limits<double>::quiet_NaN();
+  else
+    {
+      std::size_t niter=0;
+      double c=(xpos+xneg)/2;
+      while (niter<maxIter)
+        {
+          double yc=f(c)-targetf;
+          ++niter;
+          if (yc==0)
+            return c;
+          else if (yc>0)
+            {
+              xpos=c;
+            }
+          else
+            {
+              xneg=c;
+            }
+          c=(xpos+xneg)/2;
+
+        }
+      return c;
+    }
+
+}
+inline
+double secante(double (*f)(double),double targetf,double xpos,double xneg, std::size_t maxIter)
+{
+  double ypos, yneg;
+  ypos=f(xpos)-targetf;
+  if (ypos==0)
+    return xpos;
+  else if(ypos<0)
+    {
+      std::swap(xpos,xneg);
+      yneg=ypos;
+      ypos=f(xpos)-targetf;
+    }
+  else
+    {
+      yneg=f(xneg)-targetf;
+    }
+  if (yneg==0)
+    return xneg;
+  else if (yneg>0)
+    return std::numeric_limits<double>::quiet_NaN();
+  else
+    {
+      std::size_t niter=0;
+      double c=xpos-ypos*(xpos-xneg)/(ypos-yneg);
+      while (niter<maxIter)
+        {
+          double yc=f(c)-targetf;
+          ++niter;
+          if (yc==0)
+            return c;
+          else if (yc>0)
+            {
+              xpos=c;
+              ypos=yc;
+            }
+          else
+            {
+              xneg=c;
+              yneg=yc;
+            }
+          c=xpos-ypos*(xpos-xneg)/(ypos-yneg);
+
+        }
+      return c;
+    }
+}
+
+
+inline
+double exp1_over_x(double x)
+{
+  if (std::abs(x)>1e-3)
+    return std::expm1(x)/x;
+  else
+    return 1+x/2.0+x*x/6.0+x*x*x/24.0+x*x*x*x/120.0;
+}
+
+
+
+class inverse
+{
+public:
+  inverse(double (*func)(double)
+          ,std::vector<double> vals
+          ,std::size_t maxIter)
+    : f_(func),
+      finv_(),
+      maxIter_(maxIter)
+  {
+    for (double x:vals)
+      finv_[f_(x)]=x;
+  }
+
+  double eval(double x)
+  {
+    auto it=finv_.upper_bound(x);
+    if (it==finv_.begin())
+      {
+        return lowerbound_;
+      }
+    else if (it==finv_.end())
+      return upperbound_;
+    else
+      {
+        double max=it->second;
+        --it;
+        double min=it->second;
+        return secante(f_,x,min,max,maxIter_);
+      }
+  }
+
+private:
+  double (*f_)(double);
+  std::map<double,double> finv_;
+  std::size_t maxIter_;
+  double lowerbound_;
+  double upperbound_;
+};
+
 
 
 
@@ -615,6 +760,129 @@ private:
   double lower_default_;
   double upper_default_;
 };
+
+
+
+/// los primeros dos intervalos DEBEN ser iguales
+/// el vector sumy contiene la suma de los ys de cada intervalo
+class MIExpSpline
+{
+public:
+  MIExpSpline(const std::vector<double>& x, const std::vector<std::vector<double>>& sumy):
+    x_map_()
+  ,n_knots_(x.size()-1)
+  ,n_cols_(sumy[0].size())
+  , x_(x)
+  , YM_(sumy)
+  , yM_(std::vector<std::vector<double>>(n_knots_,std::vector<double>(n_cols_)))
+  , bM_(std::vector<std::vector<double>>(n_knots_,std::vector<double>(n_cols_)))
+  {
+    for (std::size_t i=0; i<x.size(); ++i)
+      x_map_[x[i]]=i;
+    for (std::size_t j=0; j<n_cols_; ++j)
+      {
+
+        double b=log((YM_[2][j]-YM_[1][j])/(YM_[1][j]-YM_[0][j]))/(x_[1]-x_[0]);
+        bM_[0][j]=b;
+        double y=-bM_[0][j]*(YM_[1][j]-YM_[0][j])/std::expm1(bM_[0][j]*(x_[0]-x_[1]));
+        yM_[0][j]=y;
+        bM_[1][j]=b;
+        double y1=yM_[0][j]*exp(bM_[1][j]*(x_[2]-x_[1]));
+        yM_[1][j]=y1;
+      }
+    for (std::size_t i=2; i<n_knots_; ++i)
+      for (std::size_t j=0; j<n_cols_; ++j)
+        {
+          double b=inv_.eval((YM_[i+1][j]-YM_[i][j])/yM_[i-1][j]/(x_[i+1]-x_[i]))/(x_[i+1]-x_[i]);
+          bM_[i][j]=b;
+          double y=yM_[i-1][j]*exp(bM_[i][j]*(x_[i+1]-x_[i]));
+          yM_[i][j]=y;
+
+        }
+  }
+
+
+
+
+  std::vector<double> eval( double x)const
+  {
+    std::vector<double> o(n_cols_);
+    std::size_t i; double t;
+    if (get_index(x,i,t))
+      {
+        for (std::size_t j=0; j<n_cols_; ++j)
+          o[j]= i_eval(i,j,t);
+        return o;
+      }
+    else if (i==0)
+      return std::vector<double>(n_cols_,lower_default_);
+    else
+      return std::vector<double>(n_cols_,upper_default_);
+  }
+
+
+  std::vector<std::vector<double>> eval(const std::vector<double> x)
+  {
+    std::vector<std::vector<double>> o(x.size());
+    for (std::size_t i=0; i<x.size(); ++i)
+      o[i]=eval(x[i]);
+    return o;
+  }
+
+
+
+private:
+  static inverse inv_;
+  static inverse getInv()
+  {
+    std::vector<double> v{-1e9,-1e7,-1e5,-1e4,-1e3,-1e2,-10 ,-7, -5, -4, -3 ,-2,-1.5,-1,0.7,-0.5,-0.4,-0.2,-0.1,-0.05,0,0.05,0.1,0.2,0.3,0.4,0.5,0.7,0.9,1,1.5,2,3,5,7,9,15,20,30,50,100};
+
+
+    return inverse(exp1_over_x,v,8);
+  }
+
+  double i_eval(std::size_t i, std::size_t j,double t)const
+  {
+    double Y0=YM_[i][j];
+    double y= yM_[i-1][j];
+    double b=bM_[i-1][j];
+    double e=std::expm1(bM_[i-1][j]*t);
+    double yb=y/b;
+    double ybe=yb*e;
+    return YM_[i][j]+yM_[i-1][j]/bM_[i-1][j]*std::expm1(bM_[i-1][j]*t);
+
+  }
+
+  bool get_index(double x,std::size_t& i, double& t)const
+  {
+    auto it=x_map_.upper_bound(x);
+    if ((it!=x_map_.end()))
+      {
+        i=it->second;
+        if (it!=x_map_.begin())
+         {
+           t=(x-x_[i]);
+        return true;
+          }
+        else return false;
+      }
+    else return false;
+  }
+
+
+
+  std::map<double,std::size_t> x_map_;
+  std::size_t n_knots_;
+  std::size_t n_cols_;
+  std::vector<double> x_;
+  std::vector<std::vector<double>> YM_;
+  std::vector<std::vector<double>> yM_;
+  std::vector<std::vector<double>> bM_;
+  double lower_default_;
+  double upper_default_;
+};
+
+
 
 
 #endif // SPLINES
