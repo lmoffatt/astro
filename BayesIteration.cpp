@@ -20,9 +20,10 @@ nextState(const CortexLikelihood* CL,
   mcmcWalkerState o(x.getMeanState(),x.numWalkers());
   std::size_t K=x.numWalkers();
   std::size_t N=x.numParameters();
+#pragma omp parallel for
   for (std::size_t k=0; k<K; ++k)
     {
-      std::uniform_int_distribution<std::size_t> i(0,K-2);
+       std::uniform_int_distribution<std::size_t> i(0,K-2);
       auto j=i(mt);
       if (j>=k) ++j;
       std::uniform_real_distribution<double> u(0,1);

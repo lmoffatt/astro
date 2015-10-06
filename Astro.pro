@@ -6,6 +6,13 @@ CONFIG -= qt
 QMAKE_CXXFLAGS_RELEASE += -std=c++11 #-lpthread
 QMAKE_CXXFLAGS_DEBUG += -std=c++11 #-lpthread
 
+
+QMAKE_CXXFLAGS += -fopenmp
+QMAKE_LFLAGS +=  -fopenmp
+LIBS += -lgomp -lpthread
+
+
+
 QMAKE_CXX = g++
 
 
