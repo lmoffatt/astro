@@ -305,6 +305,17 @@ double Parameters::mean(const std::string& name)const
     return std::numeric_limits<double>::quiet_NaN();
 }
 
+double Parameters::mean(std::size_t i)const
+{
+  if (i!=std::string::npos)
+    {
+      double m=Tr(trans_[i])->inverse(mean_of_tr_[i]);
+      return m;
+    }
+  else
+    return std::numeric_limits<double>::quiet_NaN();
+}
+
 
 double Parameters::tMean(const std::string& name)const
 {
@@ -344,6 +355,16 @@ Transformation* Parameters::getTransform(const std::string &name) const
 
 }
 
+Transformation* Parameters::getTransform(std::size_t i) const
+{
+  if (i!=std::string::npos)
+    {
+      return Tr(trans_[i]);
+    }
+  else
+    return Tr(LINEAR);
+
+}
 
 
 std::string Parameters::unit(const std::string& name)const
@@ -485,6 +506,12 @@ double Parameters::dBStd(const std::string& name)const
 
 }
 
+
+/// returns the standard deviation in dB (deciBel)
+double Parameters::dBStd(std::size_t i)const
+{
+   return std_of_tr_[i]*10;
+}
 
 
 
@@ -689,6 +716,7 @@ Parameters Parameters::randomSample(std::mt19937& mt,double factor)const
 
 }
 
+
 Parameters Parameters::randomSample(std::mt19937& mt,Parameters prior,double factor)const
 
 {
@@ -726,6 +754,44 @@ Parameters Parameters::randomSample(std::mt19937& mt,Parameters prior,double fac
   return s;
 
 }
+
+std::vector<double> Parameters::randomSampleValues(std::mt19937 &mt, Parameters prior, double factor) const
+
+{
+  std::vector<double> o(size());
+  if (prior.cho_.empty())
+    {
+      for (std::size_t i=0; i<mean_of_tr_.size();i++)
+
+        {
+
+          o[i]=randNormal(mt,mean_of_tr_[i]
+                                           ,prior.std_of_tr_[i]*factor);
+        }
+    }
+  else
+    {
+      std::vector<double> z(mean_of_tr_.size());
+      for (std::size_t i=0; i<mean_of_tr_.size();i++)
+        {
+          z[i]=randNormal(mt)*factor;
+        }
+      for (std::size_t i=0; i<mean_of_tr_.size();i++)
+        {
+
+          o[i]=mean_of_tr_[i];
+          for (std::size_t j=0; j<i+1;j++)
+            {
+              o[i]+=prior.cho_[i][j]*z[j];
+            }
+        }
+    }
+  return o;
+}
+
+
+
+
 
 
 

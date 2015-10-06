@@ -9,7 +9,36 @@
 #include <limits>
 #include <chrono>
 
+#include <ctime>
+
 std::istream& safeGetline(std::istream& is, std::string& t);
+
+inline
+std::string leadingZero(int i)
+{
+  if (i==0)
+    return "00";
+  else if (i<10)
+    return "0"+std::to_string(i);
+  else return std::to_string(i);
+}
+
+inline
+std::string time_now()
+{
+  auto tc=std::chrono::system_clock::now();
+  std::time_t rawtime=std::chrono::system_clock::to_time_t(tc);
+
+  auto tcount=(tc.time_since_epoch().count()/1000)%1000000;
+
+
+  struct std::tm * t;
+  time (&rawtime);
+  t = localtime (&rawtime);
+  return leadingZero(t->tm_hour)+leadingZero(t->tm_min)+leadingZero(t->tm_sec)+"s"+std::to_string(tcount);
+
+}
+
 
 
 template<typename T>
@@ -30,6 +59,9 @@ void writeTable(std::ostream& s,
                 const std::vector<std::vector< std::vector<double>>>& ys,
                 std::size_t i0=0, std::size_t iend=0)
 {
+
+  s<<std::scientific;
+  s.precision(10);
   s<<tableTitle<<"\n";
   s<<xtitle<<"\t";
   for (std::size_t j=0; j<ytitles.size(); ++j)
@@ -269,12 +301,14 @@ public:
     return s;
   }
 
+
+
   std::string getSaveName(std::string name)
   {
-    auto t=std::chrono::system_clock::now().time_since_epoch().count();
-    std::string filename=myClass()+"_"+name+"_"+std::to_string(t%100000);
+
+    std::string filename=myClass()+"_"+name+"_"+time_now();
     setId(filename);
-    return filename+".txt";
+    return filename;
   }
 
   std::string save(std::string name)

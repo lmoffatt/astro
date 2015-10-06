@@ -69,16 +69,22 @@ public:
 
   virtual double logLik(const Parameters& p)const;
 
+  virtual double logLik(const std::vector<double>& o)const;
+
+
+
   virtual std::vector<double> epsilon(const std::vector<std::vector<double>>& p)const=0;
 
   virtual const std::vector<double> weight(const std::vector<std::vector<double>>& p)const=0;
 
   virtual double logPrior(const Parameters& p) const;
 
+
   virtual std::vector<double> PriorGradient(const Parameters& p) const;
 
 
   virtual ~ABC_Distribution_Model(){}
+  double logPrior(const std::vector<double> &o) const;
 };
 
 
@@ -110,7 +116,7 @@ public:
   const std::vector<double> weight(const std::vector<std::vector<double>>& p)const;
 
 
-  virtual ~ABC_Multinomial_Model();
+  virtual ~ABC_Multinomial_Model(){}
 };
 
 
@@ -175,8 +181,8 @@ public:
 
 
   LevenbergMarquardtDistribution(const CortexLikelihood* f,
-                                const Parameters& initialParam,
-                                std::size_t numIterations,
+                                 const Parameters& initialParam,
+                                 std::size_t numIterations,
                                  double maxDuration_mins,
                                  const std::string&  name);
 
@@ -327,6 +333,9 @@ public:
 protected:
   virtual void update() override{}
 };
+
+
+
 
 
 #endif // LEVENBERGMARQUARDT

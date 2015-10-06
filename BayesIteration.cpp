@@ -5,737 +5,475 @@
 #include "BayesIteration.h"
 #include "MatrixInverse.h"
 #include "CortexLikelihood.h"
+#include "CommandManager.h"
 
-//std::vector<double> ABC_Freq_obs::getDataWeigth()
-//{
-////  std::vector<double> w=getDataStandardError();
-////  for (std::size_t i=0; i<w.size(); i++)
-////    {
-////      w[i]=1.0/w[i]/w[i];
-////    }
-////  std::vector<double> wW(w);
-////  return wW;
-//}
+#include <tuple>
 
-
-ABC_Multinomial_Model::~ABC_Multinomial_Model(){}
-
-BayesIteration::~BayesIteration(){
-}
-
-
-
-Parameters BayesIteration::Posterior()const
-{
-  return posterior_;
-}
-
-Parameters BayesIteration::Prior(std::size_t n)const
-{
-  return priors_[n];
-
-}
-
-
-BayesIteration::BayesIteration(const CortexLikelihood *m,
-                               Parameters prior,
-                               const ABC_Freq_obs* d,
-                               const std::string& filename):
-  m_(m),
-  data_(1,d),
-  priors_(1,prior),
-  posterior_(),
-  numSeeds_(20),
-  filename_(filename)
-{
-  //getPosterior();
-}
-
-
-BayesIteration& BayesIteration::addNewData(ABC_Freq_obs* d)
-{
-  data_.push_back(d);
-  priors_.push_back(posterior_);
-  getPosterior();
-}
-
-
-
-BayesIteration::BayesIteration(const BayesIteration& other):
-  m_(other.m_),
-  data_(other.data_),
-  priors_(other.priors_),
-  posterior_(other.posterior_)
-{}
-
-
-/*   void swap(BayesIteration& one, BayesIteration& other);
-
-    BayesIteration& operator=(const BayesIteration& other);
-
-    BayesIteration();
-
-    ~BayesIteration(){}
-*/
-// void reset(const SimParameters& sp,const Treatment& tr);
-
-
-
-
-
-
-BayesIteration::BayesIteration(){}
-
-
-
-
-std::vector<std::vector<double>> BayesIteration::f(const Parameters& parameters)const
+mcmcWalkerState
+nextState(const CortexLikelihood* CL,
+          std::mt19937& mt,
+          double a,
+          mcmcWalkerState& x
+          ,std::size_t& ifeval)
 {
 
-  std::vector<std::vector<double>> simulatedResults=m_->f(parameters);
-  std::vector<double> param=parameters.trMeans();
-
-  //simulatedResults.insert(simulatedResults.end(),param.begin(),param.end());
-  return simulatedResults;
-}
-
-
-const ABC_Freq_obs& BayesIteration::getData()const
-{
-//  std::vector<double>data =data_.back()->getData();
-//  std::vector<double> param=priors_.back().pMeans();
-
-//  data.insert(data.end(),param.begin(),param.end());
-//  std::vector<double> d(data);
-//  return d;
-
-
-}
-
-//std::vector<double> BayesIteration::getDataStandardError()const
-//{
-
-//  std::vector<double>se =data_.back()->getDataStandardError();
-//  std::vector<double> param=priors_.back().pStds();
-
-//  se.insert(se.end(),param.begin(),param.end());
-//  std::vector<double> o(se);
-//  return o;
-
-//}
-
-BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint)
-{
-
-  Parameters p=priors_.back();
-
-  std::size_t numIterations=1000;
-  double maxDuration=120;
-
-  LevenbergMarquardtDistribution LM(m_,
-                        startingPoint,
-                        numIterations,maxDuration,
-                                    "");
-  LM.optimize();
-  std::ofstream f;
-
-  f.open(filename_.c_str(),std::ios_base::app);
-
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  f<<"----------The prior is-----------------------------\n";
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-
-  put(f,p);
-
-
-
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  f<<"----------Start from the following point------------------\n";
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  put(f,startingPoint);
-
-
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  f<<"----------Result of Levenberg Marquardt------------------\n";
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  f<<LM;
-  f<<"SS \t"<<LM.LogLik()<<"\n";
-  f<<"Evidence \t"<<LM.getEvidence()<<"\n";
-  f<<"Posterior Likelihoo \t"<<LM.getLogPostLik()<<"\n";
-  f<<"logDetPriorCov \t"<<LM.logDetPriorCov()<<"\n";
-  f<<"logDetPostrCov \t"<<LM.logDetPostCov()<<"\n";
-  f<<"logDetPostrStd \t"<<LM.logDetPostStd()<<"\n";
-  f<<"logLikelihood \t"<<LM.LogLik()<<"\n";
-
-
-
-
-
-  f<<"chi2Distance to seed\t"<<startingPoint.chi2Distance(LM.OptimParameters())<<"\n";
-  f<<"dBDistance to seed\t"<<dbDistance(startingPoint,LM.OptimParameters())<<"\n";
-  f<<"chi2Distance to prior\t"<<p.chi2Distance(LM.OptimParameters())<<"\n";
-  f<<"dBDistance to prior\t"<<dbDistance(p,LM.OptimParameters())<<std::endl;
-  put(f,LM.OptimParameters());
-  f<<"SS \t"<<LM.LogLik()<<"\n";
-
-
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  f<<"----------Result of Hessian calculation---\n";
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  Parameters h=getHessian(LM.OptimParameters(),1e-5);
-
-  double logDetPost=log(det(h.getCovariance()));
-  f<<"SS \t"<<LM.LogLik()<<"\n";
-
-  f<<"Evidence \t"<<LM.getEvidence()<<"\n";
-  f<<"Evidence Hess\t"<<LM.getEvidence()-0.5*LM.logDetPostCov()+0.5*logDetPost<<"\n";
-  f<<"logDetPostrCov \t"<<LM.logDetPostCov()<<"\n";
-  f<<"logDetPostrCov Hess\t"<<logDetPost<<"\n";
-
-  h.write(f);
-
-
-  Parameters corrMax=getEvidence(LM.OptimParameters(),1000);
-  corrMax.write(f);
-
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  f<<"----------Result of Posterior LikelihoodSampling---\n";
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  corrMax.write(f);
-  logDetPost=log(det(corrMax.getCovariance()));
-  double SSc=SumWeighedSquare(corrMax);
-  f<<"SS \t"<<LM.LogLik()<<"\n";
-  f<<"SS corr\t"<<SSc<<"\n";
-
-  f<<"Evidence \t"<<LM.getEvidence()<<"\n";
-  f<<"Evidence corr SS\t"<<-0.5*LM.LogLik()+0.5*logDetPost<<"\n";
-  f<<"Evidence corr SSc\t"<<-0.5*SSc+0.5*logDetPost<<"\n";
-
-  f<<"Posterior Likelihoo \t"<<LM.getLogPostLik()<<"\n";
-  f<<"logDetPriorCov \t"<<LM.logDetPriorCov()<<"\n";
-  f<<"logDetPostrCov \t"<<LM.logDetPostCov()<<"\n";
-  f<<"logDetPostrCovCorr \t"<<logDetPost<<"\n";
-  f<<"logDetPostrStd \t"<<LM.logDetPostStd()<<"\n";
-
-
-  put(f,corrMax);
-
-
-
-  f<<"Evidence \t"<<LM.getEvidence()<<"\n";
-  f<<"chi2Distance to seed\t"<<startingPoint.chi2Distance(LM.OptimParameters())<<"\n";
-  f<<"dBDistance to seed\t"<<dbDistance(startingPoint,LM.OptimParameters())<<"\n";
-  f<<"chi2Distance to prior\t"<<p.chi2Distance(LM.OptimParameters())<<"\n";
-  f<<"dBDistance to prior\t"<<dbDistance(p,LM.OptimParameters())<<std::endl;
-
-
-  f.close();
-  return *this;
-}
-
-BayesIteration& BayesIteration::getPosterior(const Parameters& startingPoint,
-                                             double factor,
-                                             std::size_t numSeeds)
-{
-//  std::vector<double> data=getData();
-//  std::vector<double> w=getDataWeigth();
-
-  std::random_device rd;
-  std::mt19937 mt(rd());
-
-  Parameters p=priors_.back();
-
-  std::size_t numIterations=1000;
-
-  double maxDuration=120;
-
-  std::ofstream f;
-
-  f.open(filename_.c_str(),std::ios_base::app);
-
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  f<<"----------The prior is-----------------------------\n";
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-
-  put(f,p);
-
-  for (std::size_t i=0;i<numSeeds;i++)
+  mcmcWalkerState o(x.getMeanState(),x.numWalkers());
+  std::size_t K=x.numWalkers();
+  std::size_t N=x.numParameters();
+  for (std::size_t k=0; k<K; ++k)
     {
-
-      Parameters seed;
-      seed=startingPoint.randomSample(mt,p,factor);
-      LevenbergMarquardtDistribution LM(m_,
-                            seed,
-                            numIterations,maxDuration,
-                                        "");
-      LM.optimize();
-
-
-
-
-
-
-      f<<"--------------------------------------------------"
-         "---------------------------------------------------\n";
-      f<<"----------Start from the following point------------------\n";
-      f<<"--------------------------------------------------"
-         "---------------------------------------------------\n";
-      put(f,seed);
-
-
-
-
-
-      f<<"--------------------------------------------------"
-         "---------------------------------------------------\n";
-      f<<"----------Result of Levenberg Marquardt------------------\n";
-      f<<"--------------------------------------------------"
-         "---------------------------------------------------\n";
-      if (LM.LogLik()<200)
-        f<<LM;
-      f<<"Suma de cuadrados"<<LM.LogLik();
-      f<<"\t numero iteraciones"<<LM.numIter()<<"\tNumero evaluaciones"<<LM.numEval()<<"\n";
-      f<<"Evidence \t"<<LM.getEvidence()<<"\n";
-      f<<"Posterior Likelihoo \t"<<LM.getLogPostLik()<<"\n";
-      f<<"logDetPriorCov \t"<<LM.logDetPriorCov()<<"\n";
-      f<<"logDetPostrCov \t"<<LM.logDetPostCov()<<"\n";
-      f<<"logDetPostrStd \t"<<LM.logDetPostStd()<<"\n";
-      f<<"logLikelihood \t"<<LM.LogLik()<<"\n";
-
-      f<<"chi2Distance to seed\t"<<startingPoint.chi2Distance(LM.OptimParameters())<<"\n";
-      f<<"dBDistance to seed\t"<<dbDistance(startingPoint,LM.OptimParameters())<<"\n";
-      f<<"chi2Distance to prior\t"<<p.chi2Distance(LM.OptimParameters())<<"\n";
-      f<<"dBDistance to prior\t"<<dbDistance(p,LM.OptimParameters())<<"\n";
-
-      put(f,LM.OptimParameters());
-      f<<"SS \t"<<LM.LogLik()<<"\n";
-
-
-    }
-
-  f.close();
-  return *this;
-
-}
-
-
-
-BayesIteration& BayesIteration::getPosterior()
-{
-  std::random_device rd;
-  std::mt19937 mt (rd());
-  std::vector<LevenbergMarquardtDistribution> LMs;
-  std::vector<Parameters> Ps;
-
-
-  Parameters p=priors_.back();
-
-
-  std::size_t factor=2;
-  std::size_t numIterations=30;
-  double maxDuration=60;
-  std::size_t numSeeds=10;
-  std::map<double,Parameters> seeds=getRandomParameters(mt,numSeeds*factor,1);
-
-  std::map<double,Parameters> friuts;
-
-  LevenbergMarquardtDistribution LM(m_,
-                        p,
-                        numIterations,maxDuration,
-                                    "");
-  LM.optimize();
-  LMs.push_back(LM);
-  Ps.push_back(LM.OptimParameters());
-
-  friuts[LM.LogLik()]=LM.OptimParameters();
-  std::ofstream f;
-
-  f.open(filename_.c_str(),std::ios_base::app);
-
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  f<<"----------The prior is-----------------------------\n";
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-
-  put(f,p);
-
-
-
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  f<<"----------Start from the center-------------------\n";
-  f<<"--------------------------------------------------"
-     "---------------------------------------------------\n";
-  f<<LM;
-  put(f,Ps.back());
-  f.close();
-
-
-  std::map<double,Parameters>::iterator it=seeds.begin();
-
-  for (std::size_t i=0; i<numSeeds; i++)
-    {
-      Parameters initParam=(*it).second;
-      double ss=(*it).first;
-      ++it;
-      LevenbergMarquardtDistribution LM(m_,
-                            initParam,
-                            numIterations,maxDuration,
-                                        "");
-      LM.optimize();
-      friuts[LM.LogLik()]=LM.OptimParameters();
-
-      LMs.push_back(LM);
-      Ps.push_back(LM.OptimParameters());
-      f.open(filename_.c_str(),std::ios_base::app);
-      f<<"--------------------------------------------------"
-         "---------------------------------------------------\n";
-      f<<"----------Start from the perisphery-------------------\n";
-      f<<"--------------------------------------------------"
-         "---------------------------------------------------\n";
-      f<<LM;
-      put(f,Ps.back());
-      f.close();
-
-    }
-  double errorFactor=0.2;
-  double errorShrinkFactor=3;
-
-  std::size_t numCycle=3;
-  for (size_t iCycle=0;
-       iCycle<numCycle;
-       iCycle++)
-    {
-      seeds=friuts;
-      it=seeds.begin();
-      size_t j=0;
-      size_t jfactor=5;
-      Parameters initParam=(*it).second;
-      errorFactor/=errorShrinkFactor;
-
-
-
-      for (std::size_t i=0; i<numSeeds; i++)
+      std::uniform_int_distribution<std::size_t> i(0,K-2);
+      auto j=i(mt);
+      if (j>=k) ++j;
+      std::uniform_real_distribution<double> u(0,1);
+      double z=std::pow(u(mt)*(std::sqrt(a)-std::sqrt(1.0/a))+std::sqrt(1/a),2);
+      std::vector<double> y=x[j]+(x[k]-x[j])*z;
+      double logprior=CL->logPrior(y);
+      double logpostlik=CL->logLik(y)+logprior;
+      ++ifeval;
+      double logq=log(z)*(N-1)+logpostlik-x.logPostLik(k);
+      double logr=log(u(mt));
+      if (logr<=logq)
         {
-          ++j;
-          if(j==jfactor)
-            {
-              ++it;
-              initParam=(*it).second;
-              j=0;
-            }
-          initParam=initParam.randomSample(mt,errorFactor);
-
-          LevenbergMarquardtDistribution LM(m_,
-                                initParam,
-                                numIterations,maxDuration,"");
-          LM.optimize();
-          friuts[LM.LogLik()]=LM.OptimParameters();
-
-          LMs.push_back(LM);
-          Ps.push_back(LM.OptimParameters());
-          f.open(filename_.c_str(),std::ios_base::app);
-          f<<"--------------------------------------------------"
-             "---------------------------------------------------\n";
-          f<<"----------Start from the perisphery-------------------\n";
-          f<<"--------------------------------------------------"
-             "---------------------------------------------------\n";
-          f<<LM;
-          put(f,Ps.back());
-          f.close();
+          o[k]=y;
+          o.logPostLik(k)=logpostlik;
+          o.logPrior(k)=logprior;
+        }
+      else
+        {
+          o[k]=x[k];
+          o.logPostLik(k)=x.logPostLik(k);
+          o.logPrior(k)=x.logPrior(k);
 
         }
-
-
     }
 
-  return *this;
+  o.update_Mean();
+  o.update_Covariance();
+  return o;
+}
+
+mcmcWalkerState::mcmcWalkerState(const Parameters &prior, std::vector<std::vector<double> > trMeans, std::vector<double> postLiks, std::vector<double> logPrios):
+  mean_(prior)
+,trMeans_(trMeans)
+,postLiks_(postLiks)
+,priorLiks_(logPrios){
+  update_Mean();
+  update_Covariance();
+
+}
+
+mcmcWalkerState::mcmcWalkerState(const Parameters& prior, std::size_t numWalkers):
+  mean_(prior)
+,trMeans_(numWalkers)
+,postLiks_(numWalkers)
+,priorLiks_(numWalkers){}
+
+mcmcWalkerState mcmcWalkerState::create(const CortexLikelihood *f
+                                        , const Parameters &initialParam
+                                        , std::size_t numWalkers
+                                        , double radiusWalkers
+                                        , std::mt19937 &mt
+                                        , std::size_t &ifeval)
+{
+  mcmcWalkerState o(f->getPrior(),numWalkers);
+  std::size_t i=0;
+  while    (i<numWalkers)
+    {
+      o[i]=initialParam.randomSampleValues(mt,f->getPrior(),radiusWalkers);
+      double logprior=f->logPrior(o[i]);
+      double logPostLik=logprior+f->logLik(o[i]);
+      ++ifeval;
+      o.logPostLik(i)=logPostLik;
+      o.logPrior(i)=logprior;
+      if (!std::isnan(logPostLik))
+        ++i;
+
+    }
+  o.update_Mean();
+  o.update_Covariance();
+  return o;
+}
+
+mcmcWalkerState::mcmcWalkerState(){}
+
+const Parameters &mcmcWalkerState::getMeanState() const
+{
+  return mean_;
+}
+
+std::size_t mcmcWalkerState::numWalkers() const
+{
+  return trMeans_.size();
+}
+
+std::size_t mcmcWalkerState::numParameters() const
+{
+  return mean_.size();
+}
+
+std::vector<double> &mcmcWalkerState::operator[](std::size_t i)
+{
+  return trMeans_[i];
+}
+
+const std::vector<double> &mcmcWalkerState::operator[](std::size_t i) const
+{
+  return trMeans_[i];
+}
+
+double &mcmcWalkerState::logPostLik(std::size_t i)
+{
+  return postLiks_[i];
+}
+
+const double &mcmcWalkerState::logPostLik(std::size_t i) const
+{
+  return postLiks_[i];
+}
+const double &mcmcWalkerState::logPostLikMean() const
+{
+  return postLikMean_;
+}
+const double &mcmcWalkerState::logPostLikStd() const
+{
+  return postLikStd_;
+}
+const double &mcmcWalkerState::logPriorLikMean() const
+{
+  return priorLikMean_;
+}
+const double &mcmcWalkerState::logPriorLikStd() const
+{
+  return priorLikStd_;
 }
 
 
-std::ostream& BayesIteration::put(std::ostream& s,const Parameters& parameters)const
+
+double &mcmcWalkerState::logPrior(std::size_t i)
 {
- // m_->put(s,parameters);
+  return priorLiks_[i];
+}
+
+const double &mcmcWalkerState::logPrior(std::size_t i) const
+{
+  return priorLiks_[i];
+}
+
+void mcmcWalkerState::update_Mean()
+{
+  std::vector<double> mean(numParameters(),0);
+
+  for (std::size_t j=0; j<numParameters(); ++j)
+    {
+      for (std::size_t i=0; i<numWalkers(); ++i)
+        mean[j]+=trMeans_[i][j];
+      mean[j]/=numWalkers();
+    }
+  postLikMean_=0;
+  priorLikMean_=0;
+  for (std::size_t i=0; i<numWalkers(); ++i)
+    {
+      postLikMean_+=postLiks_[i];
+      priorLikMean_+=priorLiks_[i];
+    }
+  postLikMean_/=numWalkers();
+  priorLikMean_/=numWalkers();
+  mean_.settMeans(mean);
+}
+
+void mcmcWalkerState::update_Covariance()
+{
+  std::vector<std::vector<double>> cov(numParameters(),std::vector<double>(numParameters(),0));
+  for (std::size_t k=0; k<numWalkers(); ++k)
+    {
+      for (std::size_t i=0; i<numParameters(); ++i)
+        for (std::size_t j=i; j<numParameters(); ++j)
+          cov[i][j]+=(trMeans_[k][i]-mean_[i])*(trMeans_[k][j]-mean_[j]);
+    }
+  for (std::size_t i=0; i<numParameters(); ++i)
+    for (std::size_t j=i; j<numParameters(); ++j)
+      {
+        cov[i][j]/=numWalkers();
+        cov[j][i]=cov[i][j];
+      }
+
+  postLikStd_=0;
+  priorLikStd_=0;
+  for (std::size_t i=0; i<numWalkers(); ++i)
+    {
+      postLikStd_+=std::pow(postLiks_[i]-postLikMean_,2);
+      priorLikStd_+=std::pow(priorLiks_[i]-priorLikMean_,2);
+    }
+
+  postLikStd_/=numWalkers();
+  postLikStd_=std::sqrt(postLikStd_);
+  priorLikStd_/=numWalkers();
+  priorLikStd_=std::sqrt(priorLikStd_);
+
+
+
+  mean_.setCovariance(cov);
+}
+
+std::ostream &mcmcWalkerState::writeTrValues(std::ostream &s, std::size_t isample)
+{
+  for (std::size_t i=0; i<numWalkers(); ++i)
+    {
+      s<<isample<<"\t"<<i<<"\t"<<logPostLik(i)<<"\t"<<logPrior(i);
+      for (std::size_t k=0; k<numParameters(); ++k)
+        s<<"\t"<<trMeans_[i][k];
+      s<<"\n";
+    }
+  return s;
+}
+
+std::ostream &mcmcWalkerState::writeValues(std::ostream &s, std::size_t isample)
+{
+  for (std::size_t i=0; i<numWalkers(); ++i)
+    {
+      s<<isample<<"\t"<<i<<"\t"<<logPostLik(i)<<"\t"<<logPrior(i);
+      for (std::size_t k=0; k<numParameters(); ++k)
+        s<<"\t"<<mean_.getTransform(k)->inverse(trMeans_[i][k]);
+      s<<"\n";
+    }
   return s;
 }
 
 
-void BayesIteration::setFilename(const std::string filename)
+std::ostream &mcmcWalkerState::writeValuesTitles(std::ostream &s)
 {
-  filename_=filename;
+  s<<"isample"<<"\t"<<"i"<<"\t"<<"logPostLik(i)"<<"\t"<<"logPrior(i)";
+  for (std::size_t k=0; k<numParameters(); ++k)
+    s<<"\t"<<mean_.indexToName(k);
+  s<<"\n";
+  return s;
 }
 
-double BayesIteration::SumWeighedSquare(const Parameters& p)
+std::ostream &mcmcWalkerState::writeMeans(std::ostream &s)
 {
-//  std::vector<double> d=this->getData();
-//  std::vector<double> w=this->getDataWeigth();
+    s<<"\t"<<logPostLikMean()<<"\t"<<logPostLikStd();
+    s<<"\t"<<logPriorLikMean()<<"\t"<<logPriorLikStd();
 
-//  std::vector<double> y=this->p_exp(p);
-//  double SSW=0;
-//  for (std::size_t i=0;i<d.size();i++)
-//    {
-//      SSW+=pow(y[i]-d[i],2)*w[i];
-//    };
-//  return SSW;
+      for (std::size_t k=0; k<numParameters(); ++k)
+      {
+          s<<"\t"<<mean_.mean(k);
+          s<<"\t"<<mean_.dBStd(k);
+      }
+      s<<"\n";
+  return s;
 }
 
-Parameters BayesIteration::getHessian(const Parameters& MAP,double eps)
+std::ostream &mcmcWalkerState::writeMeansTitles(std::ostream &s)
 {
-  std::vector<std::vector<double> > Hessian(MAP.size(),std::vector<double> (MAP.size(),0));
-  double ss=0.5*SumWeighedSquare(MAP);
+    s<<"\t"<<"logPostLikMean"<<"\t"<<"logPostLikStd";
+    s<<"\t"<<"logPriorLikMean"<<"\t"<<"logPriorLikStd";
 
-  for (std::size_t i=0; i<MAP.size(); i++)
+      for (std::size_t k=0; k<numParameters(); ++k)
+      {
+          s<<"\t"<<mean_.indexToName(k)<<"_mean";
+          s<<"\t"<<mean_.indexToName(k)<<"_dB";
+        }
+      s<<"\n";
+  return s;
+}
+
+
+
+
+std::ostream &mcmcWalkerState::writeBody(std::ostream &s) const
+{
+  writeField(s,"mean_state",mean_);
+  writeField(s,"transformed_Means",trMeans_);
+  writeField(s,"postLikelihood",postLiks_);
+  writeField(s,"priorLikelihood",priorLiks_);
+  return s;
+}
+
+void mcmcWalkerState::clear() {
+  priorLiks_.clear();
+  postLiks_.clear();
+  trMeans_.clear();
+}
+
+bool mcmcWalkerState::readBody(std::string &line, std::istream &s)
+{
+  if (!readField(line,s,"mean_state",mean_)) return false;
+  else if (!readField(line,s,"transformed_Means",trMeans_)) return false;
+  else if (!readField(line,s,"postLikelihood",postLiks_)) return false;
+  else if (!readField(line,s,"priorLikelihood",priorLiks_)) return false;
+  else return true;
+}
+
+
+
+
+
+
+
+
+emcee_mcmc::emcee_mcmc(const CortexLikelihood *f
+                       , const Parameters &initialParam
+                       , double maxDuration_minutes
+                       , std::size_t numIterations
+                       , std::size_t numWalkers
+                       , std::size_t nSkip
+                       , double radiusWalkers
+                       , const std::string &name
+                       , double a
+                       , std::mt19937::result_type initseed)
+  :
+    startTime_(std::chrono::steady_clock::now()),
+    mt_()
+  , fname_(name),
+    os_val_(),
+    os_mean_(),
+    CL_(f)
+  ,initial_(initialParam)
+  , maxDuration_minutes_(maxDuration_minutes)
+  , numSamples_(numIterations)
+  , numWalkers_(numWalkers)
+  ,n_skip_(nSkip)
+  , radiusWalkers_(radiusWalkers)
+  , a_(a)
+{
+
+  fname_=getSaveName(fname_);
+  os_val_.open(fname_+"_val.txt",std::ofstream::out);
+  os_mean_.open(fname_+"_mean.txt",std::ofstream::out);
+
+
+  if (initseed!=0)
     {
-      Parameters fip(MAP);
-      fip[i]=fip[i]+eps;
-      Parameters fin(MAP);
-      fin[i]=fin[i]-eps;
-      double ssip=0.5*SumWeighedSquare(fip);
-      double ssin=0.5*SumWeighedSquare(fin);
+      mt_.seed(initseed);
+      std::cout<<"Seed for random generator provided="<<initseed<<std::endl;
+      if (os_mean_.is_open())
+        os_mean_<<"Seed for random generator provided="<<initseed<<std::endl;
+    }
+  else
+    {
+      std::random_device rd;
+      std::mt19937::result_type seed=rd();
+      mt_.seed(seed);
+      std::cout<<"Seed of random generator="<<seed<<std::endl;
+      if (os_mean_.is_open())
+        os_mean_<<"Seed of random generator="<<seed<<std::endl;
+    }
 
-      Hessian[i][i]=(ssip+ssin-2.0*ss)/eps/eps;
-      for (std::size_t j=i+1; j<MAP.size(); j++)
+}
+
+mcmcWrun emcee_mcmc::run()
+{
+  startTime_=std::chrono::steady_clock::now();
+  ifeval_=0;
+
+  mcmcWrun o(this,numSamples_);
+  mcmcWalkerState ws_0=mcmcWalkerState::create(CL_,initial_,numWalkers_,radiusWalkers_,mt_,ifeval_);
+  mcmcWalkerState ws_1;
+  std::size_t i=0;
+  double runt=0;
+  os_mean_.precision(10);
+  os_val_.precision(10);
+  std::cout<<"i"<<"\t"<<"ifeval"<<"\t"<<"runt"<<"\t"<<"timeIter"<<"\t";
+  std::cout<<"logPostLikMean()"<<"\t"<<"logPostLikStd()";
+  std::cout<<"\t"<<"logPriorLikMean()"<<"\t"<<"logPriorLikStd()"<<std::endl;
+
+  os_mean_<<"i"<<"\t"<<"ifeval"<<"\t"<<"runt"<<"\t"<<"timeIter";
+  ws_0.writeMeansTitles(os_mean_);
+
+  while ((runt<maxDuration_minutes_)&&(i<numSamples_))
+    {
+      auto tnow=std::chrono::steady_clock::now();
+      auto d=tnow-startTime_;
+      double t0=runt;
+      runt=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
+      double timeIter=60*(runt-t0);
+      for (std::size_t ii=0; ii<n_skip_; ++ii)
         {
-          Parameters fipjp(MAP);
-          fipjp[i]=fipjp[i]+eps;
-          Parameters fipjn(fipjp);
-          fipjp[j]=fipjp[j]+eps;
-          fipjn[j]=fipjn[j]-eps;
-
-          Parameters finjp(MAP);
-          finjp[i]=finjp[i]-eps;
-          Parameters finjn(finjp);
-          finjp[j]=finjp[j]+eps;
-          finjn[j]=finjn[j]-eps;
-
-          double ssipjp=0.5*SumWeighedSquare(fipjp);
-          double ssinjp=0.5*SumWeighedSquare(finjp);
-          double ssipjn=0.5*SumWeighedSquare(fipjn);
-          double ssinjn=0.5*SumWeighedSquare(finjn);
-
-          Hessian[i][j]=(ssipjp+ssinjn-ssipjn-ssinjp)/eps/eps/4.0;
-          Hessian[j][i]=Hessian[i][j];
+          ws_1=nextState(CL_,mt_,a_,ws_0,ifeval_);
+          std::swap(ws_0,ws_1);
         }
 
+      std::cout<<i<<"\t"<<ifeval_<<"\t"<<runt<<"\t"<<timeIter<<"\t";
+      std::cout<<ws_0.logPostLikMean()<<"\t"<<ws_0.logPostLikStd();
+      std::cout<<"\t"<<ws_0.logPriorLikMean()<<"\t"<<ws_0.logPriorLikStd()<<std::endl;
+      ws_0.writeValuesTitles(os_val_);
+      ws_0.writeValues(os_val_,i);
+      os_mean_<<i<<"\t"<<ifeval_<<"\t"<<runt<<"\t"<<timeIter;
+      ws_0.writeMeans(os_mean_);
+      os_mean_.flush();
+      os_val_.flush();
+      ++i;
     }
-  Parameters result(MAP);
-  result.setCovariance(inv(Hessian));
-  return result;
 }
 
-
-Parameters BayesIteration::getHessianInterpol(const Parameters& MAP, double mindSS, double maxdSS)
+std::ostream &emcee_mcmc::writeBody(std::ostream &s) const
 {
-  std::vector<std::vector<double> > Hessian(MAP.size(),std::vector<double> (MAP.size(),0));
-  double ss=0.5*SumWeighedSquare(MAP);
+  writeField(s,"Likelihood_Model",CL_->id());
+  writeField(s,"Initial_Parameter",initial_);
+  writeField(s,"Maximal_duration",maxDuration_minutes_);
+  writeField(s,"Number_Samples",numSamples_);
+  writeField(s,"Number_Walkers",numWalkers_);
+  writeField(s,"Initial_Radius",radiusWalkers_);
+  writeField(s,"eemcee_a",a_);
 
-  for (std::size_t i=0; i<MAP.size(); i++)
-    {
-      double ep=1e-3;
-      double h;
-
-      Parameters fip(MAP);
-      Parameters fin(MAP);
-      double ssip;
-      double ssin;
-
-      fip[i]=MAP[i]+ep;
-      fin[i]=MAP[i]-ep;
-      ssip=0.5*SumWeighedSquare(fip);
-      ssin=0.5*SumWeighedSquare(fin);
-      h=(ssip+ssin-2.0*ss);
-      while (h<mindSS)
-        {
-
-        }
-
-
-
-
-      Hessian[i][i]=h;
-      for (std::size_t j=i+1; j<MAP.size(); j++)
-        {
-          Parameters fipjp(MAP);
-          fipjp[i]=fipjp[i]+ep;
-          Parameters fipjn(fipjp);
-          fipjp[j]=fipjp[j]+ep;
-          fipjn[j]=fipjn[j]-ep;
-
-          Parameters finjp(MAP);
-          finjp[i]=finjp[i]-ep;
-          Parameters finjn(finjp);
-          finjp[j]=finjp[j]+ep;
-          finjn[j]=finjn[j]-ep;
-
-          double ssipjp=0.5*SumWeighedSquare(fipjp);
-          double ssinjp=0.5*SumWeighedSquare(finjp);
-          double ssipjn=0.5*SumWeighedSquare(fipjn);
-          double ssinjn=0.5*SumWeighedSquare(finjn);
-
-          Hessian[i][j]=(ssipjp+ssinjn-ssipjn-ssinjp)/ep/ep/4.0;
-          Hessian[j][i]=Hessian[i][j];
-        }
-
-    }
-  Parameters result(MAP);
-  result.setCovariance(inv(Hessian));
-  return result;
+  return s;
 }
 
-
-
-Parameters BayesIteration::getEvidence(const Parameters& maximumPostLik, std::size_t num)
+bool emcee_mcmc::readBody(std::string &line, std::istream &s)
 {
-  std::random_device rd;
-  std::mt19937 mt(rd());
-
-  double ss0=SumWeighedSquare(maximumPostLik);
-  std::vector<Parameters> parvec;
-  std::vector<double> parvecVal;
-  std::vector<double> m=maximumPostLik.trMeans();
-  std::vector<std::vector<double> > covinv=inv(maximumPostLik.getCovariance());
-  double sumw=0;
-  double sumP=0;
-
-  for (std::size_t i=0; i<num; i++)
+  std::string likelihoodName;
+  if (!readField(line,s,"Likelihood_Model",likelihoodName)) return false;
+  else
     {
-      Parameters p;
-      double factor=1.0;
-      double  dss;
-      double sampLogLik=0;
-      p=maximumPostLik.randomSample(mt,factor);
-      dss=SumWeighedSquare(p)-ss0;
-      std::vector<double> d=m;
-      for (std::size_t i0=0;i0<p.size(); i0++ )
-        {
-          d[i0]=p[i0]-m[i0];
-        }
-      for (std::size_t i0=0;i0<p.size(); i0++ )
-        {
-          sampLogLik+=d[i0]*d[i0]*covinv[i0][i0];
-          for (std::size_t j0=i0+1;j0<p.size(); j0++ )
-            {
-              sampLogLik+=2*d[i0]*d[j0]*covinv[i0][j0];
-            }
-        }
-
-      double pv=exp(-0.5*(dss-sampLogLik));
-      double plik=0;
-      while((pv!=pv)||(pv<1e-2))
-        {
-          factor/=sqrt(2);
-          for (std::size_t i0=0;i0<p.size(); i0++ )
-            {
-              p[i0]=m[i0]+factor*d[i0];
-            }
-          dss=SumWeighedSquare(p)-ss0;
-          pv=exp(-0.5*(dss-sampLogLik*factor*factor));
-
-        }
-
-
-      parvec.push_back(p);
-      parvecVal.push_back(pv);
-      sumw+=pv;
+      CL_=cm_->getLikelihood(likelihoodName);
+      if (!readField(line,s,"Initial_Parameter",initial_))
+        return false;
+      else if (!readField(line,s,"Maximal_duration",maxDuration_minutes_))
+        return false;
+      else if (!readField(line,s,"Initial_Parameter",initial_))
+        return false;
+      else if (!readField(line,s,"Number_Samples",numSamples_))
+        return false;
+      else if (!readField(line,s,"Number_Walkers",numWalkers_))
+        return false;
+      else if (!readField(line,s,"Initial_Radius",radiusWalkers_))
+        return false;
+      else if (!readField(line,s,"eemcee_a",a_))
+        return false;
+      else return true;
     }
-
-  // now calculate expected mean and covariance
-  Parameters result(maximumPostLik);
-  std::vector<double> mout(m.size(),0);
-  std::vector<std::vector<double> > covout(m.size(),std::vector<double>(m.size(),0));
-
-  for(std::size_t im=0; im<parvec.size(); ++im)
-    {
-      for (std::size_t i=0; i<parvec[im].size(); i++)
-        mout[i]+=parvec[im][i]*parvecVal[im]/sumw;
-    }
-  for(std::size_t im=0; im<parvec.size(); ++im)
-    {
-      for (std::size_t i=0; i<parvec[im].size(); i++)
-        for (std::size_t j=0; j<parvec[im].size(); j++)
-          covout[i][j]+=(parvec[im][i]-mout[i])*(parvec[im][j]-mout[j])*
-              parvecVal[im]/sumw;
-    }
-  result.settMeans(mout);
-  result.setCovariance(covout);
-
-  return result;
-
-
-
-
 }
 
 
 
-
-std::map<double,Parameters> BayesIteration::getRandomParameters(std::mt19937& mt,
-                                                                const Parameters& per,
-                                                                std::size_t num,
-                                                                double factor)
+void mcmcWrun::push_back(mcmcWalkerState w)
 {
-  std::map<double,Parameters> myMap;
-  for (std::size_t i=0; i<num; i++)
-    {
-      Parameters p=per.randomSample(mt,factor);
-      double ss=SumWeighedSquare(p);
-
-      std::cout<<ss<<"\n";
-      //    std::cout<<p;
-      if (!(ss!=ss))
-        myMap[ss]=p;
-    }
-
-
-  for (std::map<double,Parameters>::iterator it=myMap.begin();it!=myMap.end();++it)
-    {
-      double ss=(*it).first;
-      std::cout<<(*it).first<<"\n";
-
-    }
-
-
-  return myMap;
+  run_[iend_]=w;
+  iend_++;
 }
 
-std::map<double,Parameters> BayesIteration::getRandomParameters(std::mt19937 &mt, std::size_t num,
-                                                                double factor)
+std::ostream &mcmcWrun::writeBody(std::ostream &s) const
 {
-  std::map<double,Parameters> myMap;
-  for (std::size_t i=0; i<num; i++)
-    {
-      Parameters p=priors_.back().randomSample(mt,factor);
-      double ss=SumWeighedSquare(p);
 
-      std::cout<<ss<<"\n";
-      //    std::cout<<p;
-      if (!(ss!=ss))
-        myMap[ss]=p;
-    }
+  writeField(s,"mcmc_Algorithm",e_->id());
+  writeField(s,"mcmc_run",run_);
 
-
-  for (std::map<double,Parameters>::iterator it=myMap.begin();it!=myMap.end();++it)
-    {
-      double ss=(*it).first;
-      std::cout<<(*it).first<<"\n";
-
-    }
-
-
-  return myMap;
 }
 
+bool mcmcWrun::readBody(std::string &line, std::istream &s)
+{
+  std::string algorithm;
+  if (!readField(line,s,"mcmc_Algorithm",algorithm)) return false;
+  else {
+      auto e=cm_->getMcmc(algorithm);
+      if (e==nullptr) return false;
+      else
+        {
+          e_=e;
+          if (!readField(line,s,"mcmc_run",run_)) return false;
+          else return true;
 
+        }
+    }
+}

@@ -108,6 +108,7 @@ public:
 
 
   double mean(const std::string& name)const;
+  double mean(std::size_t i) const;
 
   /// pMean("someParameter")=log10(mean("someParameter")
   double tMean(const std::string& name)const;
@@ -116,6 +117,9 @@ public:
 
   Transformation* getTransform(const std::string& name)const;
 
+  Transformation* getTransform(std::size_t i)const;
+
+
   bool hasCovariance()const
   {
     return !cov_.empty();
@@ -123,6 +127,7 @@ public:
 
   /// returns the standard deviation of the logartithm of the parameter in deciBels
   double dBStd(const std::string& name)const;
+  double dBStd(std::size_t i)const;
 
   bool setMeans(const std::vector<std::string> names,const std::vector<double> values);
   bool settMeans(const std::vector<std::string> names,const std::vector<double> log10values);
@@ -188,9 +193,17 @@ public:
 
 
 
+
   Parameters randomSample(std::mt19937 &mt, Parameters prior, double factor)const;
 
 
+  std::vector<double> randomSampleValues(std::mt19937 &mt, Parameters prior, double factor)const;
+
+
+  Parameters toParameters(const std::vector<double>& o)const
+  {
+    return Parameters(id_,model_,name_to_i_,names_,o,trans_,unit_);
+  }
 
   Parameters(const Parameters& other);
   Parameters();
@@ -215,17 +228,42 @@ public:
 
   static TRANSFORM toTr(const std::string& trs);
 
+protected:
+  Parameters(const std::string id,
+             double model
+             ,std::map<std::string, std::size_t> nametoi,
+             std::vector<std::string> names,
+             std::vector<double> meanoftr,
+             std::vector<TRANSFORM> trans,
+             std::vector<std::string> unit):
+id_(id)
+  ,model_(model)
+  ,name_to_i_(nametoi)
+    ,names_(names)
+  ,mean_of_tr_(meanoftr)
+  ,trans_(trans)
+  ,unit_(unit)
+  ,std_of_tr_{}
+  ,corr_{}
+  ,comment_{}
+  ,cov_{}
+  ,cov_inv_{}
+  ,cho_{}
+  ,logDetCov_(){}
+
+
+
 private:
   std::size_t index(const std::string& name)const;
 
 
   std::vector<std::vector<double> >
   buildCovariance(const std::vector<double>& std_of_tr,
-                const std::vector<std::vector<double>> correlations);
+                  const std::vector<std::vector<double>> correlations);
 
   std::vector<std::vector<double> >
   buildCorrelations(const std::vector<double>& std_of_tr,
-                  const std::vector<std::vector<double>> covariance);
+                    const std::vector<std::vector<double>> covariance);
 
   std::vector<double> getStdDev(const std::vector<std::vector<double>>& covariance);
 

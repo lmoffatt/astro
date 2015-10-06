@@ -7,87 +7,268 @@
 #include <map>
 #include "LevenbergMarquardt.h"
 
+#include <random>
+
+
+inline double mean(const std::vector<double>& x)
+{
+  double m=0;
+  for (std::size_t i=0; i<x.size(); ++i)
+    m+=x[i];
+  return m/x.size();
+}
+
+
+inline std::vector<double> removeMean(const std::vector<double>& x,double m)
+{
+  std::vector<double> o(x.size());
+  for (std::size_t i=0; i<x.size(); ++i)
+    o[i]=x[i]-m;
+  return o;
+}
 
 
 
+inline double AutoCorrelationMean(const std::vector<double>& d, std::size_t k)
+{
+  double sum=0;
+  for (std::size_t i=0; i+k<d.size(); ++i)
+    sum+=d[i]*d[i+k];
+  sum/=d.size()-k;
+  return sum;
+}
 
-class BayesIteration:public ABC_Multinomial_Model, public ABC_Freq_obs
+inline double var(const std::vector<double>& d)
+{
+  double sum=0;
+  for (std::size_t i=0; i<d.size(); ++i)
+    sum+=d[i]*d[i];
+  sum/=d.size();
+  return sum;
+}
+
+inline std::vector<double> reduce(const std::vector<double>& x)
+{
+  std::vector<double> o(x.size()/2);
+  for (std::size_t i=0; i<o.size(); ++i)
+    {
+      o[i]=x[2*i]+x[2*i+1];
+    }
+  return o;
+}
+
+
+inline double integratedAutoCorrelationTimed(const std::vector<double>& d,std::size_t n)
+{
+  double v=var(d);
+  double tau=v;
+  for (std::size_t i=1; i<n; ++i)
+    {
+      tau+=AutoCorrelationMean(d,i)*2.0;
+    }
+  tau/=v;
+  if ((tau>n)&&(n*n<d.size()))
+    {
+      auto r=reduce(d);
+      return integratedAutoCorrelationTimed(r,n);
+    }
+  else
+    return tau;
+}
+
+
+inline double integratedAutoCorrelationTime(const std::vector<double>& x,std::size_t n)
+{
+  double m=mean(x);
+  std::vector<double> d=removeMean(x,m);
+  return integratedAutoCorrelationTimed(d,n);
+
+}
+
+
+
+class mcmcWalkerState: public BaseObject
 {
 public:
+  mcmcWalkerState(const Parameters& prior
+                  , std::vector<std::vector<double>> trMeans
+                  ,std::vector<double> postLiks
+                  , std::vector<double> logPrios);
 
-    Parameters Posterior()const;
-
-    Parameters Prior(std::size_t n_obs=0)const;
-
-
-    BayesIteration(const CortexLikelihood *f,
-                   Parameters prior,
-                   const ABC_Freq_obs* d,
-                   const std::string &filename);
-
-
-    std::map<double,Parameters> getRandomParameters(std::mt19937& mt,std::size_t num,double factor);
-
-    std::map<double,Parameters> getRandomParameters(std::mt19937& mt,const Parameters& per,std::size_t num, double factor);
-
-
-    double SumWeighedSquare(const Parameters& p);
+  mcmcWalkerState(const Parameters &prior
+                  , std::size_t numWalkers);
 
 
 
-    BayesIteration& addNewData(ABC_Freq_obs* d);
-
-    virtual ~BayesIteration();
-
-    virtual void setFilename(const std::string filename);
-
-    virtual std::vector<std::vector<double>> f (const Parameters& parameters)const;
-
-    virtual const ABC_Freq_obs& getData()const;
-
-     BayesIteration(const BayesIteration& other);
-    /*
-
-    friend void swap(BayesIteration& one, BayesIteration& other);
-
-    BayesIteration& operator=(const BayesIteration& other);
-*/
-    BayesIteration();
-
-    BayesIteration& getPosterior();
-
-    BayesIteration& getPosterior(const Parameters& startingPoint);
-
-    BayesIteration& getPosterior(const Parameters& startingPoint, double factor, std::size_t numSeeds);
-
-    Parameters getEvidence(const Parameters& maximumPostLik, std::size_t num);
-
-    Parameters getHessian(const Parameters& MAP, double eps=1e-3);
+  static mcmcWalkerState create(const CortexLikelihood* f,
+                                const Parameters& initialParam,
+                                std::size_t numWalkers,
+                                double radiusWalkers,
+                                std::mt19937& mt,
+                                std::size_t& ifeval);
 
 
-    Parameters getHessianInterpol(const Parameters& MAP, double minP, double maxP);
+  mcmcWalkerState();
 
-    virtual std::ostream& put(std::ostream& s,const Parameters& parameters)const;
+  const Parameters& getMeanState()const;
+
+  std::size_t numWalkers() const;
+
+  std::size_t numParameters()const;
+
+  std::vector<double>& operator[](std::size_t i);
+
+  const std::vector<double>& operator[](std::size_t i)const;
+
+  double& logPostLik(std::size_t i);
+  const double& logPostLik(std::size_t i)const;
+
+  double& logPrior(std::size_t i);
+  const double& logPrior(std::size_t i) const;
+
+  void update_Mean();
+
+  void update_Covariance();
+
+  std::ostream& writeTrValues(std::ostream& s,std::size_t isample);
+
 
 
 
 private:
+  Parameters mean_;
+  double postLikMean_;
+  double postLikStd_;
+  double priorLikMean_;
+  double priorLikStd_;
+  std::vector<std::vector<double>> trMeans_;
+  std::vector<double> postLiks_;
+  std::vector<double> priorLiks_;
 
-    const CortexLikelihood* m_;
+  // BaseClass interface
+public:
+  static std::string ClassName(){ return "mcmcWalkerState";}
+  virtual std::__cxx11::string myClass() const override{ return ClassName();}
 
-    std::vector<const ABC_Freq_obs*> data_;
+  // BaseObject interface
+public:
+  virtual BaseObject *create() const override{ return new mcmcWalkerState;}
+  virtual std::ostream &writeBody(std::ostream &s) const override;
+  virtual void clear() override;
+  virtual bool readBody(std::string &line, std::istream &s) override;
 
-    std::vector<Parameters> priors_;
+  const double &logPostLikMean() const;
+  const double &logPostLikStd() const;
+  const double &logPriorLikMean() const;
+  const double &logPriorLikStd() const;
+  std::ostream &writeValues(std::ostream &s, std::size_t isample);
+  std::ostream &writeMeans(std::ostream &s);
+  std::ostream &writeValuesTitles(std::ostream &s);
+  std::ostream &writeMeansTitles(std::ostream &s);
+protected:
+  virtual void update() override{}
+};
 
-    Parameters posterior_;
-    std::size_t numSeeds_;
 
-    std::vector<LevenbergMarquardtDistribution> LM_;
+class emcee_mcmc;
+class mcmcWrun: public BaseAgent
+{
+public:
 
-    std::string filename_;
+
+  mcmcWrun(const emcee_mcmc* e,
+           std::size_t numIterations):
+    e_(e),
+    run_(numIterations){}
+
+  mcmcWrun(){}
+
+  void push_back(mcmcWalkerState w);
 
 
-    };
+
+private:
+  const emcee_mcmc* e_;
+  std::vector<mcmcWalkerState> run_;
+  std::size_t iend_;
+
+  // BaseClass interface
+public:
+  static std::string ClassName(){return "mcmcWRun";}
+  virtual std::string myClass() const override {return ClassName();}
+
+  // BaseObject interface
+public:
+  virtual BaseObject *create() const override{
+
+    return new mcmcWrun;
+  }
+  virtual std::ostream &writeBody(std::ostream &s) const override;
+  virtual void clear() override{}
+  virtual bool readBody(std::string &line, std::istream &s) override;
+
+protected:
+  virtual void update() override{}
+};
+
+class emcee_mcmc: public BaseAgent
+{
+public:
+  emcee_mcmc(const CortexLikelihood* f,
+             const Parameters& initialParam,
+             double maxDuration_minutes,
+             std::size_t numIterations,
+             std::size_t numWalkers,
+             std::size_t nSkip,
+             double radiusWalkers,
+             const std::string&  name,
+             double a,
+             std::mt19937::result_type initseed);
+
+  emcee_mcmc(){}
+
+  mcmcWrun run();
+
+
+  void next();
+
+
+  // BaseClass interface
+public:
+  static std::string ClassName(){return "emcee_mcmc"; }
+  virtual std::__cxx11::string myClass() const override {return ClassName();}
+
+  // BaseObject interface
+public:
+  virtual BaseObject *create() const override{ return new emcee_mcmc;}
+  virtual std::ostream &writeBody(std::ostream &s) const override;
+
+
+
+
+  virtual void clear() override{}
+
+  virtual bool readBody(std::string &line, std::istream &s) override;
+
+protected:
+  virtual void update() override{}
+
+private:
+  std::chrono::steady_clock::time_point startTime_;
+  std::mt19937 mt_;
+  std::string fname_;
+  std::ofstream os_val_;
+  std::ofstream os_mean_;
+  const CortexLikelihood* CL_;
+  Parameters initial_;
+  double maxDuration_minutes_;
+  std::size_t numSamples_;
+  std::size_t numWalkers_;
+  std::size_t n_skip_;
+  std::size_t ifeval_;
+  double radiusWalkers_;
+  double a_;
+};
 
 
 #endif // BAYESITERATION

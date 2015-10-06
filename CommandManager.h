@@ -19,7 +19,7 @@
 class BaseModel;
 class CortexSimulation;
 class CortexLikelihood;
-
+class emcee_mcmc;
 
 inline std::string& removeComments(std::string& line)
 {
@@ -96,10 +96,12 @@ public:
   CortexMeasure *getMeasure(std::string id);
   BaseModel *getModel(std::string idModel);
   CortexSimulation *getSimulation(std::string idSimulation);
-  Experiment *getExperiment(std::string id);
+  Experiment *getExperiment(const std::string &id);
 
   CortexLikelihood* getLikelihood(const std::string& idLik);
   void push_back(Experiment *experiment);
+  void push_back(emcee_mcmc *mcmc);
+  emcee_mcmc *getMcmc(const std::string& id);
 private:
   std::map <std::string, CommandBase*> cmd_;
   std::map <std::string,TissueSection*> sections;
@@ -107,6 +109,8 @@ private:
   std::map <std::string,CortexMeasure*> measures;
 
   std::map <std::string,Experiment*> experiments;
+
+  std::map <std::string,emcee_mcmc*> mcmcs;
 
   std::map <std::string,BaseModel*> models;
 
@@ -325,6 +329,30 @@ private:
   CommandManager* cm_;
 
 };
+
+
+
+class McmcCommand:public CommandBase
+{
+ // CommandBase interface
+public:
+  virtual void run(const std::string line);
+
+  virtual std::string id() const
+  {
+    return "mcmc";
+  }
+  McmcCommand(CommandManager* cm):
+    CommandBase("mcmc"),
+    cm_(cm){}
+
+  ~McmcCommand(){}
+private:
+  CommandManager* cm_;
+
+};
+
+
 
 
 

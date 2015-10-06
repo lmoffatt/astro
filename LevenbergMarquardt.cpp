@@ -76,9 +76,9 @@ LevenbergMarquardtDistribution::LevenbergMarquardtDistribution (const LevenbergM
   w_(other.w_),
   ParamInitial_(other.ParamInitial_),
   nPar_(other.nPar_),
-  maxDur_in_min_(other.maxDur_in_min_),
   nData_(other.nData_),
   dx_(other.dx_),
+  maxDur_in_min_(other.maxDur_in_min_),
   maxIter_(other.maxIter_),
   maxFeval_(other.maxFeval_),
   ParamChangeMin_(other.ParamChangeMin_),
@@ -392,7 +392,7 @@ void update_Gradient(std::vector<double>& G,
 }
 
 
-void update_JTWJ(std::vector<std::vector<double>>& JTWJ
+void update_JTWJ_landa(std::vector<std::vector<double>>& JTWJ
                  ,std::vector<std::vector<double>>& JTWJ_landa
                  ,const Parameters& ParamCurr
                  ,const std::vector<std::vector<double>>& J
@@ -421,7 +421,7 @@ void LevenbergMarquardtDistribution::computeJacobian()
   if (!isJacobianInvalid_)
     {update_Gradient(G_,prior_G_,epsilon_,J_);
 
-      update_JTWJ(JTWJ_,JTWJ_landa_,ParamCurr_,J_,w_,nPar_,nData_);
+      update_JTWJ_landa(JTWJ_,JTWJ_landa_,ParamCurr_,J_,w_,nPar_,nData_);
     }
 }
 
@@ -726,19 +726,24 @@ unsigned ABC_Freq_obs::numCells() const
 
 double ABC_Distribution_Model::logPrior(const Parameters &p)const
 {
+  return logPrior(p.trMeans());
+}
+
+double ABC_Distribution_Model::logPrior(const std::vector<double> &o)const
+{
 
 
   double sumL=0;
   if (!getPrior().hasCovariance())
     {
-      for (unsigned i=0; i<p.size(); ++i)
-        sumL+=std::pow(p[i]-getPrior()[i],2)/std::pow(getPrior().pStds()[i],2);
+      for (unsigned i=0; i<o.size(); ++i)
+        sumL+=std::pow(o[i]-getPrior()[i],2)/std::pow(getPrior().pStds()[i],2);
     }
   else
     {
-      for (unsigned i=0; i<p.size(); ++i)
-        for (unsigned j=0; j<p.size(); ++j)
-          sumL+=(p[i]-getPrior()[i])*(p[j]-getPrior()[j])*getPrior().getInvCovariance()[i][j];
+      for (unsigned i=0; i<o.size(); ++i)
+        for (unsigned j=0; j<o.size(); ++j)
+          sumL+=(o[i]-getPrior()[i])*(o[j]-getPrior()[j])*getPrior().getInvCovariance()[i][j];
     }
   return 0.5*(-sumL);
   //+getPrior().logDetCov());
@@ -809,6 +814,11 @@ ABC_Distribution_Model::J(const Parameters &p,
 double ABC_Distribution_Model::logLik(const Parameters &p) const
 {
   return logLik(f(p));
+}
+
+double ABC_Distribution_Model::logLik(const std::vector<double> &o) const
+{
+  return logLik(f(getPrior().toParameters(o)));
 }
 
 
@@ -1002,4 +1012,24 @@ const std::vector<double> ABC_MultiPoison_Model::weight(const std::vector<std::v
   return out;
 
 }
+
+
+void update_JTWJ(std::vector<std::vector<double>>& JTWJ
+                 ,const Parameters& ParamCurr
+                 ,const std::vector<std::vector<double>>& J
+                 ,const std::vector<double>& w
+                 ,std::size_t nPar,
+                 std::size_t nData)
+{
+  for (std::size_t i=0; i<nPar; ++i)
+    for (std::size_t j=0; j<nPar; ++j)
+      {
+        JTWJ[i][j]=ParamCurr.getInvCovariance()[i][j];
+        for (std::size_t n=0; n<nData; ++n)
+          {
+            JTWJ[i][j]+=J[n][i]*J[n][j]*w[n];
+          }
+      }
+}
+
 

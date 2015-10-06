@@ -3,6 +3,7 @@
 #include "CommandManager.h"
 #include "LevenbergMarquardt.h"
 #include "CortexLikelihood.h"
+#include "BayesIteration.h"
 #include <sstream>
 #include <iostream>
 
@@ -84,6 +85,8 @@ CommandManager::CommandManager()
   cmd_["experiment"]=new ExperimentCommand(this);
   cmd_["likelihood"]=new LikelihoodCommand(this);
   cmd_["optimize"]=new OptimizeCommand(this);
+  cmd_["mcmc"]=new McmcCommand(this);
+
 
 
 }
@@ -140,6 +143,11 @@ void CommandManager::push_back(Experiment *experiment)
   experiments[experiment->id()]=experiment;
 }
 
+void CommandManager::push_back(emcee_mcmc *mcmc)
+{
+  mcmcs[mcmc->id()]=mcmc;
+}
+
 void CommandManager::push_back(CortexLikelihood *likelihood)
 {
   likelihood->setCommandManager(this);
@@ -161,6 +169,8 @@ CommandManager::~CommandManager()
   for (auto elem: simulations)
     delete elem.second;
   for (auto elem: experiments)
+    delete elem.second;
+  for (auto elem: mcmcs)
     delete elem.second;
   for (auto elem: likelihoods)
     delete elem.second;
@@ -195,7 +205,7 @@ CortexMeasure *CommandManager::getMeasure(std::string id)
     return nullptr;
 }
 
-Experiment *CommandManager::getExperiment(std::string id)
+Experiment *CommandManager::getExperiment(const std::string& id)
 {
   auto it=experiments.find(id);
   if(it!=experiments.end())
@@ -203,6 +213,19 @@ Experiment *CommandManager::getExperiment(std::string id)
   else
     return nullptr;
 }
+
+
+emcee_mcmc *CommandManager::getMcmc(const std::string& id)
+{
+  auto it=mcmcs.find(id);
+  if(it!=mcmcs.end())
+    return it->second;
+  else
+    return nullptr;
+}
+
+
+
 
 CortexLikelihood *CommandManager::getLikelihood(const std::string &id)
 {
@@ -836,3 +859,98 @@ void OptimizeCommand::run(const std::string line)
 
 }
 
+
+void McmcCommand::run(const std::string line)
+{
+
+  //optimize opt experiment1 parameters_10 parameters_10 10 100
+
+  std::string mcmcS, mcmcName, experimentName, priorName, paramName;
+  double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
+  double walkerRadius,a=2;
+  std::mt19937::result_type initseed=0;
+  std::size_t nPoints_per_decade,nSamples,nWalkers,nSkip;
+  std::stringstream ss(line);
+
+  ss>>mcmcS>>mcmcName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>nSamples>>maxduration>>walkerRadius>>nWalkers>>nSkip>>a>>initseed;
+
+  Experiment *e=new Experiment;
+  e->load(experimentName);
+  if (e->numMeasures()==0)
+    {
+      std::cerr<<"Experiment "<<experimentName<<" not found\n";
+      return;
+    }
+
+  std::string filename=priorName;
+  std::fstream f;
+
+  f.open(filename.c_str());
+  if (!f)
+    {
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+      if (!f)
+        {
+          std::cerr<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
+          f.close();
+          return;
+        }
+    }
+  std::string line2;
+  safeGetline(f,line2);
+  Parameters prior;
+
+  if (!prior.read(line2,f))
+    {
+      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      f.close();
+      return;
+    }
+
+  f.close();
+
+  filename=paramName;
+  f.open(filename.c_str());
+  if (!f)
+    {
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+    }
+  if (!f)
+    {
+      std::cerr<<"Parameters file "<<filename<<" not found"<<std::endl;
+      f.close();
+      return;
+    }
+
+
+  safeGetline(f,line2);
+  Parameters p;
+
+  if (!p.read(line2,f))
+    {
+      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      f.close();
+      return;
+    }
+
+  f.close();
+
+  BaseModel*m=BaseModel::create(prior);
+  if (m!=nullptr)
+    {
+      cm_->push_back(m);
+
+      CortexPoisonLikelihood  CL(mcmcName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+
+
+
+      emcee_mcmc emc(&CL,p,maxduration,nSamples,nWalkers,nSkip,walkerRadius,mcmcName,a,initseed);
+      emc.run();
+      }
+
+
+
+
+}
