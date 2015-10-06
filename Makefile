@@ -13,15 +13,15 @@ CC            = ~/opt/gcc-5.2.0/bin/gcc
 CXX           = ~/opt/gcc-5.2.0/bin/g++
 DEFINES       =
 CFLAGS        = -m64 -pipe -O2 -Wall -W $(DEFINES)
-CXXFLAGS      = -m64 -pipe -std=c++11 -O2 -Wall -W $(DEFINES)
+CXXFLAGS      = -pipe -fopenmp -O2 -std=c++11 -Wall -W -fPIC $(DEFINES)
 INCPATH       = -I../Astro -I. -I../../../../Qt5.5.0/5.5/gcc_64/mkspecs/linux-g++
 QMAKE         = /home/luciano/Qt5.5.0/5.5/gcc_64/bin/qmake
 DEL_FILE      = rm -f
 
-LFLAGS        = -Wl,-O1 -Wl,-rpath=/home/lmoffatt.inquimae/opt/gcc-5.2.0/lib/
+LFLAGS        = -fopenmp -Wl,-O1 -Wl,-rpath=/home/lmoffatt.inquimae/opt/gcc-5.2.0/lib/
 LINK          = ~/opt/gcc-5.2.0/bin/g++
 
-LIBS          = $(SUBLIBS)   -lblas -llapack
+LIBS          = $(SUBLIBS)  -lgomp -lpthread  -lblas -llapack
 
 AR            = ar cqs
 RANLIB        =
