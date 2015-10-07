@@ -143,7 +143,7 @@ void CommandManager::push_back(Experiment *experiment)
   experiments[experiment->id()]=experiment;
 }
 
-void CommandManager::push_back(emcee_mcmc *mcmc)
+void CommandManager::push_back(mcmc *mcmc)
 {
   mcmcs[mcmc->id()]=mcmc;
 }
@@ -215,7 +215,7 @@ Experiment *CommandManager::getExperiment(const std::string& id)
 }
 
 
-emcee_mcmc *CommandManager::getMcmc(const std::string& id)
+mcmc *CommandManager::getMcmc(const std::string& id)
 {
   auto it=mcmcs.find(id);
   if(it!=mcmcs.end())
@@ -869,10 +869,11 @@ void McmcCommand::run(const std::string line)
   double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
   double walkerRadius,a=2;
   std::mt19937::result_type initseed=0;
-  std::size_t nPoints_per_decade,nSamples,nWalkers,nSkip;
+  std::size_t nPoints_per_decade,betaSamples,nSamples,nWalkers,nSkip;
   std::stringstream ss(line);
 
-  ss>>mcmcS>>mcmcName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>nSamples>>maxduration>>walkerRadius>>nWalkers>>nSkip>>a>>initseed;
+  ss>>mcmcS>>mcmcName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax;
+  ss>>betaSamples>>nSamples>>maxduration>>walkerRadius>>nWalkers>>nSkip>>a>>initseed;
 
   Experiment *e=new Experiment;
   e->load(experimentName);
@@ -946,7 +947,7 @@ void McmcCommand::run(const std::string line)
 
 
 
-      emcee_mcmc emc(&CL,p,maxduration,nSamples,nWalkers,nSkip,walkerRadius,mcmcName,a,initseed);
+      mcmc emc(&CL,p,maxduration,betaSamples,nSamples,nWalkers,nSkip,walkerRadius,mcmcName,a,initseed);
       emc.run();
       }
 

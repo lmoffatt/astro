@@ -92,11 +92,13 @@ class mcmcWalkerState: public BaseObject
 public:
   mcmcWalkerState(const Parameters& prior
                   , std::vector<std::vector<double>> trMeans
-                  ,std::vector<double> postLiks
+                  , double beta
+                  , std::vector<double> dataLiks
                   , std::vector<double> logPrios);
 
   mcmcWalkerState(const Parameters &prior
-                  , std::size_t numWalkers);
+                  , std::size_t numWalkers
+                  , double beta);
 
 
 
@@ -105,7 +107,8 @@ public:
                                 std::size_t numWalkers,
                                 double radiusWalkers,
                                 std::mt19937& mt,
-                                std::size_t& ifeval);
+                                std::size_t& ifeval,
+                                double beta);
 
 
   mcmcWalkerState();
@@ -120,8 +123,7 @@ public:
 
   const std::vector<double>& operator[](std::size_t i)const;
 
-  double& logPostLik(std::size_t i);
-  const double& logPostLik(std::size_t i)const;
+  double logBetaLik(std::size_t i)const;
 
   double& logPrior(std::size_t i);
   const double& logPrior(std::size_t i) const;
@@ -137,18 +139,19 @@ public:
 
 private:
   Parameters mean_;
-  double postLikMean_;
-  double postLikStd_;
-  double postLikMin_;
-  double postLikMax_;
+  double dataLikMean_;
+  double dataLikStd_;
+  double dataLikMin_;
+  double dataLikMax_;
 
   double priorLikMean_;
   double priorLikStd_;
   double priorLikMin_;
   double priorLikMax_;
 
+  double beta_;
   std::vector<std::vector<double>> trMeans_;
-  std::vector<double> postLiks_;
+  std::vector<double> dataLiks_;
   std::vector<double> priorLiks_;
 
   // BaseClass interface
@@ -163,30 +166,33 @@ public:
   virtual void clear() override;
   virtual bool readBody(std::string &line, std::istream &s) override;
 
-  const double &logPostLikMean() const;
-  const double &logPostLikStd() const;
+  const double &logDataLikMean() const;
+  const double &logDataLikStd() const;
   const double &logPriorLikMean() const;
   const double &logPriorLikStd() const;
   std::ostream &writeValues(std::ostream &s, std::size_t isample);
   std::ostream &writeMeans(std::ostream &s);
   std::ostream &writeValuesTitles(std::ostream &s);
   std::ostream &writeMeansTitles(std::ostream &s);
-  const double &logPostLikMax() const;
-  const double &logPostLikMin() const;
+  const double &logDataLikMax() const;
+  const double &logDataLikMin() const;
   const double &logPriorLikMax() const;
   const double &logPriorLikMin() const;
+  const double &logDataLik(std::size_t i) const;
+  double &logDataLik(std::size_t i);
+  double beta() const;
 protected:
   virtual void update() override{}
 };
 
 
-class emcee_mcmc;
+class mcmc;
 class mcmcWrun: public BaseAgent
 {
 public:
 
 
-  mcmcWrun(const emcee_mcmc* e,
+  mcmcWrun(const mcmc* e,
            std::size_t numIterations):
     e_(e),
     run_(numIterations){}
@@ -198,7 +204,7 @@ public:
 
 
 private:
-  const emcee_mcmc* e_;
+  const mcmc* e_;
   std::vector<mcmcWalkerState> run_;
   std::size_t iend_;
 
@@ -221,23 +227,24 @@ protected:
   virtual void update() override{}
 };
 
-class emcee_mcmc: public BaseAgent
+class mcmc: public BaseAgent
 {
 public:
-  emcee_mcmc(const CortexLikelihood* f,
-             const Parameters& initialParam,
-             double maxDuration_minutes,
-             std::size_t numIterations,
-             std::size_t numWalkers,
-             std::size_t nSkip,
-             double radiusWalkers,
-             const std::string&  name,
-             double a,
-             std::mt19937::result_type initseed);
+  mcmc(const CortexLikelihood* f,
+       const Parameters& initialParam,
+       double maxDuration_minutes,
+       std::size_t betaSamples,
+       std::size_t eqSamples,
+       std::size_t numWalkers,
+       std::size_t nSkip,
+       double radiusWalkers,
+       const std::string&  name,
+       double a,
+       std::mt19937::result_type initseed);
 
-  emcee_mcmc(){}
+  mcmc(){}
 
-  mcmcWrun run();
+  void run();
 
 
   void next();
@@ -245,12 +252,12 @@ public:
 
   // BaseClass interface
 public:
-  static std::string ClassName(){return "emcee_mcmc"; }
+  static std::string ClassName(){return "mcmc"; }
   virtual std::__cxx11::string myClass() const override {return ClassName();}
 
   // BaseObject interface
 public:
-  virtual BaseObject *create() const override{ return new emcee_mcmc;}
+  virtual BaseObject *create() const override{ return new mcmc;}
   virtual std::ostream &writeBody(std::ostream &s) const override;
 
 
@@ -271,7 +278,9 @@ private:
   std::ofstream os_mean_;
   const CortexLikelihood* CL_;
   Parameters initial_;
+  double betarun_;
   double maxDuration_minutes_;
+  std::size_t betaSamples_;
   std::size_t numSamples_;
   std::size_t numWalkers_;
   std::size_t n_skip_;

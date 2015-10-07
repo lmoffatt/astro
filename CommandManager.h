@@ -19,7 +19,7 @@
 class BaseModel;
 class CortexSimulation;
 class CortexLikelihood;
-class emcee_mcmc;
+class mcmc;
 
 inline std::string& removeComments(std::string& line)
 {
@@ -100,8 +100,8 @@ public:
 
   CortexLikelihood* getLikelihood(const std::string& idLik);
   void push_back(Experiment *experiment);
-  void push_back(emcee_mcmc *mcmc);
-  emcee_mcmc *getMcmc(const std::string& id);
+  void push_back(mcmc *mcmc);
+  mcmc *getMcmc(const std::string& id);
 private:
   std::map <std::string, CommandBase*> cmd_;
   std::map <std::string,TissueSection*> sections;
@@ -110,7 +110,7 @@ private:
 
   std::map <std::string,Experiment*> experiments;
 
-  std::map <std::string,emcee_mcmc*> mcmcs;
+  std::map <std::string,mcmc*> mcmcs;
 
   std::map <std::string,BaseModel*> models;
 
