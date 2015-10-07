@@ -1,4 +1,4 @@
 //experiment experiment_log2_25 10000000 1 0  0  [ 0 25 50 100 250 500 : 500 : 4000  ]  3dplCL 3dpl 7dpl2
 //ss>>mcmcS>>mcmcName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade
 //>>dtmax>>nSamples>>maxduration>>walkerRadius>>nWalkers>>nSkip>>a>>initseed;
-mcmc MCP_log_250u_100s_200w_LABEL ../experiment_log_250_1 LABEL LABEL 250  1 10 100  10000  1200 1 200 20 2.0 0
+mcmc MCP_log_250u_100s_50w_LABEL ../experiment_log_250_1 LABEL LABEL 250  1 10 100  10000  1200 1 50 20 2.0 0
