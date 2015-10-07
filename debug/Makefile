@@ -44,7 +44,7 @@ CHK_DIR_EXISTS= test -d
 MKDIR         = mkdir -p
 
 DISTNAME      = Astro1.0.0
-DISTDIR = ~/Astro/release/.tmp/Astro1.0.0
+DISTDIR = ~/Astro/debug/.tmp/Astro1.0.0
 AR            = ar cqs
 RANLIB        =
 SED           = sed
