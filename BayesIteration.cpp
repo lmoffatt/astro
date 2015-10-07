@@ -20,14 +20,27 @@ nextState(const CortexLikelihood* CL,
   mcmcWalkerState o(x.getMeanState(),x.numWalkers());
   std::size_t K=x.numWalkers();
   std::size_t N=x.numParameters();
-#pragma omp parallel for
+
+  std::vector<std::size_t> js(K);
+  std::uniform_int_distribution<std::size_t> is(0,K-2);
   for (std::size_t k=0; k<K; ++k)
     {
-       std::uniform_int_distribution<std::size_t> i(0,K-2);
-      auto j=i(mt);
-      if (j>=k) ++j;
+      js[k]=is(mt);
+      if (js[k]>=k) ++js[k];
+    }
+  std::uniform_real_distribution<double> u(0,1);
+  std::vector<double> rs(K);
+  for (std::size_t k=0; k<K; ++k)
+    {
+      rs[k]=u(mt);
+   }
+
+ #pragma omp parallel for
+  for (std::size_t k=0; k<K; ++k)
+    {
+      std::size_t j=js[k];
       std::uniform_real_distribution<double> u(0,1);
-      double z=std::pow(u(mt)*(std::sqrt(a)-std::sqrt(1.0/a))+std::sqrt(1/a),2);
+      double z=std::pow(rs[k]*(std::sqrt(a)-std::sqrt(1.0/a))+std::sqrt(1/a),2);
       std::vector<double> y=x[j]+(x[k]-x[j])*z;
       double logprior=CL->logPrior(y);
       double logpostlik=CL->logLik(y)+logprior;
@@ -253,29 +266,29 @@ std::ostream &mcmcWalkerState::writeValuesTitles(std::ostream &s)
 
 std::ostream &mcmcWalkerState::writeMeans(std::ostream &s)
 {
-    s<<"\t"<<logPostLikMean()<<"\t"<<logPostLikStd();
-    s<<"\t"<<logPriorLikMean()<<"\t"<<logPriorLikStd();
+  s<<"\t"<<logPostLikMean()<<"\t"<<logPostLikStd();
+  s<<"\t"<<logPriorLikMean()<<"\t"<<logPriorLikStd();
 
-      for (std::size_t k=0; k<numParameters(); ++k)
-      {
-          s<<"\t"<<mean_.mean(k);
-          s<<"\t"<<mean_.dBStd(k);
-      }
-      s<<"\n";
+  for (std::size_t k=0; k<numParameters(); ++k)
+    {
+      s<<"\t"<<mean_.mean(k);
+      s<<"\t"<<mean_.dBStd(k);
+    }
+  s<<"\n";
   return s;
 }
 
 std::ostream &mcmcWalkerState::writeMeansTitles(std::ostream &s)
 {
-    s<<"\t"<<"logPostLikMean"<<"\t"<<"logPostLikStd";
-    s<<"\t"<<"logPriorLikMean"<<"\t"<<"logPriorLikStd";
+  s<<"\t"<<"logPostLikMean"<<"\t"<<"logPostLikStd";
+  s<<"\t"<<"logPriorLikMean"<<"\t"<<"logPriorLikStd";
 
-      for (std::size_t k=0; k<numParameters(); ++k)
-      {
-          s<<"\t"<<mean_.indexToName(k)<<"_mean";
-          s<<"\t"<<mean_.indexToName(k)<<"_dB";
-        }
-      s<<"\n";
+  for (std::size_t k=0; k<numParameters(); ++k)
+    {
+      s<<"\t"<<mean_.indexToName(k)<<"_mean";
+      s<<"\t"<<mean_.indexToName(k)<<"_dB";
+    }
+  s<<"\n";
   return s;
 }
 
