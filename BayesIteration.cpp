@@ -14,7 +14,8 @@ nextState(const CortexLikelihood* CL,
           std::mt19937& mt,
           double a,
           mcmcWalkerState& x
-          ,std::size_t& ifeval)
+          ,std::size_t& ifeval
+          ,std::size_t& accept_count)
 {
 
   mcmcWalkerState o(x.getMeanState(),x.numWalkers());
@@ -33,9 +34,9 @@ nextState(const CortexLikelihood* CL,
   for (std::size_t k=0; k<K; ++k)
     {
       rs[k]=u(mt);
-   }
+    }
 
- #pragma omp parallel for
+#pragma omp parallel for
   for (std::size_t k=0; k<K; ++k)
     {
       std::size_t j=js[k];
@@ -52,6 +53,7 @@ nextState(const CortexLikelihood* CL,
           o[k]=y;
           o.logPostLik(k)=logpostlik;
           o.logPrior(k)=logprior;
+          accept_count++;
         }
       else
         {
@@ -149,6 +151,30 @@ const double &mcmcWalkerState::logPostLikMean() const
 {
   return postLikMean_;
 }
+
+const double &mcmcWalkerState::logPriorLikMax() const
+{
+  return priorLikMax_;
+}
+
+const double &mcmcWalkerState::logPriorLikMin() const
+{
+  return priorLikMin_;
+}
+
+
+const double &mcmcWalkerState::logPostLikMax() const
+{
+  return postLikMax_;
+}
+
+const double &mcmcWalkerState::logPostLikMin() const
+{
+  return postLikMin_;
+}
+
+
+
 const double &mcmcWalkerState::logPostLikStd() const
 {
   return postLikStd_;
@@ -186,10 +212,23 @@ void mcmcWalkerState::update_Mean()
     }
   postLikMean_=0;
   priorLikMean_=0;
+  postLikMax_=postLiks_[0];
+  postLikMin_=postLikMax_;
+  priorLikMax_=priorLiks_[0];
+  priorLikMin_=priorLikMax_;
+
   for (std::size_t i=0; i<numWalkers(); ++i)
     {
       postLikMean_+=postLiks_[i];
       priorLikMean_+=priorLiks_[i];
+      if (postLiks_[i]>postLikMax_) postLikMax_=postLiks_[i];
+      if (postLiks_[i]<postLikMin_) postLikMin_=postLiks_[i];
+
+      if (priorLiks_[i]>priorLikMax_) priorLikMax_=priorLiks_[i];
+      if (priorLiks_[i]<priorLikMin_) priorLikMin_=priorLiks_[i];
+
+
+
     }
   postLikMean_/=numWalkers();
   priorLikMean_/=numWalkers();
@@ -266,8 +305,8 @@ std::ostream &mcmcWalkerState::writeValuesTitles(std::ostream &s)
 
 std::ostream &mcmcWalkerState::writeMeans(std::ostream &s)
 {
-  s<<"\t"<<logPostLikMean()<<"\t"<<logPostLikStd();
-  s<<"\t"<<logPriorLikMean()<<"\t"<<logPriorLikStd();
+  s<<"\t"<<logPostLikMean()<<"\t"<<logPostLikStd()<<"\t"<<logPostLikMax()<<"\t"<<logPostLikMin();
+  s<<"\t"<<logPriorLikMean()<<"\t"<<logPriorLikStd()<<"\t"<<logPriorLikMax()<<"\t"<<logPriorLikMin();
 
   for (std::size_t k=0; k<numParameters(); ++k)
     {
@@ -280,8 +319,8 @@ std::ostream &mcmcWalkerState::writeMeans(std::ostream &s)
 
 std::ostream &mcmcWalkerState::writeMeansTitles(std::ostream &s)
 {
-  s<<"\t"<<"logPostLikMean"<<"\t"<<"logPostLikStd";
-  s<<"\t"<<"logPriorLikMean"<<"\t"<<"logPriorLikStd";
+  s<<"\t"<<"logPostLikMean"<<"\t"<<"logPostLikStd"<<"\t"<<"logPostLikMax"<<"\t"<<"logPostLikMin";
+  s<<"\t"<<"logPriorLikMean"<<"\t"<<"logPriorLikStd"<<"\t"<<"logPriorLikMax"<<"\t"<<"logPriorLikMin";
 
   for (std::size_t k=0; k<numParameters(); ++k)
     {
@@ -348,6 +387,7 @@ emcee_mcmc::emcee_mcmc(const CortexLikelihood *f
   , numSamples_(numIterations)
   , numWalkers_(numWalkers)
   ,n_skip_(nSkip)
+  ,acc_ratio_()
   , radiusWalkers_(radiusWalkers)
   , a_(a)
 {
@@ -388,11 +428,13 @@ mcmcWrun emcee_mcmc::run()
   double runt=0;
   os_mean_.precision(10);
   os_val_.precision(10);
-  std::cout<<"i"<<"\t"<<"ifeval"<<"\t"<<"runt"<<"\t"<<"timeIter"<<"\t";
-  std::cout<<"logPostLikMean()"<<"\t"<<"logPostLikStd()";
-  std::cout<<"\t"<<"logPriorLikMean()"<<"\t"<<"logPriorLikStd()"<<std::endl;
+  std::cout<<"i"<<"\t"<<"ifeval"<<"\t"<<"runt"<<"\t"<<"timeIter"<<"\t"<<"\t"<<"acc_ratio";
+  std::cout<<"logPostLikMean()"<<"\t"<<"logPostLikStd()"<<"\t";
+  std::cout<<"logPostLikMax()"<<"\t"<<"logPostLikMin()";
+  std::cout<<"\t"<<"logPriorLikMean()"<<"\t"<<"logPriorLikStd()";
+  std::cout<<"logPriorLikMax()"<<"\t"<<"logPriorLikMin()"<<std::endl;
 
-  os_mean_<<"i"<<"\t"<<"ifeval"<<"\t"<<"runt"<<"\t"<<"timeIter";
+  os_mean_<<"i"<<"\t"<<"ifeval"<<"\t"<<"runt"<<"\t"<<"timeIter"<<"\t"<<"acc_ratio";
   ws_0.writeMeansTitles(os_mean_);
 
   while ((runt<maxDuration_minutes_)&&(i<numSamples_))
@@ -402,18 +444,23 @@ mcmcWrun emcee_mcmc::run()
       double t0=runt;
       runt=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
       double timeIter=60*(runt-t0);
+      std::size_t acc_count=0;
       for (std::size_t ii=0; ii<n_skip_; ++ii)
         {
-          ws_1=nextState(CL_,mt_,a_,ws_0,ifeval_);
+          ws_1=nextState(CL_,mt_,a_,ws_0,ifeval_,acc_count);
           std::swap(ws_0,ws_1);
         }
+      acc_ratio_=1.0*acc_count/n_skip_/numWalkers_;
 
-      std::cout<<i<<"\t"<<ifeval_<<"\t"<<runt<<"\t"<<timeIter<<"\t";
+      std::cout<<i<<"\t"<<ifeval_<<"\t"<<runt<<"\t"<<timeIter<<"\t"<<acc_ratio_<<"\t";
       std::cout<<ws_0.logPostLikMean()<<"\t"<<ws_0.logPostLikStd();
-      std::cout<<"\t"<<ws_0.logPriorLikMean()<<"\t"<<ws_0.logPriorLikStd()<<std::endl;
+      std::cout<<"\t"<<ws_0.logPostLikMax()<<"\t"<<ws_0.logPostLikMin();
+      std::cout<<"\t"<<ws_0.logPriorLikMean()<<"\t"<<ws_0.logPriorLikStd();
+      std::cout<<"\t"<<ws_0.logPriorLikMax()<<"\t"<<ws_0.logPriorLikMin()
+              <<std::endl;
       ws_0.writeValuesTitles(os_val_);
       ws_0.writeValues(os_val_,i);
-      os_mean_<<i<<"\t"<<ifeval_<<"\t"<<runt<<"\t"<<timeIter;
+      os_mean_<<i<<"\t"<<ifeval_<<"\t"<<runt<<"\t"<<timeIter<<"\t"<<acc_ratio_;
       ws_0.writeMeans(os_mean_);
       os_mean_.flush();
       os_val_.flush();

@@ -139,8 +139,14 @@ private:
   Parameters mean_;
   double postLikMean_;
   double postLikStd_;
+  double postLikMin_;
+  double postLikMax_;
+
   double priorLikMean_;
   double priorLikStd_;
+  double priorLikMin_;
+  double priorLikMax_;
+
   std::vector<std::vector<double>> trMeans_;
   std::vector<double> postLiks_;
   std::vector<double> priorLiks_;
@@ -165,6 +171,10 @@ public:
   std::ostream &writeMeans(std::ostream &s);
   std::ostream &writeValuesTitles(std::ostream &s);
   std::ostream &writeMeansTitles(std::ostream &s);
+  const double &logPostLikMax() const;
+  const double &logPostLikMin() const;
+  const double &logPriorLikMax() const;
+  const double &logPriorLikMin() const;
 protected:
   virtual void update() override{}
 };
@@ -265,6 +275,7 @@ private:
   std::size_t numSamples_;
   std::size_t numWalkers_;
   std::size_t n_skip_;
+  double acc_ratio_;
   std::size_t ifeval_;
   double radiusWalkers_;
   double a_;

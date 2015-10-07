@@ -14,11 +14,6 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
 
 
   CortexState out(c);
-  double maxf=0;
-
-  for (double x:dPsi)
-    if (std::abs(x)>maxf)
-      maxf=std::abs(x);
 
   if (hasOmega)
     {
@@ -34,7 +29,6 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
   out.psi_B_=Psi_Bound(p,out);
 
   return out;
-
 
 }
 

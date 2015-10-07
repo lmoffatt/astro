@@ -69,6 +69,55 @@ public:
     dx_[n-1]=dx_[n-2];
   }
 
+  CortexState(const CortexState& other):
+    x_(other.x_)
+  ,dx_(other.dx_)
+  ,h_(other.h_)
+  ,epsilon_(other.epsilon_)
+  ,psi_T_(other.psi_T_)
+  ,psi_B_(other.psi_B_)
+  ,omega_T_(other.omega_T_)
+  ,omega_B_(other.omega_B_)
+  ,rho_(other.rho_)
+  {}
+
+
+  CortexState(CortexState&& other):
+    x_(other.x_)
+  ,dx_(other.dx_)
+  ,h_(other.h_)
+  ,epsilon_(other.epsilon_)
+  ,psi_T_(other.psi_T_)
+  ,psi_B_(other.psi_B_)
+  ,omega_T_(other.omega_T_)
+  ,omega_B_(other.omega_B_)
+  ,rho_(other.rho_)
+  {}
+
+
+  friend void swap(CortexState& a,CortexState& b)
+  {
+    std::swap(a.x_,b.x_);
+    std::swap(a.dx_,b.dx_);
+    std::swap(a.h_,b.h_);
+    std::swap(a.epsilon_,b.epsilon_);
+    std::swap(a.psi_T_,b.psi_T_);
+    std::swap(a.psi_B_,b.psi_B_);
+    std::swap(a.omega_T_,b.omega_T_);
+    std::swap(a.omega_B_,b.omega_B_);
+    std::swap(a.rho_,b.rho_);
+
+  }
+
+  CortexState& operator =(const CortexState& other)
+  {
+    if (&other!=this)
+      {
+        CortexState tmp(other);
+        swap(*this,tmp);
+      }
+    return *this;
+  }
 
 
 };
@@ -174,9 +223,9 @@ public:
   double total();
   std::vector<double> partial();
 
-  private:
-   const Experiment* e_;
-   const CortexSimulation* s_;
+private:
+  const Experiment* e_;
+  const CortexSimulation* s_;
 
 };
 
