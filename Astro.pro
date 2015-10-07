@@ -175,7 +175,8 @@ DISTFILES += \
     run/p_213_51/parameters_213_51 \
     run/p_213_23/parameters_213_23 \
     run/local_script \
-    run/mcmc_script
+    run/mcmc_script \
+    debug/Makefile
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
