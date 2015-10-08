@@ -10,13 +10,13 @@
 #include <tuple>
 
 mcmcWalkerState
-nextState(const CortexLikelihood* CL,
-          std::mt19937& mt,
-          double a,
-          double beta,
-          mcmcWalkerState& x
-          ,std::size_t& ifeval
-          ,std::size_t& accept_count)
+nextStateStretch(const CortexLikelihood* CL,
+                 std::mt19937& mt,
+                 double a,
+                 double beta,
+                 mcmcWalkerState& x
+                 ,std::size_t& ifeval
+                 ,std::size_t& accept_count)
 {
 
   mcmcWalkerState o(x.getMeanState(),x.numWalkers(),beta);
@@ -46,7 +46,7 @@ nextState(const CortexLikelihood* CL,
       double logprior=CL->logPrior(y);
       double logdatalik=CL->logLik(y);
       ++ifeval;
-      double logq=log(z)*(N-1)+beta*logdatalik+logprior-x.logBetaLik(k);
+      double logq=log(z)*(N-1)+beta*logdatalik+logprior-beta*x.logDataLik(k)-x.logPrior(k);
       double logr=log(rs[k]);
       if (logr<=logq)
         {
@@ -68,6 +68,98 @@ nextState(const CortexLikelihood* CL,
   return o;
 }
 
+
+
+
+
+mcmcWalkerState
+nextStateWalk(const CortexLikelihood* CL,
+              std::mt19937& mt,
+              std::size_t N,
+              double rWalk,
+              double beta,
+
+              mcmcWalkerState& x
+              ,std::size_t& ifeval
+              ,std::size_t& accept_count)
+{
+  mcmcWalkerState o(x.getMeanState(),x.numWalkers(),beta);
+  std::size_t K=x.numWalkers();
+
+  std::vector<std::vector<std::size_t>> js(K,std::vector<std::size_t>(N));
+
+  std::uniform_int_distribution<std::size_t> is(0,K-1);
+  for (std::size_t k=0; k<K; ++k)
+    {
+      std::vector<bool> sel(k,false);
+      sel[k]=true;
+      std::size_t jsel=k;
+      std::size_t nsel=0;
+      while (nsel<N)
+        {
+          while (sel[jsel])
+            jsel=is(mt);
+          js[k][nsel]=jsel;
+          sel[jsel]=true;
+          ++nsel;
+        }
+     }
+  std::vector<std::vector<double>> zs(K,std::vector<double>(N));
+
+  std::normal_distribution<double> n;
+  for (std::size_t k=0; k<K; ++k)
+    for (std::size_t i=0; i<N; ++i)
+      zs[k][i]=n(mt);
+
+  std::uniform_real_distribution<double> u(0,1);
+  std::vector<double> rs(K);
+  for (std::size_t k=0; k<K; ++k)
+    {
+      rs[k]=u(mt);
+    }
+
+
+#pragma omp parallel for
+  for (std::size_t k=0; k<K; ++k)
+    {
+      std::vector<double> xmean=x[js[k][0]];
+      for (std::size_t jj=1; jj<N; ++jj)
+        {
+          xmean+=x[js[k][jj]];
+        }
+      xmean*=1.0/N;
+      std::vector<double> y=x[k];
+      for (std::size_t jj=0; jj<N; ++jj)
+        {
+          y+=(x[js[k][jj]]-xmean)*zs[k][jj]*rWalk;
+        }
+      double logprior=CL->logPrior(y);
+      double logdatalik=CL->logLik(y);
+      ++ifeval;
+      double logq=beta*logdatalik+logprior-beta*x.logDataLik(k)-x.logPrior(k);
+      double logr=log(rs[k]);
+      if (logr<=logq)
+        {
+          o[k]=y;
+          o.logDataLik(k)=logdatalik;
+          o.logPrior(k)=logprior;
+          accept_count++;
+        }
+      else
+        {
+          o[k]=x[k];
+          o.logDataLik(k)=x.logDataLik(k);
+          o.logPrior(k)=x.logPrior(k);
+
+        }
+    }
+  o.update_Mean();
+  o.update_Covariance();
+  return o;
+}
+
+
+
 mcmcWalkerState::mcmcWalkerState(const Parameters &prior,
                                  std::vector<std::vector<double> > trMeans,
                                  double beta,
@@ -87,8 +179,8 @@ mcmcWalkerState::mcmcWalkerState(const Parameters& prior, std::size_t numWalkers
   mean_(prior)
 ,beta_(beta)
 ,trMeans_(numWalkers)
-,priorLiks_(numWalkers)
 ,dataLiks_(numWalkers)
+,priorLiks_(numWalkers)
 {}
 
 mcmcWalkerState mcmcWalkerState::create(const CortexLikelihood *f
@@ -382,16 +474,19 @@ bool mcmcWalkerState::readBody(std::string &line, std::istream &s)
 
 
 mcmc::mcmc(const CortexLikelihood *f
-                       , const Parameters &initialParam
-                       , double maxDuration_minutes
-                       , std::size_t betaSamples
-                       , std::size_t eqSamples
-                       , std::size_t numWalkers
-                       , std::size_t nSkip
-                       , double radiusWalkers
-                       , const std::string &name
-                       , double a
-                       , std::mt19937::result_type initseed)
+           , const Parameters &initialParam
+           , double maxDuration_minutes
+           , std::size_t betaSamples
+           , std::size_t eqSamples
+           , std::size_t numWalkers
+           , std::size_t nSkip
+           , double radiusWalkers
+           , const std::string &name
+           , double a
+           ,std::size_t N_for_Walk
+           ,double rWalk
+           ,method m
+          , std::mt19937::result_type initseed)
   :
     startTime_(std::chrono::steady_clock::now()),
     mt_()
@@ -407,7 +502,10 @@ mcmc::mcmc(const CortexLikelihood *f
   ,n_skip_(nSkip)
   ,acc_ratio_()
   , radiusWalkers_(radiusWalkers)
-  , a_(a)
+  ,a_(a)
+  ,N_for_Walk_(N_for_Walk)
+  ,rWalk_(rWalk)
+  ,method_(m)
 {
 
   fname_=getSaveName(fname_);
@@ -444,7 +542,26 @@ void mcmc::run()
   double runt=0;
   os_mean_.precision(10);
   os_val_.precision(10);
-  std::cout.width(10);
+  std::cout<<"mcmc run. method=";
+  os_mean_<<"mcmc run. method=";
+  switch (method_) {
+    case WALK:
+      std::cout
+          <<"walk. Number of points="<<N_for_Walk_<<" walk ratio="<<rWalk_<<std::endl;
+      os_mean_
+          <<"walk. Number of points="<<N_for_Walk_<<" walk ratio="<<rWalk_<<std::endl;
+
+      break;
+    case STRETCH:
+      std::cout<<"stretch. value of parameter a="<<a_<<std::endl;
+      os_mean_<<"stretch. value of parameter a="<<a_<<std::endl;
+      break;
+
+    default:
+      break;
+    }
+
+
   std::cout<<"i"<<"\t"<<"beta"<<"\t"<<"ifeval"<<"\t"<<"runt"<<"\t"<<"timeIter"<<"\t"<<"acc_r"<<"\t";
   std::cout<<"DataLikMean()"<<"\t"<<"DataLikStd()"<<"\t";
   std::cout<<"DataLikMax()"<<"\t"<<"DataLikMin()";
@@ -465,10 +582,14 @@ void mcmc::run()
       std::size_t acc_count=0;
       for (std::size_t ii=0; ii<n_skip_; ++ii)
         {
-//          ws_1=nextState(CL_,mt_,a_,betarun_,ws_0,ifeval_,acc_count);
-//          std::swap(ws_0,ws_1);
+          //          ws_1=nextState(CL_,mt_,a_,betarun_,ws_0,ifeval_,acc_count);
+          //          std::swap(ws_0,ws_1);
 
-          ws_0=nextState(CL_,mt_,a_,betarun_,ws_0,ifeval_,acc_count);
+        if (method_==STRETCH)
+          ws_0=nextStateStretch(CL_,mt_,a_,betarun_,ws_0,ifeval_,acc_count);
+        else
+          ws_0=nextStateWalk(CL_,mt_,N_for_Walk_,rWalk_,betarun_,ws_0,ifeval_,acc_count);
+
         }
       acc_ratio_=1.0*acc_count/n_skip_/numWalkers_;
 
@@ -489,6 +610,8 @@ void mcmc::run()
       ++i;
     }
 }
+
+
 
 std::ostream &mcmc::writeBody(std::ostream &s) const
 {
@@ -544,7 +667,7 @@ std::ostream &mcmcWrun::writeBody(std::ostream &s) const
 
   writeField(s,"mcmc_Algorithm",e_->id());
   writeField(s,"mcmc_run",run_);
-
+  return s;
 }
 
 bool mcmcWrun::readBody(std::string &line, std::istream &s)

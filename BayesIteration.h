@@ -230,6 +230,9 @@ protected:
 class mcmc: public BaseAgent
 {
 public:
+  enum method {STRETCH,WALK};
+
+
   mcmc(const CortexLikelihood* f,
        const Parameters& initialParam,
        double maxDuration_minutes,
@@ -240,6 +243,9 @@ public:
        double radiusWalkers,
        const std::string&  name,
        double a,
+       std::size_t N_for_Walk,
+       double rWalk,
+       method m,
        std::mt19937::result_type initseed);
 
   mcmc(){}
@@ -247,7 +253,11 @@ public:
   void run();
 
 
+
+
   void next();
+
+
 
 
   // BaseClass interface
@@ -288,6 +298,9 @@ private:
   std::size_t ifeval_;
   double radiusWalkers_;
   double a_;
+  std::size_t N_for_Walk_;
+  double rWalk_;
+  method method_;
 };
 
 
