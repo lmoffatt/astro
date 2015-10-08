@@ -11,7 +11,7 @@
 #$ -v OMP_NUM_THREADS=4 ### Setea la cantidad de threads a 8
 
 #$ -V  # Exporta las variables de entorno
-#$ -N TIS1_012  # El nombre del job
+#$ -N TS05_012  # El nombre del job
 #$ -cwd # Cambia al directorio actual
 
 # Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
