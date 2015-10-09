@@ -186,6 +186,7 @@ public:
   std::size_t numMeasures() const;
   std::ostream &writeYValues(std::ostream &s, std::size_t isample);
   std::vector<std::vector<double> > &f(std::size_t i);
+  std::ostream &writeYValuesTitles(std::ostream &s, CortexLikelihood *CL);
 protected:
   virtual void update() override{}
 };

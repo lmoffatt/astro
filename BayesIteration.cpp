@@ -425,6 +425,20 @@ std::ostream &mcmcWalkerState::writeYValues(std::ostream &s, std::size_t isample
     }
   return s;
 }
+std::ostream &mcmcWalkerState::writeYValuesTitles(std::ostream &s, CortexLikelihood * CL)
+{
+  s<<"isample"<<"\t"<<"beta"<<"\t"<<"i"<<"\t"<<"logDataLik(i)"<<"\t"<<"logPrior(i)";
+  for (std::size_t n=0; n<numMeasures(); ++n)
+    {
+      for (std::size_t l=0;l<f_[0][0].size(); ++l )
+        s<<"\t"<<CL->getExperiment();
+      s<<"\t";
+    }
+  s<<"\n";
+  return s;
+}
+
+
 
 std::ostream &mcmcWalkerState::writeValuesTitles(std::ostream &s)
 {
