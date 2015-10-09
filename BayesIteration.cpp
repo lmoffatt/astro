@@ -160,24 +160,25 @@ nextStateWalk(const CortexLikelihood* CL,
 
 
 
-mcmcWalkerState::mcmcWalkerState(const Parameters &prior,
-                                 std::vector<std::vector<double> > trMeans,
-                                 double beta,
-                                 std::vector<double> dataLiks,
-                                 std::vector<double> logPrios):
-  mean_(prior)
-,beta_(beta)
-,trMeans_(trMeans)
-,dataLiks_(dataLiks)
-,priorLiks_(logPrios)
-{
-  update_Mean();
-  update_Covariance();
-}
+//mcmcWalkerState::mcmcWalkerState(const Parameters &prior,
+//                                 std::vector<std::vector<double> > trMeans,
+//                                 double beta,
+//                                 std::vector<double> dataLiks,
+//                                 std::vector<double> logPrios):
+//  mean_(prior)
+//,beta_(beta)
+//,trMeans_(trMeans)
+//,dataLiks_(dataLiks)
+//,priorLiks_(logPrios)
+//{
+//  update_Mean();
+//  update_Covariance();
+//}
 
 mcmcWalkerState::mcmcWalkerState(const Parameters& prior, std::size_t numWalkers, double beta):
   mean_(prior)
 ,beta_(beta)
+,f_(numWalkers)
 ,trMeans_(numWalkers)
 ,dataLiks_(numWalkers)
 ,priorLiks_(numWalkers)
@@ -227,10 +228,22 @@ std::size_t mcmcWalkerState::numParameters() const
   return mean_.size();
 }
 
+std::size_t mcmcWalkerState::numMeasures() const
+{
+  return f_[0].size();
+}
+
+
 std::vector<double> &mcmcWalkerState::operator[](std::size_t i)
 {
   return trMeans_[i];
 }
+
+std::vector<std::vector<double>> &mcmcWalkerState::f(std::size_t i)
+{
+  return f_[i];
+}
+
 
 const std::vector<double> &mcmcWalkerState::operator[](std::size_t i) const
 {
@@ -397,6 +410,21 @@ std::ostream &mcmcWalkerState::writeValues(std::ostream &s, std::size_t isample)
   return s;
 }
 
+std::ostream &mcmcWalkerState::writeYValues(std::ostream &s, std::size_t isample)
+{
+  for (std::size_t i=0; i<numWalkers(); ++i)
+    {
+      s<<"isamp="<<isample<<"\t"<<beta()<<"\t"<<i<<"\t"<<logDataLik(i)<<"\t"<<logPrior(i);
+      for (std::size_t n=0; n<numMeasures(); ++n)
+        {
+          for (std::size_t l=0;l<f_[0][0].size(); ++l )
+            s<<"\t"<<f_[i][n][l];
+          s<<"\t";
+        }
+      s<<"\n";
+    }
+  return s;
+}
 
 std::ostream &mcmcWalkerState::writeValuesTitles(std::ostream &s)
 {

@@ -90,11 +90,11 @@ inline double integratedAutoCorrelationTime(const std::vector<double>& x,std::si
 class mcmcWalkerState: public BaseObject
 {
 public:
-  mcmcWalkerState(const Parameters& prior
-                  , std::vector<std::vector<double>> trMeans
-                  , double beta
-                  , std::vector<double> dataLiks
-                  , std::vector<double> logPrios);
+//  mcmcWalkerState(const Parameters& prior
+//                  , std::vector<std::vector<double>> trMeans
+//                  , double beta
+//                  , std::vector<double> dataLiks
+//                  , std::vector<double> logPrios);
 
   mcmcWalkerState(const Parameters &prior
                   , std::size_t numWalkers
@@ -150,9 +150,11 @@ private:
   double priorLikMax_;
 
   double beta_;
+  std::vector<std::vector<std::vector<double>>> f_;
   std::vector<std::vector<double>> trMeans_;
   std::vector<double> dataLiks_;
   std::vector<double> priorLiks_;
+
 
   // BaseClass interface
 public:
@@ -181,6 +183,9 @@ public:
   const double &logDataLik(std::size_t i) const;
   double &logDataLik(std::size_t i);
   double beta() const;
+  std::size_t numMeasures() const;
+  std::ostream &writeYValues(std::ostream &s, std::size_t isample);
+  std::vector<std::vector<double> > &f(std::size_t i);
 protected:
   virtual void update() override{}
 };
