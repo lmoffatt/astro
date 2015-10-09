@@ -54,6 +54,9 @@ public:
 
   virtual  std::vector<std::vector<double>> f(const Parameters& parameters)const=0;
 
+  virtual  std::vector<std::vector<double>> f(const std::vector<double>& p)const;
+
+
   std::vector<std::vector<double>>
   J(const Parameters& p,
     const std::vector<std::vector<double>>& f0 ,

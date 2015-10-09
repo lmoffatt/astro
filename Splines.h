@@ -843,12 +843,10 @@ private:
 
   double i_eval(std::size_t i, std::size_t j,double t)const
   {
-    double Y0=YM_[i][j];
-    double y= yM_[i-1][j];
-    double b=bM_[i-1][j];
-    double e=std::expm1(bM_[i-1][j]*t);
-    double yb=y/b;
-    double ybe=yb*e;
+    //double y= yM_[i-1][j];
+    //double b=bM_[i-1][j];
+    //double e=std::expm1(bM_[i-1][j]*t);
+    //double yb=y/b;
     return YM_[i][j]+yM_[i-1][j]/bM_[i-1][j]*std::expm1(bM_[i-1][j]*t);
 
   }

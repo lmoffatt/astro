@@ -770,6 +770,11 @@ std::vector<double> ABC_Distribution_Model::PriorGradient(const Parameters &p)co
 
 
 
+std::vector<std::vector<double> > ABC_Distribution_Model::f(const std::vector<double> &p) const
+{
+  return f(getPrior().toParameters(p));
+}
+
 std::vector<std::vector<double> >
 ABC_Distribution_Model::J(const Parameters &p,
                           const std::vector<std::vector<double> > &f0

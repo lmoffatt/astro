@@ -184,9 +184,9 @@ public:
   double &logDataLik(std::size_t i);
   double beta() const;
   std::size_t numMeasures() const;
-  std::ostream &writeYValues(std::ostream &s, std::size_t isample);
   std::vector<std::vector<double> > &f(std::size_t i);
-  std::ostream &writeYValuesTitles(std::ostream &s, CortexLikelihood *CL);
+  std::ostream &writeYValuesTitles(std::ostream &s, const CortexLikelihood *CL);
+  std::ostream &writeYValues(std::ostream &s, std::size_t isample, const CortexLikelihood *CL);
 protected:
   virtual void update() override{}
 };
@@ -290,8 +290,10 @@ private:
   std::chrono::steady_clock::time_point startTime_;
   std::mt19937 mt_;
   std::string fname_;
-  std::ofstream os_val_;
+  std::ofstream os_par_;
   std::ofstream os_mean_;
+  std::ofstream os_pred_;
+
   const CortexLikelihood* CL_;
   Parameters initial_;
   double betarun_;

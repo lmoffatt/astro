@@ -37,20 +37,22 @@ nextStateStretch(const CortexLikelihood* CL,
       rs[k]=u(mt);
     }
 
-#pragma omp parallel for
+//#pragma omp parallel for
   for (std::size_t k=0; k<K; ++k)
     {
       std::size_t j=js[k];
       double z=std::pow(rs[k]*(std::sqrt(a)-std::sqrt(1.0/a))+std::sqrt(1/a),2);
       std::vector<double> y=x[j]+(x[k]-x[j])*z;
       double logprior=CL->logPrior(y);
-      double logdatalik=CL->logLik(y);
+      std::vector<std::vector<double>> f=CL->f(y);
+      double logdatalik=CL->logLik(f);
       ++ifeval;
       double logq=log(z)*(N-1)+beta*logdatalik+logprior-beta*x.logDataLik(k)-x.logPrior(k);
       double logr=log(rs[k]);
       if (logr<=logq)
         {
           o[k]=y;
+          o.f(k)=f;
           o.logDataLik(k)=logdatalik;
           o.logPrior(k)=logprior;
           accept_count++;
@@ -58,6 +60,7 @@ nextStateStretch(const CortexLikelihood* CL,
       else
         {
           o[k]=x[k];
+          o.f(k)=x.f(k);
           o.logDataLik(k)=x.logDataLik(k);
           o.logPrior(k)=x.logPrior(k);
 
@@ -103,7 +106,7 @@ nextStateWalk(const CortexLikelihood* CL,
           sel[jsel]=true;
           ++nsel;
         }
-     }
+    }
   std::vector<std::vector<double>> zs(K,std::vector<double>(N));
 
   std::normal_distribution<double> n;
@@ -410,29 +413,65 @@ std::ostream &mcmcWalkerState::writeValues(std::ostream &s, std::size_t isample)
   return s;
 }
 
-std::ostream &mcmcWalkerState::writeYValues(std::ostream &s, std::size_t isample)
+std::ostream &mcmcWalkerState::writeYValues(std::ostream &s, std::size_t isample, const CortexLikelihood* CL)
 {
   for (std::size_t i=0; i<numWalkers(); ++i)
     {
-      s<<"isamp="<<isample<<"\t"<<beta()<<"\t"<<i<<"\t"<<logDataLik(i)<<"\t"<<logPrior(i);
-      for (std::size_t n=0; n<numMeasures(); ++n)
+  s<<isample<<"\t"<<beta_<<"\t"<<i<<"\t"<<logDataLik(i)<<"\t"<<logPrior(i);
+
+  std::size_t numMeasures=CL->getExperiment()->numMeasures();
+  std::size_t js=0;
+
+  for (std::size_t im=0; im<numMeasures; ++im)
+    {
+      s<<"\t"<<"\t"<<CL->getExperiment()->getMeasure(im)->id();
+      if (CL->getExperiment()->getMeasure(im)->inj_Width()>0)
         {
-          for (std::size_t l=0;l<f_[0][0].size(); ++l )
-            s<<"\t"<<f_[i][n][l];
-          s<<"\t";
+          s<<"\t"<<"injury";
+          for (std::size_t is=0; is<CL->getModel()->getNumberOfSimulatedStates(); ++is)
+            {
+              s<<"\t"<<f_[i][js][0];
+              ++js;
+            }
         }
-      s<<"\n";
+
+      for (std::size_t ix=0; ix<CL->getExperiment()->getMeasure(im)->meanAstro().size(); ++ix)
+        {
+          s<<"\t";
+          for (std::size_t is=0; is<f_[i][0].size(); ++is)
+            {
+              s<<"\t"<<f_[i][js][is];
+            }
+          ++js;
+        }
     }
+  s<<"\n";
+ }
   return s;
 }
-std::ostream &mcmcWalkerState::writeYValuesTitles(std::ostream &s, CortexLikelihood * CL)
+std::ostream &mcmcWalkerState::writeYValuesTitles(std::ostream &s, const CortexLikelihood * CL)
 {
   s<<"isample"<<"\t"<<"beta"<<"\t"<<"i"<<"\t"<<"logDataLik(i)"<<"\t"<<"logPrior(i)";
-  for (std::size_t n=0; n<numMeasures(); ++n)
+
+  std::size_t numMeasures=CL->getExperiment()->numMeasures();
+  for (std::size_t i=0; i<numMeasures; ++i)
     {
-      for (std::size_t l=0;l<f_[0][0].size(); ++l )
-        s<<"\t"<<CL->getExperiment();
-      s<<"\t";
+      s<<"\t"<<"\t"<<CL->getExperiment()->getMeasure(i)->id();
+      if (CL->getExperiment()->getMeasure(i)->inj_Width()>0)
+        {
+          s<<"\t"<<"injury";
+          for (std::size_t is=0; is<CL->getModel()->getNumberOfSimulatedStates(); ++is)
+            s<<"\t"<<"S_INJ_"<<is;
+        }
+
+      for (std::size_t ix=0; ix<CL->getExperiment()->getMeasure(i)->meanAstro().size(); ++ix)
+        {
+          s<<"\t";
+          for (std::size_t is=0; is<f_[i][0].size(); ++is)
+            {
+              s<<"\t"<<"n_pred_"<<is<<"_at_"<<CL->getExperiment()->getMeasure(i)->xpos()[ix];
+            }
+        }
     }
   s<<"\n";
   return s;
@@ -528,13 +567,14 @@ mcmc::mcmc(const CortexLikelihood *f
            ,std::size_t N_for_Walk
            ,double rWalk
            ,method m
-          , std::mt19937::result_type initseed)
+           , std::mt19937::result_type initseed)
   :
     startTime_(std::chrono::steady_clock::now()),
     mt_()
   , fname_(name),
-    os_val_(),
+    os_par_(),
     os_mean_(),
+    os_pred_(),
     CL_(f)
   ,initial_(initialParam)
   , maxDuration_minutes_(maxDuration_minutes)
@@ -551,8 +591,9 @@ mcmc::mcmc(const CortexLikelihood *f
 {
 
   fname_=getSaveName(fname_);
-  os_val_.open(fname_+"_val.txt",std::ofstream::out);
+  os_par_.open(fname_+"_par.txt",std::ofstream::out);
   os_mean_.open(fname_+"_mean.txt",std::ofstream::out);
+  os_pred_.open(fname_+"_pred.txt",std::ofstream::out);
 
 
   if (initseed!=0)
@@ -583,7 +624,9 @@ void mcmc::run()
   std::size_t i=0;
   double runt=0;
   os_mean_.precision(10);
-  os_val_.precision(10);
+  os_par_.precision(10);
+  os_pred_.precision(10);
+
   std::cout<<"mcmc run. method=";
   os_mean_<<"mcmc run. method=";
   switch (method_) {
@@ -627,10 +670,10 @@ void mcmc::run()
           //          ws_1=nextState(CL_,mt_,a_,betarun_,ws_0,ifeval_,acc_count);
           //          std::swap(ws_0,ws_1);
 
-        if (method_==STRETCH)
-          ws_0=nextStateStretch(CL_,mt_,a_,betarun_,ws_0,ifeval_,acc_count);
-        else
-          ws_0=nextStateWalk(CL_,mt_,N_for_Walk_,rWalk_,betarun_,ws_0,ifeval_,acc_count);
+          if (method_==STRETCH)
+            ws_0=nextStateStretch(CL_,mt_,a_,betarun_,ws_0,ifeval_,acc_count);
+          else
+            ws_0=nextStateWalk(CL_,mt_,N_for_Walk_,rWalk_,betarun_,ws_0,ifeval_,acc_count);
 
         }
       acc_ratio_=1.0*acc_count/n_skip_/numWalkers_;
@@ -643,12 +686,17 @@ void mcmc::run()
       std::cout<<"\t"<<ws_0.logPriorLikMean()<<"\t"<<ws_0.logPriorLikStd();
       std::cout<<"\t"<<ws_0.logPriorLikMax()<<"\t"<<ws_0.logPriorLikMin()
               <<std::endl;
-      ws_0.writeValuesTitles(os_val_);
-      ws_0.writeValues(os_val_,i);
+      ws_0.writeValuesTitles(os_par_);
+      ws_0.writeYValuesTitles(os_pred_,CL_);
+
+      ws_0.writeValues(os_par_,i);
+      ws_0.writeYValues(os_pred_,i,CL_);
+
       os_mean_<<"isamp="<<i<<"\t"<<ifeval_<<"\t"<<runt<<"\t"<<timeIter<<"\t"<<acc_ratio_;
       ws_0.writeMeans(os_mean_);
       os_mean_.flush();
-      os_val_.flush();
+      os_par_.flush();
+      os_pred_.flush();
       ++i;
     }
 }

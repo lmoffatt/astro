@@ -320,6 +320,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
 
 
 
+
 //--------------------------------------------------------------------------
 
 std::ostream &CortexMultinomialLikelihoodEvaluation::writeBody(std::ostream &s) const
