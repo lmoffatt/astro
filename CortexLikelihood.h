@@ -6,14 +6,26 @@
 
 class CortexLikelihood: public BaseAgent,virtual public ABC_Distribution_Model, public ABC_Freq_obs
 {
+  // BaseClass interface
+public:
+  static std::string ClassName();
+  virtual std::string myClass() const override;
+
+  // BaseObject interface
+public:
+  virtual CortexLikelihood* create() const override=0;
+  CortexLikelihood();
+  virtual std::ostream &writeBody(std::ostream &s) const override;
+  virtual void clear() override;
+  virtual bool readBody(std::string &line, std::istream &s) override;
+
+  std::vector<double> getNBins(const Experiment *e);
   // ABC_Multinomial_Model interface
 public:
   virtual void setPrior(const Parameters &parameters) override;
 
   virtual const ABC_Freq_obs &getData() const override;
   virtual const Parameters &getPrior() const override;
-
-
 
   CortexLikelihood(std::string id,
                    const Experiment* e,
@@ -32,22 +44,26 @@ public:
   virtual const std::vector<double> &ntot_obs() const override;
   virtual std::ostream &put(std::ostream &s) const override;
 
-  ~CortexLikelihood(){}
+  ~CortexLikelihood();
 
   std::ostream& write(std::ostream& s)const;
 
 
-  const Experiment* getExperiment()const{return e_;}
+  CortexLikelihood(const CortexLikelihood& o)=delete;
 
-  const BaseModel* getModel()const {return m_;}
+  const Experiment* getExperiment()const;
+
+  const BaseModel* getModel()const;
 
 protected:
+  void update();
+
   std::vector<std::vector<double>> getstate(const Experiment* e);
 
   std::vector<double> getNtot(const std::vector<std::vector<double>> nstate);
 
   Parameters prior_;
-  BaseModel* m_;
+  const BaseModel* m_;
   const Experiment* e_;
   double dx_;
   double dtmin_;
@@ -59,46 +75,6 @@ protected:
   std::vector<double> bin_dens_;
 
 
-  // BaseClass interface
-public:
-  static std::string ClassName(){return "CortexLikelihood";}
-  virtual std::string myClass() const override {return ClassName();}
-
-  // BaseObject interface
-public:
-  virtual CortexLikelihood* create() const override=0;
-  CortexLikelihood(){}
-  virtual std::ostream &writeBody(std::ostream &s) const override
-  {
-    writeField(s,"prior",prior_);
-    writeField(s,"experimental_results",e_->id());
-    writeField(s,"grid_legth",dx_);
-    writeField(s,"min_sample_time",dtmin_);
-    writeField(s,"prod_sample_time",nPoints_per_decade_);
-
-    writeField(s,"max_sample_time",dtmax_);
-
-    writeField(s,"tiempo_equilibrio",tequilibrio_);
-    return s;
-  }
-  virtual void clear() override
-  {
-    prior_.clear();
-    e_=nullptr;
-    nstate_.clear();
-    ntot_.clear();
-  }
-  virtual bool readBody(std::string &line, std::istream &s) override;
-
-  std::vector<double> getNBins(const Experiment *e);
-protected:
-  void update(){
-    m_=BaseModel::create(prior_);
-    bin_dens_=getNBins(e_);
-    nstate_=getstate(e_);
-    ntot_=getNtot(nstate_);
-
-  }
 };
 
 

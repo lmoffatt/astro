@@ -10,7 +10,7 @@
 
 std::vector<std::vector<double>> interpolateInjury(const std::vector<double>&x,
                                                    const std::vector<std::vector<double> >& y,
-                                                   const std::vector<double> xint,
+                                                   const std::vector<double>& xint,
                                                    double injLenth)
 {
   std::vector<std::vector<double>> cumY(x.size(),std::vector<double>(y[0].size(),0));
@@ -96,6 +96,8 @@ std::ostream &CortexLikelihood::put(std::ostream &s) const
   return s;
 }
 
+CortexLikelihood::~CortexLikelihood(){}
+
 std::ostream &CortexLikelihood::write(std::ostream &s) const
 {
   s<<"Likelihood \n";
@@ -105,6 +107,10 @@ std::ostream &CortexLikelihood::write(std::ostream &s) const
 
   return s;
 }
+
+const Experiment *CortexLikelihood::getExperiment() const{return e_;}
+
+const BaseModel *CortexLikelihood::getModel() const {return m_;}
 
 std::vector<std::vector<double> > CortexLikelihood::getstate(const Experiment *e)
 {
@@ -143,6 +149,14 @@ std::vector<double>  CortexLikelihood::getNBins(const Experiment *e)
   return o;
 }
 
+void CortexLikelihood::update(){
+  m_=BaseModel::create(prior_);
+    bin_dens_=getNBins(e_);
+    nstate_=getstate(e_);
+    ntot_=getNtot(nstate_);
+
+}
+
 
 std::vector<double> CortexLikelihood::getNtot(const std::vector<std::vector<double> > nstate)
 {
@@ -151,6 +165,34 @@ std::vector<double> CortexLikelihood::getNtot(const std::vector<std::vector<doub
     for (std::size_t j=0; j<nstate[i].size(); ++j)
       o[i]+=nstate[i][j];
   return o;
+}
+
+std::__cxx11::string CortexLikelihood::ClassName(){return "CortexLikelihood";}
+
+std::__cxx11::string CortexLikelihood::myClass() const {return ClassName();}
+
+CortexLikelihood::CortexLikelihood(){}
+
+std::ostream &CortexLikelihood::writeBody(std::ostream &s) const
+{
+  writeField(s,"prior",prior_);
+  writeField(s,"experimental_results",e_->id());
+  writeField(s,"grid_legth",dx_);
+  writeField(s,"min_sample_time",dtmin_);
+  writeField(s,"prod_sample_time",nPoints_per_decade_);
+
+  writeField(s,"max_sample_time",dtmax_);
+
+  writeField(s,"tiempo_equilibrio",tequilibrio_);
+  return s;
+}
+
+void CortexLikelihood::clear()
+{
+  prior_.clear();
+  e_=nullptr;
+  nstate_.clear();
+  ntot_.clear();
 }
 
 bool CortexLikelihood::readBody(std::string &line, std::istream &s)
@@ -196,9 +238,9 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
 {
   std::vector<std::vector<double>> o(nstate_.size());
 
-  m_->loadParameters(parameters);
+  BaseModel* m=BaseModel::create(parameters);
 
-  CortexSimulation s=m_->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+  CortexSimulation s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
   if (s.dx_.empty())
     return {};
   std::size_t ic=0;
@@ -237,8 +279,8 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
 
   double h=1e-5;
 
-  m_->loadParameters(parameters);
-  CortexSimulation s=m_->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+  BaseModel * m=BaseModel::create(parameters);
+  CortexSimulation s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
   if (s.x_.empty())
     return{};
   std::size_t ic=0;
@@ -267,7 +309,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
       ///horrible hack for the lession:
       /// dedico una fila para la probabilidad de cada estado antes de la lesion
 
-      if (cm->inj_Width()>0)
+      if ( cm->inj_Width()>0)
         {
           double injVolume_liters=cm->inj_Area()*1e-12*h*1000;
           double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;

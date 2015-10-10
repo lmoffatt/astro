@@ -769,7 +769,8 @@ class MIExpSpline
 {
 public:
   MIExpSpline(const std::vector<double>& x, const std::vector<std::vector<double>>& sumy):
-    x_map_()
+   inv_(getInv())
+   , x_map_()
   ,n_knots_(x.size()-1)
   ,n_cols_(sumy[0].size())
   , x_(x)
@@ -807,7 +808,7 @@ public:
   std::vector<double> eval( double x)const
   {
     std::vector<double> o(n_cols_);
-    std::size_t i; double t;
+    std::size_t i=0; double t;
     if (get_index(x,i,t))
       {
         for (std::size_t j=0; j<n_cols_; ++j)
@@ -832,7 +833,7 @@ public:
 
 
 private:
-  static inverse inv_;
+  inverse inv_;
   static inverse getInv()
   {
     std::vector<double> v{-1e9,-1e7,-1e5,-1e4,-1e3,-1e2,-10 ,-7, -5, -4, -3 ,-2,-1.5,-1,0.7,-0.5,-0.4,-0.2,-0.1,-0.05,0,0.05,0.1,0.2,0.3,0.4,0.5,0.7,0.9,1,1.5,2,3,5,7,9,15,20,30,50,100};

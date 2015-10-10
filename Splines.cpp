@@ -25,5 +25,4 @@ Spline::Spline(std::vector<double> x, std::vector<double> y):
 
 
 
-inverse MIExpSpline::inv_=getInv();
 

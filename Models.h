@@ -166,6 +166,7 @@ public:
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const=0;
   virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio) const=0;
 
+  virtual BaseModel* clone()const=0;
 
   static BaseModel* create(const Parameters& p);
 
@@ -240,6 +241,7 @@ class Model00:public BaseModel
 {
   SimplestModel m;
 
+   Model00* clone()const { return new Model00;}
 
 
 
@@ -467,6 +469,9 @@ public:
 
   }
 
+
+
+
   virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
@@ -490,7 +495,7 @@ class Model011:public BaseModel
 {
   SimplestModel m;
 
-
+   Model011* clone()const { return new Model011;}
 
 
   class myParameters
@@ -753,6 +758,9 @@ public:
 class Model012:public BaseModel
 {
   SimplestModel m;
+
+  Model012* clone()const { return new Model012;}
+
 
 
 
@@ -1019,6 +1027,9 @@ public:
 class Model012_22:public BaseModel
 {
   SimplestModel m;
+
+  Model012_22* clone()const { return new Model012_22;}
+
 
 
 
@@ -1300,6 +1311,9 @@ public:
 class Model012_51:public BaseModel
 {
   SimplestModel m;
+
+  Model012_51* clone()const { return new Model012_51;}
+
 
 
 
@@ -1587,6 +1601,9 @@ class Model013:public BaseModel
 {
   SimplestModel m;
 
+  Model013* clone()const { return new Model013;}
+
+
 
 
 
@@ -1859,6 +1876,9 @@ public:
 class Model013_23:public BaseModel
 {
   SimplestModel m;
+
+  Model013_23* clone()const { return new Model013_23;}
+
 
 
 
@@ -2168,6 +2188,9 @@ public:
 class Model013_23_31:public BaseModel
 {
   SimplestModel m;
+
+  Model013_23_31* clone()const { return new Model013_23_31;}
+
 
 
 
@@ -2489,6 +2512,9 @@ class Model013_51:public BaseModel
 {
   SimplestModel m;
 
+  Model013_51* clone()const { return new Model013_51;}
+
+
 
 
 
@@ -2783,6 +2809,9 @@ class Model021:public BaseModel
 {
   SimplestModel m;
 
+  Model021* clone()const { return new Model021;}
+
+
 
 
 
@@ -3062,6 +3091,9 @@ class Model022:public BaseModel
 {
   SimplestModel m;
 
+  Model022* clone()const { return new Model022;}
+
+
 
 
 
@@ -3335,6 +3367,9 @@ public:
 class Model023:public BaseModel
 {
   SimplestModel m;
+
+  Model023* clone()const { return new Model023;}
+
 
 
 
@@ -3622,6 +3657,9 @@ class Model031:public BaseModel
 {
   SimplestModel m;
 
+  Model031* clone()const { return new Model031;}
+
+
 
 
 
@@ -3889,6 +3927,9 @@ public:
 class Model051:public BaseModel
 {
   SimplestModel m;
+
+  Model051* clone()const { return new Model051;}
+
 
 
 
@@ -4165,6 +4206,9 @@ public:
 class Model10:public BaseModel
 {
   SimplestModel m;
+
+  Model10* clone()const { return new Model10;}
+
 
   class myParameters
   {
@@ -4472,6 +4516,9 @@ class Model111:public BaseModel
 {
   SimplestModel m;
 
+  Model111* clone()const { return new Model111;}
+
+
   class myParameters
   {
   public:
@@ -4778,6 +4825,9 @@ public:
 class Model112:public BaseModel
 {
   SimplestModel m;
+
+  Model112* clone()const { return new Model112;}
+
 
   class myParameters
   {
@@ -5087,6 +5137,9 @@ public:
 class Model112_22:public BaseModel
 {
   SimplestModel m;
+
+  Model112_22* clone()const { return new Model112_22;}
+
 
   class myParameters
   {
@@ -5404,6 +5457,9 @@ class Model112_22_31:public BaseModel
 {
   SimplestModel m;
 
+  Model112_22_31* clone()const { return new Model112_22_31;}
+
+
   class myParameters
   {
   public:
@@ -5715,6 +5771,9 @@ public:
 class Model112_51:public BaseModel
 {
   SimplestModel m;
+
+  Model112_51* clone()const { return new Model112_51;}
+
 
   class myParameters
   {
@@ -6048,6 +6107,9 @@ public:
 class Model112_52:public BaseModel
 {
   SimplestModel m;
+
+  Model112_52* clone()const { return new Model112_52;}
+
 
   class myParameters
   {
@@ -6397,6 +6459,9 @@ class Model113:public BaseModel
 {
   SimplestModel m;
 
+  Model113* clone()const { return new Model113;}
+
+
   class myParameters
   {
   public:
@@ -6710,6 +6775,9 @@ public:
 class Model113_42:public BaseModel
 {
   SimplestModel m;
+
+  Model113_42* clone()const { return new Model113_42;}
+
 
   class myParameters
   {
@@ -7039,6 +7107,9 @@ class Model114:public BaseModel
 {
   SimplestModel m;
 
+  Model114* clone()const { return new Model114;}
+
+
   class myParameters
   {
   public:
@@ -7355,6 +7426,9 @@ public:
 class Model114_24_44:public BaseModel
 {
   SimplestModel m;
+
+  Model114_24_44* clone()const { return new Model114_24_44;}
+
 
   class myParameters
   {
@@ -7744,6 +7818,9 @@ public:
 class Model114_24_32_44:public BaseModel
 {
   SimplestModel m;
+
+  Model114_24_32_44* clone()const { return new Model114_24_32_44;}
+
 
   class myParameters
   {
@@ -8166,6 +8243,9 @@ class Model115:public BaseModel
 {
   SimplestModel m;
 
+  Model115* clone()const { return new Model115;}
+
+
   class myParameters
   {
   public:
@@ -8487,6 +8567,9 @@ public:
 class Model115_22:public BaseModel
 {
   SimplestModel m;
+
+  Model115_22* clone()const { return new Model115_22;}
+
 
   class myParameters
   {
@@ -8823,6 +8906,9 @@ public:
 class Model115_25:public BaseModel
 {
   SimplestModel m;
+
+  Model115_25* clone()const { return new Model115_25;}
+
 
   class myParameters
   {
@@ -9189,6 +9275,9 @@ class Model121:public BaseModel
 {
   SimplestModel m;
 
+  Model121* clone()const { return new Model121;}
+
+
   class myParameters
   {
   public:
@@ -9499,6 +9588,9 @@ class Model122:public BaseModel
 {
   SimplestModel m;
 
+  Model122* clone()const { return new Model122;}
+
+
   class myParameters
   {
   public:
@@ -9805,6 +9897,9 @@ public:
 class Model123:public BaseModel
 {
   SimplestModel m;
+
+  Model123* clone()const { return new Model123;}
+
 
   class myParameters
   {
@@ -10123,6 +10218,9 @@ public:
 class Model124:public BaseModel
 {
   SimplestModel m;
+
+  Model124* clone()const { return new Model124;}
+
 
   class myParameters
   {
@@ -10455,6 +10553,9 @@ public:
 class Model125:public BaseModel
 {
   SimplestModel m;
+
+  Model125* clone()const { return new Model125;}
+
 
   class myParameters
   {
@@ -10797,6 +10898,9 @@ class Model131:public BaseModel
 {
   SimplestModel m;
 
+  Model131* clone()const { return new Model131;}
+
+
   class myParameters
   {
   public:
@@ -11103,6 +11207,9 @@ public:
 class Model132:public BaseModel
 {
   SimplestModel m;
+
+  Model132* clone()const { return new Model132;}
+
 
   class myParameters
   {
@@ -11435,6 +11542,9 @@ class Model141:public BaseModel
 {
   SimplestModel m;
 
+  Model141* clone()const { return new Model141;}
+
+
   class myParameters
   {
   public:
@@ -11756,6 +11866,9 @@ public:
 class Model142:public BaseModel
 {
   SimplestModel m;
+
+  Model142* clone()const { return new Model142;}
+
 
   class myParameters
   {
@@ -12079,6 +12192,9 @@ public:
 class Model144:public BaseModel
 {
   SimplestModel m;
+
+  Model144* clone()const { return new Model144;}
+
 
   class myParameters
   {
@@ -12414,6 +12530,9 @@ class Model151:public BaseModel
 {
   SimplestModel m;
 
+  Model151* clone()const { return new Model151;}
+
+
   class myParameters
   {
   public:
@@ -12743,6 +12862,9 @@ public:
 class Model152:public BaseModel
 {
   SimplestModel m;
+
+  Model152* clone()const { return new Model152;}
+
 
   class myParameters
   {
@@ -13081,6 +13203,9 @@ class Model20:public BaseModel
 {
   SimplestModel m;
 
+  Model20* clone()const { return new Model20;}
+
+
   class myParameters
   {
   public:
@@ -13370,6 +13495,9 @@ public:
 class Model211:public BaseModel
 {
   SimplestModel m;
+
+  Model211* clone()const { return new Model211;}
+
 
   class myParameters
   {
@@ -13663,6 +13791,9 @@ public:
 class Model212:public BaseModel
 {
   SimplestModel m;
+
+  Model212* clone()const { return new Model212;}
+
 
   class myParameters
   {
@@ -13960,6 +14091,9 @@ public:
 class Model213:public BaseModel
 {
   SimplestModel m;
+
+  Model213* clone()const { return new Model213;}
+
 
   class myParameters
   {
@@ -14263,6 +14397,9 @@ public:
 class Model214:public BaseModel
 {
   SimplestModel m;
+
+  Model214* clone()const { return new Model214;}
+
 
   class myParameters
   {
@@ -14575,6 +14712,9 @@ public:
 class Model215:public BaseModel
 {
   SimplestModel m;
+
+  Model215* clone()const { return new Model215;}
+
 
   class myParameters
   {

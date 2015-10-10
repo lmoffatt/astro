@@ -1024,6 +1024,17 @@ std::vector<std::vector<double>> operator*(
 }
 
 
+inline
+std::vector<std::vector<double>> operator*(
+     std::vector<std::vector<double>> && x
+    ,double t)
+{
+
+  std::vector<std::vector<double>> o(x);
+  o*=t;
+  return o;
+}
+
 
 
 

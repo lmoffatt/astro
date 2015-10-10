@@ -46,7 +46,9 @@ public:
     ,h_(h)
     ,epsilon_(epsilon)
     ,psi_T_(std::vector<double>(x.size(),0))
+    ,psi_B_(std::vector<double>(x.size(),0))
     ,omega_T_(std::vector<double> (x.size(),0))
+    ,omega_B_(std::vector<double> (x.size(),0))
     ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
   {}
 
@@ -60,7 +62,9 @@ public:
     ,h_(h)
     ,epsilon_(epsilon)
     ,psi_T_(std::vector<double>(x.size(),0))
+    ,psi_B_(std::vector<double>(x.size(),0))
     ,omega_T_(std::vector<double> (x.size(),0))
+    ,omega_B_(std::vector<double> (x.size(),0))
     ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
   {
     auto n=x.size();
@@ -69,55 +73,16 @@ public:
     dx_[n-1]=dx_[n-2];
   }
 
-  CortexState(const CortexState& other):
-    x_(other.x_)
-  ,dx_(other.dx_)
-  ,h_(other.h_)
-  ,epsilon_(other.epsilon_)
-  ,psi_T_(other.psi_T_)
-  ,psi_B_(other.psi_B_)
-  ,omega_T_(other.omega_T_)
-  ,omega_B_(other.omega_B_)
-  ,rho_(other.rho_)
-  {}
+  CortexState(const CortexState& other)=default;
 
 
-  CortexState(CortexState&& other):
-    x_(other.x_)
-  ,dx_(other.dx_)
-  ,h_(other.h_)
-  ,epsilon_(other.epsilon_)
-  ,psi_T_(other.psi_T_)
-  ,psi_B_(other.psi_B_)
-  ,omega_T_(other.omega_T_)
-  ,omega_B_(other.omega_B_)
-  ,rho_(other.rho_)
-  {}
+  CortexState(CortexState&& other)=default;
 
 
-  friend void swap(CortexState& a,CortexState& b)
-  {
-    std::swap(a.x_,b.x_);
-    std::swap(a.dx_,b.dx_);
-    std::swap(a.h_,b.h_);
-    std::swap(a.epsilon_,b.epsilon_);
-    std::swap(a.psi_T_,b.psi_T_);
-    std::swap(a.psi_B_,b.psi_B_);
-    std::swap(a.omega_T_,b.omega_T_);
-    std::swap(a.omega_B_,b.omega_B_);
-    std::swap(a.rho_,b.rho_);
 
-  }
+  CortexState& operator =(const CortexState& other)=default;
 
-  CortexState& operator =(const CortexState& other)
-  {
-    if (&other!=this)
-      {
-        CortexState tmp(other);
-        swap(*this,tmp);
-      }
-    return *this;
-  }
+  CortexState& operator =(CortexState&& other)=default;
 
 
 };
@@ -129,7 +94,16 @@ public:
 class CortexSimulation
 {
 public:
-  CortexSimulation(){}
+  CortexSimulation()=default;
+
+  CortexSimulation(const CortexSimulation& other)=default;
+
+  CortexSimulation(CortexSimulation&& other)=default;
+
+  CortexSimulation& operator =(CortexSimulation&& other)=default;
+
+  CortexSimulation& operator =(const CortexSimulation& other)=default;
+
 
   std::ostream& write(std::ostream& s);
 
@@ -208,26 +182,13 @@ public:
 
 
 
+
+
   void read(std::string &line, std::istream &s);
 };
 
 class Experiment;
 
-class Likelihood
-{
-public:
-  Likelihood(const Experiment* e, const CortexSimulation* s):
-    e_(e), s_(s){}
-
-
-  double total();
-  std::vector<double> partial();
-
-private:
-  const Experiment* e_;
-  const CortexSimulation* s_;
-
-};
 
 #endif // CORTEXSIMULATION
 

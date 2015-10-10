@@ -12,7 +12,6 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
     dOmega=dOmega_dt(p,c);
   auto dRho=dRho_dt(p,c,hasOmega);
 
-
   CortexState out(c);
 
   if (hasOmega)
@@ -20,8 +19,6 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
       addStep(out.omega_T_,dOmega,dt);
     }
   addStep(out.psi_T_,dPsi,dt);
-
-
 
   addMStep(out.rho_,dRho,dt);
   if (hasOmega)
@@ -452,8 +449,6 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
     }
   return s;
-
-
 }
 
 
@@ -466,7 +461,7 @@ BaseModel *BaseModel::create(const Parameters &p)
   auto it=models_.find(modelNumeber);
   if (it!=models_.end())
     {
-      BaseModel*  out=it->second;
+      BaseModel*  out=it->second->clone();
       out->loadParameters(p);
       return out;
     }

@@ -248,10 +248,10 @@ public:
        std::size_t nSkip,
        double radiusWalkers,
        const std::string&  name,
-       double a,
+       double amin, double amax,
        std::size_t N_for_Walk,
        double rWalk,
-       method m,
+       method m, bool includePredictions,
        std::mt19937::result_type initseed);
 
   mcmc(){}
@@ -305,9 +305,12 @@ private:
   double acc_ratio_;
   std::size_t ifeval_;
   double radiusWalkers_;
-  double a_;
+  double amin_;
+  double amax_;
+
   std::size_t N_for_Walk_;
   double rWalk_;
+  bool includePredictions_;
   method method_;
 };
 
