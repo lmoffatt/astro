@@ -20,16 +20,18 @@ nextStateStretch(const CortexLikelihood* CL,
                  ,std::size_t& accept_count)
 {
 
-  mcmcWalkerState o(x.getMeanState(),x.numWalkers(),beta);
+ // mcmcWalkerState o(x.getMeanState(),x.numWalkers(),beta);
   std::size_t K=x.numWalkers();
   std::size_t N=x.numParameters();
 
   std::vector<std::size_t> js(K);
-  std::uniform_int_distribution<std::size_t> is(0,K-2);
-  for (std::size_t k=0; k<K; ++k)
+
+  std::uniform_int_distribution<std::size_t> is(0,K/2-1);
+  for (std::size_t k=0; k<K/2; ++k)
     {
-      js[k]=is(mt);
-      if (js[k]>=k) ++js[k];
+      js[k]=is(mt)+K/2;
+      js[k+K/2]=is(mt);
+
     }
   std::uniform_real_distribution<double> u(0,1);
   std::vector<double> rs(K);
@@ -50,9 +52,11 @@ nextStateStretch(const CortexLikelihood* CL,
   }
 
 
-
-#pragma omp parallel for default (none) shared (o,K,CL,rs,a,amin,amax,x,N,beta,js) reduction (+ : ifeval, accept_count)
-  for (std::size_t k=0; k<K; ++k)
+// first half
+for (std::size_t ih=0; ih<2; ++ih)
+{
+#pragma omp parallel for default (none) shared (ih,K,CL,rs,a,amin,amax,x,N,beta,js) reduction (+ : ifeval, accept_count)
+  for (std::size_t k=ih*K/2; k<K/2+ih*K/2; ++k)
     {
       std::size_t j=js[k];
       double av;
@@ -70,24 +74,18 @@ nextStateStretch(const CortexLikelihood* CL,
       double logr=log(rs[k]);
       if (logr<=logq)
         {
-          o[k]=y;
-          o.f(k)=f;
-          o.logDataLik(k)=logdatalik;
-          o.logPrior(k)=logprior;
+          x[k]=y;
+          x.f(k)=f;
+          x.logDataLik(k)=logdatalik;
+          x.logPrior(k)=logprior;
           accept_count++;
         }
-      else
-        {
-          o[k]=x[k];
-          o.f(k)=x.f(k);
-          o.logDataLik(k)=x.logDataLik(k);
-          o.logPrior(k)=x.logPrior(k);
+      }
 
-        }
-    }
-  o.update_Mean();
-  o.update_Covariance();
-  return o;
+}
+  x.update_Mean();
+  x.update_Covariance();
+  return x;
 }
 
 
