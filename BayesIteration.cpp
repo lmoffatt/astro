@@ -14,6 +14,7 @@ nextStateStretch(const CortexLikelihood* CL,
                  std::mt19937& mt,
                  double amin,
                  double amax,
+                 double a_b,
                  double beta,
                  mcmcWalkerState& x
                  ,std::size_t& ifeval
@@ -46,9 +47,9 @@ nextStateStretch(const CortexLikelihood* CL,
   else
     {
       a.resize(K);
-      std::uniform_real_distribution<double> arand(amin,amax);
+      std::uniform_real_distribution<double> arand(std::pow(amin, a_b),std::pow(amax, a_b));
       for (std::size_t k=0; k<K; ++k)
-        a[k]=arand(mt);
+        a[k]=std::pow(arand(mt),1.0/a_b);
   }
 
 
@@ -654,6 +655,7 @@ bool mcmcWalkerState::readBody(std::string &line, std::istream &s)
 mcmc::mcmc(const CortexLikelihood *f
            , const Parameters &initialParam
            , double maxDuration_minutes
+           , std::size_t quasiPriorSamples
            , std::size_t betaSamples
            , std::size_t eqSamples
            , std::size_t numWalkers
@@ -662,6 +664,7 @@ mcmc::mcmc(const CortexLikelihood *f
            , const std::string &name
            , double amin
            , double amax
+           , double a_b
            ,std::size_t N_for_Walk
            ,double rWalk
            ,method m
@@ -677,14 +680,16 @@ mcmc::mcmc(const CortexLikelihood *f
     CL_(f)
   ,initial_(initialParam)
   , maxDuration_minutes_(maxDuration_minutes)
+  ,quasiPriorSamples_(quasiPriorSamples)
   , betaSamples_(betaSamples)
-  , numSamples_(betaSamples+eqSamples)
+  , numSamples_(quasiPriorSamples+betaSamples+eqSamples)
   , numWalkers_(numWalkers)
   ,n_skip_(nSkip)
   ,acc_ratio_()
   , radiusWalkers_(radiusWalkers)
   ,amin_(amin)
   ,amax_(amax)
+  ,a_b_(a_b)
   ,N_for_Walk_(N_for_Walk)
   ,rWalk_(rWalk)
   ,includePredictions_(includePredictions)
@@ -742,9 +747,9 @@ void mcmc::run()
       break;
     case STRETCH:
       std::cout
-          <<"stretch. value of parameter amin="<<amin_<<" amax="<<amax_<<std::endl;
+          <<"stretch. value of parameter amin="<<amin_<<" amax="<<amax_<<" a_b="<<a_b_<<std::endl;
       os_mean_
-          <<"stretch. value of parameter amin="<<amin_<<" amax="<<amax_<<std::endl;
+          <<"stretch. value of parameter amin="<<amin_<<" amax="<<amax_<<" a_b="<<a_b_<<std::endl;
       break;
 
     default:
@@ -763,7 +768,7 @@ void mcmc::run()
 
   while ((runt<maxDuration_minutes_)&&(i<numSamples_))
     {
-      betarun_=std::min(1.0*i/betaSamples_,1.0);
+      betarun_=std::min(((1.0*std::max(i,quasiPriorSamples_+1)-quasiPriorSamples_)/betaSamples_),1.0);
       auto tnow=std::chrono::steady_clock::now();
       auto d=tnow-startTime_;
       double t0=runt;
@@ -776,7 +781,7 @@ void mcmc::run()
           //          std::swap(ws_0,ws_1);
 
           if (method_==STRETCH)
-            ws_0=nextStateStretch(CL_,mt_,amin_,amax_,betarun_,ws_0,ifeval_,acc_count);
+            ws_0=nextStateStretch(CL_,mt_,amin_,amax_,a_b_,betarun_,ws_0,ifeval_,acc_count);
           else
             ws_0=nextStateWalk(CL_,mt_,N_for_Walk_,rWalk_,betarun_,ws_0,ifeval_,acc_count);
 
@@ -816,12 +821,14 @@ std::ostream &mcmc::writeBody(std::ostream &s) const
   writeField(s,"Likelihood_Model",CL_->id());
   writeField(s,"Initial_Parameter",initial_);
   writeField(s,"Maximal_duration",maxDuration_minutes_);
+  writeField(s,"QuasiPrior_Samples",quasiPriorSamples_);
   writeField(s,"Beta_Samples",betaSamples_);
   writeField(s,"Number_Samples",numSamples_);
   writeField(s,"Number_Walkers",numWalkers_);
   writeField(s,"Initial_Radius",radiusWalkers_);
   writeField(s,"eemcee_amin",amin_);
   writeField(s,"eemcee_amax",amax_);
+  writeField(s,"eemcee_a_b",a_b_);
 
   return s;
 }
@@ -839,6 +846,8 @@ bool mcmc::readBody(std::string &line, std::istream &s)
         return false;
       else if (!readField(line,s,"Initial_Parameter",initial_))
         return false;
+      else if (!readField(line,s,"QuasiPrior_Samples",quasiPriorSamples_))
+        return false;
       else if (!readField(line,s,"Beta_Samples",betaSamples_))
         return false;
       else if (!readField(line,s,"Number_Samples",numSamples_))
@@ -850,6 +859,8 @@ bool mcmc::readBody(std::string &line, std::istream &s)
       else if (!readField(line,s,"eemcee_amin",amin_))
         return false;
       else if (!readField(line,s,"eemcee_amax",amax_))
+        return false;
+      else if (!readField(line,s,"eemcee_a_b",a_b_))
         return false;
       else return true;
     }

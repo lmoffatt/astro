@@ -867,9 +867,9 @@ void McmcCommand::run(const std::string line)
 
   std::string mcmcS, mcmcName, experimentName, priorName, paramName;
   double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
-  double walkerRadius,amin=1,amax=2,rWalk;
+  double walkerRadius,amin=1,amax=2,a_b=2,rWalk;
   std::mt19937::result_type initseed=0;
-  std::size_t nPoints_per_decade,betaSamples,nSamples,nWalkers,nSkip, NforWalk;
+  std::size_t nPoints_per_decade,quasiPriorSamples,betaSamples,nSamples,nWalkers,nSkip, NforWalk;
   std::stringstream ss(line);
 
   std::string method, savePredic;
@@ -878,7 +878,7 @@ void McmcCommand::run(const std::string line)
 
   ss>>mcmcS>>method;
   ss>>mcmcName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax;
-  ss>>betaSamples>>nSamples>>maxduration>>walkerRadius>>nWalkers>>nSkip;
+  ss>>quasiPriorSamples>>betaSamples>>nSamples>>maxduration>>walkerRadius>>nWalkers>>nSkip;
   if (method=="walk")
   {
       eMe=mcmc::WALK;
@@ -887,7 +887,7 @@ void McmcCommand::run(const std::string line)
   else
     {
       eMe=mcmc::STRETCH;
-      ss>>amin>>amax>>initseed>>savePredic;
+      ss>>amin>>amax>>a_b>>initseed>>savePredic;
     }
  bool savePredictions=savePredic=="save";
   Experiment *e=new Experiment;
@@ -962,8 +962,8 @@ void McmcCommand::run(const std::string line)
 
 
 
-      mcmc emc(&CL,p,maxduration,betaSamples,nSamples,nWalkers,nSkip
-               ,walkerRadius,mcmcName,amin,amax,NforWalk,rWalk,eMe,initseed,savePredictions);
+      mcmc emc(&CL,p,maxduration,quasiPriorSamples,betaSamples,nSamples,nWalkers,nSkip
+               ,walkerRadius,mcmcName,amin,amax,a_b,NforWalk,rWalk,eMe,initseed,savePredictions);
       emc.run();
       }
 

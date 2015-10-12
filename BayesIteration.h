@@ -242,13 +242,14 @@ public:
   mcmc(const CortexLikelihood* f,
        const Parameters& initialParam,
        double maxDuration_minutes,
+       std::size_t quasiPriorSamples,
        std::size_t betaSamples,
        std::size_t eqSamples,
        std::size_t numWalkers,
        std::size_t nSkip,
        double radiusWalkers,
        const std::string&  name,
-       double amin, double amax,
+       double amin, double amax, double a_b,
        std::size_t N_for_Walk,
        double rWalk,
        method m, bool includePredictions,
@@ -298,6 +299,7 @@ private:
   Parameters initial_;
   double betarun_;
   double maxDuration_minutes_;
+  std::size_t quasiPriorSamples_;
   std::size_t betaSamples_;
   std::size_t numSamples_;
   std::size_t numWalkers_;
@@ -307,6 +309,7 @@ private:
   double radiusWalkers_;
   double amin_;
   double amax_;
+  double a_b_;
 
   std::size_t N_for_Walk_;
   double rWalk_;
