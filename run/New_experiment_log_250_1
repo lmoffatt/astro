@@ -1,9 +1,7 @@
-Experiment	experiment_log_250
+Experiment	New_experiment_log_250_1
 simulation_time	604800
 time_of_Measures
 0	259200	604800	
-time_of_Simulated_Points
-0	259200	604800
 Measures
 CortexMeasure	3dplCL_1_2_3
 dia	0
@@ -16,7 +14,6 @@ x_pos
 0	250	500	1000	1500	2000	2500	3000	3500	
 area_covered_by_Astrocytes
 1263894	1314626	2199649	1563376	1270403	872054	449384.2  185358
-	
 total_number_of_Astrocytes
 143	112	233	162	88	73	27	6	
 number_of_Astrocytes_of_each_type

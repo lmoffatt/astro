@@ -526,7 +526,7 @@ void LevenbergMarquardtDistribution::updateLanda()
       /// mientras no sea mejor
       while(((logPostLogLikNew_<=logPostLikCurr_)
              &&(ifevalLoop<maxFealLoop)
-             )||isnan(logPostLogLikNew_))
+             )||std::isnan(logPostLogLikNew_))
         {
           /// si me paso freno...
           if (landa_*v_>=maxLanda_) break;
