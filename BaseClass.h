@@ -441,7 +441,7 @@ bool readValue(std::string& line,
           return false;
         }
       auto ie=line.find_first_of(" \t",i0);
-      std::string sv=line.substr(i0,ie-i0);
+      std::string sv=line.substr(i0,ie);
       if (sv=="nan")
         {
           val=std::numeric_limits<double>::quiet_NaN();
@@ -451,7 +451,9 @@ bool readValue(std::string& line,
       else if (sv=="-nan")
         {
           val=-std::numeric_limits<double>::quiet_NaN();
-          line=line.substr(ie);
+          if (ie!=std::string::npos)
+            line=line.substr(ie);
+          else line.clear();
           return true;
         }
       else if (sv=="inf")

@@ -1,9 +1,9 @@
-Experiment	New_experiment_log_250_1
+Experiment	experiment_log_250
 simulation_time	604800
 time_of_Measures
 0	259200	604800	
 Measures
-CortexMeasure	3dplCL_1_2_3
+CortexMeasure	3dplCL
 dia	0
 tissue_width	0.0001
 inj_width	0
@@ -28,7 +28,7 @@ number_of_Astrocytes_of_each_type
 0	0	0	0	0	0	0
 
 density_of_Astrocytes_of_each_type
-0.0001131423996	8.51953331213592E-05	0.000105925990919	0.000103621905415	6.92693578336953E-05	8.37104124285881E-05	6.00822191790455E-05	3.236979250963E-05	0
+0.0001131423996	8.51953331213592E-05	0.000105925990919	0.000103621905415	6.92693578336953E-05	8.37104124285881E-05	6.00822191790455E-05	3.236979250963E-05  3.236979250963E-05 
 covariance_of_number_of_Astrocytes_of_each_type
 4.35	0	-4.35	0	0	0	0	
 	0	0	0	0	0	0	0	
@@ -103,7 +103,7 @@ covariance_of_number_of_Astrocytes_of_each_type
 	0	0	0	0	0	0	0	
 	
 
-	CortexMeasure	3dpl_1_3_4_5
+	CortexMeasure	3dpl
 dia	3
 tissue_width	0.0001
 inj_width	50
@@ -203,7 +203,7 @@ covariance_of_number_of_Astrocytes_of_each_type
 	0	0	0	0	0	0	0	
 	
 
-	CortexMeasure	7dpl1_2_3_4_5
+	CortexMeasure	7dpl2
 dia	7
 tissue_width	0.0001
 inj_width	1000
