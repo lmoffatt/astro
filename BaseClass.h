@@ -49,6 +49,18 @@ void writeField(std::ostream& s
   s<<fieldName<<"\t"<<value<<"\n";
 }
 
+template<typename T>
+void writePtrField(std::ostream& s
+                   , const std::string& fieldName
+                   , const T* value)
+{
+  if (value!=nullptr)
+    s<<fieldName<<"\t"<<*value<<"\n";
+  else
+    s<<fieldName<<"\t"<<"NULL"<<"\n";
+
+}
+
 
 inline
 void writeTable(std::ostream& s,
@@ -110,6 +122,9 @@ bool readValue(std::string& line,
                std::istream&,
                std::string& val);
 
+bool readValue(std::string& line,
+               std::istream&,
+               bool& val);
 
 
 template<typename T>
@@ -156,9 +171,47 @@ bool readField(std::string& line,
       safeGetline(ss,line);
       return readValue(line,s,value);
     }
-  else return false;
+  else
+
+    {
+      std::cerr<<"unexpected Field\n";
+      std::cerr<<"\t\t Expected: "<<fieldName<<" \t found:";
+      std::cerr<<fname<<"\n";
+
+      return false;
+
+    }
 }
 
+template<typename T>
+bool readPtrField(std::string& line,
+                  std::istream& s
+                  , const std::string& fieldName
+                  , T*& value)
+{
+  while (line.empty()&& safeGetline(s,line)) {}
+  std::stringstream ss(line);
+  std::string fname;
+  ss>>fname;
+
+  if (fieldName==fname)
+    {
+      safeGetline(ss,line);
+      while (line.empty()&& safeGetline(s,line)) {}
+      ss.str(line);
+      std::string clname;
+      ss>>clname;
+      T* p=T::createChild(clname);
+      if (p!=nullptr)
+        {
+          delete value;
+          value=p;
+          return value->read(line,s);
+        }
+      else return false;
+    }
+  else return false;
+}
 
 
 
@@ -189,7 +242,14 @@ bool readField(std::string& line,
       // safeGetline(s,line);
       return readValue(line,s,value);
     }
-  else return false;
+  else
+    {
+      std::cerr<<"unexpected Field\n";
+      std::cerr<<"\t\t Expected: "<<fieldName<<" \t found:";
+      std::cerr<<fname<<"\n";
+
+      return false;
+    }
 }
 
 template<typename T>
@@ -412,7 +472,7 @@ public:
           return false;
       }
     else
-      return false;
+        return false;
 
   }
 
@@ -457,6 +517,17 @@ bool readValue(std::string& line,
   return val.read(line,s);
 
 }
+
+template<typename T>
+bool readValue(std::string& line,
+               std::istream& s,
+               T*& val)
+{
+
+  return val.read(line,s);
+
+}
+
 
 
 inline
@@ -531,6 +602,48 @@ bool readValue(std::string& line,
   return o;
 
 }
+
+inline
+bool readValue(std::string& line,
+               std::istream&,
+               bool& val)
+{
+  std::stringstream ss(line);
+  bool o=bool(ss>>val);
+  if (!o)  //check for inf nan and -nan values
+    {
+      auto i0=line.find_first_not_of(" \t");
+      if (i0==line.npos)
+        {
+          safeGetline(ss,line);
+          return false;
+        }
+      auto ie=line.find_first_of(" \t",i0);
+      std::string sv=line.substr(i0,ie-i0);
+      if (sv=="true")
+        {
+          val=true;
+          line=line.substr(ie);
+          return true;
+        }
+      else if (sv=="false")
+        {
+          val=false;
+          line=line.substr(ie);
+          return true;
+        }
+      else
+        return false;
+    }
+  else
+    {
+      safeGetline(ss,line);
+      return true;
+    }
+}
+
+
+
 
 #endif // BASECLASS
 

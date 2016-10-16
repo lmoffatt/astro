@@ -37,12 +37,31 @@ inline std::string& replaceLabel(std::string& line,
   std::size_t i=0;
   while (i!=line.npos)
     {
-         i=line.find(label,i);
-         if (i!=line.npos)
-         line.replace(i,label.size(),replacement);
+      i=line.find(label,i);
+      if (i!=line.npos)
+        line.replace(i,label.size(),replacement);
     }
   return line;
 }
+
+
+inline std::string& replaceLabel(std::string& line,
+                                 const std::vector<std::string>& label,
+                                 const std::vector<std::string>& replacement)
+{
+  for (std::size_t j=0; j<label.size(); ++j)
+    {
+      std::size_t i=0;
+      while (i!=line.npos)
+        {
+          i=line.find(label[j],i);
+          if (i!=line.npos)
+            line.replace(i,label[j].size(),replacement[j]);
+        }
+    }
+  return line;
+}
+
 
 class CommandBase: public BaseClass
 {
@@ -51,7 +70,7 @@ public:
     return "Command";
   }
 
-   virtual std::string myClass()const override
+  virtual std::string myClass()const override
   {
     return ClassName();
   }
@@ -119,6 +138,8 @@ private:
   std::map <std::string,CortexLikelihood*> likelihoods;
 
 
+
+
 };
 
 
@@ -130,10 +151,10 @@ public:
   int run(char* filenme);
 
   int runDefine(const std::string& filename,
-          const std::string& label,
-                const std::string& valueInplace);
+                const std::vector<std::__cxx11::string> &label,
+                const std::vector<std::__cxx11::string> &valueInplace);
 
- private:
+private:
   CommandManager* cm_;
 
 
@@ -207,7 +228,7 @@ private:
 
 class MergeCommand:public CommandBase
 {
- // CommandBase interface
+  // CommandBase interface
 public:
   virtual void run(const std::string line) override;
   MergeCommand(CommandManager* cm):
@@ -223,7 +244,7 @@ private:
 
 class DistancesCommand:public CommandBase
 {
- // CommandBase interface
+  // CommandBase interface
 public:
   virtual void run(const std::string line);
   virtual std::string id() const
@@ -243,7 +264,7 @@ private:
 
 class HistogramCommand:public CommandBase
 {
- // CommandBase interface
+  // CommandBase interface
 public:
   virtual void run(const std::string line);
   HistogramCommand(CommandManager* cm):
@@ -259,7 +280,7 @@ private:
 
 class ExperimentCommand:public CommandBase
 {
- // CommandBase interface
+  // CommandBase interface
 public:
   virtual void run(const std::string line);
   virtual std::string id() const
@@ -269,7 +290,7 @@ public:
   ExperimentCommand(CommandManager* cm):
     CommandBase("experiment"),
     cm_(cm){}
-~ExperimentCommand(){}
+  ~ExperimentCommand(){}
 private:
   CommandManager* cm_;
 
@@ -279,7 +300,7 @@ private:
 
 class SimulateCommand:public CommandBase
 {
- // CommandBase interface
+  // CommandBase interface
 public:
   virtual void run(const std::string line);
 
@@ -296,7 +317,7 @@ private:
 
 class LikelihoodCommand:public CommandBase
 {
- // CommandBase interface
+  // CommandBase interface
 public:
   virtual void run(const std::string line);
   virtual std::string id() const;
@@ -312,7 +333,7 @@ private:
 
 class OptimizeCommand:public CommandBase
 {
- // CommandBase interface
+  // CommandBase interface
 public:
   virtual void run(const std::string line);
 
@@ -334,7 +355,7 @@ private:
 
 class McmcCommand:public CommandBase
 {
- // CommandBase interface
+  // CommandBase interface
 public:
   virtual void run(const std::string line);
 

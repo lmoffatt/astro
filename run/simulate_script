@@ -1,12 +1,4 @@
-simulate sim_zero opt_10_100_24 20  sim_op_10_100_3
-//write sim_D psi t = 0 t = 100 t = 200  t = 1000  t = 10000  t = 100000
-write sim_op_10_100_3 psi t = 0 t = 300  t = 3600  t = 21600  t = 86400 t = 172800  t = 259200  t = 345600  t = 432000  t = 518400   t = 604800
-write sim_op_10_100_3 rho t = 86400 t = 259200   t = 604800
-write sim_op_10_100_3 omega t = 0 t = 300  t = 3600  t = 21600  t = 86400 t = 172800  t = 259200  t = 345600  t = 432000  t = 518400   t = 604800
+//   ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>
+//dx>>dtmin>>nPointsPerDecade>>dtmax>>niter>>maxmin>>factor>>nseeds>>initseed;
+simulate EL_log_50u_100s_PARAM ../experiment_log_50_1 PRIOR PARAM 50  0.1 10 5  500  1200 1 100    0
 
-
-//write sim_parameters_10 rho t = 0 t = 86400 t = 172800  t = 259200  t = 345600  t = 432000  t = 518400   t = 604800
-//write sim_parameters_10 psi t = 0 t = 86400 t = 172800  t = 259200  t = 345600  t = 432000  t = 518400   t = 604800
-//write sim_parameters_10 omega t = 0 t = 86400 t = 172800  t = 259200  t = 345600  t = 432000  t = 518400   t = 604800
-//write sim_parameters_10 psi x = 0 x = 1e-4  x = 1e-3
-//write sim_parameters_10 omega x = 0 x = 1e-4  x = 1e-3

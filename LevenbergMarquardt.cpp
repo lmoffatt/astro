@@ -240,9 +240,9 @@ LevenbergMarquardtDistribution &LevenbergMarquardtDistribution::
 optimize(std::string optname,
          double factor,
          std::size_t numSeeds,
-         std::mt19937::result_type initseed)
+         std::mt19937_64::result_type initseed)
 {
-  std::mt19937 mt;
+  std::mt19937_64 mt;
   std::random_device rd;
 
   if (initseed!=0)
@@ -258,7 +258,7 @@ optimize(std::string optname,
     {
       if (initseed==0)
         {
-          std::mt19937::result_type seed=rd();
+          std::mt19937_64::result_type seed=rd();
           mt.seed(seed);
           std::cout<<"Seed of random generator="<<seed<<std::endl;
           if (os_.is_open())
@@ -526,7 +526,7 @@ void LevenbergMarquardtDistribution::updateLanda()
       /// mientras no sea mejor
       while(((logPostLogLikNew_<=logPostLikCurr_)
              &&(ifevalLoop<maxFealLoop)
-             )||isnan(logPostLogLikNew_))
+             )||std::isnan(logPostLogLikNew_))
         {
           /// si me paso freno...
           if (landa_*v_>=maxLanda_) break;
@@ -721,6 +721,17 @@ unsigned ABC_Freq_obs::numCells() const
   if (!ntot_obs().empty())
     return ntot_obs().size()*n_obs(0).size();
   else return 0;
+}
+
+std::size_t ABC_Freq_obs::numDF() const
+{
+  std::size_t sum=0;
+  for (std::size_t i =0; i<ntot_obs().size(); ++i)
+    {
+      if (ntot_obs()[i]>0)
+        sum+=n_obs(i).size()-1;
+    }
+  return sum;
 }
 
 

@@ -16,11 +16,11 @@ sample time
 
 equilibrium time
 [s]
-1000
+10000
 
 total time
 [s]
-700000
+1400000
 
 
 

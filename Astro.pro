@@ -27,7 +27,8 @@ SOURCES += main.cpp \
     LevenbergMarquardt.cpp \
     BayesIteration.cpp \
     CortexLikelihood.cpp \
-    Splines.cpp
+    Splines.cpp \
+    StochasticLevenbergMarquardt.cpp
 
 #include(deployment.pri)
 #qtcAddDeployment()
@@ -44,7 +45,8 @@ HEADERS += \
     CortexLikelihood.h \
     BaseClass.h \
     MCMC.h \
-    Splines.h
+    Splines.h \
+    StochasticLevenbergMarquardt.h
 
 DISTFILES += \
     run/script \
@@ -176,7 +178,8 @@ DISTFILES += \
     run/p_213_23/parameters_213_23 \
     run/local_script \
     run/mcmc_script \
-    debug/Makefile
+    debug/Makefile \
+    run/7dpl_resultados.txt
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

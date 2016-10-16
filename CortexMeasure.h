@@ -88,6 +88,19 @@ public:
     return distance_to_lession_;
   }
 
+  double distance_to_superior()const
+  {
+    return distance_to_superior_;
+  }
+  double distance_to_inferior()const
+  {
+    return distance_to_inferior_;
+  }
+  double distance_to_posterior()const
+  {
+    return distance_to_posterior_;
+  }
+
   double distance_to_tissue()const
   {
     return distance_to_tissue_;
@@ -105,6 +118,9 @@ public:
   ,prob_(prob)
   ,distance_to_lession_(std::numeric_limits<double>::infinity())
   ,distance_to_tissue_(std::numeric_limits<double>::infinity())
+  ,distance_to_superior_(std::numeric_limits<double>::infinity())
+  ,distance_to_inferior_(std::numeric_limits<double>::infinity())
+  ,distance_to_posterior_(std::numeric_limits<double>::infinity())
     ,distance_to_vaso_(std::numeric_limits<double>::infinity())
   {}
 private:
@@ -117,6 +133,9 @@ private:
   double distance_to_lession_;
   double distance_to_tissue_;
   double distance_to_vaso_;
+  double distance_to_superior_;
+  double distance_to_inferior_;
+  double distance_to_posterior_;
 };
 
 
@@ -135,6 +154,12 @@ public:
   virtual std::vector<position>& limits()
   {
     return limits_;
+  }
+
+  virtual void insert(std::vector<position>::const_iterator be, std::vector<position>::const_iterator en )
+  {
+    limits_.insert(limits_.end(),be,en);
+    updateMinMax();
   }
 
   virtual const std::vector<position>& limits()const
@@ -220,6 +245,35 @@ class LimiteLesion: public tissueElement
   LimiteLesion(){}
 
 };
+
+class LimiteSuperior: public tissueElement
+{public:
+  LimiteSuperior(std::vector<position> lim):
+    tissueElement("Limite_superior",lim){}
+
+  LimiteSuperior(){}
+
+};
+
+class LimiteInferior: public tissueElement
+{public:
+  LimiteInferior(std::vector<position> lim):
+    tissueElement("Limite_inferior",lim){}
+
+  LimiteInferior(){}
+
+};
+
+
+class LimitePosterior: public tissueElement
+{public:
+  LimitePosterior(std::vector<position> lim):
+    tissueElement("Limite_posterior",lim){}
+
+  LimitePosterior(){}
+
+};
+
 
 class LimiteTejido: public tissueElement
 {
@@ -468,6 +522,7 @@ private:
   double minimalVasoDistance_;
   double injWidth_;
   double injLength_;
+  std::size_t rata_;
   std::vector<double> x_;
   std::vector<double> measAreaAstro_;
   std::vector<double> numAstro_;
@@ -612,11 +667,12 @@ public:
 
   double tMeas(unsigned i)const;
 
+  void insert_tSim(double t);
 
 
 
 
-  Experiment(std::string ide, std::vector<CortexMeasure> mv);
+  Experiment(std::string ide, std::vector<CortexMeasure> mv,const std::vector<double>& tsimul);
 
   const CortexMeasure* getMeasure(unsigned i)const;
 
@@ -630,6 +686,8 @@ public:
 private:
   std::vector<CortexMeasure> m_;
   std::vector<double> tMeasures_;
+  std::vector<double> tSimulates_;
+
   double tsim_;
 
 
@@ -639,6 +697,8 @@ public:
   {
     writeField(s,"simulation_time",tsim_);
     writeField(s,"time_of_Measures",tMeasures_);
+    writeField(s,"time_of_Simulated_Points",tSimulates_);
+
     writeField(s,"Measures",m_);
     return s;
   }
@@ -647,6 +707,7 @@ public:
   {
     m_.clear();
     tMeasures_.clear();
+    tSimulates_.clear();
   }
 
   virtual bool readBody(std::string& line,std::istream &s) override
@@ -655,12 +716,17 @@ public:
       return false;
     else if (!readField(line,s,"time_of_Measures",tMeasures_))
       return false;
+    else if (!readField(line,s,"time_of_Simulated_Points",tSimulates_))
+      return false;
+
     else if(!readField(line,s,"Measures",m_))
       return false;
     else
       return true;
   }
 
+  double tSimul(unsigned i) const;
+  std::size_t numSimPoints() const;
 protected:
   void update(){}
 
@@ -729,8 +795,8 @@ public:
   void include(TissuePhoto& other)
   {
     astr_.insert(astr_.end(),other.astr_.begin(),other.astr_.end());
-    lt_.limits().insert(lt_.limits().end(),other.lt_.limits().begin(),other.lt_.limits().end());
-    ll_.limits().insert(ll_.limits().end(),other.ll_.limits().begin(),other.ll_.limits().end());
+    lt_.insert(other.lt_.limits().begin(),other.lt_.limits().end());
+    ll_.insert(other.ll_.limits().begin(),other.ll_.limits().end());
 
     limiteFoto_.insert(
           limiteFoto_.end(),other.limiteFoto_.begin(),other.limiteFoto_.end());
@@ -760,18 +826,25 @@ public:
 
 
   unsigned num;
+  std::size_t rata;
+
   std::string id;
   double h_;
   std::vector<Astrocyte> astr_;
 
   LimiteTejido lt_;
   LimiteLesion ll_;
+  LimiteSuperior ls_;
+  LimiteInferior li_;
+  LimitePosterior lp_;
+
   std::vector<LimiteFoto> limiteFoto_;
   double xmin_,xmax_,ymin_,ymax_;
 
   std::uniform_real_distribution<double> xud_, yud_;
 
   double injury_Width_=0;
+  double injury_Area_=0;
 
 
   std::vector<LimiteVaso> vasos_;
@@ -791,7 +864,7 @@ public:
   }
 
 
-  CortexMeasure* measure(std::mt19937 &mt, std::string id, double dia, std::vector<double> x, double minimal_distance_to_tissue=0, double minimal_distance_to_vaso=0, std::size_t maxpoints=1E4);
+  CortexMeasure* measure(std::mt19937_64 &mt, std::string id, double dia, std::vector<double> x, double minimal_distance_to_tissue=0, double minimal_distance_to_vaso=0, std::size_t maxpoints=1E4);
 };
 
 
@@ -820,19 +893,15 @@ public:
   void distances();
 
 
-  CortexMeasure* measure(std::mt19937& mt,std::vector<double> x,double minimalDistanceTissue,double minimalDistanceVaso,std::size_t maxpoints)
-  {
-    return fotos.begin()->second.measure(mt,id(),dia_,x,minimalDistanceTissue,minimalDistanceVaso,maxpoints);
-  }
+  CortexMeasure* measure(std::mt19937_64& mt,std::vector<double> x,double minimalDistanceTissue,double minimalDistanceVaso,std::size_t maxpoints);
 
+  void measure(CommandManager* cm,std::mt19937_64& mt,std::vector<double> x,double minimalDistanceTissue,double minimalDistanceVaso,std::size_t maxpoints);
 
 
 private:
   std::string id_;
   double dia_;
-
-
-};
+ };
 
 
 
@@ -914,6 +983,15 @@ std::vector<double>& operator-=(
     x[i]-=y[i];
 
   return x;
+}
+
+
+template<typename T>
+std::vector<T>& initialize(std::vector<T>& o, T x)
+{
+  for (auto& a:o)
+    a=x;
+  return o;
 }
 
 

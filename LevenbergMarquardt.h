@@ -23,16 +23,7 @@ public:
 
   unsigned numCells()const;
 
-  std::size_t numDF()const
-  {
-    std::size_t sum=0;
-    for (std::size_t i =0; i<ntot_obs().size(); ++i)
-      {
-        if (ntot_obs()[i]>0)
-          sum+=n_obs(i).size()-1;
-      }
-    return sum;
-  }
+  std::size_t numDF()const;
 
   virtual ~ABC_Freq_obs(){}
   virtual std::ostream& put(std::ostream& s)const=0;
@@ -180,7 +171,7 @@ public:
   LevenbergMarquardtDistribution& optimize(std::string optname,
                                            double factor,
                                            std::size_t numSeeds,
-                                           std::mt19937::result_type initseed=0);
+                                           std::mt19937_64::result_type initseed=0);
 
 
   LevenbergMarquardtDistribution(const CortexLikelihood* f,
@@ -336,6 +327,11 @@ public:
 protected:
   virtual void update() override{}
 };
+
+
+
+
+
 
 
 

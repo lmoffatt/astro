@@ -11,4 +11,4 @@
 //    eMe=mcmc::STRETCH;
 //   ss>>amin>>amax>>initseed>>savePredic;
 // }
-mcmc stretch ITS1_15_8TH_05_log_250u_100s_200w_LABEL ../experiment_log_250_1 LABEL LABEL 250  1 10 100  300 1000 1000  3000 1 50 20 1 2.0 2.0 0 notsave
+mcmc stretch ITS1_15_8TH_05_log_250u_100s_200w_LABEL ../experiment_log_250_1 LABEL LABEL 250  1 10 100  300 1000 1000  3000 1 5 20 1 2.0 2.0 0 notsave

@@ -678,7 +678,7 @@ std::vector<std::string> Parameters::commonNames(const Parameters& other)const
 
 
 
-Parameters Parameters::randomSample(std::mt19937& mt,double factor)const
+Parameters Parameters::randomSample(std::mt19937_64& mt,double factor)const
 {
 
 
@@ -717,7 +717,7 @@ Parameters Parameters::randomSample(std::mt19937& mt,double factor)const
 }
 
 
-Parameters Parameters::randomSample(std::mt19937& mt,Parameters prior,double factor)const
+Parameters Parameters::randomSample(std::mt19937_64& mt,Parameters prior,double factor)const
 
 {
   Parameters sample(*this);
@@ -755,7 +755,7 @@ Parameters Parameters::randomSample(std::mt19937& mt,Parameters prior,double fac
 
 }
 
-std::vector<double> Parameters::randomSampleValues(std::mt19937 &mt, Parameters prior, double factor) const
+std::vector<double> Parameters::randomSampleValues(std::mt19937_64 &mt, Parameters prior, double factor) const
 
 {
   std::vector<double> o(size());
@@ -789,6 +789,23 @@ std::vector<double> Parameters::randomSampleValues(std::mt19937 &mt, Parameters 
   return o;
 }
 
+double Parameters::logProb(const Parameters& sample)const
+{
+  std::size_t n=n;
+   std::vector<double> d(n);
+  for (std::size_t i=0; i<n; ++i)
+    d[i]=sample.mean_of_tr_[i]-this->mean_of_tr_[i];
+
+  double z=0;
+  for (std::size_t i=0; i<n; ++i)
+    for (std::size_t j=0; j<n; ++j)
+      z+=d[i]*this->cov_inv_[i][j]*d[j];
+
+  return -0.5*(logDetCov_+z+n*log(2*PI));
+
+}
+
+
 
 
 
@@ -808,12 +825,12 @@ unsigned Parameters::size()const
 
 
 
-double randNormal(std::mt19937& mt,double mean,double stddev)
+double randNormal(std::mt19937_64& mt,double mean,double stddev)
 {
   std::normal_distribution<> nd(mean,stddev);
   return nd(mt);
 }
-double randNormal(std::mt19937& mt)
+double randNormal(std::mt19937_64& mt)
 {
 
   std::normal_distribution<> nd(0,1);

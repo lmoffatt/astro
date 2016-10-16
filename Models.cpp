@@ -405,7 +405,7 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
   CortexState c=init(p,sp,dx);
 
-  CortexSimulation s(c,sp.numMeasures());
+  CortexSimulation s(c,sp.numSimPoints());
   s.p_=par;
   s.dt_=dtmax;
   double t=-tequilibrio;
@@ -419,13 +419,13 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
   addDamp(c,p);
   double dt_run=dtmin;
-  while (i<sp.numMeasures())
+  while (i<sp.numSimPoints())
     {
       t+=dt_run;
 
       c=nextEuler(p,c,dt_run);
 
-      if (t>=sp.tMeas(i))
+      if (t>=sp.tSimul(i))
         {
           s.t_[i]=t;
           s.sdt_[i]=dt_run;

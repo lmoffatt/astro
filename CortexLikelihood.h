@@ -14,6 +14,8 @@ public:
   // BaseObject interface
 public:
   virtual CortexLikelihood* create() const override=0;
+  virtual CortexSimulation simulate(const Parameters &parameters) const=0;
+  virtual std::vector<std::vector<double> > g(const Parameters &parameters, const CortexSimulation &s) const=0;
   CortexLikelihood();
   virtual std::ostream &writeBody(std::ostream &s) const override;
   virtual void clear() override;
@@ -149,6 +151,15 @@ public:
   {
     return CortexLikelihood::getPrior();
   }
+
+  // CortexLikelihood interface
+public:
+  virtual CortexSimulation simulate(const Parameters &parameters) const override
+  {
+  }
+  virtual std::vector<std::vector<double> > g(const Parameters &parameters, const CortexSimulation &s) const override
+  {
+  }
 };
 
 
@@ -160,6 +171,7 @@ public:
 
   // ABC_Multinomial_Model interface
   std::vector<std::vector<double> > f(const Parameters &parameters) const override;
+
 
 
 
@@ -228,6 +240,8 @@ public:
   {
     return CortexLikelihood::getPrior();
   }
+  CortexSimulation simulate(const Parameters &parameters) const;
+  std::vector<std::vector<double> > g(const Parameters &parameters, const CortexSimulation &s) const;
 };
 
 

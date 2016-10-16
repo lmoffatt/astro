@@ -163,7 +163,6 @@ public:
 
   virtual void loadParameters(const Parameters& p)=0;
 
-  virtual CortexSimulation run(const CortexExperiment& e,double dt) const=0;
   virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio) const=0;
 
   virtual BaseModel* clone()const=0;

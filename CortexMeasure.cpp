@@ -15,6 +15,7 @@ void TissuePhoto::read(std::string& line, std::istream &s)
   std::string name;
   std::stringstream ss(line);
   ss>>name;
+  num=0;
   if (name=="foto")
     {
       ss>>num;
@@ -45,6 +46,29 @@ void TissuePhoto::read(std::string& line, std::istream &s)
               double x,y,prob;
               unsigned typo;
               while (ss2>>x>>y>>typo>>prob)
+                {
+                  std::string idAstro;
+                  std::stringstream sid(idAstro);
+                  sid<<this->id<<"a"<<astr_.size();
+
+                  astr_.push_back(Astrocyte(sid.str(),x,y,typo,prob));
+                  safeGetline(s,line);
+                  ss2.str(line);
+                  ss2.clear();
+                }
+            }
+          else if (line.find("celula_")!=std::string::npos)
+            {
+              safeGetline(s,line);
+              safeGetline(s,line);
+              safeGetline(s,line);
+              std::stringstream ss2;
+              ss2.str(line);
+              std::string code;
+              double d_les,d_tej,d_vas;
+              double x,y,prob;
+              unsigned typo;
+              while (ss2>>code>>d_les>>d_tej>>d_vas>>x>>y>>typo>>prob)
                 {
                   std::string idAstro;
                   std::stringstream sid(idAstro);
@@ -90,7 +114,7 @@ void TissuePhoto::read(std::string& line, std::istream &s)
               lt_=LimiteTejido(v);
 
             }
-          else if (line.find("limite lesion")!=std::string::npos)
+          else if (line.find("limite de lesion")!=std::string::npos)
             {
               safeGetline(s,line);
               safeGetline(s,line);
@@ -105,9 +129,64 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                   ss2.clear();
                 }
               ll_=LimiteLesion(v);
+              limiteFoto_.push_back(LimiteFoto(v));
+
+            }
+          else if (line.find("limite superior")!=std::string::npos)
+            {
+              safeGetline(s,line);
+              safeGetline(s,line);
+              std::stringstream ss2(line);
+              double x,y;
+              std::vector<position> v;
+              while (ss2>>x>>y)
+                {
+                  v.push_back(position(x,y));
+                  safeGetline(s,line);
+                  ss2.str(line);
+                  ss2.clear();
+                }
+              ls_=LimiteSuperior(v);
+              limiteFoto_.back().insert(v.begin(),v.end());
 
             }
 
+          else if (line.find("limite inferior")!=std::string::npos)
+            {
+              safeGetline(s,line);
+              safeGetline(s,line);
+              std::stringstream ss2(line);
+              double x,y;
+              std::vector<position> v;
+              while (ss2>>x>>y)
+                {
+                  v.push_back(position(x,y));
+                  safeGetline(s,line);
+                  ss2.str(line);
+                  ss2.clear();
+                }
+              li_=LimiteInferior(v);
+              limiteFoto_.back().insert(v.begin(),v.end());
+
+            }
+          else if (line.find("limite posterior")!=std::string::npos)
+            {
+              safeGetline(s,line);
+              safeGetline(s,line);
+              std::stringstream ss2(line);
+              double x,y;
+              std::vector<position> v;
+              while (ss2>>x>>y)
+                {
+                  v.push_back(position(x,y));
+                  safeGetline(s,line);
+                  ss2.str(line);
+                  ss2.clear();
+                }
+              lp_=LimitePosterior(v);
+              limiteFoto_.back().insert(v.begin(),v.end());
+
+            }
           else if (line.find("vaso")!=line.npos)
             {
               safeGetline(s,line);
@@ -152,14 +231,256 @@ void TissuePhoto::read(std::string& line, std::istream &s)
             {
               std::stringstream ss(line);
               std::string ancho,lesion;
-               ss>>ancho>>lesion>>injury_Width_;
-               safeGetline(s,line);
+              ss>>ancho>>lesion>>injury_Width_;
+              safeGetline(s,line);
+
+            }
+          else if (line.find("area de lesion")!=line.npos)
+            {
+              std::stringstream ss(line);
+              std::string ancho,de,lesion;
+              ss>>ancho>>de>>lesion>>injury_Area_;
+              safeGetline(s,line);
 
             }
           else break;
 
         }
     }
+  else
+    if (name=="rata" )
+      {
+        ss>>rata;
+        std::stringstream sid(id);
+        sid<<"rata"<<rata;
+        id=sid.str();
+        safeGetline(s,line);
+        while (true)
+          {
+            ss.clear();
+            ss.str(line);
+            name.clear();
+            ss.clear();
+            ss>>name;
+            while (name.empty()&&safeGetline(s,line))
+              {
+
+                ss.str(line);
+                ss.clear();
+                ss>>name;
+              }
+            if (line.find("celulas")!=std::string::npos)
+              {
+                safeGetline(s,line);
+                safeGetline(s,line);
+                std::stringstream ss2;
+                ss2.str(line);
+                double x,y,prob;
+                unsigned typo;
+                while (ss2>>x>>y>>typo)
+                  {
+                    prob=1;
+                    ss2>>prob;
+                    std::string idAstro;
+                    std::stringstream sid(idAstro);
+                    sid<<this->id<<"a"<<astr_.size();
+
+                    astr_.push_back(Astrocyte(sid.str(),x,y,typo,prob));
+                    safeGetline(s,line);
+                    ss2.str(line);
+                    ss2.clear();
+                  }
+              }
+            else if (line.find("celula_")!=std::string::npos)
+              {
+                safeGetline(s,line);
+                safeGetline(s,line);
+                safeGetline(s,line);
+                std::stringstream ss2;
+                ss2.str(line);
+                std::string code;
+                double d_les,d_tej,d_vas;
+                double x,y,prob;
+                unsigned typo;
+                while (ss2>>code>>d_les>>d_tej>>d_vas>>x>>y>>typo>>prob)
+                  {
+                    std::string idAstro;
+                    std::stringstream sid(idAstro);
+                    sid<<this->id<<"a"<<astr_.size();
+
+                    astr_.push_back(Astrocyte(sid.str(),x,y,typo,prob));
+                    safeGetline(s,line);
+                    ss2.str(line);
+                    ss2.clear();
+                  }
+              }
+            else if (line.find("limite foto")!=std::string::npos)
+              {
+                safeGetline(s,line);
+                safeGetline(s,line);
+                std::stringstream ss2(line);
+                double x,y;
+                std::vector<position> v;
+                while (ss2>>x>>y)
+                  {
+                    v.push_back(position(x,y));
+                    safeGetline(s,line);
+                    ss2.str(line);
+                    ss2.clear();
+                  }
+                limiteFoto_.push_back(LimiteFoto(v));
+
+              }
+            else if (line.find("limite tejido")!=std::string::npos)
+              {
+                safeGetline(s,line);
+                safeGetline(s,line);
+                std::stringstream ss2(line);
+                double x,y;
+                std::vector<position> v;
+                while (ss2>>x>>y)
+                  {
+                    v.push_back(position(x,y));
+                    safeGetline(s,line);
+                    ss2.str(line);
+                    ss2.clear();
+                  }
+                lt_=LimiteTejido(v);
+
+              }
+            else if (line.find("limite de lesion")!=std::string::npos)
+              {
+                safeGetline(s,line);
+                safeGetline(s,line);
+                std::stringstream ss2(line);
+                double x,y;
+                std::vector<position> v;
+                while (ss2>>x>>y)
+                  {
+                    v.push_back(position(x,y));
+                    safeGetline(s,line);
+                    ss2.str(line);
+                    ss2.clear();
+                  }
+                ll_=LimiteLesion(v);
+                limiteFoto_.push_back(LimiteFoto(v));
+
+              }
+            else if (line.find("limite superior")!=std::string::npos)
+              {
+                safeGetline(s,line);
+                safeGetline(s,line);
+                std::stringstream ss2(line);
+                double x,y;
+                std::vector<position> v;
+                while (ss2>>x>>y)
+                  {
+                    v.push_back(position(x,y));
+                    safeGetline(s,line);
+                    ss2.str(line);
+                    ss2.clear();
+                  }
+                ls_=LimiteSuperior(v);
+                limiteFoto_.back().insert(v.begin(),v.end());
+
+              }
+
+            else if (line.find("limite inferior")!=std::string::npos)
+              {
+                safeGetline(s,line);
+                safeGetline(s,line);
+                std::stringstream ss2(line);
+                double x,y;
+                std::vector<position> v;
+                while (ss2>>x>>y)
+                  {
+                    v.push_back(position(x,y));
+                    safeGetline(s,line);
+                    ss2.str(line);
+                    ss2.clear();
+                  }
+                li_=LimiteInferior(v);
+                limiteFoto_.back().insert(v.begin(),v.end());
+
+              }
+            else if (line.find("limite posterior")!=std::string::npos)
+              {
+                safeGetline(s,line);
+                safeGetline(s,line);
+                std::stringstream ss2(line);
+                double x,y;
+                std::vector<position> v;
+                while (ss2>>x>>y)
+                  {
+                    v.push_back(position(x,y));
+                    safeGetline(s,line);
+                    ss2.str(line);
+                    ss2.clear();
+                  }
+                lp_=LimitePosterior(v);
+                limiteFoto_.back().insert(v.begin(),v.end());
+
+              }
+            else if (line.find("vaso")!=line.npos)
+              {
+                safeGetline(s,line);
+                safeGetline(s,line);
+                std::stringstream ss2(line);
+                double x,y;
+                std::vector<position> v;
+                while (ss2>>x>>y)
+                  {
+                    v.push_back(position(x,y));
+                    safeGetline(s,line);
+                    ss2.str(line);
+                    ss2.clear();
+                  }
+                vasos_.push_back(LimiteVaso(v));
+
+              }
+
+            else if (line.find("pin")!=line.npos)
+              {
+                std::stringstream ss(line);
+                std::string pinName; unsigned pinNum;
+                ss>>pinName>>pinNum;
+
+                safeGetline(s,line);
+                safeGetline(s,line);
+                std::stringstream ss2(line);
+                double x,y;
+                std::vector<position> v;
+                while (ss2>>x>>y)
+                  {
+                    v.push_back(position(x,y));
+                    safeGetline(s,line);
+
+                    ss2.str(line);
+                    ss2.clear();
+                  }
+                pines_[pinNum]=Pin(v);
+
+              }
+            else if (line.find("ancho lesion")!=line.npos)
+              {
+                std::stringstream ss(line);
+                std::string ancho,lesion;
+                ss>>ancho>>lesion>>injury_Width_;
+                safeGetline(s,line);
+
+              }
+            else if (line.find("area de lesion")!=line.npos)
+              {
+                std::stringstream ss(line);
+                std::string ancho,de,lesion;
+                ss>>ancho>>de>>lesion>>injury_Area_;
+                safeGetline(s,line);
+
+              }
+            else break;
+
+          }
+      }
 
 }
 
@@ -338,6 +659,56 @@ void TissuePhoto::updateMinMax()
       if (lf.ymax_>ymax_)
         ymax_=lf.ymax_;
     }
+   if (true){
+    const LimiteInferior& lf=li_;
+    if (lf.xmin_<xmin_)
+      xmin_=lf.xmin_;
+    if (lf.xmax_>xmax_)
+      xmax_=lf.xmax_;
+    if (lf.ymin_<ymin_)
+      ymin_=lf.ymin_;
+    if (lf.ymax_>ymax_)
+      ymax_=lf.ymax_;
+
+  }
+
+   if (true){
+    const LimiteSuperior& lf=ls_;
+    if (lf.xmin_<xmin_)
+      xmin_=lf.xmin_;
+    if (lf.xmax_>xmax_)
+      xmax_=lf.xmax_;
+    if (lf.ymin_<ymin_)
+      ymin_=lf.ymin_;
+    if (lf.ymax_>ymax_)
+      ymax_=lf.ymax_;
+
+  }
+   if (true){
+    const LimitePosterior& lf=lp_;
+    if (lf.xmin_<xmin_)
+      xmin_=lf.xmin_;
+    if (lf.xmax_>xmax_)
+      xmax_=lf.xmax_;
+    if (lf.ymin_<ymin_)
+      ymin_=lf.ymin_;
+    if (lf.ymax_>ymax_)
+      ymax_=lf.ymax_;
+
+  }
+   if (true){
+    const LimiteLesion& lf=ll_;
+    if (lf.xmin_<xmin_)
+      xmin_=lf.xmin_;
+    if (lf.xmax_>xmax_)
+      xmax_=lf.xmax_;
+    if (lf.ymin_<ymin_)
+      ymin_=lf.ymin_;
+    if (lf.ymax_>ymax_)
+      ymax_=lf.ymax_;
+
+  }
+
 }
 
 
@@ -402,6 +773,17 @@ void TissueSection::distances()
     f.second.calculate_distances();
 }
 
+CortexMeasure *TissueSection::measure(std::mt19937_64 &mt, std::vector<double> x, double minimalDistanceTissue, double minimalDistanceVaso, std::size_t maxpoints)
+{
+  return fotos.begin()->second.measure(mt,id(),dia_,x,minimalDistanceTissue,minimalDistanceVaso,maxpoints);
+}
+
+void TissueSection::measure(CommandManager *cm, std::mt19937_64 &mt, std::vector<double> x, double minimalDistanceTissue, double minimalDistanceVaso, std::size_t maxpoints)
+{
+  for (auto& f:fotos)
+    cm->push_back(f.second.measure(mt,id(),dia_,x,minimalDistanceTissue,minimalDistanceVaso,maxpoints));
+}
+
 
 
 class Intervaling
@@ -426,7 +808,7 @@ public:
   virtual unsigned num() const
   {
     if (ticks_.size()>0)
-    return ticks_.size()-1;
+      return ticks_.size()-1;
     else return 0;
   }
   virtual std::vector<double> limits() const
@@ -465,7 +847,7 @@ private:
 
 };
 
-CortexMeasure *TissuePhoto::measure(std::mt19937& mt,std::string id,double dia,std::vector<double> x,double minimal_distance_to_tissue,double minimal_distance_to_vaso
+CortexMeasure *TissuePhoto::measure(std::mt19937_64& mt,std::string id,double dia,std::vector<double> x,double minimal_distance_to_tissue,double minimal_distance_to_vaso
                                     , std::size_t maxpoints)
 {
 
@@ -520,7 +902,7 @@ CortexMeasure *TissuePhoto::measure(std::mt19937& mt,std::string id,double dia,s
     {
       if ((a.distance_to_tissue()>minimal_distance_to_tissue)
           &&(a.distance_to_vaso()>minimal_distance_to_vaso))
-            {
+        {
           switch (a.type()){
             case 1:
             case 2:
@@ -646,7 +1028,7 @@ bool tissueElement::isInside(const position &p)const
   bool nowAbove=e->y>p.y;
   while (true)
     {
-      while ((lastAbove==nowAbove))
+      while (lastAbove==nowAbove)
         {
           b=e;
           lastAbove=nowAbove;
@@ -680,9 +1062,14 @@ bool tissueElement::isInside(const position &p)const
 std::ostream &Astrocyte::write(std::ostream &s)
 {
   s<<id()<<"\t";
-  if (distance_to_lession_<std::numeric_limits<double>::infinity())
+  if (distance_to_tissue_<std::numeric_limits<double>::infinity())
     s<<distance_to_lession_<<"\t"<<distance_to_tissue_<<"\t"
     <<distance_to_vaso_<<"\t";
+  else  if (distance_to_superior_<std::numeric_limits<double>::infinity())
+    s<<distance_to_lession_<<"\t"<<distance_to_superior_<<"\t"
+    <<distance_to_inferior_<<"\t"<<distance_to_posterior_<<"\t"
+    <<distance_to_vaso_<<"\t";
+
   s<<pos().x<<"\t"<<pos().y<<"\t"<<type()<<"\t"<<prob()<<"\n";
   return s;
 }
@@ -692,8 +1079,12 @@ std::string Astrocyte::getHeader()
   std::string ss;
   std::stringstream s(ss);
   s<<"ID"<<"\t";
-  if (distance_to_lession_<std::numeric_limits<double>::infinity())
+  if (distance_to_tissue_<std::numeric_limits<double>::infinity())
     s<<"d_les (um)"<<"\t"<<"d_tej (um)"<<"\t"<<"d_vaso (um)"<<"\t";
+  else if (distance_to_superior_<std::numeric_limits<double>::infinity())
+    s<<"d_les (um)"<<"\t"<<"d_sup (um)"<<"\t"<<"d_inf (um)"<<"\t"<<"d_pos (um)"<<"\t"
+    <<"d_vaso (um)"<<"\t";
+
   s<<"X (um)"<<"\t"<<"Y (um)"<<"\t"<<"TIPO"<<"\t"<<"PB"<<"\n";
 
   return s.str();
@@ -704,6 +1095,10 @@ void Astrocyte::calculateDistances(const TissuePhoto &f)
   distance_to_lession_=f.ll_.distance(*this);
   distance_to_tissue_=f.lt_.distance(*this);
   distance_to_vaso_=f.distance_to_neareast_Vaso(p_);
+  distance_to_superior_=f.ls_.distance(*this);
+  distance_to_inferior_=f.li_.distance(*this);
+  distance_to_posterior_=f.lp_.distance(*this);
+
 }
 
 
@@ -876,6 +1271,12 @@ std::size_t Experiment::numMeasures() const
   return m_.size();
 }
 
+std::size_t Experiment::numSimPoints() const
+{
+  return tSimulates_.size();
+}
+
+
 double Experiment::tsim() const
 {
   return tsim_;
@@ -886,14 +1287,28 @@ double Experiment::tMeas(unsigned i) const
   return tMeasures_[i];
 }
 
-Experiment::Experiment(std::string ide, std::vector<CortexMeasure> mv):
-  m_(mv),tMeasures_(mv.size()),tsim_(0)
+double Experiment::tSimul(unsigned i) const
+{
+  return tSimulates_[i];
+}
+
+
+Experiment::Experiment(std::string ide, std::vector<CortexMeasure> mv,const  std::vector<double> &tsimul):
+  m_(mv),tMeasures_(mv.size()),tsim_(0),tSimulates_()
 {
   setId(ide);
+  std::size_t isimul=0;
   for (unsigned i=0; i<m_.size(); ++i)
     {
       tMeasures_[i]=m_[i].dia()*60*60*24;
-      if (tMeasures_[i]>tsim_) tsim_=tMeasures_[i];
+      if (tMeasures_[i]>tsim_)
+        tsim_=tMeasures_[i];
+      while (isimul<tsimul.size()&&tsimul[isimul]<tMeasures_[i])
+        {
+          tSimulates_.push_back(tsimul[isimul]);
+          ++isimul;
+        }
+      tSimulates_.push_back(tMeasures_[i]);
     }
 
 

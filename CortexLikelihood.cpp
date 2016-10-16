@@ -271,6 +271,14 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
 
 
 
+CortexSimulation CortexPoisonLikelihood::simulate(const Parameters &parameters)const
+{
+  BaseModel * m=BaseModel::create(parameters);
+  CortexSimulation s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+  delete m;
+  return s;
+}
+
 
 
 std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &parameters) const
@@ -281,6 +289,75 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
 
   BaseModel * m=BaseModel::create(parameters);
   CortexSimulation s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+  if (s.x_.empty())
+    return{};
+  std::size_t ic=0;
+  unsigned is=0;
+
+  for (unsigned ie=0; ie<e_->numMeasures(); ie++)
+    {
+      const CortexMeasure* cm=e_->getMeasure(ie);
+      double t=cm->dia()*24*60*60;
+      while (s.t_[is]<t
+             &&is<s.t_.size())
+        ++is;
+
+
+      double currInjury=parameters.get("inj_width_"+cm->id());
+      if (std::isnan(currInjury))
+        currInjury=0;
+
+
+      // voy a interpolar los resultados de la medicion a partir de la simulacion.
+      // la simulacion pasa a ser independiente de la medicion
+
+      // rho debe estar en celulas por litro
+      auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury*1e-6);
+
+      ///horrible hack for the lession:
+      /// dedico una fila para la probabilidad de cada estado antes de la lesion
+
+      if ( cm->inj_Width()>0)
+        {
+          double injVolume_liters=cm->inj_Area()*1e-12*h*1000;
+          double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
+          double f=injVolume_liters/simVol_liters;
+
+
+
+          for (std::size_t istate=0; istate<rho[0].size(); ++istate)
+            {
+              o[ic]=std::vector<double>(5,rho[0][istate]/5.0*f);
+
+              ++ic;
+            }
+
+        }
+      for (std::size_t ix=0; ix<rho.size()-1;++ix)
+        {
+          /// en celulas por litro
+          auto rho_sim=m_->getObservedNumberFromModel(rho[ix+1]);
+
+          double measuredVolume_inLiters=cm->areaAstro()[ix]*1e-12*h*1000; // en um cuadrados  h indica el espesor del corte
+          double simVol_liters=cm->h()*cm->h()*(cm->xpos()[ix+1]-cm->xpos()[ix])*1e-6*1000;
+          double f=measuredVolume_inLiters/simVol_liters;
+
+          o[ic]=rho_sim*f;
+          ++ic;
+        }
+
+    }
+  return o;
+}
+
+
+
+std::vector<std::vector<double> > CortexPoisonLikelihood::g(const Parameters& parameters,const CortexSimulation &s) const
+{
+  std::vector<std::vector<double>> o(nstate_.size());
+
+  double h=1e-5;
+
   if (s.x_.empty())
     return{};
   std::size_t ic=0;
@@ -361,8 +438,6 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
 
 
 
-
-
 //--------------------------------------------------------------------------
 
 std::ostream &CortexMultinomialLikelihoodEvaluation::writeBody(std::ostream &s) const
@@ -391,7 +466,11 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
       x.insert(x.end(),++CL_->getExperiment()->getMeasure(i)->xpos().begin(),
                CL_->getExperiment()->getMeasure(i)->xpos().end());
     }
-  std::vector<std::vector<double>> f=CL_->f(p_);
+
+  CortexSimulation simul=CL_->simulate(p_);
+  std::vector<std::vector<double>> f=CL_->g(p_,simul);
+
+
 
 
 
@@ -454,6 +533,9 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
     }
   ytitles[7].push_back("logL_total");
 
+
+
+
   std::vector<std::vector<std::vector<double>>> ytable;
   ytable.push_back(std::vector<std::vector<double>>(1,ntot));
   ytable.push_back(std::vector<std::vector<double>>(1,binDens));
@@ -477,6 +559,64 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
       std::string title=CL_->getExperiment()->getMeasure(ime)->id()+"_predicted_measured_Likelihdood";
       writeTable(s,title,xtitle,x,ytitles,ytable,i0,ie);
     }
+
+  s<<"//------------------------Simulations------------------------//\n";
+
+  x=simul.x_;
+
+   ytitles.clear();
+   ytitles.resize(3);
+
+
+
+  ytitles[0].push_back("DAMP_tot");
+  ytitles[0].push_back("DAMP_free");
+  ytitles[0].push_back("DAMP_bound");
+
+  ytitles[1].push_back("MED_tot");
+  ytitles[1].push_back("MED_free");
+  ytitles[1].push_back("MED_bound");
+
+  ytitles[2].push_back("d_pred_Neur");
+
+  for (std::size_t is=1; is<simul.rho_[0][0].size(); ++is)
+    {
+     ytitles[2].push_back("d_pred_A"+std::to_string(is-1));
+    }
+
+
+
+  std::size_t numSims=CL_->getExperiment()->numSimPoints();
+  for (std::size_t isim=0; isim<numSims; ++isim)
+    {
+      ytable.clear();
+      ytable.resize(3);
+      std::vector<std::vector<double>> psi(simul.psi_B_[isim].size(),std::vector<double>(3));
+      ytable[0]=psi;
+      ytable[1]=psi;
+
+      for (std::size_t ix=0; ix<simul.psi_B_[isim].size(); ++ix)
+        {
+          ytable[0][ix][0]=simul.psi_T_[isim][ix];
+          ytable[0][ix][1]=(simul.psi_T_[isim][ix]-simul.psi_B_[isim][ix]);
+          ytable[0][ix][2]=simul.psi_B_[isim][ix];
+
+          ytable[1][ix][0]=simul.omega_T_[isim][ix];
+          ytable[1][ix][1]=(simul.omega_T_[isim][ix]-simul.omega_B_[isim][ix]);
+          ytable[1][ix][2]=simul.omega_B_[isim][ix];
+
+        }
+
+
+      ytable[2]=simul.rho_[isim];
+
+      std::string title="simulations_at"+std::to_string(simul.t_[isim])+"_s";
+
+      writeTable(s,title,xtitle,x,ytitles,ytable);
+
+}
+  simul.write(s);
+
 
 
   s<<"//---------------------Parameters------------------------//\n";

@@ -18,14 +18,14 @@ std::vector<double> label_to_sequence(std::string s)
   double val;
   double dx;
   char ch;
-   while (ss>>val)
+  while (ss>>val)
     {
       o.push_back(val);
       ss>>ch;
       if ((ch>='0')&&(ch<='9'))
         {
           ss.putback(ch);
-         }
+        }
       else if (ch==':')
         {
           ss>>dx>>ch>>val;
@@ -35,7 +35,7 @@ std::vector<double> label_to_sequence(std::string s)
 
     }
 
-   return o;
+  return o;
 
 
 }
@@ -56,7 +56,7 @@ int Script::run(char* filename)
 
 }
 
-int Script::runDefine(const std::string &filename, const std::string &label, const std::string &valueInplace)
+int Script::runDefine(const std::string &filename, const std::vector<std::string> &label, const std::vector<std::string> &valueInplace)
 {
   std::ifstream f(filename);
   while (f)
@@ -64,6 +64,7 @@ int Script::runDefine(const std::string &filename, const std::string &label, con
       std::string line;
       safeGetline(f,line);
       removeComments(line);
+
       replaceLabel(line,label,valueInplace);
       cm_->execute(line);
     }
@@ -329,7 +330,7 @@ void HistogramCommand::run(const std::string line)
 
   std::vector<double> limits=label_to_sequence(interval);
 
-  std::mt19937 mt;
+  std::mt19937_64 mt;
   if (initseed==0)
     {
       std::random_device rd;
@@ -350,10 +351,10 @@ void HistogramCommand::run(const std::string line)
     }
 
 
-   if (s!=nullptr)
+  if (s!=nullptr)
     {
-      CortexMeasure* m= s->measure(mt,limits,minDistance_Tissue, minDistance_Vaso,maxnumpoints);
-      cm_->push_back(m);
+      s->measure(cm_,mt,limits,minDistance_Tissue, minDistance_Vaso,maxnumpoints);
+
     }
 
 
@@ -370,7 +371,7 @@ void ExperimentCommand::run(const std::string line)
   std::string cName,expName, currsection;
   std::vector<std::string> sections;
   std::stringstream ss(line);
-//  experiment experiment_0 10000000 1 0  0  [0 25 50 100 250 500:500:4000]  3dplCL 3dpl 7dpl2
+  //  experiment experiment_0 10000000 1 0  0  [0 25 50 100 250 500:500:4000]  3dplCL 3dpl 7dpl2
 
 
   ss>>cName>>expName>>maxnumpoints>>initseed>>minDistance_Tissue>>minDistance_Vaso;
@@ -396,8 +397,8 @@ void ExperimentCommand::run(const std::string line)
   for (auto s:sections)
     {
       cm_->execute("read "+s);
-      cm_->execute("align "+s);
-      cm_->execute("merge "+s);
+      //cm_->execute("align "+s);
+      //cm_->execute("merge "+s);
       cm_->execute("distances "+s);
       cm_->execute("write "+s);
 
@@ -411,7 +412,7 @@ void ExperimentCommand::run(const std::string line)
 
     }
 
-  Experiment* e=new Experiment(expName,vCM);
+  Experiment* e=new Experiment(expName,vCM,{});
   cm_->push_back(e);
 
   e->store(expName+"_"+std::to_string(initseed));
@@ -421,23 +422,51 @@ void ExperimentCommand::run(const std::string line)
 
 void SimulateCommand::run(const std::string line)
 {
-  std::string cName, eName, paramName,simName;
-  double dt;
-  std::stringstream ss(line);
-  ss>>cName>>eName>>paramName>>dt>>simName;
 
-  std::string filename=eName;
-  std::ifstream f(filename.c_str());
+  //simulate opt experiment1 parameters_10 parameters_10 10 100
+
+  std::string simulateS, simName, experimentName, priorName, paramName;
+  double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
+  double factor=0;
+  std::mt19937_64::result_type initseed=0;
+  std::size_t nPoints_per_decade,niter,nseeds=0;
+  std::stringstream ss(line);
+
+  ss>>simulateS>>simName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>factor>>nseeds>>initseed;
+
+  Experiment *e=new Experiment;
+  e->load(experimentName);
+  if (e->numMeasures()==0)
+    {
+      std::cerr<<"Experiment "<<experimentName<<" not found\n";
+      return;
+    }
+
+  std::string filename=priorName;
+  std::fstream f;
+
+  f.open(filename.c_str());
   if (!f)
     {
       std::string filenaExt=filename+".txt";
       f.open(filenaExt.c_str());
+      if (!f)
+        {
+          std::cerr<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
+          f.close();
+          return;
+        }
     }
   std::string line2;
   safeGetline(f,line2);
-  CortexExperiment e;
+  Parameters prior;
 
-  e.read(line2,f);
+  if (!prior.read(line2,f))
+    {
+      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      f.close();
+      return;
+    }
 
   f.close();
 
@@ -448,33 +477,42 @@ void SimulateCommand::run(const std::string line)
       std::string filenaExt=filename+".txt";
       f.open(filenaExt.c_str());
     }
+  if (!f)
+    {
+      std::cerr<<"Parameters file "<<filename<<" not found"<<std::endl;
+      f.close();
+      return;
+    }
+
+
   safeGetline(f,line2);
   Parameters p;
 
-  p.read(line2,f);
+  if (!p.read(line2,f))
+    {
+      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      f.close();
+      return;
+    }
 
   f.close();
 
-  BaseModel*m=BaseModel::create(p);
+  BaseModel*m=BaseModel::create(prior);
   if (m!=nullptr)
     {
       cm_->push_back(m);
 
-      CortexSimulation* s=new CortexSimulation;
-      *s=m->run(e,dt);
-      if (simName.empty())
-        {
-          s->id_="sim_";
-          s->id_+=paramName;
-        }
-      else
-        s->id_=simName;
+      CortexPoisonLikelihood  CL(simName+"_L",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
-      cm_->push_back(s);
-      std::string c="write  ";
-      c+=s->id_;
 
-      cm_->execute(c);
+      CortexMultinomialLikelihoodEvaluation CE(CL,p);
+      std::ofstream fo;
+      std::string fnameout=simName+"_lik.txt";
+      fo.open(fnameout.c_str());
+      CE.extract(fo);
+      fo.close();
+
+
 
     }
 
@@ -509,6 +547,7 @@ void readCommand::run(const std::string rline)
   std::string line;
   safeGetline(f,line);
   double dia=0;
+  std::size_t rata=0;
   if (line.find("experiment")!=line.npos)
     {
       safeGetline(f,line);
@@ -524,12 +563,26 @@ void readCommand::run(const std::string rline)
           safeGetline(f,line);
 
         }
+
+
       auto  s=new TissueSection(filename,dia);
 
       while (f)
         {
 
-          if (line.find("foto")!=line.npos)
+          if (line.find("rata")!=line.npos)
+            {
+              std::stringstream ss(line);
+              std::string ratastr;
+
+              ss>>ratastr>>rata;
+              TissuePhoto foto;
+
+              foto.read(line,f);
+              s->fotos[foto.rata]=foto;
+
+            }
+          else if (line.find("foto")!=line.npos)
             {
               TissuePhoto foto;
 
@@ -540,8 +593,8 @@ void readCommand::run(const std::string rline)
             safeGetline(f,line);
 
         }
-      cmd_->push_back(s);
-    }
+          cmd_->push_back(s);
+     }
   else  if (line.find("simulation")!=line.npos)
     while (f)
       {
@@ -769,7 +822,7 @@ void OptimizeCommand::run(const std::string line)
   std::string optimizeS, optName, experimentName, priorName, paramName;
   double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
   double factor=0;
-  std::mt19937::result_type initseed=0;
+  std::mt19937_64::result_type initseed=0;
   std::size_t nPoints_per_decade,niter,nseeds=0;
   std::stringstream ss(line);
 
@@ -852,7 +905,7 @@ void OptimizeCommand::run(const std::string line)
 
       LM.optimize(optName,factor,nseeds,initseed);
 
-      }
+    }
 
 
 
@@ -868,28 +921,24 @@ void McmcCommand::run(const std::string line)
   std::string mcmcS, mcmcName, experimentName, priorName, paramName;
   double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
   double walkerRadius,amin=1,amax=2,a_b=2,rWalk;
-  std::mt19937::result_type initseed=0;
+  std::mt19937_64::result_type initseed=0;
   std::size_t nPoints_per_decade,quasiPriorSamples,betaSamples,nSamples,nWalkers,nSkip, NforWalk;
   std::stringstream ss(line);
 
   std::string method, savePredic;
-  mcmc::method eMe;
-
 
   ss>>mcmcS>>method;
   ss>>mcmcName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax;
   ss>>quasiPriorSamples>>betaSamples>>nSamples>>maxduration>>walkerRadius>>nWalkers>>nSkip;
   if (method=="walk")
-  {
-      eMe=mcmc::WALK;
+    {
       ss>>NforWalk>>rWalk>>initseed>>savePredic;
     }
   else
     {
-      eMe=mcmc::STRETCH;
       ss>>amin>>amax>>a_b>>initseed>>savePredic;
     }
- bool savePredictions=savePredic=="save";
+  bool savePredictions=savePredic=="save";
   Experiment *e=new Experiment;
   e->load(experimentName);
   if (e->numMeasures()==0)
@@ -962,10 +1011,19 @@ void McmcCommand::run(const std::string line)
 
 
 
-      mcmc emc(&CL,p,maxduration,quasiPriorSamples,betaSamples,nSamples,nWalkers,nSkip
-               ,walkerRadius,mcmcName,amin,amax,a_b,NforWalk,rWalk,eMe,initseed,savePredictions);
-      emc.run();
-      }
+      if (method=="stretch")
+        {
+          Initialize_Ensamble ie(walkerRadius,nWalkers);
+          StretchProposal sp(amin,a_b,nSkip);
+          Finalize fi(nSamples,maxduration);
+          Beta_Ramp beta(betaSamples,quasiPriorSamples);
+          Sampler   sa(&std::cout,mcmcName,savePredictions);
+
+
+          mcmc mc(mcmcName,&CL,p,&ie,&sp,&fi,&beta,&sa,initseed);
+          mc.run();
+        }
+    }
 
 
 

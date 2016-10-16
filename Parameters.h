@@ -12,6 +12,7 @@
 
 enum TRANSFORM {LINEAR,LOG,LOGRATIO};
 
+const double PI = 3.141592653589793;
 
 class Transformation
 {
@@ -188,22 +189,26 @@ public:
 
   const std::vector< std::vector <double> >& getInvCovariance()const;
 
-  Parameters randomSample(std::mt19937 &mt, double factor=1)const;
+  Parameters randomSample(std::mt19937_64 &mt, double factor=1)const;
 
 
 
 
 
-  Parameters randomSample(std::mt19937 &mt, Parameters prior, double factor)const;
+  Parameters randomSample(std::mt19937_64 &mt, Parameters prior, double factor)const;
 
 
-  std::vector<double> randomSampleValues(std::mt19937 &mt, Parameters prior, double factor)const;
+  std::vector<double> randomSampleValues(std::mt19937_64 &mt, Parameters prior, double factor)const;
 
 
   Parameters toParameters(const std::vector<double>& o)const
   {
     return Parameters(id_,model_,name_to_i_,names_,o,trans_,unit_);
   }
+
+
+  double logProb(const Parameters &sample) const;
+
 
   Parameters(const Parameters& other);
   Parameters();
@@ -324,8 +329,8 @@ double dbDistance(const Parameters& one,const Parameters& other);
 bool areTheSame(const Parameters& one, const Parameters& other);
 
 
-double randNormal(std::mt19937 &mt, double mean, double stddev);
-double randNormal(std::mt19937 &mt);
+double randNormal(std::mt19937_64 &mt, double mean, double stddev);
+double randNormal(std::mt19937_64 &mt);
 
 
 

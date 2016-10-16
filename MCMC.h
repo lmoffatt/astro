@@ -3,20 +3,20 @@
 #include "LevenbergMarquardt.h"
 
 
-class Mcmc
-{
-  Mcmc(std::string name,
-      CortexLikelihood* m_,
-       const Parameters& init)
-  {
+//class Mcmc
+//{
+//  Mcmc(std::string name,
+//      CortexLikelihood* m_,
+//       const Parameters& init)
+//  {
 
-  }
+//  }
 
-  void run(std::size_t numIter);
+//  void run(std::size_t numIter);
 
 
 
-};
+//};
 
 struct MCMCrun
 {
