@@ -27,13 +27,12 @@ struct mcmc_prior
 
 struct mcmc_post: public mcmc_prior
 {
-  mcmc_post(mcmc_prior &&p): mcmc_prior(p), isValid(false), f(),logLik(0),beta(0){}
+  mcmc_post(mcmc_prior &&p): mcmc_prior(p), isValid(false), f(),logLik(0){}
   mcmc_post(){}
   bool isValid;
   M_Matrix<double> f;
   double logLik;
-  double beta;
-  double logbPL()const {return logPrior+logLik*beta;}
+  double logbPL(double beta)const {return logPrior+logLik*beta;}
 };
 
 
@@ -48,7 +47,9 @@ struct mcmc_Dpost: public mcmc_post
 template<typename Dist=MultivariateGaussian>
 struct mcmc_step: public mcmc_Dpost
 {
-  mcmc_step(mcmc_Dpost &&p): mcmc_Dpost(p), proposed(){}
+  mcmc_step(mcmc_Dpost &&p, double beta_): mcmc_Dpost(p),beta(beta_), proposed(){}
+  double beta;
+ double logbPL()const {return logbPL(beta);}
   Dist proposed;
 
 };
@@ -228,7 +229,7 @@ public:
     return sumLogL;
   }
 
-  mcmc_post get_mcmc_Post(const M<D>& model, const D& data, M_Matrix<double> param, double beta)
+  mcmc_post get_mcmc_Post(const M<D>& model, const D& data, M_Matrix<double> param)
   {
     mcmc_prior p=model.prior(data,param);
     mcmc_post out(std::move(p));
@@ -237,7 +238,6 @@ public:
     if (std::isnan(out.logLik))
       out.isValid=false;
     else out.isValid=true;
-    out.beta=beta;
     return out;
   }
 
@@ -571,11 +571,11 @@ public:
     double exp_next_logL;
   };
 
-  static LM_logL update_landa(const mcmc_Dpost& postL,double landa)
+  static LM_logL update_landa(const mcmc_Dpost& postL,double landa,double beta)
   {
     LM_logL out;
-    out.G=postL.D_prior.G+postL.D_lik.G*postL.beta;
-    out.H=postL.D_prior.H+postL.D_lik.H*postL.beta;
+    out.G=postL.D_prior.G+postL.D_lik.G*beta;
+    out.H=postL.D_prior.H+postL.D_lik.H*beta;
     for (std::size_t i=0; i<out.H.nrows(); ++i)
       out.H(i,i)=out.H(i,i)*(1+landa);
     out.Hinv=invSafe(out.H);
@@ -586,24 +586,24 @@ public:
 
   mcmc_step<> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, double beta)
   {
-     return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param,beta));
+     return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param),beta);
   }
 
-  mcmc_step<> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost&& p)
+  mcmc_step<> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost&& p,double beta)
   {
-    mcmc_step<> out(std::move(p));
+    mcmc_step<> out(std::move(p),beta);
     double landa=landa0_;
     std::size_t iloop=0;
     LM_logL LM_logL=update_landa( out.D_lik,landa);
 
     M_Matrix<double> next=p.param+LM_logL.d;
-    mcmc_post cand=L.get_mcmc_Post(model,data,next, p.beta);
-    while (!t_(LM_logL.exp_next_logL,cand.logbPL(),p.param.size())&&iloop<maxLoop_)
+    mcmc_post cand=L.get_mcmc_Post(model,data,next);
+    while (!t_(LM_logL.exp_next_logL,cand.logbPL(beta),p.param.size())&&iloop<maxLoop_)
       {
         landa*=v_;
         LM_logL=update_landa( out.D_lik,landa);
         next=p.param+LM_logL.d;
-        cand=L.get_mcmc_Post(model,data,next, p.beta);
+        cand=L.get_mcmc_Post(model,data,next);
         ++iloop;
       }
     out.proposed=MultivariateGaussian(next,LM_logL.H,LM_logL.Hinv);
@@ -659,7 +659,7 @@ public:
    ,const M<D>& model
    ,const D& data
    ,mcmc_step<>& sDist,
-   std::size_t nsamples, std::size_t nskip,double beta,std::mt19937_64& mt)const
+   std::size_t nsamples, std::size_t nskip,std::mt19937_64& mt)const
   {
     SamplesSeries<mcmc_step<>> o(nsamples);
 
@@ -773,17 +773,15 @@ public:
     std::vector<std::pair<double,SamplesSeries<mcmc_step<>>>> o;
 
     M_Matrix<double> pinit=model.sample(mt);
-
-
     double beta0=beta[0].first;
     mcmc_step<> cDist=LMLik.get_mcmc_step(lik,model,data,pinit,beta0);
 
     for (std::size_t i=0; i<beta.size(); ++i)
       {
 
-        o.push_back({beta[i].first,mcmc.run(cDist,beta[i].second.first,beta[i].second.second,beta[i].first,mt)});
-      }
-    return new Evidence_evaluation<>(std::move(o));
+        o.push_back({beta[i].first,mcmc.run(LMLik,lik,model,data,cDist,beta[i].second.first,beta[i].second.second,beta[i].first,mt)});
+       }
+    return new Evidence_Evaluation<>(std::move(o));
   }
 };
 
