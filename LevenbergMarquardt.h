@@ -52,7 +52,6 @@ public:
   J(const Parameters& p,
     const std::vector<std::vector<double>>& f0 ,
     double delta=1e-4)const;
-
   virtual std::vector<std::vector<double>>
   logLikCells(const std::vector<std::vector<double> > &p) const=0;
 

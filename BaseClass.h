@@ -524,7 +524,7 @@ bool readValue(std::string& line,
                T*& val)
 {
 
-  return val.read(line,s);
+  return val->read(line,s);
 
 }
 

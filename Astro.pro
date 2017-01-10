@@ -28,7 +28,10 @@ SOURCES += main.cpp \
     BayesIteration.cpp \
     CortexLikelihood.cpp \
     Splines.cpp \
-    StochasticLevenbergMarquardt.cpp
+    StochasticLevenbergMarquardt.cpp \
+    Evidence.cpp \
+    Matrix.cpp \
+    Distributions.cpp
 
 #include(deployment.pri)
 #qtcAddDeployment()
@@ -46,7 +49,10 @@ HEADERS += \
     BaseClass.h \
     MCMC.h \
     Splines.h \
-    StochasticLevenbergMarquardt.h
+    StochasticLevenbergMarquardt.h \
+    Evidence.h \
+    Matrix.h \
+    Distributions.h
 
 DISTFILES += \
     run/script \

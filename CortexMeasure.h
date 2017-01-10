@@ -679,18 +679,6 @@ public:
   Experiment(){}
 
 
-
-
-
-
-private:
-  std::vector<CortexMeasure> m_;
-  std::vector<double> tMeasures_;
-  std::vector<double> tSimulates_;
-
-  double tsim_;
-
-
   // BaseObject interface
 public:
   virtual std::ostream &writeBody(std::ostream &s) const override
@@ -729,6 +717,18 @@ public:
   std::size_t numSimPoints() const;
 protected:
   void update(){}
+
+
+
+
+private:
+  std::vector<CortexMeasure> m_;
+  std::vector<double> tMeasures_;
+  std::vector<double> tSimulates_;
+
+  double tsim_;
+
+
 
 };
 

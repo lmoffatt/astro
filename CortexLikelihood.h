@@ -2,6 +2,7 @@
 #define CORTEXLIKELIHOOD
 #include "Models.h"
 #include "BayesIteration.h"
+#include "Evidence.h"
 
 
 class CortexLikelihood: public BaseAgent,virtual public ABC_Distribution_Model, public ABC_Freq_obs
@@ -295,6 +296,9 @@ protected:
 };
 
 
+
+
+
 class CortexPoisonLikelihoodEvaluation: public BaseAgent
 {
   // BaseClass interface
@@ -341,6 +345,128 @@ protected:
 
 
 };
+
+template<typename T>
+using myMatrix= std::vector<std::vector<T>> ;
+
+
+
+
+
+
+      template<class Model=CortexLikelihood, class Data=Experiment>
+
+      struct Cortex_Hessian_Approximation
+      {
+        const Model& CL_;
+        const Data& data_;
+        double dp_;
+
+        Cortex_Hessian_Approximation(const Model& model,
+                                          const Data& data,
+                                          double dp=1E-5
+            ):
+          CL_(model),data_(data),dp_(dp){}
+
+
+
+        double get_betaLogLikelihood(const M_Matrix<double>& parameters, double beta_)const
+        {
+
+          ModelPredictions pred=CL_(parameters,data_);
+          return pred.logLikelihood_*beta_+pred.logPrior_;
+
+        }
+
+
+
+        Likelihood_Evaluation get_Hessian(const M_Matrix<double>& parameters, double beta_)const
+        {
+          ModelPredictions pred=CL_(parameters,data_);
+          Likelihood_Evaluation o;
+          std::size_t n=pred.g_.epsilon_.size();
+
+          o.logL_=-n*0.5*log(2*PI);
+          for (std::size_t j=0; j<n; ++j)
+            {
+              o.logL_-=0.5*pred.g_.logVariance_[j];
+              o.logL_-=0.5*std::pow(pred.g_.epsilon_[j],2)/pred.g_.variance_[j];
+
+            }
+
+
+
+          o.beta_logL_=o.logL_*beta_+pred.logPrior_;
+
+
+
+          std::size_t k=parameters.size();
+          M_Matrix<double>  J_e(n,k);
+          M_Matrix<double>  J_logv(n,k);
+
+
+          M_Matrix<double> p=parameters;
+          for (std::size_t i=0; i<k; ++i)
+            {
+
+              double po=p[i];
+              p[i]+=dp_;
+
+              ModelPredictions pred_i=CL_(p,data_);
+              for (std::size_t j=0; j<n; ++j)
+                {
+                  J_e(j,i)=(pred_i.g_.epsilon_[j]-pred.g_.epsilon_[j])/dp_;
+                  J_logv(j,i)=(pred_i.g_.logVariance_[j]-pred.g_.logVariance_[j])/dp_;
+                }
+              p[i]=po;
+            }
+
+          o.G_=M_Matrix<double>(k,1);
+          o.H_=M_Matrix<double>(k,k);
+          o.beta_G_=M_Matrix<double>(k,1);
+          o.beta_H_=M_Matrix<double>(k,k);
+          for (std::size_t i=0; i<k; ++i)
+            {
+              o.G_(i,0)=0;
+
+              for (std::size_t j=0; j<n; ++j)
+                {
+                  o.G_(i,0)+=(std::pow(pred.g_.epsilon_[j],2)/pred.g_.variance_[j]-1.0)/2.0*J_logv(j,i);
+                  o.G_(i,0)+=pred.g_.epsilon_[j]/pred.g_.variance_[j]*J_e(j,i);
+                }
+              o.beta_G_(i,0)=pred.priorG_(i,0)+o.G_(i,0)*beta_;
+
+              for (std::size_t i2=0; i2<k; ++i2)
+                {
+                  o.H_(i,i2)=0;
+                  for (std::size_t j=0; j<n; ++j)
+                    {
+                      o.H_(i,i2)+=1.0/2.0*J_logv(j,i)*J_logv(j,i2);
+                      o.H_(i,i2)*=1/pred.g_.variance_[j]*J_e(j,i)*J_e(j,i2);
+                    }
+                  o.beta_H_(i,i2)=pred.priorH_(i,i2)+beta_*o.H_(i,i2);
+                }
+            }
+          return o;
+
+
+
+        }
+
+
+      };
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

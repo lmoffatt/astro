@@ -12,7 +12,10 @@
 
 enum TRANSFORM {LINEAR,LOG,LOGRATIO};
 
-const double PI = 3.141592653589793;
+#ifndef PI____
+#define PI____
+ const double PI  =3.141592653589793238463;
+#endif
 
 class Transformation
 {
@@ -272,7 +275,7 @@ private:
 
   std::vector<double> getStdDev(const std::vector<std::vector<double>>& covariance);
 
-  void update();
+  void update() override;
 
   static std::map<TRANSFORM,Transformation*> tr_map_;
 
