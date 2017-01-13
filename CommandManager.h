@@ -352,6 +352,26 @@ private:
 };
 
 
+class EvidenceCommand:public CommandBase
+{
+  // CommandBase interface
+public:
+  virtual void run(const std::string line);
+
+  virtual std::string id() const
+  {
+    return "evidence";
+  }
+  EvidenceCommand(CommandManager* cm):
+    CommandBase("evidence"),
+    cm_(cm){}
+
+  ~EvidenceCommand(){}
+private:
+  CommandManager* cm_;
+
+};
+
 
 class McmcCommand:public CommandBase
 {

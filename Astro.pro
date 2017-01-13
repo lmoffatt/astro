@@ -28,7 +28,6 @@ SOURCES += main.cpp \
     BayesIteration.cpp \
     CortexLikelihood.cpp \
     Splines.cpp \
-    StochasticLevenbergMarquardt.cpp \
     Evidence.cpp \
     Matrix.cpp \
     Distributions.cpp
@@ -49,7 +48,6 @@ HEADERS += \
     BaseClass.h \
     MCMC.h \
     Splines.h \
-    StochasticLevenbergMarquardt.h \
     Evidence.h \
     Matrix.h \
     Distributions.h

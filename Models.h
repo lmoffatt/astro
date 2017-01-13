@@ -4,7 +4,7 @@
 #include "CortexMeasure.h"
 #include "CortexSimulation.h"
 
-#include "BayesIteration.h"
+//#include "BayesIteration.h"
 
 #include <map>
 #include <vector>

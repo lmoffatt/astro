@@ -1029,3 +1029,102 @@ void McmcCommand::run(const std::string line)
 
 
 }
+
+void EvidenceCommand::run(const std::__cxx11::string line)
+
+{
+
+  //optimize opt experiment1 parameters_10 parameters_10 10 100
+
+  std::string optimizeS, optName, experimentName, priorName, paramName;
+  double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
+  double factor=0;
+  std::mt19937_64::result_type initseed=0;
+  std::size_t nPoints_per_decade,niter,nseeds=0;
+  std::stringstream ss(line);
+
+  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>factor>>nseeds>>initseed;
+
+  Experiment *e=new Experiment;
+  e->load(experimentName);
+  if (e->numMeasures()==0)
+    {
+      std::cerr<<"Experiment "<<experimentName<<" not found\n";
+      return;
+    }
+
+  std::string filename=priorName;
+  std::fstream f;
+
+  f.open(filename.c_str());
+  if (!f)
+    {
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+      if (!f)
+        {
+          std::cerr<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
+          f.close();
+          return;
+        }
+    }
+  std::string line2;
+  safeGetline(f,line2);
+  Parameters prior;
+
+  if (!prior.read(line2,f))
+    {
+      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      f.close();
+      return;
+    }
+
+  f.close();
+
+  filename=paramName;
+  f.open(filename.c_str());
+  if (!f)
+    {
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+    }
+  if (!f)
+    {
+      std::cerr<<"Parameters file "<<filename<<" not found"<<std::endl;
+      f.close();
+      return;
+    }
+
+
+  safeGetline(f,line2);
+  Parameters p;
+
+  if (!p.read(line2,f))
+    {
+      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      f.close();
+      return;
+    }
+
+  f.close();
+
+  BaseModel*m=BaseModel::create(prior);
+  if (m!=nullptr)
+    {
+      cm_->push_back(m);
+
+      CortexPoisonLikelihood  CL(optName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+
+
+
+      LevenbergMarquardtDistribution LM(&CL,p,niter,maxduration,optName);
+
+
+      LM.optimize(optName,factor,nseeds,initseed);
+
+    }
+
+
+
+
+}
