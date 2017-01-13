@@ -119,7 +119,7 @@ public:
 
   CortexLikelihood* getLikelihood(const std::string& idLik);
   void push_back(Experiment *experiment);
-  void push_back(mcmc *mcmc);
+ // void push_back(mcmc *mcmc);
   mcmc *getMcmc(const std::string& id);
 private:
   std::map <std::string, CommandBase*> cmd_;
@@ -373,25 +373,6 @@ private:
 };
 
 
-class McmcCommand:public CommandBase
-{
-  // CommandBase interface
-public:
-  virtual void run(const std::string line);
-
-  virtual std::string id() const
-  {
-    return "mcmc";
-  }
-  McmcCommand(CommandManager* cm):
-    CommandBase("mcmc"),
-    cm_(cm){}
-
-  ~McmcCommand(){}
-private:
-  CommandManager* cm_;
-
-};
 
 
 

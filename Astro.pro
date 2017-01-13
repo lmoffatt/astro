@@ -25,7 +25,6 @@ SOURCES += main.cpp \
     MatrixInverse.cpp \
     matrixCholesky.cpp \
     LevenbergMarquardt.cpp \
-    BayesIteration.cpp \
     CortexLikelihood.cpp \
     Splines.cpp \
     Evidence.cpp \
@@ -43,10 +42,8 @@ HEADERS += \
     Parameters.h \
     MatrixInverse.h \
     LevenbergMarquardt.h \
-    BayesIteration.h \
     CortexLikelihood.h \
     BaseClass.h \
-    MCMC.h \
     Splines.h \
     Evidence.h \
     Matrix.h \
