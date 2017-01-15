@@ -38,6 +38,7 @@ struct mcmc_post: public mcmc_prior
 
 struct mcmc_Dpost: public mcmc_post
 {
+  mcmc_Dpost(){}
   mcmc_Dpost(mcmc_post &&p): mcmc_post(p), D_lik(){}
 
   D_logL D_lik;
@@ -47,9 +48,10 @@ struct mcmc_Dpost: public mcmc_post
 template<typename Dist=MultivariateGaussian>
 struct mcmc_step: public mcmc_Dpost
 {
+  mcmc_step(){}
   mcmc_step(mcmc_Dpost &&p, double beta_): mcmc_Dpost(p),beta(beta_), proposed(){}
   double beta;
- double logbPL()const {return logbPL(beta);}
+ double logbPL()const {return mcmc_post::logbPL(beta);}
   Dist proposed;
 
 };
@@ -211,13 +213,13 @@ template<class D, template<class> class M>
 class Poisson_Likelihood
 {
 public:
-  double logLikelihood(double landa,std::size_t k)
+  static double logLikelihood(double landa,std::size_t k)
   {
     return k*log(landa)-landa-lgamma(k+1);
   }
 
 
-  double logL(const D& data,const M_Matrix<double>& landa)
+  static double logL(const D& data,const M_Matrix<double>& landa)
   {
     M_Matrix<std::size_t> k=data();
     double sumLogL=0;
@@ -229,7 +231,7 @@ public:
     return sumLogL;
   }
 
-  mcmc_post get_mcmc_Post(const M<D>& model, const D& data, M_Matrix<double> param)
+  static mcmc_post get_mcmc_Post(const M<D>& model, const D& data, M_Matrix<double> param)
   {
     mcmc_prior p=model.prior(data,param);
     mcmc_post out(std::move(p));
@@ -247,13 +249,13 @@ template<class D, template<class> class M>
 class Poisson_DLikelihood: public Poisson_Likelihood<D,M>
 {
 public:
-  mcmc_Dpost get_mcmc_Dpost(const M<D>& model, const D& data, const M_Matrix<double>& param,double beta)
+  static mcmc_Dpost get_mcmc_Dpost(const M<D>& model, const D& data, const M_Matrix<double>& param)
   {
-    return mcmcD(model,data,param,get_mcmc_post(model,data,param,beta));
+    return get_mcmc_Dpost(model,data,param,Poisson_Likelihood<D,M>::get_mcmc_Post(model,data,param));
   }
 
 
-  mcmc_Dpost get_mcmc_Dpost(const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post p)
+  static mcmc_Dpost get_mcmc_Dpost(const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post p)
   {
     mcmc_Dpost out(std::move(p));
     M_Matrix<std::size_t> k=data();
@@ -265,13 +267,15 @@ public:
   }
 
 private:
-  M_Matrix<double> get_G(const M_Matrix<double>& landa, const M_Matrix<std::size_t>& k, const M_Matrix<double>& J)const
+  static
+  M_Matrix<double> get_G(const M_Matrix<double>& landa, const M_Matrix<std::size_t>& k, const M_Matrix<double>& J)
   {
     M_Matrix<double> epsilon=landa-M_Matrix<double>(k);
     return epsilon*J;
   }
 
-  M_Matrix<double> get_H(const M_Matrix<double>& landa, const M_Matrix<double>& J)const
+  static
+  M_Matrix<double> get_H(const M_Matrix<double>& landa, const M_Matrix<double>& J)
   {
     std::size_t n=landa.size();
     std::size_t npar=J.ncols();
@@ -288,10 +292,11 @@ private:
 
   }
 
+  static
   M_Matrix<double>
   get_J(const M<D>& model, const D& data, const M_Matrix<double>& param,
         const M_Matrix<double>& logLanda_0  ,
-        double delta=1e-4)const
+        double delta=1e-4)
   {
     M_Matrix<double> k=data();
     std::size_t n=k.size();
@@ -370,31 +375,31 @@ public:
     return out;
   }
 
-  mcmc_step<> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, double beta)
+  mcmc_step<> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, double beta)const
   {
      return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param),beta);
   }
 
-  mcmc_step<> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost&& p,double beta)
+   mcmc_step<> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost&& p,double beta)const
   {
     mcmc_step<> out(std::move(p),beta);
     return update_mcmc_step(L,model,data,out,beta);
     }
 
-  mcmc_step<>& update_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_step<>& out,double beta)
+  mcmc_step<>& update_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_step<>& out,double beta)const
   {
     out.beta=beta;
 
     double landa=landa0_;
     std::size_t iloop=0;
-    LM_logL LM_logL=update_landa( out.D_lik,landa);
+    LM_logL LM_logL=update_landa( out,landa,beta);
 
     M_Matrix<double> next=out.param+LM_logL.d;
     mcmc_post cand=L.get_mcmc_Post(model,data,next);
     while (!t_(LM_logL.exp_next_logL,cand.logbPL(beta),out.param.size())&&iloop<maxLoop_)
       {
         landa*=v_;
-        LM_logL=update_landa( out.D_lik,landa);
+        LM_logL=update_landa( out,landa, beta);
         next=out.param+LM_logL.d;
         cand=L.get_mcmc_Post(model,data,next);
         ++iloop;
@@ -456,7 +461,9 @@ public:
    ,const M<D>& model
    ,const D& data
    ,mcmc_step<>& sDist,
-   std::size_t nsamples, std::size_t nskip,std::mt19937_64& mt)const
+   std::size_t nsamples,
+   std::size_t nskip,
+   std::mt19937_64& mt)const
   {
     SamplesSeries<mcmc_step<>> o(nsamples);
 
@@ -576,7 +583,7 @@ public:
     for (std::size_t i=0; i<beta.size(); ++i)
       {
         cDist=LMLik.update_mcmc_step(lik,model,data,cDist,beta[i].first);
-        o.push_back({beta[i].first,mcmc.run(LMLik,lik,model,data,cDist,beta[i].second.first,beta[i].second.second,beta[i].first,mt)});
+        o.push_back({beta[i].first,mcmc.run(LMLik,lik,model,data,cDist,beta[i].second.first,beta[i].second.second,mt)});
        }
     return new Evidence_Evaluation<>(std::move(o));
   }

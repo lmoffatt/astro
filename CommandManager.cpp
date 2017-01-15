@@ -979,6 +979,7 @@ void EvidenceCommand::run(const std::__cxx11::string line)
     }
 
 
+
   safeGetline(f,line2);
   Parameters p;
 
@@ -998,6 +999,24 @@ void EvidenceCommand::run(const std::__cxx11::string line)
 
       CortexPoisonLikelihood  CL(optName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
+       double trust_region=1;
+       MyModel<MyData> m;
+       MyData d;
+       Metropolis_Hastings_mcmc<MyData,MyModel> mcmc;
+       LevenbergMarquardt_step<MyData,MyModel> LMLik(trust_region);
+       Poisson_DLikelihood<MyData,MyModel> DLik;
+       TI ti;
+       std::mt19937_64 mt;
+       std::random_device rd;
+
+       if (initseed==0)
+         {
+           std::mt19937_64::result_type seed=rd();
+           mt.seed(seed);
+         }
+
+
+       ti.run(mcmc,LMLik,DLik,m,d,{},mt);
 
 
       LevenbergMarquardtDistribution LM(&CL,p,niter,maxduration,optName);

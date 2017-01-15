@@ -232,11 +232,11 @@ public:
 
   template<typename S>
   M_Matrix (const M_Matrix<S> & sample)
-    : _nrows(sample._nrows),
-      _ncols(sample._ncols),
-      _ncells(sample._ncells)
+    : _nrows(sample.nrows()),
+      _ncols(sample.ncols()),
+      _ncells(sample.size())
   {
-    for (std::size_t i = 0; i < size(sample); ++i)
+    for (std::size_t i = 0; i < sample.size(); ++i)
       (*this)[i] = sample[i];
 
   }

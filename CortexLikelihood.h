@@ -1,7 +1,6 @@
 #ifndef CORTEXLIKELIHOOD
 #define CORTEXLIKELIHOOD
 #include "Models.h"
-//#include "BayesIteration.h"
 #include "Evidence.h"
 
 
@@ -350,6 +349,28 @@ template<typename T>
 using myMatrix= std::vector<std::vector<T>> ;
 
 
+
+template<class Data>
+class MyModel
+{
+public:
+  M_Matrix<double> sample(std::mt19937_64& mt1)const{}
+  mcmc_prior prior(const Data& data, M_Matrix<double> param)const{}
+  M_Matrix<double> f(const Data& data, M_Matrix<double> param)const{}
+  M_Matrix<double> logLanda(const Data& data, M_Matrix<double> param)const{}
+
+};
+
+class MyData
+{
+public:
+  M_Matrix<std::size_t> operator()()const{}
+
+};
+
+typedef
+Thermodynamic_Integration_mcmc<
+MyData,MyModel> TI;
 
 
 
