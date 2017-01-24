@@ -914,19 +914,19 @@ void OptimizeCommand::run(const std::string line)
 
 
 void EvidenceCommand::run(const std::__cxx11::string line)
-
 {
 
+   // evidence evi experiment1 paramters_10
   //optimize opt experiment1 parameters_10 parameters_10 10 100
 
-  std::string optimizeS, optName, experimentName, priorName, paramName;
+  std::string optimizeS, optName, experimentName, priorName;
   double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
   double factor=0;
   std::mt19937_64::result_type initseed=0;
   std::size_t nPoints_per_decade,niter,nseeds=0;
   std::stringstream ss(line);
 
-  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>factor>>nseeds>>initseed;
+  ss>>optimizeS>>optName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>factor>>nseeds>>initseed;
 
   Experiment *e=new Experiment;
   e->load(experimentName);
@@ -964,44 +964,17 @@ void EvidenceCommand::run(const std::__cxx11::string line)
 
   f.close();
 
-  filename=paramName;
-  f.open(filename.c_str());
-  if (!f)
-    {
-      std::string filenaExt=filename+".txt";
-      f.open(filenaExt.c_str());
-    }
-  if (!f)
-    {
-      std::cerr<<"Parameters file "<<filename<<" not found"<<std::endl;
-      f.close();
-      return;
-    }
-
-
-
-  safeGetline(f,line2);
-  Parameters p;
-
-  if (!p.read(line2,f))
-    {
-      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
-      f.close();
-      return;
-    }
-
-  f.close();
 
   BaseModel*m=BaseModel::create(prior);
   if (m!=nullptr)
     {
       cm_->push_back(m);
 
-      CortexPoisonLikelihood  CL(optName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+      auto CL=new CortexPoisonLikelihood(optName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
        double trust_region=1;
-       MyModel<MyData> m;
-       MyData d;
+       MyModel<MyData> m(CL);
+       MyData d(CL);
        Metropolis_Hastings_mcmc<MyData,MyModel> mcmc;
        LevenbergMarquardt_step<MyData,MyModel> LMLik(trust_region);
        Poisson_DLikelihood<MyData,MyModel> DLik;
@@ -1015,14 +988,11 @@ void EvidenceCommand::run(const std::__cxx11::string line)
            mt.seed(seed);
          }
 
+       std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>> beta;
 
-       ti.run(mcmc,LMLik,DLik,m,d,{},mt);
-
-
-      LevenbergMarquardtDistribution LM(&CL,p,niter,maxduration,optName);
+      Evidence_Evaluation<> * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt);
 
 
-      LM.optimize(optName,factor,nseeds,initseed);
 
     }
 

@@ -230,16 +230,45 @@ public:
  */
   }
 
+
+
   template<typename S>
   M_Matrix (const M_Matrix<S> & sample)
     : _nrows(sample.nrows()),
       _ncols(sample.ncols()),
-      _ncells(sample.size())
+      _ncells(sample.size()),
+      _data(sample.size())
+
   {
     for (std::size_t i = 0; i < sample.size(); ++i)
       (*this)[i] = sample[i];
 
   }
+  M_Matrix (const std::vector<std::vector<T>> & sample)
+    : _nrows(sample.size()),
+      _ncols(sample[0].size()),
+      _ncells(sample.size()*sample[0].size())
+    ,_data(sample.size()*sample[0].size())
+  {
+    for (std::size_t i = 0; i < sample.size(); ++i)
+     for (std::size_t j=0; j<sample[0].size(); ++j)
+      (*this)(i,j) = sample[i][j];
+
+  }
+
+
+  template<typename S>
+  M_Matrix (const std::vector<std::vector<S>> & sample)
+    : _nrows(sample.size()),
+      _ncols(sample[0].size()),
+      _ncells(sample.size()*sample[0].size())
+    ,_data(sample.size()*sample[0].size())
+  {
+    for (std::size_t i = 0; i < sample.size(); ++i)
+      (*this)[i] = sample[i];
+
+  }
+
 
 
   M_Matrix<T>& operator=(const M_Matrix<T>& x)=default;

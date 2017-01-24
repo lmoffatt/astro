@@ -350,23 +350,93 @@ using myMatrix= std::vector<std::vector<T>> ;
 
 
 
-template<class Data>
-class MyModel
-{
-public:
-  M_Matrix<double> sample(std::mt19937_64& mt1)const{}
-  mcmc_prior prior(const Data& data, M_Matrix<double> param)const{}
-  M_Matrix<double> f(const Data& data, M_Matrix<double> param)const{}
-  M_Matrix<double> logLanda(const Data& data, M_Matrix<double> param)const{}
-
-};
 
 class MyData
 {
 public:
-  M_Matrix<std::size_t> operator()()const{}
+  M_Matrix<std::size_t> operator()()const
+  {
 
+    std::size_t nrows= e_->n_obs().size();
+    if (nrows>0)
+      {
+        std::size_t ncols=e_->n_obs()[0].size();
+        M_Matrix<std::size_t> out(nrows,ncols);
+        for (std::size_t i=0; i<nrows; ++i)
+          for (std::size_t j=0; j<ncols; ++j)
+            out(i,j)=e_->n_obs()[i][j];
+        return out;
+      }
+    else return {};
+  }
+
+  MyData(ABC_Freq_obs *e ):e_(e){}
+
+private:
+  const ABC_Freq_obs *e_;
 };
+
+template<class Data=MyData>
+class MyModel
+{
+public:
+  M_Matrix<double> sample(std::mt19937_64& mt)const
+  {
+    Parameters sample=CL_->getPrior().randomSample(mt,1);
+    return M_Matrix<double> (1,sample.size(),sample.trMeans());
+
+
+
+  }
+  mcmc_prior prior(const Data& data, M_Matrix<double> param)const
+  {
+    mcmc_prior out;
+    out.param=param;
+
+    auto& p=CL_->getPrior();
+    std::size_t npar=param.size();
+
+    Parameters Pa=p.toParameters(param.toVector());
+
+    out.logPrior=p.logProb(Pa);
+    D_logL D_prior;
+    out.D_prior.H=M_Matrix<double>(p.getInvCovariance());
+    M_Matrix<double> d(param.nrows(),param.ncols(),p.trMeans());
+    d=param-d;
+
+
+    out.D_prior.G=d*D_prior.H;
+
+    return out;
+
+  }
+  M_Matrix<double> f(const Data& data, M_Matrix<double> param)const{
+    auto ff=CL_->f(param.toVector());
+    std::size_t nrows= ff.size();
+    if (nrows>0)
+      {
+        std::size_t ncols=ff[0].size();
+        M_Matrix<double> out(nrows,ncols);
+        for (std::size_t i=0; i<nrows; ++i)
+          for (std::size_t j=0; j<ncols; ++j)
+            out(i,j)=ff[i][j];
+        return out;
+      }
+    else return {};
+
+  }
+  M_Matrix<double> logLanda(const Data& data, M_Matrix<double> param)const{
+    M_Matrix<double> out=f(data,param);
+    out.apply([](double x){return log10(x);});
+    return out;
+
+  }
+
+  MyModel(CortexLikelihood* CL):CL_(CL){}
+ private:
+   const CortexLikelihood* CL_;
+};
+
 
 typedef
 Thermodynamic_Integration_mcmc<
