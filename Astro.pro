@@ -183,7 +183,8 @@ DISTFILES += \
     run/7dpl_resultados.txt \
     run/p_000m/parameters_000m.txt \
     run/p_100m/parameters_100m.txt \
-    run/p_114_24_32_44m/parameter_114_24_32_44
+    run/p_114_24_32_44m/parameter_114_24_32_44 \
+    run/New_experiment_log_250_1
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
