@@ -399,13 +399,12 @@ public:
     Parameters Pa=p.toParameters(param.toVector());
 
     out.logPrior=p.logProb(Pa);
-    D_logL D_prior;
     out.D_prior.H=M_Matrix<double>(p.getInvCovariance());
     M_Matrix<double> d(param.nrows(),param.ncols(),p.trMeans());
-    d=param-d;
+    d=param - d;
 
 
-    out.D_prior.G=d*D_prior.H;
+    out.D_prior.G=d*out.D_prior.H;
 
     return out;
 
@@ -427,7 +426,7 @@ public:
   }
   M_Matrix<double> logLanda(const Data& data, M_Matrix<double> param)const{
     M_Matrix<double> out=f(data,param);
-    out.apply([](double x){return log10(x);});
+    out=out.apply([](double x){return log10_guard(x);});
     return out;
 
   }
@@ -436,6 +435,34 @@ public:
  private:
    const CortexLikelihood* CL_;
 };
+
+inline
+std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>
+getBeta(const M_Matrix<double>& b
+        , const M_Matrix<std::size_t>& samples
+        , const M_Matrix<std::size_t>& skip)
+{
+  std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>
+ out(b.size());
+
+  for (std::size_t i=0; i<b.size(); ++i)
+     {
+       out[i].first=b[i];
+       if (samples.size()>1)
+       out[i].second.first=samples[i];
+       else
+         out[i].second.first=samples[0];
+      if (skip.size()>1)
+       out[i].second.second=skip[i];
+      else
+        out[i].second.second=skip[0];
+     }
+  return out;
+
+}
+
+
+
 
 
 typedef

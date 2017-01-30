@@ -230,6 +230,17 @@ public:
  */
   }
 
+  M_Matrix (std::size_t nrows,std::size_t ncols)
+    : _nrows(nrows),
+      _ncols(ncols),
+      _ncells(nrows*ncols),
+      //   _data(_ncells>0?new T[x.size()]:0)
+      _data(nrows*ncols)
+  {
+    /*  for (std::size_t i = 0; i < size(sample); ++i)
+      (*this)[i] = sample[i];
+ */
+  }
 
 
   template<typename S>
@@ -251,8 +262,8 @@ public:
     ,_data(sample.size()*sample[0].size())
   {
     for (std::size_t i = 0; i < sample.size(); ++i)
-     for (std::size_t j=0; j<sample[0].size(); ++j)
-      (*this)(i,j) = sample[i][j];
+      for (std::size_t j=0; j<sample[0].size(); ++j)
+        (*this)(i,j) = sample[i][j];
 
   }
 
@@ -274,6 +285,8 @@ public:
   M_Matrix<T>& operator=(const M_Matrix<T>& x)=default;
 
 
+
+
   ~M_Matrix()
   {
     //  if (_data>0)
@@ -281,13 +294,6 @@ public:
   }
 
 
-  M_Matrix(std::size_t nrows_,std::size_t ncols_)
-    : _nrows(nrows_),
-      _ncols(ncols_),
-      _ncells(nrows_*ncols_),
-      //_data((_ncells>0)?new T[_ncells]:NULL)
-      _data(_ncells)
-  {}
 
   M_Matrix(std::size_t nrows_,std::size_t ncols_, std::vector<T> data):
     _nrows(nrows_),
@@ -528,7 +534,7 @@ M_Matrix<T>  Rand(M_Matrix<T> x)
 
 
 
-  /**
+/**
   Blas
 
 SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
@@ -654,22 +660,22 @@ SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
 */
 
 
-  /**
+/**
      Transpose the first and multiply by the second
      @post transpMult(x,y)==Transpose(x)*y
      @remarks It is faster, since we save copying matrices
     */
-  template<typename T>
-  M_Matrix<T> TranspMult(const M_Matrix<T>& x,const M_Matrix<T>& y)
-  {
-    // First it has to find out if the last dimension of x matches the first of y
+template<typename T>
+M_Matrix<T> TranspMult(const M_Matrix<T>& x,const M_Matrix<T>& y)
+{
+  // First it has to find out if the last dimension of x matches the first of y
 
 
-    // now we build the M_Matrix result
-    M_Matrix<T> z=zeros<T> (x.ncols(),y.ncols());
+  // now we build the M_Matrix result
+  M_Matrix<T> z=zeros<T> (x.ncols(),y.ncols());
 
 
-    /***  as fortran uses the reverse order for matrices and we want to
+  /***  as fortran uses the reverse order for matrices and we want to
               avoid a copying operation, we calculate
                   Transpose(Z)=Transpose(y)*Transpose(x)
 
@@ -677,74 +683,74 @@ SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
 
 
               */
-    char  	TRANSA='N';
-    char  	TRANSB='T';
-    int  	M=y.ncols();
-    int  	N=x.ncols();
-    int  	K=x.nrows();
-    double  ALPHA=1.0;
-    double*  A=const_cast<double*> (&y[0]);
-    int  	LDA=M;
-    double*  B=const_cast<double*> (&x[0]);
-    int  	LDB=N;
-    double BETA=0.0;
-    double * C=&z[0];
-    int  	LDC=M;
+  char  	TRANSA='N';
+  char  	TRANSB='T';
+  int  	M=y.ncols();
+  int  	N=x.ncols();
+  int  	K=x.nrows();
+  double  ALPHA=1.0;
+  double*  A=const_cast<double*> (&y[0]);
+  int  	LDA=M;
+  double*  B=const_cast<double*> (&x[0]);
+  int  	LDB=N;
+  double BETA=0.0;
+  double * C=&z[0];
+  int  	LDC=M;
 
 
 
-    try{
-      dgemm_(&TRANSA,&TRANSB,&M,&N,&K,&ALPHA,A,&LDA,B,&LDB,&BETA,C,&LDC);
-    }
-    catch (...)
-    {
-      std::cerr<<" dgemm_error";
-    }
-    return z;
+  try{
+    dgemm_(&TRANSA,&TRANSB,&M,&N,&K,&ALPHA,A,&LDA,B,&LDB,&BETA,C,&LDC);
   }
+  catch (...)
+  {
+    std::cerr<<" dgemm_error";
+  }
+  return z;
+}
 
-  /**
+/**
      Multiply by the Transpose of the second matrix
      @post MultTransp(x,y)==x*Transpose(y)
      @remarks It is faster, since we save copying matrices
     */
-  template<typename T>
-  M_Matrix<T> multTransp(const M_Matrix<T>& x,const M_Matrix<T>& y)
+template<typename T>
+M_Matrix<T> multTransp(const M_Matrix<T>& x,const M_Matrix<T>& y)
+{
+  // First it has to find out if the last dimension of x matches the first of y
+  //ASSERT_NE(x.size(),0);
+  //ASSERT_EQ(x.ncols(),ncols(y));
+  // now we build the M_Matrix result
+  M_Matrix<T> z=zeros<T> (x.nrows(),y.nrows());
+  char  	TRANSA='T';
+  char  	TRANSB='N';
+  int  	M=y.nrows();
+  int  	N=x.nrows();
+  int  	K=x.ncols();
+  double  ALPHA=1.0;
+  double*  A=const_cast<double*> (&y[0]);
+  int  	LDA=K;
+  double*  B=const_cast<double*> (&x[0]);
+  int  	LDB=K;
+  double BETA=0.0;
+  double * C=&z[0];
+  int  	LDC=M;
+
+  try
   {
-    // First it has to find out if the last dimension of x matches the first of y
-    ASSERT_NE(x.size(),0);
-    ASSERT_EQ(x.ncols(),ncols(y));
-    // now we build the M_Matrix result
-    M_Matrix<T> z=zeros<T> (x.nrows(),y.nrows());
-    char  	TRANSA='T';
-    char  	TRANSB='N';
-    int  	M=y.nrows();
-    int  	N=x.nrows();
-    int  	K=x.ncols();
-    double  ALPHA=1.0;
-    double*  A=const_cast<double*> (&y[0]);
-    int  	LDA=K;
-    double*  B=const_cast<double*> (&x[0]);
-    int  	LDB=K;
-    double BETA=0.0;
-    double * C=&z[0];
-    int  	LDC=M;
-
-    try
-    {
-      dgemm_(&TRANSA,&TRANSB,&M,&N,&K,&ALPHA,A,&LDA,B,&LDB,&BETA,C,&LDC);
-    }
-    catch(...)
-    {
-      std::cerr<<" dgemm_ error";
-    }
-
-    return z;
+    dgemm_(&TRANSA,&TRANSB,&M,&N,&K,&ALPHA,A,&LDA,B,&LDB,&BETA,C,&LDC);
+  }
+  catch(...)
+  {
+    std::cerr<<" dgemm_ error";
   }
 
+  return z;
+}
 
 
-  /**
+
+/**
     Matrix multiplication.
     @pre \p x.ncols()==y.nrows()
     @returns z=x*y
@@ -752,15 +758,15 @@ SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
     @post z(i,j)= sum on k of x(i,k)*y(k,j)
     @post assert(x.ncols()==y.nrows())
     */
-  template<typename T>
-  M_Matrix<T> operator*(const M_Matrix<T>& x,const M_Matrix<T>& y)
-  {
-    // First it has to find out if the last dimension of x matches the
-    //first of y
-    // now we build the M_Matrix result
-    M_Matrix<T> z=zeros<T> (x.nrows(),y.ncols());
+template<typename T>
+M_Matrix<T> operator*(const M_Matrix<T>& x,const M_Matrix<T>& y)
+{
+  // First it has to find out if the last dimension of x matches the
+  //first of y
+  // now we build the M_Matrix result
+  M_Matrix<T> z=zeros<T> (x.nrows(),y.ncols());
 
-    /***  as fortran uses the reverse order for matrices and we want to
+  /***  as fortran uses the reverse order for matrices and we want to
           avoid a copying operation, we calculate
               Transpose(Z)=Transpose(y)*Transpose(x)
 
@@ -768,128 +774,144 @@ SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
 
 
           */
-    char  	TRANSA='N';
-    char  	TRANSB='N';
-    int  	M=y.ncols();
-    int  	N=x.nrows();
-    int  	K=x.ncols();
-    double  ALPHA=1.0;
-    double*  A=const_cast<double*> (&y[0]);
-    int  	LDA=M;
-    double*  B=const_cast<double*> (&x[0]);
-    int  	LDB=K;
-    double BETA=0.0;
-    double * C=&z[0];
-    int  	LDC=M;
+  char  	TRANSA='N';
+  char  	TRANSB='N';
+  int  	M=y.ncols();
+  int  	N=x.nrows();
+  int  	K=x.ncols();
+  double  ALPHA=1.0;
+  double*  A=const_cast<double*> (&y[0]);
+  int  	LDA=M;
+  double*  B=const_cast<double*> (&x[0]);
+  int  	LDB=K;
+  double BETA=0.0;
+  double * C=&z[0];
+  int  	LDC=M;
 
 
-    try
-    {
-      dgemm_(&TRANSA,&TRANSB,&M,&N,&K,&ALPHA,A,&LDA,B,&LDB,&BETA,C,&LDC);
-    }
-    catch (...)
-    {
-      assert(false);
-    }
-    return z;
-  }
-
-
-
- inline
-  M_Matrix<double> operator*(const M_Matrix<double>& x,
-                             const M_Matrix<std::size_t>& y)
+  try
   {
-    // First it has to find out if the last dimension of x matches the
-    //first of y
-    // now we build the M_Matrix result
-    M_Matrix<double> z(x.nrows(),y.ncols(),0.0);
-    // we build the dimensions std::vector of the result
-    for (size_t i=0; i<z.nrows(); i++)
-      for (size_t j=0; j<z.ncols(); j++)
-        for (size_t k=0; k<x.ncols(); k++)
-          z(i,j)+=x(i,k)*y(k,j);
-    return z;
+    dgemm_(&TRANSA,&TRANSB,&M,&N,&K,&ALPHA,A,&LDA,B,&LDB,&BETA,C,&LDC);
   }
+  catch (...)
+  {
+    assert(false);
+  }
+  return z;
+}
+
+
+
+inline
+M_Matrix<double> operator*(const M_Matrix<double>& x,
+                           const M_Matrix<std::size_t>& y)
+{
+  // First it has to find out if the last dimension of x matches the
+  //first of y
+  // now we build the M_Matrix result
+  M_Matrix<double> z(x.nrows(),y.ncols(),0.0);
+  // we build the dimensions std::vector of the result
+  for (size_t i=0; i<z.nrows(); i++)
+    for (size_t j=0; j<z.ncols(); j++)
+      for (size_t k=0; k<x.ncols(); k++)
+        z(i,j)+=x(i,k)*y(k,j);
+  return z;
+}
+template<typename T>
+M_Matrix<T> operator-(const M_Matrix<T>& x)
+{
+  M_Matrix<T> out(x.nrows(),x.ncols());
+  for (std::size_t i=0; i<out.size(); ++i)
+    out[i]=-x[i];
+  return out;
+}
+
+template<typename T>
+M_Matrix<T> operator-(M_Matrix<T>&& x)
+{
+  for (std::size_t i=0; i<x.size(); ++i)
+    x[i]=-x[i];
+  return x;
+}
 
 
 
 
 
-     /** @name Aritmetic Assigment Operations between a Matrix and a scalar
+/** @name Aritmetic Assigment Operations between a Matrix and a scalar
     (single element)
       */
-     //@{
-     /**
+//@{
+/**
      Scalar Adition assignment.
      @returns a reference to itself
      @post all the values of the matrix are summed up by the value x
      */
 
-     template<typename T>
-     M_Matrix<T>& operator+=(M_Matrix<T>& itself, T x)
-     {
-         for (size_t i=0; i<itself.size(); i++)
-             itself[i]+=x;
-         return itself;
-     }
+template<typename T>
+M_Matrix<T>& operator+=(M_Matrix<T>& itself, T x)
+{
+  for (size_t i=0; i<itself.size(); i++)
+    itself[i]+=x;
+  return itself;
+}
 
 
-     /**
+/**
      Scalar Subtraction assignment.
      @returns a reference to itself
      @post all the values of the matrix are sustracted by the value x
      */
-     template<typename T>
-     M_Matrix<T>& operator-=(M_Matrix<T>& itself, T x)
-     {
-         for (size_t i=0; i<itself.size(); i++)
-             itself[i]-=x;
-         return itself;
-     }
+template<typename T>
+M_Matrix<T>& operator-=(M_Matrix<T>& itself, T x)
+{
+  for (size_t i=0; i<itself.size(); i++)
+    itself[i]-=x;
+  return itself;
+}
 
 
 
 
 
-     /**
+/**
      Scalar Multiplication assignment.
      @returns a reference to itself
      @post all the values of the matrix are multiplied by the value x
      */
-     template<typename T>
-     M_Matrix<T>& operator*=(M_Matrix<T>& itself, T x)
-     {
-         for (size_t i=0; i<itself.size(); i++)
-             itself[i]*=x;
-         return itself;
-     }
+template<typename T>
+M_Matrix<T>& operator*=(M_Matrix<T>& itself, T x)
+{
+  for (size_t i=0; i<itself.size(); i++)
+    itself[i]*=x;
+  return itself;
+}
 
 
-     /**
+/**
      Scalar Division assignment.
      @returns a reference to itself
      @post all the values of the matrix are divided by the value x
      */
-     template<typename T>
-     M_Matrix<T>& operator/=(M_Matrix<T>& itself, T x)
-     {
-         for (size_t i=0; i<itself.size(); i++)
-             itself[i]/=x;
-         return itself;
-     }
+template<typename T>
+M_Matrix<T>& operator/=(M_Matrix<T>& itself, T x)
+{
+  for (size_t i=0; i<itself.size(); i++)
+    itself[i]/=x;
+  return itself;
+}
 
-     //@}
-     /** @name Aritmetic Assigment Operations between two Matrices
+//@}
+/** @name Aritmetic Assigment Operations between two Matrices
       */
-     //@{
+//@{
 
 
 
 
 
 
-     /*!
+/*!
      Matrix Addition assignment.
      @returns a reference to itself
      @pre  same number of rows and columns
@@ -898,16 +920,16 @@ SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
            assert(nrows(*this)==nrows(other))&& assert(ncols(*this)==ncols(other))
 
      */
-     template<typename T>
-     M_Matrix<T>& operator+=(M_Matrix<T>& itself,
-                             const M_Matrix<T>& other)
-     {
-         for (size_t i=0; i<itself.size(); i++)
-             itself[i]+=other[i];
-         return itself;
-     }
+template<typename T>
+M_Matrix<T>& operator+=(M_Matrix<T>& itself,
+                        const M_Matrix<T>& other)
+{
+  for (size_t i=0; i<itself.size(); i++)
+    itself[i]+=other[i];
+  return itself;
+}
 
-     /*!
+/*!
       Matrix Subtraction assignment.
       @returns a reference to itself
       @pre  same number of rows and columns
@@ -915,16 +937,16 @@ SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
             values of the other matrix\n\n
             assert(nrows(*this)==nrows(other))&& assert(ncols(*this)==ncols(other))
       */
-      template<typename T>
-      M_Matrix<T>& operator-=(M_Matrix<T>& itself,
-                              const M_Matrix<T>& other)
-      {
-          for (size_t i=0; i<itself.size(); i++)
-              itself[i]-=other[i];
-          return itself;
-      }
+template<typename T>
+M_Matrix<T>& operator-=(M_Matrix<T>& itself,
+                        const M_Matrix<T>& other)
+{
+  for (size_t i=0; i<itself.size(); i++)
+    itself[i]-=other[i];
+  return itself;
+}
 
-      /*!
+/*!
       Matrix Addition assignment with typecast.
       @warning will not compile unless typecast T(S) is defined
       @returns a reference to itself
@@ -934,16 +956,16 @@ SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
             assert(nrows(*this)==nrows(other))&& assert(ncols(*this)==ncols(other))
 
       */
-      template<typename T,typename S>
-      M_Matrix<T>& operator+=(M_Matrix<T>& itself,
-                              const M_Matrix<S>& other)
-      {
-          for (size_t i=0; i<itself.size(); i++)
-              itself[i]+=T(other[i]);
-          return itself;
-      }
+template<typename T,typename S>
+M_Matrix<T>& operator+=(M_Matrix<T>& itself,
+                        const M_Matrix<S>& other)
+{
+  for (size_t i=0; i<itself.size(); i++)
+    itself[i]+=T(other[i]);
+  return itself;
+}
 
-      /*!
+/*!
        Matrix Subtraction assignment with typecast.
       @warning will not compile unless typecast T(S) is defined.
        @returns a reference to itself
@@ -952,19 +974,19 @@ SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
              values of the other matrix\n\n
              assert(nrows(*this)==nrows(other))&& assert(ncols(*this)==ncols(other))
        */
-       template<typename T,typename S>
-       M_Matrix<T>& operator-=(M_Matrix<T>& itself,
-                               const M_Matrix<S>& other)
-       {
-           for (size_t i=0; i<itself.size(); i++)
-               itself[i]-=T(other[i]);
-           return itself;
-       }
+template<typename T,typename S>
+M_Matrix<T>& operator-=(M_Matrix<T>& itself,
+                        const M_Matrix<S>& other)
+{
+  for (size_t i=0; i<itself.size(); i++)
+    itself[i]-=T(other[i]);
+  return itself;
+}
 
 
 
 
-     //@}
+//@}
 
 
 
@@ -974,99 +996,99 @@ SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
 
 
 
-     /** @name Aritmetic operation between a Matrix and a scalar (single element)
+/** @name Aritmetic operation between a Matrix and a scalar (single element)
       */
-     //@{
+//@{
 
-     /**
+/**
      Scalar Addition.
      @returns a copy of the matrix with its values summed by x
      */
-     template<typename T>
-     M_Matrix<T> operator+(const M_Matrix<T>& x,T t)
-     {    // we build the M_Matrix result
-         M_Matrix<T> z(x);
-         z+=t;
-         return z;
-     }
+template<typename T>
+M_Matrix<T> operator+(const M_Matrix<T>& x,T t)
+{    // we build the M_Matrix result
+  M_Matrix<T> z(x);
+  z+=t;
+  return z;
+}
 
-     /**
+/**
      Scalar Addition reverse order.
      */
-     template<typename T>
-     M_Matrix<T> operator+(T t,const M_Matrix<T>& x)
-     {
-         return x+t;
-     }
+template<typename T>
+M_Matrix<T> operator+(T t,const M_Matrix<T>& x)
+{
+  return x+t;
+}
 
-     /**
+/**
      Scalar Subtraction.
      @returns a copy of the matrix with its values substracted by x
      */
-     template<typename T>
-     M_Matrix<T> operator-(const M_Matrix<T>& x,T t)
-     {    // we build the M_Matrix result
-         M_Matrix<T> z(x);
-         z-=t;
-         return z;
-     };
+template<typename T>
+M_Matrix<T> operator-(const M_Matrix<T>& x,T t)
+{    // we build the M_Matrix result
+  M_Matrix<T> z(x);
+  z-=t;
+  return z;
+};
 
-     /**
+/**
      Scalar Subtraction reverse order.
      */
-     template<typename T>
-     M_Matrix<T> operator-(T t,const M_Matrix<T>& x)
-     {
-         return x-t;
-     }
+template<typename T>
+M_Matrix<T> operator-(T t,const M_Matrix<T>& x)
+{
+  return x-t;
+}
 
-     /**
+/**
      Scalar Multiplication.
      @returns a copy of the matrix with its values multiplied by the value x
      */
-     template<typename T>
-     M_Matrix<T> operator*(const M_Matrix<T>& x,T t)
-     {    // we build the M_Matrix result
-         M_Matrix<T> z(x);
-         z*=t;
-         return z;
-     }
+template<typename T>
+M_Matrix<T> operator*(const M_Matrix<T>& x,T t)
+{    // we build the M_Matrix result
+  M_Matrix<T> z(x);
+  z*=t;
+  return z;
+}
 
-     /**
+/**
      Scalar Multiplication reverse order.
      */
-     template<typename T>
-     M_Matrix<T> operator*(T t,const M_Matrix<T>& x)
-     {
-         return x*t;
-     }
+template<typename T>
+M_Matrix<T> operator*(T t,const M_Matrix<T>& x)
+{
+  return x*t;
+}
 
 
-     /**
+/**
      Scalar Division.
      @returns a copy of the matrix with its values divided by x
      @returns a matrix of real numbers
  */
-     template<typename T>
-     M_Matrix<double> operator/(const M_Matrix<T>& x,T t)
-     {    // we build the M_Matrix result
-         M_Matrix<double> z(x);
-         z/=double(t);
-         return z;
-     };
+template<typename T>
+M_Matrix<double> operator/(const M_Matrix<T>& x,T t)
+{    // we build the M_Matrix result
+  M_Matrix<double> z(x);
+  z/=double(t);
+  return z;
+};
 
-   /**
+/**
      Division by inhomogeneus types
 
      */
 
-     template<typename T,typename S>
-     M_Matrix<double> operator/(const M_Matrix<T>& x,S t)
-     {    // we build the M_Matrix result
-         M_Matrix<double> z(x);
-         z/=double(t);
-         return z;
-     };
+template<typename T,typename S>
+M_Matrix<double> operator/(const M_Matrix<T>& x,S t)
+{    // we build the M_Matrix result
+  M_Matrix<double> z(x);
+  z/=double(t);
+  return z;
+};
 
 
 
@@ -1076,129 +1098,167 @@ SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
 
 
 
-     /**
+/**
      Scalar Division reverse order.
      */
-     template<typename T>
-     M_Matrix<double> operator/(T t,const M_Matrix<T>& x)
-     {
-         M_Matrix<double> out(x.nrows(),x.ncols());
-         for (std::size_t i=0;i<x.size();i++)
-             out[i]=double(t)/double(x[i]);
+template<typename T>
+M_Matrix<double> operator/(T t,const M_Matrix<T>& x)
+{
+  M_Matrix<double> out(x.nrows(),x.ncols());
+  for (std::size_t i=0;i<x.size();i++)
+    out[i]=double(t)/double(x[i]);
 
-         return out;
-     }
+  return out;
+}
 
 
-     //@}
-     /**
+//@}
+/**
  @name Aritmetic operations applied between two Matrices
   */
-     //@{
+//@{
 
-     /**
+/**
  Matrix sum, element wise.
  @pre \p x.nrows()==ncols(y) x.ncols()==ncols(y)
  @return z, where z.nrows()=rows(x), z.ncols()=ncols(y) and z(i,j)= sum
  on k of x(i,k)*y(k,j)
  @warning it \c assert the preconditions
  */
-     template<typename T>
-     M_Matrix<T> operator+(const M_Matrix<T>& x,const M_Matrix<T>& y)
-     {
-         M_Matrix<T> z(x);
-         for (size_t i=0; i<z.nrows(); i++)
-             for (size_t j=0; j<z.ncols(); j++)
-                 z(i,j)+=y(i,j);
-         return z;
-     }
+template<typename T>
+M_Matrix<T> operator+(const M_Matrix<T>& x,const M_Matrix<T>& y)
+{
+  M_Matrix<T> z(x);
+  for (size_t i=0; i<z.nrows(); i++)
+    for (size_t j=0; j<z.ncols(); j++)
+      z(i,j)+=y(i,j);
+  return z;
+}
 
-     /**
+/**
  Matrix sustraction, element wise.
  @pre \p x.nrows()==ncols(y) x.ncols()==ncols(y)
  @return z, where z.nrows()=rows(x), z.ncols()=ncols(y) and
  z(i,j)= sum on k of x(i,k)*y(k,j)
  @warning it \c assert the preconditions
  */
-     template<typename T>
-     M_Matrix<T> operator-(const M_Matrix<T>& x,const M_Matrix<T>& y)
-     {
-         if(x.size()!=y.size())
-             assert(false);
-         if (x.nrows()!=y.nrows())
-             assert(false);
-         M_Matrix<T> z(x.nrows(),x.ncols());
-         for (size_t i=0; i<z.size(); i++)
-             // for (size_t j=0; j<z.ncols(); j++)
-             z[i]=x[i]-y[i];
-         return z;
-     }
+template<typename T>
+M_Matrix<T> operator-(const M_Matrix<T>& x,const M_Matrix<T>& y)
+{
+  if(x.size()!=y.size())
+    assert(false);
+  if (x.nrows()!=y.nrows())
+    assert(false);
+  M_Matrix<T> z(x.nrows(),x.ncols());
+  for (size_t i=0; i<z.size(); i++)
+    // for (size_t j=0; j<z.ncols(); j++)
+    z[i]=x[i]-y[i];
+  return z;
+}
 
 
 
 
-     /**
+/**
  Multiplication of the elements of two matrices.
   @pre \p x.nrows()==ncols(y) x.ncols()==ncols(y)
   @return z, where z.nrows()=rows(x), z.ncols()=ncols(y)
  and z(i,j)= sum on k of x(i,k)*y(k,j)
   @warning it \c assert the preconditions
  */
-     template<typename T>
-     M_Matrix<T> elemMult(const M_Matrix<T>& x,const M_Matrix<T>& y)
-     {
-         assert(x.size()==y.size());
-         assert(x.nrows()==y.nrows());
-         M_Matrix<T> z(x);
-         for (size_t i=0; i<z.nrows(); i++)
-             for (size_t j=0; j<z.ncols(); j++)
-                 z(i,j)*=y(i,j);
-         return z;
-     }
+template<typename T>
+M_Matrix<T> elemMult(const M_Matrix<T>& x,const M_Matrix<T>& y)
+{
+  assert(x.size()==y.size());
+  assert(x.nrows()==y.nrows());
+  M_Matrix<T> z(x);
+  for (size_t i=0; i<z.nrows(); i++)
+    for (size_t j=0; j<z.ncols(); j++)
+      z(i,j)*=y(i,j);
+  return z;
+}
 
-     /**
+/**
  Division of the elements of two matrices.
   @pre \p x.nrows()==ncols(y) x.ncols()==ncols(y)
   @return z, where z.nrows()=rows(x), z.ncols()=ncols(y)
  and z(i,j)= sum on k of x(i,k)*y(k,j)
   @warning it \c assert the preconditions
  */
-     template<typename T,typename S>
-     M_Matrix<double> elemDiv(const M_Matrix<T>& x,const M_Matrix<S>& y)
-     {
-         M_Matrix<double> z(x);
-         for (size_t i=0; i<z.nrows(); i++)
-             for (size_t j=0; j<z.ncols(); j++)
-                 z(i,j)/=double(y(i,j));
-         return z;
-     }
+template<typename T,typename S>
+M_Matrix<double> elemDiv(const M_Matrix<T>& x,const M_Matrix<S>& y)
+{
+  M_Matrix<double> z(x);
+  for (size_t i=0; i<z.nrows(); i++)
+    for (size_t j=0; j<z.ncols(); j++)
+      z(i,j)/=double(y(i,j));
+  return z;
+}
 
-     /**
+/**
  Safe Division of the elements of two matrices.
   @pre \p x.nrows()==ncols(y) x.ncols()==ncols(y)
   @return z, where z.nrows()=rows(x), z.ncols()=ncols(y)
  and z(i,j)= sum on k of x(i,k)*y(k,j)
   @warning it \c assert the preconditions
  */
-     template<typename T,typename S>
-     M_Matrix<double> elemDivSafe(const M_Matrix<T>& x,const M_Matrix<S>& y)
-     {
-         M_Matrix<double> z(x);
-         for (size_t i=0; i<z.nrows(); i++)
-             for (size_t j=0; j<z.ncols(); j++)
-                 if (y(i,j)!=0)
-                     z(i,j)/=double(y(i,j));
-                 else
-                     z(i,j)=0;
-         return z;
-     }
-     // @}
+template<typename T,typename S>
+M_Matrix<double> elemDivSafe(const M_Matrix<T>& x,const M_Matrix<S>& y)
+{
+  M_Matrix<double> z(x);
+  for (size_t i=0; i<z.nrows(); i++)
+    for (size_t j=0; j<z.ncols(); j++)
+      if (y(i,j)!=0)
+        z(i,j)/=double(y(i,j));
+      else
+        z(i,j)=0;
+  return z;
+}
+// @}
 
 
 
 
-     //@}
+//@}
 
+
+template<typename T>
+std::ostream& operator<<(std::ostream& os,M_Matrix<T>& x)
+{
+  os<<"[";
+  for (std::size_t i=0; i<x.nrows(); ++i)
+    {
+    for (std::size_t j=0; j<x.ncols(); ++j)
+      os<<x(i,j)<<" ";
+    os<<";";
+    }
+  os<<"]";
+
+}
+
+
+template<typename T>
+std::istream& operator>>(std::istream& is,M_Matrix<T>& x)
+{
+  std::vector<T> o;
+  std::size_t nrows=0;
+  char ch;
+  while ((is>>ch)&&(ch!='[')){}
+  while (ch!=']')
+    {
+      std::string s;
+    while ((is>>ch)&&((ch!=']')&&ch!=';'))
+      {s.push_back(ch);}
+    std::stringstream ss(s);
+    T e;
+    while (ss>>e) o.push_back(e);
+    if (!o.empty()) ++nrows;
+    }
+  std::size_t ncols=o.size()/nrows;
+  x=M_Matrix<T>(nrows,ncols,o);
+  return is;
+
+}
 
 
 

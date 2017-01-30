@@ -711,8 +711,7 @@ Parameters Parameters::randomSample(std::mt19937_64& mt,double factor)const
             }
         }
     }
-  Parameters s(sample);
-  return s;
+  return sample;
 
 }
 
@@ -791,7 +790,7 @@ std::vector<double> Parameters::randomSampleValues(std::mt19937_64 &mt, Paramete
 
 double Parameters::logProb(const Parameters& sample)const
 {
-  std::size_t n=n;
+  std::size_t n=sample.size();
    std::vector<double> d(n);
   for (std::size_t i=0; i<n; ++i)
     d[i]=sample.mean_of_tr_[i]-this->mean_of_tr_[i];

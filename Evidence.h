@@ -29,7 +29,7 @@ struct mcmc_post: public mcmc_prior
 {
   mcmc_post(mcmc_prior &&p): mcmc_prior(p), isValid(false), f(),logLik(0){}
   mcmc_post(){}
-  bool isValid;
+  bool isValid=false;
   M_Matrix<double> f;
   double logLik;
   double logbPL(double beta)const {return logPrior+logLik*beta;}
@@ -206,6 +206,13 @@ private:
 
 
 
+inline double log10_guard(double x)
+{
+  if (x==0) return 0;
+  else return log10(x);
+
+}
+
 
 
 
@@ -226,7 +233,12 @@ public:
     for (std::size_t i=0; i<k.nrows(); ++i)
       {
         for (std::size_t j=0; j<k.ncols(); ++j)
-          sumLogL+=logLikelihood(landa(i,j),k(i,j));
+          {
+          if (std::isnan(landa(i,j)))
+            return landa(i,j);
+          else if (landa(i,j)!=0)
+            sumLogL+=logLikelihood(landa(i,j),k(i,j));
+          }
       }
     return sumLogL;
   }
@@ -251,15 +263,20 @@ class Poisson_DLikelihood: public Poisson_Likelihood<D,M>
 public:
   static mcmc_Dpost get_mcmc_Dpost(const M<D>& model, const D& data, const M_Matrix<double>& param)
   {
-    return get_mcmc_Dpost(model,data,param,Poisson_Likelihood<D,M>::get_mcmc_Post(model,data,param));
+    return get_mcmc_Dpost(model,data,param,get_mcmc_Post(model,data,param));
   }
+  static mcmc_post get_mcmc_Post(const M<D>& model, const D& data, M_Matrix<double> param)
+  {
+    return Poisson_Likelihood<D,M>::get_mcmc_Post(model,data,param);
+  }
+
 
 
   static mcmc_Dpost get_mcmc_Dpost(const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post p)
   {
     mcmc_Dpost out(std::move(p));
     M_Matrix<std::size_t> k=data();
-    M_Matrix<double> logLanda_0=out.f.apply([](double x){return log10(x);});
+    M_Matrix<double> logLanda_0=out.f.apply([](double x){return log10_guard(x);});
     M_Matrix<double> J=get_J(model,  data, param,logLanda_0  );
     out.D_lik.G=get_G(out.f,k,J);
     out.D_lik.H=get_H(out.f,J);
@@ -270,8 +287,11 @@ private:
   static
   M_Matrix<double> get_G(const M_Matrix<double>& landa, const M_Matrix<std::size_t>& k, const M_Matrix<double>& J)
   {
-    M_Matrix<double> epsilon=landa-M_Matrix<double>(k);
-    return epsilon*J;
+    M_Matrix<double> out(1,J.ncols(),0.0);
+    for (std::size_t j=0; j<J.ncols(); ++j)
+      for (std::size_t i=0; i<landa.size(); ++i)
+        out[j]+=(landa[i]-k[i])*J(i,j);
+    return out;
   }
 
   static
@@ -283,7 +303,7 @@ private:
     for (std::size_t j=0; j<npar; ++j)
       for (std::size_t j2=j; j2<npar; ++j2)
         for (std::size_t i=0; i<n; ++i)
-          out(j,j2)=landa[i]*J(i,j)*J(i,j2);
+          out(j,j2)+=landa[i]*J(i,j)*J(i,j2);
     for (std::size_t j=0; j<npar; ++j)
       for (std::size_t j2=0; j2<j; ++j2)
         out(j,j2)=out(j2,j);
@@ -327,13 +347,14 @@ class LevenbergMarquardt_step
 {
 public:
 
+
   struct trust_region
   {
     double r_;
 
     bool operator()(double expected, double found, std::size_t k)const
     {
-      if (std::pow(expected-found,2)<2*k*r_)
+      if (!std::isnan(found)&&(std::pow(expected-found,2)<2*k*r_))
         return true;
       else
         return false;
@@ -367,11 +388,12 @@ public:
     LM_logL out;
     out.G=postL.D_prior.G+postL.D_lik.G*beta;
     out.H=postL.D_prior.H+postL.D_lik.H*beta;
+    out.logL=postL.logbPL(beta);
     for (std::size_t i=0; i<out.H.nrows(); ++i)
       out.H(i,i)=out.H(i,i)*(1+landa);
     out.Hinv=invSafe(out.H);
-    out.d=out.Hinv*out.G;
-    out.exp_next_logL=0.5*TranspMult(out.d,out.G)[0];
+    out.d=-(out.G*out.Hinv);
+    out.exp_next_logL=out.logL-0.5*multTransp(out.d,out.G)[0];
     return out;
   }
 
@@ -386,11 +408,19 @@ public:
     return update_mcmc_step(L,model,data,out,beta);
     }
 
+   mcmc_step<> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post&& p,double beta)const
+   {
+      return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param,p),beta);
+   }
+
+
+
+
   mcmc_step<>& update_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_step<>& out,double beta)const
   {
     out.beta=beta;
 
-    double landa=landa0_;
+    double landa=0;
     std::size_t iloop=0;
     LM_logL LM_logL=update_landa( out,landa,beta);
 
@@ -398,13 +428,13 @@ public:
     mcmc_post cand=L.get_mcmc_Post(model,data,next);
     while (!t_(LM_logL.exp_next_logL,cand.logbPL(beta),out.param.size())&&iloop<maxLoop_)
       {
-        landa*=v_;
+        landa=std::pow(v_,iloop);
         LM_logL=update_landa( out,landa, beta);
         next=out.param+LM_logL.d;
         cand=L.get_mcmc_Post(model,data,next);
         ++iloop;
       }
-    out.proposed=MultivariateGaussian(next,LM_logL.H,LM_logL.Hinv);
+    out.proposed=MultivariateGaussian(next,LM_logL.Hinv,LM_logL.H);
     return out;
   }
 
@@ -438,6 +468,8 @@ class Metropolis_Hastings_mcmc
 
       double logQforward=sLik.proposed.logP(sLik.param);
       double logQbackward=cLik.proposed.logP(cLik.param);
+      double logQforwardB=sLik.proposed.logP(cLik.param);
+
 
       double logA=logPcandidate-logQforward-logPcurrent+logQbackward;
       double A=std::min(1.0,exp(logA));
@@ -576,9 +608,19 @@ public:
   {
     std::vector<std::pair<double,SamplesSeries<mcmc_step<>>>> o;
 
-    M_Matrix<double> pinit=model.sample(mt);
+
+    mcmc_post postL;
+    M_Matrix<double> pinit;
     double beta0=beta[0].first;
-    mcmc_step<> cDist=LMLik.get_mcmc_step(lik,model,data,pinit,beta0);
+    std::size_t ntrials=0;
+    while(!postL.isValid)
+    {
+        pinit=model.sample(mt);
+        postL=lik.get_mcmc_Post(model,data,pinit);
+        ++ntrials;
+    }
+
+    mcmc_step<> cDist=LMLik.get_mcmc_step(lik,model,data,pinit,std::move(postL),beta0);
 
     for (std::size_t i=0; i<beta.size(); ++i)
       {

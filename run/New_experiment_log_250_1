@@ -2,6 +2,8 @@ Experiment	experiment_log_250
 simulation_time	604800
 time_of_Measures
 0	259200	604800	
+time_of_Simulated_Points
+0	259200	604800
 Measures
 CortexMeasure	3dplCL
 dia	0

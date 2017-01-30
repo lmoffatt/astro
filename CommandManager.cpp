@@ -86,6 +86,8 @@ CommandManager::CommandManager()
   cmd_["experiment"]=new ExperimentCommand(this);
   cmd_["likelihood"]=new LikelihoodCommand(this);
   cmd_["optimize"]=new OptimizeCommand(this);
+  cmd_["evidence"]=new EvidenceCommand(this);
+
 
 
 
@@ -919,14 +921,18 @@ void EvidenceCommand::run(const std::__cxx11::string line)
    // evidence evi experiment1 paramters_10
   //optimize opt experiment1 parameters_10 parameters_10 10 100
 
-  std::string optimizeS, optName, experimentName, priorName;
+  std::string evidenceS, eviName, experimentName, priorName;
   double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
-  double factor=0;
+  double trust_region=1;
+
   std::mt19937_64::result_type initseed=0;
   std::size_t nPoints_per_decade,niter,nseeds=0;
   std::stringstream ss(line);
+  M_Matrix<double> betas;
+  M_Matrix<std::size_t> samples, nskip;
 
-  ss>>optimizeS>>optName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>factor>>nseeds>>initseed;
+  ss>>evidenceS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>trust_region>>nseeds>>initseed>>betas>>samples>>nskip;
+
 
   Experiment *e=new Experiment;
   e->load(experimentName);
@@ -970,9 +976,8 @@ void EvidenceCommand::run(const std::__cxx11::string line)
     {
       cm_->push_back(m);
 
-      auto CL=new CortexPoisonLikelihood(optName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+      auto CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
-       double trust_region=1;
        MyModel<MyData> m(CL);
        MyData d(CL);
        Metropolis_Hastings_mcmc<MyData,MyModel> mcmc;
@@ -988,7 +993,8 @@ void EvidenceCommand::run(const std::__cxx11::string line)
            mt.seed(seed);
          }
 
-       std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>> beta;
+       std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>
+           beta=getBeta(betas,samples,nskip);
 
       Evidence_Evaluation<> * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt);
 
