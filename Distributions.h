@@ -47,6 +47,11 @@ public:
   M_Matrix<double> Cov()const;
   const M_Matrix<double>& CovInv()const;
 
+
+  const M_Matrix<double>& Chol()const{return cho_cov_;}
+
+  double logDetCov()const {return logDetCov_;}
+
   virtual M_Matrix<double> logPGradient(const M_Matrix<double>& x)const
   {
     return M_Matrix<double>(1u,x.size(),(x-Mean())*Cov());
@@ -80,6 +85,17 @@ public:
 };
 
 
+
+inline
+std::ostream& operator<<(std::ostream& os,const MultivariateGaussian& x)
+{
+  os<<"\nMean\n"<<x.Mean();
+  os<<"\nCov\n"<<x.Cov();
+  os<<"\nCovInv\n"<<x.CovInv();
+  os<<"\nChol\n"<<x.Chol();
+  os<<"\nlogDetCov\n"<<x.logDetCov();
+  return os;
+}
 
 
 #endif // DISTRIBUTIONS_H

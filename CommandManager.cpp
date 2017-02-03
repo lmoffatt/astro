@@ -923,15 +923,36 @@ void EvidenceCommand::run(const std::__cxx11::string line)
 
   std::string evidenceS, eviName, experimentName, priorName;
   double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
-  double trust_region=1;
+  double landa0,v;
+  std::size_t nmaxloop;
 
   std::mt19937_64::result_type initseed=0;
-  std::size_t nPoints_per_decade,niter,nseeds=0;
+  std::size_t nPoints_per_decade,niter;
   std::stringstream ss(line);
   M_Matrix<double> betas;
   M_Matrix<std::size_t> samples, nskip;
 
-  ss>>evidenceS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>trust_region>>nseeds>>initseed>>betas>>samples>>nskip;
+  ss>>evidenceS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>betas>>samples>>nskip;
+
+
+  std::cout<<"evidenceS: "<<evidenceS;
+  std::cout<<" eviName: "<<eviName;
+  std::cout<<" experimentName:"<<experimentName;
+  std::cout<<" priorName: "<<priorName;
+  std::cout<<" dx: "<<dx;
+  std::cout<<" dtmin: "<<dtmin;
+  std::cout<<" nPoints_per_decade: "<<nPoints_per_decade;
+  std::cout<<" dtmax: "<<dtmax;
+  std::cout<<" niter: "<<niter;
+  std::cout<<" maxduration "<<maxduration;
+  std::cout<<" landa0 "<<landa0;
+  std::cout<<" v "<<v;
+  std::cout<<" nmaxloop "<<nmaxloop;
+
+  std::cout<<" initseed "<<initseed;
+  std::cout<<" betas "<<betas;
+  std::cout<<" samples "<<samples;
+  std::cout<<" nskip "<<nskip;
 
 
   Experiment *e=new Experiment;
@@ -981,7 +1002,7 @@ void EvidenceCommand::run(const std::__cxx11::string line)
        MyModel<MyData> m(CL);
        MyData d(CL);
        Metropolis_Hastings_mcmc<MyData,MyModel> mcmc;
-       LevenbergMarquardt_step<MyData,MyModel> LMLik(trust_region);
+       LevenbergMarquardt_step<MyData,MyModel> LMLik(landa0,v,nmaxloop);
        Poisson_DLikelihood<MyData,MyModel> DLik;
        TI ti;
        std::mt19937_64 mt;
@@ -990,13 +1011,23 @@ void EvidenceCommand::run(const std::__cxx11::string line)
        if (initseed==0)
          {
            std::mt19937_64::result_type seed=rd();
+
            mt.seed(seed);
+           std::cout<<"\n random seed =\n"<<seed<<"\n";
+         }
+       else
+         {
+           std::mt19937_64::result_type seed=initseed;
+
+           mt.seed(seed);
+           std::cout<<"\n provided seed =\n"<<seed<<"\n";
+
          }
 
        std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>
            beta=getBeta(betas,samples,nskip);
 
-      Evidence_Evaluation<> * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt);
+      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt);
 
 
 

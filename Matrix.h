@@ -22,6 +22,28 @@
 
 #include <iostream>
 
+inline double logit(double x){return std::log10(x/(1.0-x));}
+
+inline double logistic(double x){return 1.0/(1.0+std::pow(10.0,x));}
+
+
+template<typename T1, typename T2>
+std::pair<T1,T2>& operator+=(std::pair<T1,T2>& x, const std::pair<T1,T2>& other)
+{
+   x.first+=other.first;
+   x.second+=other.second;
+   return x;
+}
+
+
+template<typename T1, typename T2>
+std::ostream& operator<<(std::ostream& os,const std::pair<T1,T2>& other)
+{
+   os<<other.first<<" "<<other.second;
+   return os;
+}
+
+
 namespace
 {
   extern "C" void dgetrf_(int *M,
@@ -381,6 +403,10 @@ public:
   T& operator[](std::size_t n)
   {
     return _data[n];
+  }
+  bool empty()const
+  {
+    return _data.empty();
   }
 
   const T& operator[](std::size_t n) const
@@ -1223,7 +1249,7 @@ M_Matrix<double> elemDivSafe(const M_Matrix<T>& x,const M_Matrix<S>& y)
 
 
 template<typename T>
-std::ostream& operator<<(std::ostream& os,M_Matrix<T>& x)
+std::ostream& operator<<(std::ostream& os,const M_Matrix<T>& x)
 {
   os<<"[";
   for (std::size_t i=0; i<x.nrows(); ++i)
@@ -1233,7 +1259,7 @@ std::ostream& operator<<(std::ostream& os,M_Matrix<T>& x)
     os<<";";
     }
   os<<"]";
-
+  return os;
 }
 
 
@@ -1247,8 +1273,10 @@ std::istream& operator>>(std::istream& is,M_Matrix<T>& x)
   while (ch!=']')
     {
       std::string s;
-    while ((is>>ch)&&((ch!=']')&&ch!=';'))
-      {s.push_back(ch);}
+    while ((is.get(ch))&&((ch!=']')&&ch!=';'))
+      {
+        s.push_back(ch);
+      }
     std::stringstream ss(s);
     T e;
     while (ss>>e) o.push_back(e);
@@ -1430,15 +1458,20 @@ M_Matrix<double> invSafe(const M_Matrix<double>& matrix)
   }
   catch (SingularMatrix_error)
   {
-    M_Matrix<double>
-        noise=Rand(matrix)*(1e-7*norm_inf(matrix));
-    std::cerr<<" noise\n";
-    inverse=inv(matrix+noise);
-    std::cerr<<" inverse\n";
+    inverse={};
   }
   return inverse;
 }
 
+
+inline
+bool isnan(const M_Matrix<double>& x)
+{
+  for (std::size_t i=0; i<x.size(); ++i)
+    if (std::isnan(x[i]))
+      return true;
+  return false;
+}
 
 
 
