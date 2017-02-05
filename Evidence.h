@@ -7,13 +7,73 @@
 #include <random>
 
 #include <cmath>
+#include <list>
 
 
-inline double logit(const std::pair<std::size_t,std::size_t>& x)
+class gaussian_lin_regr
+{
+public:
+
+  double get_optimal_x()const
+  {
+    double xmean=SX_/SW_;
+    double ymean=SY_/SW_;
+    double var_x=SXX_/SW_-sqr(xmean);
+    double var_y=SYY_/SW_-sqr(ymean);
+    double cov=SXY_/SW_-xmean*ymean;
+    double b=cov/var_x;
+    double a=ymean-b*xmean;
+    double out=(y_opt_-a)/b;
+
+    std::cout<<"xmean="<<xmean<<" ymean="<<ymean<<" var_x="<<var_x;
+    std::cout<<"var_y="<<var_y<<" cov="<<cov<<" b="<<b<<" a="<<a<<" out= "<<out;
+
+
+    return out;
+  }
+
+  gaussian_lin_regr(double target_y,double target_y_error)
+    :y_opt_(target_y), y_e_(target_y_error),SW_(0),SX_(0),SY_(0),SXX_(0),SYY_(0),SXY_(0){}
+
+
+  void push_back(double x, double y, double ysd)
+  {
+    double w=1.0/ysd/ysd;
+    //      *std::exp(-(std::pow((y-y_opt_),2)/(2.0*(sqr(ysd)+sqr(y_e_)))));
+    std::cout<<" yopt= "<<y_opt_<<" y_e_="<<y_e_<<" x= "<<x<<"y ="<<y<<" ysd= "<<ysd<<" w= "<<w<<"\n";
+
+    SW_+=w;
+    SX_+=w*x;
+    SY_+=w*y;
+    SXX_+=w*x*x;
+    SYY_+=w*y*y;
+    SXY_+=w*x*y;
+  }
+
+
+private:
+  double y_opt_;
+  double y_e_;
+  double SW_;
+  double SX_;
+  double SY_;
+  double SXX_;
+  double SYY_;
+  double SXY_;
+
+
+};
+
+
+
+
+
+inline std::pair<double,double> logit(const std::pair<std::size_t,std::size_t>& x)
 {
   std::size_t n=x.first+x.second;
   double p=(1.0+x.first)/(2.0+n);
-  return logit(p);
+  double s=sqrt(p*(1-p)/n);
+  return logit(p,s);
 
 }
 
@@ -663,15 +723,19 @@ public:
     static std::ostream& put(std::ostream& os,const mcmc_step<pDist>& sLik
                              ,const mcmc_step<pDist>& cLik)
     {
-      double logPcurrent=sLik.logbPL();
-      double logPcandidate=cLik.logbPL();
+      if (cLik.isValid)
+        {
+          double logPcurrent=sLik.logbPL();
+          double logPcandidate=cLik.logbPL();
 
-      double logQforward=sLik.proposed.logP(cLik.param);
-      double logQbackward=cLik.proposed.logP(sLik.param);
-      double logForward=logPcandidate-logQforward;
-      double logBackward=logPcurrent-logQbackward;
+          double logQforward=sLik.proposed.logP(cLik.param);
+          double logQbackward=cLik.proposed.logP(sLik.param);
+          double logForward=logPcandidate-logQforward;
+          double logBackward=logPcurrent-logQbackward;
 
-      os<<logForward<<" "<<logBackward<<" ";
+          os<<logForward<<" "<<logBackward<<" ";
+        }
+      return os;
     }
 
     static bool accept(const mcmc_step<pDist>& sLik
@@ -708,7 +772,7 @@ public:
 
 
 
-  static std::size_t min_tryParameter(){return 10;}
+  static std::size_t min_tryParameter(){return 5;}
 
 
 
@@ -723,17 +787,15 @@ public:
    std::size_t nskip,
    std::mt19937_64& mt)
   {
-    AP r_1=AP::max();
     std::size_t nsamples_0=min_tryParameter();
-    std::size_t nsamplesFinal=nsamples*nskip/20;
+    std::size_t nsamplesFinal=std::max(40lu,nsamples*nskip/20);
     if (!sDist.isValid)
       return {};
-    std::pair<AP,AP> r_init={LM_Lik.getValue(),r_1};
     M_Matrix<double> c=sDist.proposed.sample(mt);
     mcmc_step<pDist> cDist=LM_Lik.get_mcmc_step(lik,model,data,c,sDist.beta);
 
     AP r_optimal=adapt_Parameter
-        (LM_Lik,lik,model,data,r_init,sDist,cDist,nsamples_0,nsamplesFinal,mt);
+        (LM_Lik,lik,model,data,sDist,cDist,nsamples_0,nsamplesFinal,mt);
     auto LM=LM_Lik(r_optimal);
 
     SamplesSeries<mcmc_step<pDist>> o(nsamples);
@@ -806,10 +868,10 @@ public:
 
 
   static std::pair<double,double>
-  mean_sd(const std::pair<std::size_t,std::size_t> x)
+  bay_mean_sd(const std::pair<std::size_t,std::size_t> x)
   {
     std::size_t n=x.first+x.second;
-    double p=1.0*x.first/n;
+    double p=(1.0+x.first)/(2+n);
     double sd=sqrt(p*(1-p)/n);
     return {p,sd};
 
@@ -817,70 +879,15 @@ public:
 
 
 
-  static AP next_log(double target_acceptance,
-                     const std::pair< AP,AP>& par
-                     ,std::pair<std::size_t,std::size_t> m0
-                     ,std::pair<std::size_t,std::size_t> m1
-                     )
-  {
-    double x0=std::log(par.first.getValue());
-    double x1=std::log(par.second.getValue());
-    double y=logit(target_acceptance);
-    double y0=logit(m0);
-    double y1=logit(m1);
-    double res;
-    if (y0==y1)
-      res=(x0+x1)/2.0;
-    else
-       res=x0+(y-y0)/(y1-y0)*(x1-x0);
-
-    std::cout<<"m0="<<m0<<"\n";
-    std::cout<<"m1="<<m1<<"\n";
-    std::cout<<"x0="<<x0<<"\n";
-    std::cout<<"x1="<<x1<<"\n";
-    std::cout<<"y="<<y<<"\n";
-    std::cout<<"y0="<<y0<<"\n";
-    std::cout<<"y1="<<y1<<"\n";
-    std::cout<<"res="<<res<<"\n";
-
-    res=std::exp(res);
-    std::cout<<"expres="<<res<<"\n";
-    AP pnew(par.second);
-    pnew.setValue(res);
-    return pnew;
-  }
 
 
 
-  static void next_adapt_Parameter
-  (const propDistStep<D,M,D_Lik,my_PropD,AP>& LM
-   ,const D_Lik<D,M>& lik
-   ,const M<D>& model
-   ,const D& data
-   , std::pair<AP,AP>& r
-   ,std::pair<std::size_t,std::size_t>& res0
-   ,std::pair<std::size_t,std::size_t>& res1
-   ,mcmc_step<pDist>& sDist,
-   mcmc_step<pDist>& cDist,
-   std::size_t nsamples,
-   std::mt19937_64& mt)
-  {
-    double opt_acc_=LM.optimal_acceptance_rate();
-
-    AP p=next_log(opt_acc_,r,res0,res1);
-
-    r.first=r.second;
-    r.second=p;
-    res0=res1;
-    res1=try_Parameter(LM,lik,model,data,r.second,sDist,cDist,nsamples,mt);
-
-  }
 
 
   static bool accept_Parameter
   (double opt_acc, std::pair<std::size_t, std::size_t> res)
   {
-    auto m=mean_sd(res);
+    auto m=bay_mean_sd(res);
     std::cout<<"m="<<m<<"\n";
     std::cout<<"opt_acc="<<opt_acc<<"\n";
     if ((opt_acc>m.first-2*m.second)&&(opt_acc<m.first+2*m.second))
@@ -894,36 +901,56 @@ public:
    ,const D_Lik<D,M>& lik
    ,const M<D>& model
    ,const D& data
-   ,const std::pair<AP,AP>& r_init
    ,mcmc_step<pDist>& sDist,
    mcmc_step<pDist>& cDist,
    std::size_t nsamples_0,
    std::size_t nsamplesFinal,
    std::mt19937_64& mt)
   {
-    double opt_accpt_=LM_Lik.optimal_acceptance_rate();
-    std::size_t nsamples=nsamples_0;
-    std::pair<AP,AP> rinit(r_init);
-    auto res0=try_Parameter(LM_Lik,lik,model,data,rinit.first,sDist,cDist,nsamples,mt);
-    auto res1=try_Parameter(LM_Lik,lik,model,data,rinit.second,sDist,cDist,nsamples,mt);
-    next_adapt_Parameter(LM_Lik,lik,model,data,rinit,res0,res1,sDist,cDist,nsamples,mt);
-    next_adapt_Parameter(LM_Lik,lik,model,data,rinit,res0,res1,sDist,cDist,nsamples,mt);
+    AP ap0=LM_Lik.getValue();
+    double opt_accpt=LM_Lik.optimal_acceptance_rate();
+    double y=logit(opt_accpt);
+    double yse=std::sqrt(1.0/(opt_accpt*(1-opt_accpt)*nsamplesFinal));
+    gaussian_lin_regr lr(y,yse);
 
-    while (!accept_Parameter(opt_accpt_,res1))
+    std::size_t nsamples=nsamples_0;
+    auto res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
+    double x0=std::log(ap0.getValue());
+    auto m0=logit(res0);
+    lr.push_back(x0,m0.first,m0.second );
+    ap0=AP::max();
+
+    res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
+    x0=std::log(ap0.getValue());
+    m0=logit(res0);
+    lr.push_back(x0,m0.first,m0.second );
+
+    x0=lr.get_optimal_x();
+    ap0.setValue(std::exp(x0));
+    res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
+
+    while (!accept_Parameter(opt_accpt,res0))
       {
-        next_adapt_Parameter(LM_Lik,lik,model,data,rinit,res0,res1,sDist,cDist,nsamples,mt);
+        m0=logit(res0);
+        lr.push_back(x0,m0.first,m0.second );
+        x0=lr.get_optimal_x();
+        ap0.setValue(std::exp(x0));
+        res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
       }
     while (nsamples<nsamplesFinal)
       {
-        res0+=try_Parameter(LM_Lik,lik,model,data,rinit.first,sDist,cDist,nsamples,mt);
-        res1+=try_Parameter(LM_Lik,lik,model,data,rinit.second,sDist,cDist,nsamples,mt);
+        res0+=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
         nsamples*=2;
-        while (!accept_Parameter(opt_accpt_,res1))
+        while (!accept_Parameter(opt_accpt,res0))
           {
-            next_adapt_Parameter(LM_Lik,lik,model,data,rinit,res0,res1,sDist,cDist,nsamples,mt);
+            m0=logit(res0);
+            lr.push_back(x0,m0.first,m0.second );
+            x0=lr.get_optimal_x();
+            ap0.setValue(std::exp(x0));
+            res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
           }
       }
-    return rinit.second;
+    return ap0;
 
   }
 

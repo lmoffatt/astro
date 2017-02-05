@@ -22,7 +22,10 @@
 
 #include <iostream>
 
-inline double logit(double x){return std::log10(x/(1.0-x));}
+inline double logit(double x){return std::log(x/(1.0-x));}
+inline std::pair<double,double> logit(double x,double sd){
+  return {std::log(x/(1.0-x)),sd/(x*(1.0-x))};}
+
 
 inline double logistic(double x){return 1.0/(1.0+std::pow(10.0,x));}
 
@@ -34,6 +37,10 @@ std::pair<T1,T2>& operator+=(std::pair<T1,T2>& x, const std::pair<T1,T2>& other)
    x.second+=other.second;
    return x;
 }
+
+inline double average(double x, double y){return 0.5*(x+y);}
+
+inline double sqr(double x){return x*x;}
 
 
 template<typename T1, typename T2>
@@ -1161,6 +1168,7 @@ M_Matrix<T> operator+(const M_Matrix<T>& x,const M_Matrix<T>& y)
   return z;
 }
 
+
 /**
  Matrix sustraction, element wise.
  @pre \p x.nrows()==ncols(y) x.ncols()==ncols(y)
@@ -1168,6 +1176,7 @@ M_Matrix<T> operator+(const M_Matrix<T>& x,const M_Matrix<T>& y)
  z(i,j)= sum on k of x(i,k)*y(k,j)
  @warning it \c assert the preconditions
  */
+
 template<typename T>
 M_Matrix<T> operator-(const M_Matrix<T>& x,const M_Matrix<T>& y)
 {
