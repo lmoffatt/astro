@@ -1056,8 +1056,11 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
       flog.flush();
 
 
+       std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now();
+      double timeOpt=0;
 
-      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt,flog);
+
+      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt,flog,startTime,timeOpt);
       flog.close();
       std::ofstream fout(eviName.c_str());
       fout.open(eviName.c_str(),std::ofstream::out);

@@ -9,7 +9,7 @@
 #include <cmath>
 #include <list>
 #include <fstream>
-
+#include <chrono>
 
 class gaussian_lin_regr
 {
@@ -797,7 +797,9 @@ public:
    std::size_t nsamples,
    std::size_t nskip,
    std::mt19937_64& mt
-   , std::ostream& os)
+   , std::ostream& os
+   , const std::chrono::steady_clock::time_point& startTime
+   , double& timeOpt)
   {
     std::size_t nsamples_0=min_tryParameter();
     std::size_t nsamplesFinal=std::max(40lu,nsamples*nskip/20);
@@ -807,7 +809,7 @@ public:
     mcmc_step<pDist> cDist=LM_Lik.get_mcmc_step(lik,model,data,c,sDist.beta);
 
     AP r_optimal=adapt_Parameter
-        (LM_Lik,lik,model,data,sDist,cDist,nsamples_0,nsamplesFinal,mt,os);
+        (LM_Lik,lik,model,data,sDist,cDist,nsamples_0,nsamplesFinal,mt,os,startTime,timeOpt);
     auto LM=LM_Lik(r_optimal);
 
     std::size_t naccepts=0;
@@ -819,7 +821,7 @@ public:
         os<<"niter::\t"<<o.size()<<"\t";
         std::cout<<"niter::\t"<<o.size()<<"\t";
 
-        n_steps(LM,lik,model,data,sDist,cDist,nskip,naccepts,nrejects,mt,os);
+        n_steps(LM,lik,model,data,sDist,cDist,nskip,naccepts,nrejects,mt,os,startTime,timeOpt);
         o.push_back(sDist);
         if (o.full())
           break;
@@ -844,7 +846,9 @@ public:
    mcmc_step<pDist>& cDist,
    std::size_t nsamples,
    std::mt19937_64& mt
-   ,std::ostream& os)
+   ,std::ostream& os
+   , const std::chrono::steady_clock::time_point& startTime
+   , double& timeOpt)
   {
     std::size_t naccepts=0;
     std::size_t nrejects=0;
@@ -853,7 +857,7 @@ public:
     M_Matrix<double> c=sDist.proposed.sample(mt);
     cDist=LM.get_mcmc_step(lik,model,data,c,sDist.beta);
 
-    n_steps(LM,lik,model,data,sDist,cDist,nsamples,naccepts,nrejects,mt,os);
+    n_steps(LM,lik,model,data,sDist,cDist,nsamples,naccepts,nrejects,mt,os,startTime,timeOpt);
     return {naccepts,nrejects};
 
   }
@@ -870,7 +874,9 @@ public:
    std::size_t& naccepts,
    std::size_t& nrejects,
    std::mt19937_64& mt
-   , std::ostream& os)
+   , std::ostream& os
+   , const std::chrono::steady_clock::time_point& startTime
+   , double& timeOpt)
   {
     std::size_t i=0;
     AP r_value=LM.getValue();
@@ -878,11 +884,18 @@ public:
     while(i<nsamples)
       {
 
-        std::cout<<i<<" "<<sDist.beta<<" "<<r_value<<" ";
+        auto tnow=std::chrono::steady_clock::now();
+        auto d=tnow-startTime;
+        double t0=timeOpt;
+        timeOpt=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
+        auto timeIter_=60*(timeOpt-t0);
+
+
+        std::cout<<i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<sDist.beta<<"\t"<<r_value<<"\t";
         test::put(std::cout,sDist,cDist);
         put(std::cout,sDist,cDist);
 
-        os<<"n_steps::"<<i<<" "<<sDist.beta<<" "<<r_value<<" ";
+        os<<"n_steps::"<<i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<sDist.beta<<" "<<r_value<<" ";
         test::put(os,sDist,cDist);
         put(os,sDist,cDist);
 
@@ -943,7 +956,9 @@ public:
    std::size_t nsamples_0,
    std::size_t nsamplesFinal,
    std::mt19937_64& mt
-   ,std::ostream& os)
+   ,std::ostream& os
+   , const std::chrono::steady_clock::time_point& startTime
+   , double& timeOpt)
   {
     AP ap0=AP::max();
     double opt_accpt=LM_Lik.optimal_acceptance_rate();
@@ -954,25 +969,25 @@ public:
     double y=logit(opt_accpt);
 
     std::size_t nsamples=nsamples_0;
-    auto res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
+    auto res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
     auto m0=logit(res0);
     lr.push_back(x0,m0.first,m0.second );
     x0-=dx;
     ap0.setValue(std::exp(x0));
-    res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
+    res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
     m0=logit(res0);
     lr.push_back(x0,m0.first,m0.second );
     while (res0.first<res0.second)
       {
         x0-=dx;
         ap0.setValue(std::exp(x0));
-        res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
+        res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
         m0=logit(res0);
         lr.push_back(x0,m0.first,m0.second );
       }
     x0=lr.get_optimal_x(y,os);
     ap0.setValue(std::exp(x0));
-    res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
+    res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
 
     while (!accept_Parameter(opt_accpt,res0))
       {
@@ -980,11 +995,11 @@ public:
         lr.push_back(x0,m0.first,m0.second );
         x0=lr.get_optimal_x(y,os);
         ap0.setValue(std::exp(x0));
-        res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
+        res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
       }
     while (nsamples<nsamplesFinal)
       {
-        res0+=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
+        res0+=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
         nsamples*=2;
         while (!accept_Parameter(opt_accpt,res0))
           {
@@ -992,7 +1007,7 @@ public:
             lr.push_back(x0,m0.first,m0.second );
             x0=lr.get_optimal_x(y,os);
             ap0.setValue(std::exp(x0));
-            res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
+            res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
           }
       }
     return ap0;
@@ -1176,7 +1191,9 @@ public:
    ,const D& data
    ,const std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>& beta
    , std::mt19937_64& mt
-   , std::ofstream& os)
+   , std::ofstream& os
+   , const std::chrono::steady_clock::time_point& startTime
+   , double& timeOpt)
   {
 
     std::vector<std::pair<double,SamplesSeries<mystep>>> o;
@@ -1198,7 +1215,7 @@ public:
     for (std::size_t i=0; i<beta.size(); ++i)
       {
         cDist=LMLik.update_mcmc_step(lik,model,data,cDist,beta[i].first);
-        auto s=mcmc.run(LMLik,lik,model,data,cDist,beta[i].second.first,beta[i].second.second,mt,os);
+        auto s=mcmc.run(LMLik,lik,model,data,cDist,beta[i].second.first,beta[i].second.second,mt,os,startTime,timeOpt);
         o.push_back({beta[i].first,s});
       }
     auto out=new Evidence_Evaluation<mystep>(std::move(o));
