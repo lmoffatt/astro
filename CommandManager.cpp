@@ -594,8 +594,8 @@ void readCommand::run(const std::string& rline)
             safeGetline(f,line);
 
         }
-          cmd_->push_back(s);
-     }
+      cmd_->push_back(s);
+    }
   else  if (line.find("simulation")!=line.npos)
     while (f)
       {
@@ -918,7 +918,7 @@ void OptimizeCommand::run(const std::string& line)
 void EvidenceCommand::run(const std::__cxx11::string& line)
 {
 
-   // evidence evi experiment1 paramters_10
+  // evidence evi experiment1 paramters_10
   //optimize opt experiment1 parameters_10 parameters_10 10 100
 
   std::string evidenceS, eviName, experimentName, priorName;
@@ -954,6 +954,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
   std::cout<<" samples "<<samples;
   std::cout<<" nskip "<<nskip;
 
+  std::cerr<<line;
 
   Experiment *e=new Experiment;
   e->load(experimentName);
@@ -999,64 +1000,64 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
       auto CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
-       MyModel<MyData> m(CL);
-       MyData d(CL);
-       Metropolis_Hastings_mcmc<MyData,MyModel> mcmc;
-       LevenbergMarquardt_step<MyData,MyModel> LMLik(landa0,v,nmaxloop);
-       Poisson_DLikelihood<MyData,MyModel> DLik;
-       TI ti;
-       std::mt19937_64 mt;
-       std::random_device rd;
+      MyModel<MyData> m(CL);
+      MyData d(CL);
+      Metropolis_Hastings_mcmc<MyData,MyModel> mcmc;
+      LevenbergMarquardt_step<MyData,MyModel> LMLik(landa0,v,nmaxloop);
+      Poisson_DLikelihood<MyData,MyModel> DLik;
+      TI ti;
+      std::mt19937_64 mt;
+      std::random_device rd;
 
-       if (initseed==0)
-         {
-           std::mt19937_64::result_type seed=rd();
+      if (initseed==0)
+        {
+          std::mt19937_64::result_type seed=rd();
 
-           mt.seed(seed);
-           eviName+=time_now()+"_"+std::to_string(seed);
-           std::cout<<"\n random seed =\n"<<seed<<"\n";
-         }
-       else
-         {
-           std::mt19937_64::result_type seed=initseed;
+          mt.seed(seed);
+          eviName+=time_now()+"_"+std::to_string(seed);
+          std::cerr<<"\n random seed =\n"<<seed<<"\n";
+        }
+      else
+        {
+          std::mt19937_64::result_type seed=initseed;
 
-           mt.seed(seed);
-           eviName+=time_now()+"_"+std::to_string(seed);
+          mt.seed(seed);
+          eviName+=time_now()+"_"+std::to_string(seed);
 
-           std::cout<<"\n provided seed =\n"<<seed<<"\n";
+          std::cerr<<"\n provided seed =\n"<<seed<<"\n";
 
-         }
+        }
 
-       std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>
-           beta=getBeta(betas,samples,nskip);
+      std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>
+          beta=getBeta(betas,samples,nskip);
 
-       std::string eviNameLog=eviName+"_log.txt";
-       std::ofstream flog(eviNameLog.c_str());
-       flog.open(eviName.c_str(),std::ios_base::out);
-       flog<<line<<"\n";
-       flog<<"evidenceS: "<<evidenceS<<"\n";
-       flog<<" eviName: "<<eviName<<"\n";
-       flog<<" experimentName:"<<experimentName<<"\n";
-       flog<<" priorName: "<<priorName<<"\n";
-       flog<<" dx: "<<dx<<"\n";
-       flog<<" dtmin: "<<dtmin<<"\n";
-       flog<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
-       flog<<" dtmax: "<<dtmax<<"\n";
-       flog<<" niter: "<<niter<<"\n";
-       flog<<" maxduration "<<maxduration<<"\n";
-       flog<<" landa0 "<<landa0<<"\n";
-       flog<<" v "<<v<<"\n";
-       flog<<" nmaxloop "<<nmaxloop<<"\n";
+      std::string eviNameLog=eviName+"_log.txt";
+      std::ofstream flog(eviNameLog.c_str());
+      flog.open(eviName.c_str(),std::ios_base::out);
+      flog<<line<<"\n";
+      flog<<"evidenceS: "<<evidenceS<<"\n";
+      flog<<" eviName: "<<eviName<<"\n";
+      flog<<" experimentName:"<<experimentName<<"\n";
+      flog<<" priorName: "<<priorName<<"\n";
+      flog<<" dx: "<<dx<<"\n";
+      flog<<" dtmin: "<<dtmin<<"\n";
+      flog<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
+      flog<<" dtmax: "<<dtmax<<"\n";
+      flog<<" niter: "<<niter<<"\n";
+      flog<<" maxduration "<<maxduration<<"\n";
+      flog<<" landa0 "<<landa0<<"\n";
+      flog<<" v "<<v<<"\n";
+      flog<<" nmaxloop "<<nmaxloop<<"\n";
 
-       flog<<" initseed "<<initseed<<"\n";
-       flog<<" betas "<<betas<<"\n";
-       flog<<" samples "<<samples<<"\n";
-       flog<<" nskip "<<nskip<<"\n";
+      flog<<" initseed "<<initseed<<"\n";
+      flog<<" betas "<<betas<<"\n";
+      flog<<" samples "<<samples<<"\n";
+      flog<<" nskip "<<nskip<<"\n";
 
 
 
       typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt,flog);
-       flog.close();
+      flog.close();
       std::ofstream fout(eviName.c_str());
       fout.open(eviName.c_str(),std::ios_base::out);
       fout<<line<<"\n";
@@ -1081,7 +1082,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
       fout<<*ev<<"\n";
       fout.close();
-     }
+    }
 
 
 
