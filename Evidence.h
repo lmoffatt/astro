@@ -8,13 +8,14 @@
 
 #include <cmath>
 #include <list>
+#include <fstream>
 
 
 class gaussian_lin_regr
 {
 public:
 
-  double get_optimal_x()const
+  double get_optimal_x(double target_y, std::ostream& os)const
   {
     double xmean=SX_/SW_;
     double ymean=SY_/SW_;
@@ -23,24 +24,26 @@ public:
     double cov=SXY_/SW_-xmean*ymean;
     double b=cov/var_x;
     double a=ymean-b*xmean;
-    double out=(y_opt_-a)/b;
+    double out=(target_y-a)/b;
 
-    std::cout<<"xmean="<<xmean<<" ymean="<<ymean<<" var_x="<<var_x;
-    std::cout<<"var_y="<<var_y<<" cov="<<cov<<" b="<<b<<" a="<<a<<" out= "<<out;
+    std::cout<<"get_optimal_x::\txmean\t"<<xmean<<"\tymean\t"<<ymean<<"\tvar_x\t"<<var_x;
+    std::cout<<"\tvar_y\t"<<var_y<<"\tcov\t"<<cov<<"\tb\t"<<b<<"\ta\t"<<a<<"\tout\t"<<out<< "\texp(out)\t"<<std::exp(out)<<"\n";
 
+    os<<"get_optimal_x::\txmean\t"<<xmean<<"\tymean\t"<<ymean<<"\tvar_x\t"<<var_x;
+    os<<"\tvar_y\t"<<var_y<<"\tcov\t"<<cov<<"\tb\t"<<b<<"\ta\t"<<a<<"\tout\t"<<out<< "\texp(out)\t"<<std::exp(out)<<"\n";
 
-    return out;
+    return std::max(min_x_,std::min(max_x,out));
   }
 
-  gaussian_lin_regr(double target_y,double target_y_error)
-    :y_opt_(target_y), y_e_(target_y_error),SW_(0),SX_(0),SY_(0),SXX_(0),SYY_(0),SXY_(0){}
+  gaussian_lin_regr(double min_x,double max_x)
+    :min_x_(std::min(min_x,max_x)),max_x(std::max(min_x,max_x)),SW_(0),SX_(0),SY_(0),SXX_(0),SYY_(0),SXY_(0){}
 
 
   void push_back(double x, double y, double ysd)
   {
     double w=1.0/ysd/ysd;
     //      *std::exp(-(std::pow((y-y_opt_),2)/(2.0*(sqr(ysd)+sqr(y_e_)))));
-    std::cout<<" yopt= "<<y_opt_<<" y_e_="<<y_e_<<" x= "<<x<<"y ="<<y<<" ysd= "<<ysd<<" w= "<<w<<"\n";
+    std::cout<<" x= "<<x<<"y ="<<y<<" ysd= "<<ysd<<" w= "<<w<<"\n";
 
     SW_+=w;
     SX_+=w*x;
@@ -52,8 +55,8 @@ public:
 
 
 private:
-  double y_opt_;
-  double y_e_;
+  double min_x_;
+  double max_x;
   double SW_;
   double SX_;
   double SY_;
@@ -517,9 +520,11 @@ private:
 
 struct trust_region
 {
-  static trust_region min(){return {1E-5};}
+  static trust_region min(){return {1E-6};}
 
   static trust_region max(){return {1.0};}
+
+  static double logFactor(){return std::log(100.0);}
 
   double r_;
 
@@ -785,7 +790,8 @@ public:
    ,mcmc_step<pDist>& sDist,
    std::size_t nsamples,
    std::size_t nskip,
-   std::mt19937_64& mt)
+   std::mt19937_64& mt
+   , std::ostream& os)
   {
     std::size_t nsamples_0=min_tryParameter();
     std::size_t nsamplesFinal=std::max(40lu,nsamples*nskip/20);
@@ -795,15 +801,16 @@ public:
     mcmc_step<pDist> cDist=LM_Lik.get_mcmc_step(lik,model,data,c,sDist.beta);
 
     AP r_optimal=adapt_Parameter
-        (LM_Lik,lik,model,data,sDist,cDist,nsamples_0,nsamplesFinal,mt);
+        (LM_Lik,lik,model,data,sDist,cDist,nsamples_0,nsamplesFinal,mt,os);
     auto LM=LM_Lik(r_optimal);
+
+    std::size_t naccepts=0;
+    std::size_t nrejects=0;
 
     SamplesSeries<mcmc_step<pDist>> o(nsamples);
     while(true)
       {
-        std::size_t naccepts=0;
-        std::size_t nrejects=0;
-        n_steps(LM,lik,model,data,sDist,cDist,nskip,naccepts,nrejects,mt);
+        n_steps(LM,lik,model,data,sDist,cDist,nskip,naccepts,nrejects,mt,os);
         o.push_back(sDist);
         if (o.full())
           break;
@@ -822,12 +829,17 @@ public:
    ,mcmc_step<pDist>& sDist,
    mcmc_step<pDist>& cDist,
    std::size_t nsamples,
-   std::mt19937_64& mt)
+   std::mt19937_64& mt
+   ,std::ostream& os)
   {
     std::size_t naccepts=0;
     std::size_t nrejects=0;
     auto LM=LM_Lik(r_value);
-    n_steps(LM,lik,model,data,sDist,cDist,nsamples,naccepts,nrejects,mt);
+    sDist=LM.get_mcmc_step(lik,model,data,sDist.param,sDist.beta);
+    M_Matrix<double> c=sDist.proposed.sample(mt);
+    cDist=LM.get_mcmc_step(lik,model,data,c,sDist.beta);
+
+    n_steps(LM,lik,model,data,sDist,cDist,nsamples,naccepts,nrejects,mt,os);
     return {naccepts,nrejects};
 
   }
@@ -843,16 +855,24 @@ public:
    std::size_t nsamples,
    std::size_t& naccepts,
    std::size_t& nrejects,
-   std::mt19937_64& mt)
+   std::mt19937_64& mt
+   , std::ostream& os)
   {
     std::size_t i=0;
     AP r_value=LM.getValue();
 
     while(i<nsamples)
       {
+
         std::cout<<i<<" "<<sDist.beta<<" "<<r_value<<" ";
         test::put(std::cout,sDist,cDist);
         put(std::cout,sDist,cDist);
+
+        os<<"n_steps::"<<i<<" "<<sDist.beta<<" "<<r_value<<" ";
+        test::put(os,sDist,cDist);
+        put(os,sDist,cDist);
+
+
         if (step(LM,lik,model,data,sDist,cDist,mt))
           {
             ++naccepts;
@@ -861,6 +881,8 @@ public:
           ++nrejects;
         ++i;
         std::cout<<" "<<naccepts<<" "<<nrejects<<"\n";
+        os<<" "<<naccepts<<" "<<nrejects<<"\n";
+        os.flush();
 
       }
 
@@ -905,49 +927,53 @@ public:
    mcmc_step<pDist>& cDist,
    std::size_t nsamples_0,
    std::size_t nsamplesFinal,
-   std::mt19937_64& mt)
+   std::mt19937_64& mt
+   ,std::ostream& os)
   {
-    AP ap0=LM_Lik.getValue();
+    AP ap0=AP::max();
     double opt_accpt=LM_Lik.optimal_acceptance_rate();
+    double x0=std::log(ap0.getValue());
+    double dx=AP::logFactor();
+    gaussian_lin_regr lr(std::log(AP::min().getValue()),std::log(AP::max().getValue()));
+
     double y=logit(opt_accpt);
-    double yse=std::sqrt(1.0/(opt_accpt*(1-opt_accpt)*nsamplesFinal));
-    gaussian_lin_regr lr(y,yse);
 
     std::size_t nsamples=nsamples_0;
-    auto res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
-    double x0=std::log(ap0.getValue());
+    auto res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
     auto m0=logit(res0);
     lr.push_back(x0,m0.first,m0.second );
-    ap0=AP::max();
 
-    res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
-    x0=std::log(ap0.getValue());
-    m0=logit(res0);
-    lr.push_back(x0,m0.first,m0.second );
-
-    x0=lr.get_optimal_x();
+    while (res0.first<res0.second)
+      {
+        x0-=dx;
+        ap0.setValue(std::exp(x0));
+        res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
+        m0=logit(res0);
+        lr.push_back(x0,m0.first,m0.second );
+      }
+    x0=lr.get_optimal_x(y,os);
     ap0.setValue(std::exp(x0));
-    res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
+    res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
 
     while (!accept_Parameter(opt_accpt,res0))
       {
         m0=logit(res0);
         lr.push_back(x0,m0.first,m0.second );
-        x0=lr.get_optimal_x();
+        x0=lr.get_optimal_x(y,os);
         ap0.setValue(std::exp(x0));
-        res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
+        res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
       }
     while (nsamples<nsamplesFinal)
       {
-        res0+=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
+        res0+=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
         nsamples*=2;
         while (!accept_Parameter(opt_accpt,res0))
           {
             m0=logit(res0);
             lr.push_back(x0,m0.first,m0.second );
-            x0=lr.get_optimal_x();
+            x0=lr.get_optimal_x(y,os);
             ap0.setValue(std::exp(x0));
-            res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt);
+            res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
           }
       }
     return ap0;
@@ -997,6 +1023,29 @@ public:
 
 };
 
+
+
+template
+<
+    class D
+    , template<class> class M
+    , template<class,template<class> class > class D_Lik=Poisson_DLikelihood
+    , class my_PropD=LM_MultivariateGaussian
+    , class AP=trust_region
+    ,template<
+      class
+      , template<class> class
+      , template<class,template<class> class > class
+      , class
+      , class
+      >
+    class propDistStep=LevenbergMarquardt_step
+    >
+std::ostream& operator<<(std::ostream& os
+                         ,const Metropolis_Hastings_mcmc<D,M,D_Lik,my_PropD,AP,propDistStep>& mcmc)
+{
+  return os;
+}
 
 
 
@@ -1106,8 +1155,12 @@ public:
    ,const M<D>& model
    ,const D& data
    ,const std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>& beta
-   , std::mt19937_64& mt)
+   , std::mt19937_64& mt
+   , const std::string filename)
   {
+    std::ofstream os;
+    os.open(filename.c_str());
+
     std::vector<std::pair<double,SamplesSeries<mystep>>> o;
 
 
@@ -1127,10 +1180,14 @@ public:
     for (std::size_t i=0; i<beta.size(); ++i)
       {
         cDist=LMLik.update_mcmc_step(lik,model,data,cDist,beta[i].first);
-        auto s=mcmc.run(LMLik,lik,model,data,cDist,beta[i].second.first,beta[i].second.second,mt);
+        auto s=mcmc.run(LMLik,lik,model,data,cDist,beta[i].second.first,beta[i].second.second,mt,os);
         o.push_back({beta[i].first,s});
       }
-    return new Evidence_Evaluation<mystep>(std::move(o));
+    auto out=new Evidence_Evaluation<mystep>(std::move(o));
+    std::cout<<"LogEvidence= "<<out->logEvidence()<<"\n";
+
+
+    return out;
   }
 };
 

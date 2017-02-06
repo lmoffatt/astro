@@ -246,7 +246,7 @@ CortexLikelihood *CommandManager::getLikelihood(const std::string &id)
 
 
 
-void AlignCommand::run(const std::string line)
+void AlignCommand::run(const std::string& line)
 {
 
   std::string alignName, dataName;
@@ -265,7 +265,7 @@ void AlignCommand::run(const std::string line)
 }
 
 
-void MergeCommand::run(const std::string line)
+void MergeCommand::run(const std::string& line)
 {
   std::string cName, dataName;
   std::stringstream ss(line);
@@ -288,7 +288,7 @@ void MergeCommand::run(const std::string line)
 
 
 
-void DistancesCommand::run(const std::string line)
+void DistancesCommand::run(const std::string& line)
 {
   std::string cName, dataName;
   std::stringstream ss(line);
@@ -307,7 +307,7 @@ void DistancesCommand::run(const std::string line)
 
 
 
-void HistogramCommand::run(const std::string line)
+void HistogramCommand::run(const std::string& line)
 {
 
   //histogram 3dpl d_les  0:+100:3000
@@ -362,7 +362,7 @@ void HistogramCommand::run(const std::string line)
 }
 
 
-void ExperimentCommand::run(const std::string line)
+void ExperimentCommand::run(const std::string& line)
 
 {
   // experiment experiment1 1E7 seed  0  0 [0 25 50 100 250 500:500:4000]   3dpl 7dpl
@@ -421,7 +421,7 @@ void ExperimentCommand::run(const std::string line)
 }
 
 
-void SimulateCommand::run(const std::string line)
+void SimulateCommand::run(const std::string& line)
 {
 
   //simulate opt experiment1 parameters_10 parameters_10 10 100
@@ -526,7 +526,7 @@ void SimulateCommand::run(const std::string line)
 
 
 
-void readCommand::run(const std::string rline)
+void readCommand::run(const std::string& rline)
 {
   std::stringstream ss(rline);
   std::string commandName;
@@ -617,7 +617,7 @@ void readCommand::run(const std::string rline)
 
 
 
-void writeCommand::run(const std::string line)
+void writeCommand::run(const std::string& line)
 {
   std::string writeName, dataName;
   std::stringstream ss(line);
@@ -739,7 +739,7 @@ void writeCommand::run(const std::string line)
 
 
 
-void LikelihoodCommand::run(const std::string line)
+void LikelihoodCommand::run(const std::string& line)
 {
 
   //likelihood lik experiment1 parameters_10 parameters_10 0.5 50 1000
@@ -815,7 +815,7 @@ std::string LikelihoodCommand::id() const
 }
 
 
-void OptimizeCommand::run(const std::string line)
+void OptimizeCommand::run(const std::string& line)
 {
 
   //optimize opt experiment1 parameters_10 parameters_10 10 100
@@ -915,7 +915,7 @@ void OptimizeCommand::run(const std::string line)
 
 
 
-void EvidenceCommand::run(const std::__cxx11::string line)
+void EvidenceCommand::run(const std::__cxx11::string& line)
 {
 
    // evidence evi experiment1 paramters_10
@@ -1013,6 +1013,7 @@ void EvidenceCommand::run(const std::__cxx11::string line)
            std::mt19937_64::result_type seed=rd();
 
            mt.seed(seed);
+           eviName+=time_now()+"_"+std::to_string(seed);
            std::cout<<"\n random seed =\n"<<seed<<"\n";
          }
        else
@@ -1020,6 +1021,8 @@ void EvidenceCommand::run(const std::__cxx11::string line)
            std::mt19937_64::result_type seed=initseed;
 
            mt.seed(seed);
+           eviName+=time_now()+"_"+std::to_string(seed);
+
            std::cout<<"\n provided seed =\n"<<seed<<"\n";
 
          }
@@ -1027,11 +1030,32 @@ void EvidenceCommand::run(const std::__cxx11::string line)
        std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>
            beta=getBeta(betas,samples,nskip);
 
-      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt);
+      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt,eviName+"_log.txt");
+      std::ofstream fout(eviName.c_str());
+      fout.open(eviName.c_str(),std::ios_base::out);
+      fout<<line<<"\n";
+      fout<<"evidenceS: "<<evidenceS<<"\n";
+      fout<<" eviName: "<<eviName<<"\n";
+      fout<<" experimentName:"<<experimentName<<"\n";
+      fout<<" priorName: "<<priorName<<"\n";
+      fout<<" dx: "<<dx<<"\n";
+      fout<<" dtmin: "<<dtmin<<"\n";
+      fout<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
+      fout<<" dtmax: "<<dtmax<<"\n";
+      fout<<" niter: "<<niter<<"\n";
+      fout<<" maxduration "<<maxduration<<"\n";
+      fout<<" landa0 "<<landa0<<"\n";
+      fout<<" v "<<v<<"\n";
+      fout<<" nmaxloop "<<nmaxloop<<"\n";
 
+      fout<<" initseed "<<initseed<<"\n";
+      fout<<" betas "<<betas<<"\n";
+      fout<<" samples "<<samples<<"\n";
+      fout<<" nskip "<<nskip<<"\n";
 
-
-    }
+      fout<<*ev<<"\n";
+      fout.close();
+     }
 
 
 

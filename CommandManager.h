@@ -79,7 +79,7 @@ public:
 
   virtual ~CommandBase(){}
 
-  virtual void run(const std::string line)=0;
+  virtual void run(const std::string& line)=0;
 
 };
 
@@ -167,7 +167,7 @@ class readCommand: public CommandBase
 
   // CommandBase interface
 public:
-  virtual void run(const std::string rline);
+  virtual void run(const std::string& rline) override;
 
   readCommand(CommandManager* cm):
     CommandBase("read"),
@@ -187,7 +187,7 @@ class writeCommand: public CommandBase
 
   // CommandBase interface
 public:
-  virtual void run(const std::string line);
+  virtual void run(const std::string& line) override;
 
   writeCommand(CommandManager* cm):
     CommandBase("write"),
@@ -210,7 +210,7 @@ class AlignCommand:public CommandBase
 {
   // CommandBase interface
 public:
-  virtual void run(const std::string line);
+  virtual void run(const std::string& line);
   virtual std::string id() const
   {
     return "align";
@@ -230,7 +230,7 @@ class MergeCommand:public CommandBase
 {
   // CommandBase interface
 public:
-  virtual void run(const std::string line) override;
+  virtual void run(const std::string& line) override;
   MergeCommand(CommandManager* cm):
     CommandBase("merge"),
     cm_(cm){}
@@ -246,7 +246,7 @@ class DistancesCommand:public CommandBase
 {
   // CommandBase interface
 public:
-  virtual void run(const std::string line);
+  virtual void run(const std::string& line);
   virtual std::string id() const
   {
     return "distances";
@@ -266,7 +266,7 @@ class HistogramCommand:public CommandBase
 {
   // CommandBase interface
 public:
-  virtual void run(const std::string line);
+  virtual void run(const std::string& line);
   HistogramCommand(CommandManager* cm):
     CommandBase("histogram"),
     cm_(cm){}
@@ -282,7 +282,7 @@ class ExperimentCommand:public CommandBase
 {
   // CommandBase interface
 public:
-  virtual void run(const std::string line);
+  virtual void run(const std::string& line);
   virtual std::string id() const
   {
     return "experiment";
@@ -302,7 +302,7 @@ class SimulateCommand:public CommandBase
 {
   // CommandBase interface
 public:
-  virtual void run(const std::string line);
+  virtual void run(const std::string& line);
 
   SimulateCommand(CommandManager* cm):
     CommandBase("simulate"),
@@ -319,7 +319,7 @@ class LikelihoodCommand:public CommandBase
 {
   // CommandBase interface
 public:
-  virtual void run(const std::string line);
+  virtual void run(const std::string& line);
   virtual std::string id() const;
   LikelihoodCommand(CommandManager* cm):
     CommandBase("likelihood"),
@@ -335,7 +335,7 @@ class OptimizeCommand:public CommandBase
 {
   // CommandBase interface
 public:
-  virtual void run(const std::string line);
+  virtual void run(const std::string& line);
 
   virtual std::string id() const
   {
@@ -356,7 +356,7 @@ class EvidenceCommand:public CommandBase
 {
   // CommandBase interface
 public:
-  virtual void run(const std::string line);
+  virtual void run(const std::__cxx11::string &line);
 
   virtual std::string id() const
   {
