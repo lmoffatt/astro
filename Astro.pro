@@ -185,7 +185,8 @@ DISTFILES += \
     run/p_100m/parameters_100m.txt \
     run/p_114_24_32_44m/parameter_114_24_32_44 \
     run/New_experiment_log_250_1 \
-    run/evidence_script
+    run/evidence_script \
+    run/runEvidence_0.sh
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
