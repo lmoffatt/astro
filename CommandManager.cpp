@@ -1030,7 +1030,33 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
        std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>
            beta=getBeta(betas,samples,nskip);
 
-      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt,eviName+"_log.txt");
+       std::string eviNameLog=eviName+"_log.txt";
+       std::ofstream flog(eviNameLog.c_str());
+       flog.open(eviName.c_str(),std::ios_base::out);
+       flog<<line<<"\n";
+       flog<<"evidenceS: "<<evidenceS<<"\n";
+       flog<<" eviName: "<<eviName<<"\n";
+       flog<<" experimentName:"<<experimentName<<"\n";
+       flog<<" priorName: "<<priorName<<"\n";
+       flog<<" dx: "<<dx<<"\n";
+       flog<<" dtmin: "<<dtmin<<"\n";
+       flog<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
+       flog<<" dtmax: "<<dtmax<<"\n";
+       flog<<" niter: "<<niter<<"\n";
+       flog<<" maxduration "<<maxduration<<"\n";
+       flog<<" landa0 "<<landa0<<"\n";
+       flog<<" v "<<v<<"\n";
+       flog<<" nmaxloop "<<nmaxloop<<"\n";
+
+       flog<<" initseed "<<initseed<<"\n";
+       flog<<" betas "<<betas<<"\n";
+       flog<<" samples "<<samples<<"\n";
+       flog<<" nskip "<<nskip<<"\n";
+
+
+
+      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt,flog);
+       flog.close();
       std::ofstream fout(eviName.c_str());
       fout.open(eviName.c_str(),std::ios_base::out);
       fout<<line<<"\n";

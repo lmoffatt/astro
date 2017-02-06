@@ -873,6 +873,7 @@ public:
         put(os,sDist,cDist);
 
 
+
         if (step(LM,lik,model,data,sDist,cDist,mt))
           {
             ++naccepts;
@@ -989,6 +990,7 @@ public:
    ,mcmc_step<pDist>& cLik)
   {
     os<<sLik.logbPL()<<" "<<cLik.logbPL()<<" ";
+    os<<sLik.logPrior<<" "<<cLik.logPrior<<" ";
     os<<sLik.logLik<<" "<<cLik.logLik<<" ";
     os<<sLik.proposed.landa<<" "<<cLik.proposed.landa;
     return os;
@@ -1156,10 +1158,8 @@ public:
    ,const D& data
    ,const std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>& beta
    , std::mt19937_64& mt
-   , const std::string filename)
+   , std::ofstream& os)
   {
-    std::ofstream os;
-    os.open(filename.c_str());
 
     std::vector<std::pair<double,SamplesSeries<mystep>>> o;
 
