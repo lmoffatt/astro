@@ -235,8 +235,8 @@ public:
   // F(T)->double
   double mean(const F& f, std::size_t i0=0)
   {
-    double s=f(samples_[i0]);
-    for (std::size_t i=i0+1; i<n_; ++i)
+    double s=0;
+    for (std::size_t i=i0; i<n_; ++i)
       s+=f(samples_[i]);
     return s/(n_-i0);
   }
@@ -262,13 +262,19 @@ public:
   std::pair<double,double> mean_var(const F& f, std::size_t i0=0)
   {
     double m=mean(f,i0);
-    double s=f(samples_[i0]);
-    for (std::size_t i=i0+1; i<n_; ++i)
-      s+=std::pow(f(samples_[i]),2);
-    double var=s/(n_-i0)-std::pow(m,2);
+    double s=0;
+    for (std::size_t i=i0; i<n_; ++i)
+      s+=sqr(f(samples_[i]));
+    double var=s/(n_-i0)-sqr(m);
     return {m,var};
   }
 
+  template<class F>
+  std::pair<double,double> mean_std(const F& f, std::size_t i0=0)
+  {
+    auto o=mean_var(f,i0);
+    return {o.first,std::sqrt(o.second)};
+  }
 
 private:
   std::size_t n_;
@@ -810,11 +816,19 @@ public:
     SamplesSeries<mcmc_step<pDist>> o(nsamples);
     while(true)
       {
+        os<<"niter::\t"<<o.size()<<"\t";
+        std::cout<<"niter::\t"<<o.size()<<"\t";
+
         n_steps(LM,lik,model,data,sDist,cDist,nskip,naccepts,nrejects,mt,os);
         o.push_back(sDist);
         if (o.full())
           break;
       }
+    std::pair<double,double> l=o.mean_std
+        ([](const mcmc_step<pDist>& mc){return mc.logLik;},nsamples/2);
+
+    std::cout<<"\nmcmc:: beta=\t"<<sDist.beta<<"\tlogLik\t"<<l<<"\tnsamples\t"<<nsamples/2<<"\n";
+    os<<"\nmcmc:: beta=\t"<<sDist.beta<<"\tlogLik\t"<<l<<"\n";
     return o;
 
   }
