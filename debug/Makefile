@@ -10,8 +10,8 @@ MAKEFILE      = Makefile
 
 ####### Compiler, tools and options
 
-CC            = gcc
-CXX           = g++
+CC            = ~/local/gcc-6.2.0/bin/gcc
+CXX           = ~/local/gcc-6.2.0/bin/g++
 DEFINES       =
 CFLAGS        = -pipe -O2 -Wall -W -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -fopenmp -O2 -std=c++11 -std=gnu++11 -Wall -W -fPIC $(DEFINES)

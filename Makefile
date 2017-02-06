@@ -10,8 +10,8 @@ MAKEFILE      = Makefile
 
 ####### Compiler, tools and options
 
-CC            = gcc
-CXX           = g++
+CC            = ~/local/gcc-6.2.0/bin/gcc
+CXX           = ~/local/gcc-6.2.0/bin/g++
 DEFINES       =
 CFLAGS        = -pipe -O2 -Wall -W -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -fopenmp -O2 -std=c++11 -std=gnu++11 -Wall -W -fPIC $(DEFINES)
@@ -35,8 +35,8 @@ COMPRESS      = gzip -9f
 DISTNAME      = Astro1.0.0
 DISTDIR = /home/luciano/Data/celulas/Astro/build-Astro-gcc_6-Release/.tmp/Astro1.0.0
 LINK          = g++
-LFLAGS        = -fopenmp -Wl,-O1
-LIBS          = $(SUBLIBS) -lgomp -lpthread -L/home/luciano/Data/celulas/Astro/Astro/bin -lblas -llapack
+LFLAGS        = -fopenmp -Wl,-O1,-rpath=/home/lmoffatt.inquimae/local/gcc-6.2.0/lib/
+LIBS          = $(SUBLIBS) -lblas -llapack
 AR            = ar cqs
 RANLIB        =
 SED           = sed
