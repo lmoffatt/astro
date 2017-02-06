@@ -1053,6 +1053,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
       flog<<" betas "<<betas<<"\n";
       flog<<" samples "<<samples<<"\n";
       flog<<" nskip "<<nskip<<"\n";
+      flog.flush();
 
 
 

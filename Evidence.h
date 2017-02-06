@@ -943,7 +943,11 @@ public:
     auto res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
     auto m0=logit(res0);
     lr.push_back(x0,m0.first,m0.second );
-
+    x0-=dx;
+    ap0.setValue(std::exp(x0));
+    res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os);
+    m0=logit(res0);
+    lr.push_back(x0,m0.first,m0.second );
     while (res0.first<res0.second)
       {
         x0-=dx;
