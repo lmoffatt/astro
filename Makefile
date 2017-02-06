@@ -548,7 +548,7 @@ Makefile: ../Astro/Astro.pro ../../../../Qt5.7.0/5.7/gcc_64/mkspecs/linux-g++/qm
 all: Makefile $(TARGET)
 
 dist: distdir FORCE
-(cd `dirname $(DISTDIR)` && $(TAR) $(DISTNAME).tar $(DISTNAME) && $(COMPRESS) $(DISTNAME).tar) && $(MOVE) `dirname $(DISTDIR)`/$(DISTNAME).tar.gz . && $(DEL_FILE) -r $(DISTDIR)
+	(cd `dirname $(DISTDIR)` && $(TAR) $(DISTNAME).tar $(DISTNAME) && $(COMPRESS) $(DISTNAME).tar) && $(MOVE) `dirname $(DISTDIR)`/$(DISTNAME).tar.gz . && $(DEL_FILE) -r $(DISTDIR)
 
 distdir: FORCE
 @test -d $(DISTDIR) || mkdir -p $(DISTDIR)
