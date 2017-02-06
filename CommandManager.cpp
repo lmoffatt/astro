@@ -798,7 +798,7 @@ void LikelihoodCommand::run(const std::string& line)
   CortexMultinomialLikelihoodEvaluation CE(*CL,p);
   std::ofstream fo;
   std::string fnameout=lName+"_lik.txt";
-  fo.open(fnameout.c_str());
+  fo.open(fnameout.c_str(),std::ofstream::out);
   CE.extract(fo);
   fo.close();
 
@@ -1033,7 +1033,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
       std::string eviNameLog=eviName+"_log.txt";
       std::ofstream flog(eviNameLog.c_str());
-      flog.open(eviName.c_str(),std::ios_base::out);
+      flog.open(eviName.c_str(),std::ofstream::out);
       flog<<line<<"\n";
       flog<<"evidenceS: "<<evidenceS<<"\n";
       flog<<" eviName: "<<eviName<<"\n";
@@ -1059,7 +1059,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
       typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt,flog);
       flog.close();
       std::ofstream fout(eviName.c_str());
-      fout.open(eviName.c_str(),std::ios_base::out);
+      fout.open(eviName.c_str(),std::ofstream::out);
       fout<<line<<"\n";
       fout<<"evidenceS: "<<evidenceS<<"\n";
       fout<<" eviName: "<<eviName<<"\n";
