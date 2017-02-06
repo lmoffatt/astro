@@ -551,20 +551,19 @@ dist: distdir FORCE
 	(cd `dirname $(DISTDIR)` && $(TAR) $(DISTNAME).tar $(DISTNAME) && $(COMPRESS) $(DISTNAME).tar) && $(MOVE) `dirname $(DISTDIR)`/$(DISTNAME).tar.gz . && $(DEL_FILE) -r $(DISTDIR)
 
 distdir: FORCE
-@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
-$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
+	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
+	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 
 
 clean: compiler_clean
--$(DEL_FILE) $(OBJECTS)
--$(DEL_FILE) *~ core *.core
+	-$(DEL_FILE) $(OBJECTS)
+	-$(DEL_FILE) *~ core *.core
 
 
 distclean: clean
--$(DEL_FILE) $(TARGET)
--$(DEL_FILE) .qmake.stash
+	-$(DEL_FILE) $(TARGET)
+	-$(DEL_FILE) .qmake.stash
 	-$(DEL_FILE) Makefile
-
 
 ####### Sub-libraries
 
@@ -580,18 +579,16 @@ compiler_lex_make_all:
 compiler_lex_clean:
 compiler_clean:
 
-####### Compile
-
 main.o: ../Astro/main.cpp ../Astro/CommandManager.h \
-../Astro/BaseClass.h \
-../Astro/CortexMeasure.h \
+		../Astro/BaseClass.h \
+		../Astro/CortexMeasure.h \
 		../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../Astro/main.cpp
 
 CommandManager.o: ../Astro/CommandManager.cpp ../Astro/Models.h \
-../Astro/CortexMeasure.h \
-../Astro/LevenbergMarquardt.h \
+		../Astro/CortexMeasure.h \
+		../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h \
 		../Astro/BaseClass.h \
 		../Astro/CortexSimulation.h \
@@ -603,42 +600,42 @@ CommandManager.o: ../Astro/CommandManager.cpp ../Astro/Models.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CommandManager.o ../Astro/CommandManager.cpp
 
 Models.o: ../Astro/Models.cpp ../Astro/Models.h \
-../Astro/CortexMeasure.h \
-../Astro/LevenbergMarquardt.h \
+		../Astro/CortexMeasure.h \
+		../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h \
 		../Astro/BaseClass.h \
 		../Astro/CortexSimulation.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Models.o ../Astro/Models.cpp
 
 CortexSimulation.o: ../Astro/CortexSimulation.cpp ../Astro/CortexSimulation.h \
-../Astro/Parameters.h \
-../Astro/BaseClass.h \
+		../Astro/Parameters.h \
+		../Astro/BaseClass.h \
 		../Astro/CommandManager.h \
 		../Astro/CortexMeasure.h \
 		../Astro/LevenbergMarquardt.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexSimulation.o ../Astro/CortexSimulation.cpp
 
 CortexMeasure.o: ../Astro/CortexMeasure.cpp ../Astro/CommandManager.h \
-../Astro/BaseClass.h \
-../Astro/CortexMeasure.h \
+		../Astro/BaseClass.h \
+		../Astro/CortexMeasure.h \
 		../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexMeasure.o ../Astro/CortexMeasure.cpp
 
 Parameters.o: ../Astro/Parameters.cpp ../Astro/Parameters.h \
-../Astro/BaseClass.h \
-../Astro/MatrixInverse.h
+		../Astro/BaseClass.h \
+		../Astro/MatrixInverse.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Parameters.o ../Astro/Parameters.cpp
 
 MatrixInverse.o: ../Astro/MatrixInverse.cpp ../Astro/MatrixInverse.h
-$(CXX) -c $(CXXFLAGS) $(INCPATH) -o MatrixInverse.o ../Astro/MatrixInverse.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o MatrixInverse.o ../Astro/MatrixInverse.cpp
 
 matrixCholesky.o: ../Astro/matrixCholesky.cpp ../Astro/MatrixInverse.h
-$(CXX) -c $(CXXFLAGS) $(INCPATH) -o matrixCholesky.o ../Astro/matrixCholesky.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o matrixCholesky.o ../Astro/matrixCholesky.cpp
 
 LevenbergMarquardt.o: ../Astro/LevenbergMarquardt.cpp ../Astro/LevenbergMarquardt.h \
-../Astro/Parameters.h \
-../Astro/BaseClass.h \
+		../Astro/Parameters.h \
+		../Astro/BaseClass.h \
 		../Astro/MatrixInverse.h \
 		../Astro/CortexLikelihood.h \
 		../Astro/Models.h \
@@ -650,8 +647,8 @@ LevenbergMarquardt.o: ../Astro/LevenbergMarquardt.cpp ../Astro/LevenbergMarquard
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o LevenbergMarquardt.o ../Astro/LevenbergMarquardt.cpp
 
 CortexLikelihood.o: ../Astro/CortexLikelihood.cpp ../Astro/CortexLikelihood.h \
-../Astro/Models.h \
-../Astro/CortexMeasure.h \
+		../Astro/Models.h \
+		../Astro/CortexMeasure.h \
 		../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h \
 		../Astro/BaseClass.h \
@@ -665,20 +662,20 @@ CortexLikelihood.o: ../Astro/CortexLikelihood.cpp ../Astro/CortexLikelihood.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexLikelihood.o ../Astro/CortexLikelihood.cpp
 
 Splines.o: ../Astro/Splines.cpp ../Astro/Splines.h \
-../Astro/MatrixInverse.h
-$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Splines.o ../Astro/Splines.cpp
+		../Astro/MatrixInverse.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Splines.o ../Astro/Splines.cpp
 
 Evidence.o: ../Astro/Evidence.cpp ../Astro/Evidence.h \
-../Astro/Matrix.h \
-../Astro/Distributions.h
+		../Astro/Matrix.h \
+		../Astro/Distributions.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Evidence.o ../Astro/Evidence.cpp
 
 Matrix.o: ../Astro/Matrix.cpp ../Astro/Matrix.h
-$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Matrix.o ../Astro/Matrix.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Matrix.o ../Astro/Matrix.cpp
 
 Distributions.o: ../Astro/Distributions.cpp ../Astro/Distributions.h \
-../Astro/Matrix.h
-$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Distributions.o ../Astro/Distributions.cpp
+		../Astro/Matrix.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Distributions.o ../Astro/Distributions.cpp
 
 ####### Install
 
