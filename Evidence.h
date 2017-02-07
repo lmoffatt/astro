@@ -783,7 +783,7 @@ public:
 
 
 
-  static std::size_t min_tryParameter(){return 5;}
+  static std::size_t min_tryParameter(){return 20;}
 
 
 
@@ -1104,29 +1104,32 @@ public:
 
     double sum=0;
     double sumVar=0;
-    for (std::size_t i=0; i<o.size(); ++i)
+    std::pair<double,double>  l=o[0].second.mean_var
+        ([](const mcmc& mc){return mc.logLik;},o[0].second.size()/2);
+
+    double beta=o[0].first;
+    double sumdb=0;
+
+    for (std::size_t i=1; i<o.size(); ++i)
       {
+        double beta0=beta;
+        auto l0=l;
+        beta=o[i].first;
         SamplesSeries<mcmc>& s=o[i].second;
         std::size_t nsamples=s.size();
-        std::pair<double,double> l=s.mean_var
+        l=s.mean_var
             ([](const mcmc& mc){return mc.logLik;},nsamples/2);
-        double betan, betap;
-        if (i==0)
+        double db=beta-beta0;
+        sum+=db*(l.first+l0.first)/2;
+        sumVar+=db*(l.second+l0.second)/2;
+        sumdb+=db;
+        if ((i==1)&&(beta0>0))
           {
-            betan=0;
+            double db0=beta0;
+            sum+=(db0*(1+db0/db/2))*l0.first-sqr(db0)/db/2*l.first;
+            sumVar+=(db0*(1+db0/db/2))*l0.second+sqr(db0)/db/2*l.second;
+            sumdb+=db0;
           }
-        else
-          {
-            betan=o[i].first;
-          }
-        if (i==o.size()-1)
-          betap=1;
-        else
-          betap=o[i+1].first;
-        double beta=o[i].first;
-        double db=(beta-betan)+0.5*(betap-beta);
-        sum+=db*l.first;
-        sumVar+=db*l.second;
       }
     logEvidence_={sum,sqrt(sumVar)};
     run_=o;
