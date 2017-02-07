@@ -1032,8 +1032,9 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
           beta=getBeta(betas,samples,nskip);
 
       std::string eviNameLog=eviName+"_log.txt";
-      std::ofstream flog(eviNameLog.c_str());
-      flog.open(eviName.c_str(),std::ofstream::out);
+      std::ofstream flog;
+
+      flog.open(eviNameLog.c_str(), std::ofstream::out | std::ofstream::app);
       flog<<line<<"\n";
       flog<<"evidenceS: "<<evidenceS<<"\n";
       flog<<" eviName: "<<eviName<<"\n";
@@ -1061,9 +1062,11 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
 
       typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt,flog,startTime,timeOpt);
+      std::cout<<*ev;
+      flog<<*ev;
       flog.close();
-      std::ofstream fout(eviName.c_str());
-      fout.open(eviName.c_str(),std::ofstream::out);
+      std::ofstream fout;
+      fout.open(eviName.c_str(), std::ofstream::out | std::ofstream::app);
       fout<<line<<"\n";
       fout<<"evidenceS: "<<evidenceS<<"\n";
       fout<<" eviName: "<<eviName<<"\n";
