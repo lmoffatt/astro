@@ -10,6 +10,7 @@
 #include <chrono>
 
 #include <ctime>
+#include <Matrix.h>
 
 std::istream& safeGetline(std::istream& is, std::string& t);
 
@@ -266,59 +267,6 @@ void writeField(std::ostream& s
     }
   s<<"\n";
 }
-
-
-
-
-
-template<typename T>
-std::ostream& operator<<(std::ostream& s, const std::vector<T>& v)
-{
-  for (T x:v)
-    s<<x<<"\t";
-  s<<"\n";
-  return s;
-}
-
-template<typename T>
-std::ostream& operator<<(std::ostream& s, const std::vector<std::vector<T>>& m)
-{
-  for (const std::vector<T>& v:m)
-    s<<v;
-  s<<"\n";
-  return s;
-}
-
-
-
-template<typename T>
-std::istream& operator>>(std::istream& s, std::vector<T>& v)
-{
-  std::string line;
-  safeGetline(s,line);
-  while (v.empty()  &&line.empty()&& s.good())
-    safeGetline(s,line);
-
-  T x;
-  std::stringstream ss(line);
-  while (ss>>x)
-    v.push_back(x);
-  return s;
-}
-
-template<typename T>
-std::istream& operator>>(std::istream& s, std::vector<std::vector<T>>& m)
-{
-  std::vector<T> v;
-  while((s>>v)&& !v.empty())
-    {
-      m.push_back(v);
-      v.clear();
-    }
-  return s;
-}
-
-
 
 
 

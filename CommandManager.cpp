@@ -920,6 +920,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
   // evidence evi experiment1 paramters_10
   //optimize opt experiment1 parameters_10 parameters_10 10 100
+  typedef Landa AP;
 
   std::string evidenceS, eviName, experimentName, priorName;
   double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
@@ -930,9 +931,12 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
   std::size_t nPoints_per_decade,niter;
   std::stringstream ss(line);
   M_Matrix<double> betas;
+  M_Matrix<AP> aps;
+  std::vector<std::vector<double>> apsPar;
+
   M_Matrix<std::size_t> samples, nskip;
 
-  ss>>evidenceS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>betas>>samples>>nskip;
+  ss>>evidenceS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>betas>>samples>>nskip;
 
 
   std::cout<<"evidenceS: "<<evidenceS;
@@ -951,8 +955,20 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
   std::cout<<" initseed "<<initseed;
   std::cout<<" betas "<<betas;
+  std::cout<<AP::ClassName()<<" "<<aps;
+  for (std::size_t i=0; i<apsPar.size(); ++i)
+    {
+    std::cout<<AP::ParName(i)<<" "<<apsPar;
+    for (std::size_t j=0; j<apsPar[i].size(); ++j)
+      std::cout<<apsPar[i][j]<<" ";
+    }
+
   std::cout<<" samples "<<samples;
   std::cout<<" nskip "<<nskip;
+
+  Adaptive<AP> landa(aps,apsPar);
+
+  std::cout<<landa;
 
   std::cerr<<line;
 
@@ -1002,8 +1018,9 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
       MyModel<MyData> m(CL);
       MyData d(CL);
-      Metropolis_Hastings_mcmc<MyData,MyModel> mcmc;
-      LevenbergMarquardt_step<MyData,MyModel> LMLik(landa0,v,nmaxloop);
+      Metropolis_Hastings_mcmc<
+          MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
+      LevenbergMarquardt_step<MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> LMLik;
       Poisson_DLikelihood<MyData,MyModel> DLik;
       TI ti;
       std::mt19937_64 mt;
@@ -1028,7 +1045,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
         }
 
-      std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>
+      std::vector<std::tuple<double, std::size_t,std::size_t>>
           beta=getBeta(betas,samples,nskip);
 
       std::string eviNameLog=eviName+"_log.txt";
@@ -1052,6 +1069,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
       flog<<" initseed "<<initseed<<"\n";
       flog<<" betas "<<betas<<"\n";
+      flog<<AP::ClassName()<<" "<<aps<<"\n";
       flog<<" samples "<<samples<<"\n";
       flog<<" nskip "<<nskip<<"\n";
       flog.flush();
@@ -1061,7 +1079,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
       double timeOpt=0;
 
 
-      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,beta,mt,flog,startTime,timeOpt);
+      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,landa,beta,mt,flog,startTime,timeOpt);
       std::cout<<*ev;
       flog<<*ev;
       flog.close();

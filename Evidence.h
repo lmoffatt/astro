@@ -3,6 +3,7 @@
 
 #include "Matrix.h"
 #include "Distributions.h"
+#include "Optimization_BFGS.h"
 
 #include <random>
 
@@ -10,6 +11,8 @@
 #include <list>
 #include <fstream>
 #include <chrono>
+#include <algorithm>
+#include <set>
 
 class gaussian_lin_regr
 {
@@ -156,22 +159,6 @@ std::ostream& operator<<(std::ostream& os,const mcmc_Dpost& x)
 
 
 
-struct LM_MultivariateGaussian: public MultivariateGaussian
-{
-  LM_MultivariateGaussian(MultivariateGaussian m, double mylanda):
-    MultivariateGaussian(m),landa(mylanda){}
-  LM_MultivariateGaussian():landa(){}
-  double landa;
-};
-
-inline
-std::ostream& operator<<(std::ostream& os,const LM_MultivariateGaussian& x)
-{
-  const MultivariateGaussian& b=x;
-  os<<b;
-  os<<"\nlanda\n"<<x.landa;
-  return os;
-}
 
 
 
@@ -411,10 +398,15 @@ public:
     mcmc_prior p=model.prior(data,param);
     mcmc_post out(std::move(p));
     out.f=model.f(data,param);
-    out.logLik=logL(data,out.f);
-    if (std::isnan(out.logLik))
+    if (out.f.size()==0)
       out.isValid=false;
-    else out.isValid=true;
+    else
+      {
+        out.logLik=logL(data,out.f);
+        if (std::isnan(out.logLik))
+          out.isValid=false;
+        else out.isValid=true;
+      }
     return out;
   }
 
@@ -490,7 +482,7 @@ private:
   M_Matrix<double>
   get_J(const M<D>& model, const D& data, const M_Matrix<double>& param,
         const M_Matrix<double>& logLanda_0  ,
-        double delta=1e-4, double delta_div=3, double deltamin=1e-8)
+        double delta=1e-5, double delta_div=10, double deltamin=1e-7)
   {
     M_Matrix<double> k=data();
     std::size_t n=k.size();
@@ -503,14 +495,14 @@ private:
         M_Matrix<double> p(param);
         p[j]+=deltarun;
         M_Matrix<double> logLanda_i=model.logLanda(data,p);
-        while (isnan(logLanda_i)&&deltarun>deltamin)
+        while ((isnan(logLanda_i)||(logLanda_i.empty()))&&deltarun>deltamin)
           {
             deltarun=deltarun/delta_div;
             p=param;
             p[j]+=deltarun;
             logLanda_i=model.logLanda(data,p);
           }
-        if (isnan(logLanda_i))
+        if (isnan(logLanda_i)||logLanda_i.empty())
           return {};
 
         for (std::size_t i=0; i<n; ++i)
@@ -540,7 +532,7 @@ struct trust_region
 
   bool operator()(double expected, double found, std::size_t k)const
   {
-    if (!std::isnan(found)&&(std::pow(expected-found,2)<(2.0*k*r_)))
+    if (!std::isnan(found)&&(sqr(expected-found)<2.0*r_*k))
       return true;
     else
       return false;
@@ -552,6 +544,458 @@ inline
 std::ostream& operator<<(std::ostream& os, const trust_region& t)
 {
   os<<t.r_;
+  return os;
+}
+
+struct landa_report
+{
+  std::size_t count;
+  std::size_t nanCount;
+  double sumAcceptance;
+  double sumSqrAcceptance;
+
+  double sumDeltaLogL;
+  double sumSqrDeltaLogL;
+};
+
+inline
+std::ostream& operator<<(std::ostream& os, const landa_report& l)
+{
+  os<<l.count<<"\t"<<l.nanCount<<"\t"<<l.sumAcceptance<<"\t"<<l.sumSqrAcceptance<<"\t"<<l.sumDeltaLogL<<"\t"<<l.sumSqrDeltaLogL<<"\n";
+  return os;
+}
+
+
+
+template <typename T>
+T sample_rev_map(const std::map<double,T>& reverse_prior,std::mt19937_64& mt)
+{
+  std::uniform_real_distribution<> u;
+  double r= u(mt);
+  auto it=reverse_prior.lower_bound(r);
+  return it->second;
+
+}
+
+template <class T>
+std::map<double,T>
+cumulative_reverse_map(const std::map<T,double>& normalized_map)
+{
+  std::map<double,T> out;
+  double sump=0;
+  for (auto& e:normalized_map)
+    {
+      sump+=e.second;
+      out[sump]=e.first;
+    }
+  return out;
+}
+
+
+
+
+
+struct BayesIterator
+{
+
+  template <typename Data,  class T, class LikelihoodFunction>
+
+  static std::map<T,double>
+  posterior(const LikelihoodFunction& f,const Data& newData, std::map<T,double> prior,  double & Evidence)
+  {
+    Evidence=0;
+    std::map<T,double> out(std::move(prior));
+    for (auto it=out.begin(); it!=out.end(); ++it)
+      {
+        double lik=f(newData,it->first);
+        it->second*=lik;
+        Evidence+=it->second;
+      }
+    for (auto it=out.begin(); it!=out.end(); ++it)
+      {
+        it->second/=Evidence;
+
+      }
+    return out;
+  }
+
+  template <typename Data,  class T, class LikelihoodFunction>
+  static std::pair<std::map<T,double>,std::size_t>
+  multinomial_posterior(const LikelihoodFunction& f,const Data& newData, std::pair<std::map<T,double>, std::size_t> prior, double & Evidence)
+  {
+    std::map<T,double> out(prior.first);
+    std::size_t count=prior.second;
+    std::map<T,double> sample=posterior(f,newData,prior.first,Evidence);
+
+    for (auto it=out.begin(); it!=out.end(); ++it)
+      {
+        it->second=(it->second*count +sample[it->first])/(count+1);
+      }
+    ++count;
+
+    return {out,count};
+  }
+
+};
+
+
+struct OptimalDistribution
+{
+
+  template<typename T, class GainFunction, class Data>
+  static std::map<T,double> optimal(const GainFunction& g
+                                    ,const Data& data
+                                    , const std::map<T,double>& initDistribution,
+                                    std::size_t count)
+  {
+
+    auto init0=to_logit(initDistribution);
+    auto g_logit=logit_to_Function<GainFunction,T,Data>(g,initDistribution,count);
+    std::vector<std::map<T,double>> out(5);
+    std::vector<opt_max_iter> res(5);
+    for (std::size_t i=0; i< 5; ++i)
+      {
+        M_Matrix<double> init=init0+Rand(init0);
+        res[i]=BFGS_optimal::opt(g_logit,data,init);
+        out[i]=logit_to_distribution(res[i].sample.b,initDistribution);
+      }
+    std::cerr<<"res\n"<<res;
+    std::cerr<<out;
+    return out[0];
+
+  }
+
+  template<typename T>
+  static M_Matrix<double> to_logit(const std::map<T,double>& dist)
+  {
+    M_Matrix<double> out(1,dist.size()-1);
+    double q=1;
+    auto it=dist.begin();
+    for (std::size_t i=0; i<out.size(); ++i)
+      {
+        double p=it->second;
+        out[i]=logit(p/q);
+        q-=p;
+        ++it;
+      }
+    return out;
+
+  }
+
+  template<typename T>
+  static std::map<T,double>  logit_to_distribution(const M_Matrix<double>& logParam
+                                                   ,const std::map<T,double>& dist)
+  {
+    std::map<T,double> out(dist);
+    double q=1.0;
+    auto it=out.begin();
+    for (std::size_t i=0; i<logParam.size(); ++i)
+      {
+        double p=logistic(logParam[i]);
+        it->second=p*q;
+        q-=it->second;
+        ++it;
+      }
+    it->second=q;
+    return out;
+
+
+  }
+
+  template <class GainFunction, typename T,class Data>
+  struct logit_to_Function
+  {
+    const GainFunction& g_;
+    const std::map<T,double>& initDistribution;
+    M_Matrix<double> bmean;
+    M_Matrix<double> bstd;
+    std::size_t count;
+
+    logit_to_Function(const GainFunction& g,
+                      const std::map<T,double>& initDistribution_,
+                      std::size_t count_)
+      :g_(g)
+    ,initDistribution(initDistribution_)
+    ,bmean(to_logit(initDistribution))
+    ,bstd()
+    ,count(count_){
+      bstd=ones(bmean);
+    }
+
+    double operator()(const Data& data
+                      ,const M_Matrix<double>& logitValues)const
+    {
+      auto lo=logit_to_distribution(logitValues,initDistribution);
+      double prior=Normal(logitValues,bmean,bstd);
+      return log(g_(data,lo))*count-prior;
+    }
+
+  };
+};
+
+
+
+
+
+
+
+class Landa
+{
+public:
+  typedef std::pair<Landa,double> myParameter;
+
+
+  static std::string ParName(std::size_t i)
+  {
+    switch (i)
+      {
+      case 0: return "Landa_50";
+      case 1: return "Hill_Coeff";
+      default: return "";
+      }
+  }
+
+
+  static std::string ClassName(){return "Landa";}
+  static trust_region min(){return {0.0};}
+
+  static trust_region max(){return {1E9};}
+
+  static double logFactor(){return std::log(10.0);}
+
+
+
+  double landa_;
+
+  double getValue()const {return landa_;}
+  void setValue(double r) { landa_=r;}
+
+
+  struct myAcceptProb
+  {
+    double operator()(Landa landa,const myParameter& param)const
+    {
+      double landa50=param.first.getValue();
+      double h=param.second;
+      return 1.0/(1.0+std::pow(landa50/(landa.getValue()+1),h));
+    }
+  };
+  typedef myAcceptProb AcceptanceProbability;
+
+  struct myExpectVelocity
+  {
+    double operator()(const Landa& landa)const
+    {
+      return (1.0/(1.0+landa.getValue()));
+    }
+  };
+
+  typedef myExpectVelocity ExpectedVelocity;
+
+  static std::map<myParameter, double> uniform_parameter_prior(const  std::vector<std::vector<double>>& v)
+  {
+    std::map<myParameter, double> out;
+    double p=1.0/(v[0].size()*v[1].size());
+    for (std::size_t i=0; i<v[0].size(); ++i)
+      for (std::size_t j=0; j<v[1].size(); ++j)
+        out[{Landa{v[0][i]},v[1][j]}]+=p;
+  return out;
+}
+
+
+};
+
+
+inline bool operator<(const Landa& one,const Landa& two)
+{ return one.getValue()<two.getValue();}
+
+
+
+template <class AP=Landa>
+class Adaptive
+{
+public:
+  AP sample(std::mt19937_64& mt)const
+  {
+    return sample_rev_map(rev_,mt);
+  }
+
+  void push_back(AP landa,bool accepted)
+  {
+    if (accepted)
+      {
+        std::pair<std::multiset<AP>,AP> p{std::move(currentRejected_),landa};
+        currentRejected_.clear();
+
+        rejAccCount_[p]++;
+        double Evidence=0;
+        parDist_=BayesIterator::multinomial_posterior
+            (&likelihood,p,std::move(parDist_),Evidence);
+      }
+    else
+      {
+        currentRejected_.insert(landa);
+
+      }
+  }
+
+  void actualize()
+  {
+    this->p_=OptimalDistribution::optimal(&expectedVelocity,parDist_.first,this->p_,parDist_.second);
+    this->rev_=cumulative_reverse_map(this->p_);
+  }
+
+  static double likelihood(std::pair<std::multiset<AP>,AP> data,
+                           const typename AP::myParameter& par)
+  {
+    double p=1;
+    typename AP::myAcceptProb pA;
+    for (const AP& landa:data.first)
+      {
+        p*=(1.0-pA(landa,par));
+      }
+    p*=pA(data.second,par);
+    return p;
+
+  }
+
+  static double expectedVelocity(const std::map<typename AP::myParameter, double>& parDist,
+                                 const std::map<AP,double>& pAp)
+  {
+    double sum=0;
+    typename AP::ExpectedVelocity E;
+    typename AP::AcceptanceProbability AcP;
+
+    for (auto& e1:parDist)
+      {
+        double sum2=0;
+        for (auto&e2: pAp)
+          {
+            sum2+=e2.second*AcP(e2.first,e1.first)*E(e2.first);
+          }
+        sum+=e1.second/sum2;
+      }
+    return sum;
+  }
+
+
+  Adaptive(const std::map<AP,double>& prior_landa,
+           const std::map<typename AP::myParameter, double>& prior_par):
+    p_{prior_landa},parDist_{prior_par,1},
+    rev_{cumulative_reverse_map(p_)},
+    rejAccCount_{}{}
+
+  Adaptive(std::map<AP,double>&& prior_landa,
+           std::map<typename AP::myParameter, double>&& prior_par):
+    p_{std::move(prior_landa)},parDist_{std::move(prior_par),1},
+    rev_{},
+    rejAccCount_{}{
+    rev_=cumulative_reverse_map(p_);
+  }
+
+  template<template<typename>class V>
+  Adaptive(const V<AP>& landa,
+           const  std::vector<std::vector<double>>& par):
+    Adaptive(uniform_prior(landa),AP::uniform_parameter_prior(par)){}
+
+
+  Adaptive partialReset()const
+  {
+    return Adaptive(p_,parDist_.first);
+  }
+
+  friend
+  std::ostream& operator<<(std::ostream& os, const Adaptive<AP>& me)
+  {
+    os<<AP::ClassName()<<" distribution\n";
+    for (auto &e:me.p_)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+    os<<AP::ClassName()<<" parameter distribution\n";
+    os<<"count\t"<<me.parDist_.second<<"\n";
+    for (auto &e:me.parDist_.first)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+
+    os<<AP::ClassName()<<" reverse distribution\n";
+    for (auto &e:me.rev_)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+
+    os<<AP::ClassName()<<" currently rejected\n"<<me.currentRejected_<<"\n";
+    os<<AP::ClassName()<<" history of rejected accepted\n";
+    for (auto &e:me.rejAccCount_)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+    return os;
+
+  }
+
+
+private:
+  std::map<AP,double> p_;
+
+  std::pair<std::map<typename AP::myParameter, double>,std::size_t> parDist_;
+  std::map<double,AP> rev_;
+
+  std::multiset<AP> currentRejected_;
+  std::map<std::pair<std::multiset<AP>,AP>,std::size_t> rejAccCount_;
+
+  template<template<typename>class V>
+  static std::map<AP,double> uniform_prior(const V<AP>& v)
+  {
+    std::map<AP,double> out;
+    double p=1.0/v.size();
+    for (auto it=v.begin(); it!=v.end(); ++it)
+      out[*it]+=p;
+    return out;
+  }
+
+
+
+};
+
+
+inline
+std::ostream& operator<<(std::ostream& os, const Landa& t)
+{
+  os<<t.getValue();
+  return os;
+}
+
+inline
+std::istream& operator>>(std::istream& is, Landa& t)
+{
+  double landa;
+  is>>landa;
+  t.setValue(landa);
+  return is;
+}
+struct LM_MultivariateGaussian: public MultivariateGaussian
+{
+  LM_MultivariateGaussian(MultivariateGaussian m
+                          , Landa mylanda
+                          ,double my_exp_delta_next_logL):
+    MultivariateGaussian(m),
+    landa(mylanda),
+    exp_delta_next_logL(my_exp_delta_next_logL)
+  {}
+  LM_MultivariateGaussian():landa(),exp_delta_next_logL(){}
+  Landa landa;
+  double exp_delta_next_logL;
+};
+
+inline
+std::ostream& operator<<(std::ostream& os,const LM_MultivariateGaussian& x)
+{
+  const MultivariateGaussian& b=x;
+  os<<b;
+  os<<"\nlanda\t"<<x.landa;
+  os<<"\texp_delta_next_logL\t"<<x.exp_delta_next_logL<<"\n";
   return os;
 }
 
@@ -567,14 +1011,15 @@ class LevenbergMarquardt_step
 {
 public:
 
-  AP t_;
   double landa0_;
   double v_;
   std::size_t maxLoop_;
 
-  double optimal_acceptance_rate_=0.574; // Handbook of Markov Chain Montecarlo p.100
+  //  double optimal_acceptance_rate_=0.574; // Handbook of Markov Chain Montecarlo p.100
   // optimal acceptance rate for Metropolis-Adjusted Langevin Algorithm
 
+  double optimal_acceptance_rate_=0.234; // Handbook of Markov Chain Montecarlo p.96
+  // optimal acceptance rate for Metropolis Algotithm
 
 
 public:
@@ -584,28 +1029,21 @@ public:
   LevenbergMarquardt_step( double landa0,
                            double v,
                            std::size_t maxLoop)
-    :t_{AP::min()},landa0_{landa0},v_(v),maxLoop_(maxLoop)
+    :landa0_{landa0},v_(v),maxLoop_(maxLoop)
   {
   }
 
 
-  AP getValue()const{return t_;}
 
 
 
-  LevenbergMarquardt_step operator()(AP new_trust_region)const
-  {
-    LevenbergMarquardt_step o(*this);
-    o.t_=std::move(new_trust_region);
-    return o;
-  }
 
   struct LM_logL:public D_logL
   {
     double logL;
     M_Matrix<double> Hinv;
     M_Matrix<double> d;
-    double exp_next_logL;
+    double exp_delta_next_logL;
   };
 
   static LM_logL update_landa(const mcmc_Dpost& postL,double landa,double beta)
@@ -622,7 +1060,7 @@ public:
     if (!out.Hinv.empty())
       {
         out.d=-(out.G*out.Hinv);
-        out.exp_next_logL=out.logL-0.5*multTransp(out.d,out.G)[0];
+        out.exp_delta_next_logL=-0.5*multTransp(out.d,out.G)[0];
       }
     return out;
   }
@@ -632,21 +1070,38 @@ public:
     return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param),beta);
   }
 
+  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, double beta,double landa)const
+  {
+    return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param),beta,landa);
+  }
+
+
   mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost&& p,double beta)const
   {
     mcmc_step<myPropDistribution> out(std::move(p),beta);
     return update_mcmc_step(L,model,data,out,beta);
   }
 
+  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost&& p,double beta,double landa)const
+  {
+    mcmc_step<myPropDistribution> out(std::move(p),beta);
+    return update_mcmc_step(L,model,data,out,beta,landa);
+  }
+
+
   mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post&& p,double beta)const
   {
     return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param,p),beta);
   }
 
+  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post&& p,double beta,double landa)const
+  {
+    return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param,p),beta,landa);
+  }
 
 
 
-  mcmc_step<myPropDistribution>& update_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_step<myPropDistribution>& out,double beta)const
+  mcmc_step<myPropDistribution>& update_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_step<myPropDistribution>& out,double beta, AP t_)const
   {
     out.beta=beta;
 
@@ -663,9 +1118,12 @@ public:
             next=out.param+LM_logL.d;
             cand=L.get_mcmc_Post(model,data,next);
           }
-        while ((LM_logL.Hinv.empty()
-                ||!t_(LM_logL.exp_next_logL,cand.logbPL(beta),out.param.size())
-                )&&iloop<maxLoop_)
+        while
+            ((LM_logL.Hinv.empty()
+              ||!t_(LM_logL.exp_delta_next_logL
+                    ,cand.logbPL(beta)-out.logbPL()
+                    ,out.param.size())
+              )&&iloop<maxLoop_)
 
           {
             landa=landa0_*std::pow(v_,iloop);
@@ -685,7 +1143,125 @@ public:
   }
 
 
+  mcmc_step<myPropDistribution>& update_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_step<myPropDistribution>& out,double beta, double landa)const
+  {
+    out.beta=beta;
+    if (out.isValid)
+      {
+        LM_logL LM_logL=update_landa( out,landa,beta);
+        if (!LM_logL.Hinv.empty())
+          {
+            M_Matrix<double> next=out.param+LM_logL.d;
+            out.proposed=myPropDistribution(MultivariateGaussian
+                                            (next,LM_logL.Hinv,LM_logL.H),landa);
+          }
+        else
+          out.isValid=false;
+      }
+    return
+        out;
+  }
+
+
+
+
 };
+
+
+
+template<
+    class D
+    , template<class> class M
+    , template<class,template<class> class > class D_Lik
+    , class myPropDistribution>
+class LevenbergMarquardt_step<D,M,D_Lik,myPropDistribution,Landa>
+{
+public:
+
+
+  //  double optimal_acceptance_rate_=0.574; // Handbook of Markov Chain Montecarlo p.100
+  // optimal acceptance rate for Metropolis-Adjusted Langevin Algorithm
+
+  //  double optimal_acceptance_rate_=0.234; // Handbook of Markov Chain Montecarlo p.96
+  // optimal acceptance rate for Metropolis Algotithm
+
+
+public:
+
+
+  struct LM_logL:public D_logL
+  {
+    double logL;
+    M_Matrix<double> Hinv;
+    M_Matrix<double> d;
+    double exp_delta_next_logL;
+  };
+
+  static LM_logL update_landa(const mcmc_Dpost& postL,const Landa& landa,double beta)
+  {
+    LM_logL out;
+    out.G=postL.D_prior.G+postL.D_lik.G*beta;
+    out.H=postL.D_prior.H+postL.D_lik.H*beta;
+    out.logL=postL.logbPL(beta);
+    for (std::size_t i=0; i<out.H.nrows(); ++i)
+      //    out.H(i,i)=out.H(i,i)+postL.D_lik.H(i,i)*beta*landa;
+      // this alternative does not work
+      out.H(i,i)=out.H(i,i)*(1+landa.getValue());
+    out.Hinv=invSafe(out.H);
+    if (!out.Hinv.empty())
+      {
+        out.d=-(out.G*out.Hinv);
+        out.exp_delta_next_logL=-0.5*multTransp(out.d,out.G)[0];
+      }
+    return out;
+  }
+
+  static mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param,const Landa& landa, double beta)
+  {
+    return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param),landa,beta);
+  }
+
+
+  static mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost&& p,const Landa& landa,double beta)
+  {
+    mcmc_step<myPropDistribution> out(std::move(p),beta);
+    return update_mcmc_step(L,model,data,out,landa,beta);
+  }
+
+
+  static mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post&& p,const  Landa& landa,double beta)
+  {
+    return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param,p),landa ,beta);
+  }
+
+
+
+
+
+  static  mcmc_step<myPropDistribution>& update_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_step<myPropDistribution>& out,const Landa& landa,double beta)
+  {
+    out.beta=beta;
+    if (out.isValid)
+      {
+        LM_logL LM_logL=update_landa( out,landa,beta);
+        if (!LM_logL.Hinv.empty())
+          {
+            M_Matrix<double> next=out.param+LM_logL.d;
+            out.proposed=myPropDistribution(MultivariateGaussian
+                                            (next,LM_logL.Hinv,LM_logL.H),
+                                            landa,
+                                            LM_logL.exp_delta_next_logL);
+          }
+        else
+          out.isValid=false;
+      }
+    return
+        out;
+  }
+};
+
+
+
 
 
 template<
@@ -697,7 +1273,6 @@ template<
     >
 std::ostream& operator<<(std::ostream& os,const LevenbergMarquardt_step<D,M,D_Lik,myPropD,myAP>& x )
 {
-  os<<"\ntrust_region\n"<<x.t_;
   os<<"\nlanda0\n"<<x.landa0_;
   os<<"\nlanda_mult_factor\n"<<x.v_;
   os<<"\nmaxLoop\n"<<x.maxLoop_;
@@ -710,9 +1285,9 @@ template
 <
     class D
     , template<class> class M
-    , template<class,template<class> class > class D_Lik=Poisson_DLikelihood
-    , class my_PropD=LM_MultivariateGaussian
-    , class AP=trust_region
+    , template<class,template<class> class > class D_Lik//=Poisson_DLikelihood
+    , class my_PropD//=LM_MultivariateGaussian
+    , class AP//=Landa
     ,template<
       class
       , template<class> class
@@ -755,7 +1330,6 @@ public:
     {
       if (!cLik.isValid)
         {
-
           return false;
         }
       else
@@ -771,7 +1345,14 @@ public:
           std::uniform_real_distribution<double> u(0,1);
           double r=u(mt);
           bool accept_=r<A;
-          return accept_;
+          if (accept_)
+            {
+              return true;
+            }
+          else
+            {
+              return false;
+            }
         }
     }
 
@@ -785,6 +1366,31 @@ public:
 
   static std::size_t min_tryParameter(){return 20;}
 
+
+
+
+  static void
+  run_new
+  (const propDistStep<D,M,D_Lik,my_PropD,AP>& LM_Lik
+   ,const D_Lik<D,M>& lik
+   ,const M<D>& model
+   ,const D& data
+   ,mcmc_step<pDist>& sDist,
+   Adaptive<AP>& landa,
+   const std::tuple<double,std::size_t,std::size_t>& betas,
+   std::mt19937_64& mt
+   , std::ostream& os
+   , const std::chrono::steady_clock::time_point& startTime
+   , double& timeOpt)
+  {
+    if (sDist.isValid)
+      {
+
+
+        adapt_Parameter_new
+            (LM_Lik,lik,model,data,sDist,landa,std::get<1>(betas),mt,os,startTime,timeOpt);
+      }
+  }
 
 
 
@@ -836,6 +1442,9 @@ public:
   }
 
 
+
+
+
   static std::pair<std::size_t,std::size_t> try_Parameter
   (const propDistStep<D,M,D_Lik,my_PropD,AP>& LM_Lik
    ,const D_Lik<D,M>& lik
@@ -861,6 +1470,41 @@ public:
     return {naccepts,nrejects};
 
   }
+
+
+  static void
+  try_Parameters
+  (const propDistStep<D,M,D_Lik,my_PropD,AP>& LM_Lik
+   ,const D_Lik<D,M>& lik
+   ,const M<D>& model
+   ,const D& data
+   ,mcmc_step<pDist>& sDist,
+   mcmc_step<pDist>& cDist
+   ,Adaptive<AP>& landa
+   ,std::size_t nsamples_per_par,
+   std::mt19937_64& mt
+   ,std::ostream& os
+   , const std::chrono::steady_clock::time_point& startTime
+   , double& timeOpt
+   )
+  {
+    landa.actualize();
+    n_steps_try(LM_Lik,lik,model,data,sDist,cDist,landa,mt,nsamples_per_par,os,startTime,timeOpt);
+    landa.actualize();
+    std::cerr<<landa;
+    os<<landa;
+    landa=landa.partialReset();
+
+    for (std::size_t i=0; i< 5; ++i)
+      {
+        n_steps_try(LM_Lik,lik,model,data,sDist,cDist,landa,mt,nsamples_per_par,os,startTime,timeOpt);
+        landa.actualize();
+        std::cerr<<landa;
+        os<<landa;
+      }
+  }
+
+
 
 
   static void n_steps
@@ -917,6 +1561,36 @@ public:
   }
 
 
+  static void n_steps_try
+  (const propDistStep<D,M,D_Lik,my_PropD,AP>& LM_Lik
+   ,const D_Lik<D,M>& lik
+   ,const M<D>& model
+   ,const D& data
+   ,mcmc_step<pDist>& sDist,
+   mcmc_step<pDist>& cDist,
+   Adaptive<AP>& pars,
+   std::mt19937_64& mt
+   , std::size_t nsteps
+   , std::ostream& os
+   , const std::chrono::steady_clock::time_point& startTime
+   , double& timeOpt)
+  {
+
+    for( std::size_t i=0;i<nsteps; ++i)
+      {
+
+        AP landa=pars.sample(mt);
+        if (step(LM_Lik,lik,model,data,sDist,cDist,landa,mt,i,os,startTime,timeOpt))
+          pars.push_back(landa,true);
+        else
+          pars.push_back(landa,false);
+      }
+
+
+  }
+
+
+
   static std::pair<double,double>
   bay_mean_sd(const std::pair<std::size_t,std::size_t> x)
   {
@@ -963,6 +1637,7 @@ public:
     AP ap0=AP::max();
     double opt_accpt=LM_Lik.optimal_acceptance_rate();
     double x0=std::log(ap0.getValue());
+    double xmax=x0;
     double dx=AP::logFactor();
     gaussian_lin_regr lr(std::log(AP::min().getValue()),std::log(AP::max().getValue()));
 
@@ -977,6 +1652,7 @@ public:
     res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
     m0=logit(res0);
     lr.push_back(x0,m0.first,m0.second );
+
     while (res0.first<res0.second)
       {
         x0-=dx;
@@ -989,11 +1665,14 @@ public:
     ap0.setValue(std::exp(x0));
     res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
 
-    while (!accept_Parameter(opt_accpt,res0))
+    double x00=xmax;
+    while (!accept_Parameter(opt_accpt,res0)&&x0!=x00)
       {
         m0=logit(res0);
         lr.push_back(x0,m0.first,m0.second );
+        x00=x0;
         x0=lr.get_optimal_x(y,os);
+
         ap0.setValue(std::exp(x0));
         res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
       }
@@ -1001,18 +1680,52 @@ public:
       {
         res0+=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
         nsamples*=2;
-        while (!accept_Parameter(opt_accpt,res0))
+
+        x00=xmax+1;
+        while (!accept_Parameter(opt_accpt,res0)&&x0!=x00)
           {
             m0=logit(res0);
             lr.push_back(x0,m0.first,m0.second );
+            x00=x0;
             x0=lr.get_optimal_x(y,os);
-            ap0.setValue(std::exp(x0));
-            res0=try_Parameter(LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
+            if (x0!=x00)
+              {
+                ap0.setValue(std::exp(x0));
+                res0=try_Parameter
+                    (LM_Lik,lik,model,data,ap0,sDist,cDist,nsamples,mt,os,startTime,timeOpt);
+              }
           }
       }
     return ap0;
 
   }
+
+
+  static void
+  adapt_Parameter_new
+  (const propDistStep<D,M,D_Lik,my_PropD,AP>& LM_Lik
+   ,const D_Lik<D,M>& lik
+   ,const M<D>& model
+   ,const D& data
+   ,mcmc_step<pDist>& sDist,
+   Adaptive<AP>& aps,
+   std::size_t nsamples_0,
+   std::mt19937_64& mt
+   ,std::ostream& os
+   , const std::chrono::steady_clock::time_point& startTime
+   , double& timeOpt)
+  {
+
+    std::size_t nsamples=nsamples_0;
+    mcmc_step<pDist> cDist;
+    try_Parameters(LM_Lik,lik,model,data,sDist,cDist,aps,nsamples,mt,os,startTime,timeOpt);
+
+
+
+
+
+  }
+
 
 
 
@@ -1022,10 +1735,16 @@ public:
    ,mcmc_step<pDist>& sLik
    ,mcmc_step<pDist>& cLik)
   {
+    auto d=cLik.param-sLik.param;
+    auto H=sLik.beta*sLik.D_lik.H+sLik.D_prior.H;
+    double dHd=0.5*xTSigmaX(d,H);
+    os<<" dHd "<<dHd<<" ";
     os<<sLik.logbPL()<<" "<<cLik.logbPL()<<" ";
     os<<sLik.logPrior<<" "<<cLik.logPrior<<" ";
     os<<sLik.logLik<<" "<<cLik.logLik<<" ";
-    os<<sLik.proposed.landa<<" "<<cLik.proposed.landa;
+    os<<sLik.proposed.landa<<" "<<cLik.proposed.landa<<" ";
+    //os<<sLik.proposed.exp_delta_next_logL/sLik.param.size()<<" ";
+    //os<<cLik.proposed.exp_delta_next_logL/cLik.param.size()<<" ";
     return os;
   }
 
@@ -1038,18 +1757,52 @@ public:
    ,const D& data
    ,mcmc_step<pDist>& sDist
    ,mcmc_step<pDist>& cDist
-   ,std::mt19937_64& mt)
+   ,const AP& landa
+   ,std::mt19937_64& mt
+   ,std::size_t i
+   , std::ostream& os
+   , const std::chrono::steady_clock::time_point& startTime
+   , double& timeOpt)
   {
     bool out;
+    LM_Lik.update_mcmc_step(lik,model,data,sDist,landa,sDist.beta);
+    M_Matrix<double> c=sDist.proposed.sample(mt);
+    cDist=LM_Lik.get_mcmc_step(lik,model,data,c,landa,sDist.beta);
     if (test::accept(sDist,cDist,mt))
       {
-        sDist=std::move(cDist);
         out =true;
       }
     else
-      out=false;
-    M_Matrix<double> c=sDist.proposed.sample(mt);
-    cDist=LM_Lik.get_mcmc_step(lik,model,data,c,sDist.beta);
+      {
+        out=false;
+      }
+    auto tnow=std::chrono::steady_clock::now();
+    auto d=tnow-startTime;
+    double t0=timeOpt;
+    timeOpt=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
+    auto timeIter_=60*(timeOpt-t0);
+    std::cout<<i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<sDist.beta;
+    //test::put(std::cout,sDist,cDist);
+    put(std::cout,sDist,cDist);
+
+    os<<"n_steps::"<<i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<sDist.beta;
+    test::put(os,sDist,cDist);
+    put(os,sDist,cDist);
+    if (out)
+      {
+        sDist=std::move(cDist);
+        std::cout<<"Acc\n";
+        os<<"Acc\n";
+      }
+    else
+      {
+        std::cout<<"Rej\n";
+        os<<"Rej\n";
+
+      }
+
+
+
     return out;
   }
 
@@ -1152,9 +1905,9 @@ std::ostream& operator<<(std::ostream& os,Evidence_Evaluation<mcmc>& x)
 template<
     class D
     , template<class>   class M
-    , template<class,template<class> class >   class D_Lik=Poisson_DLikelihood
-    , class my_PropD=LM_MultivariateGaussian
-    , class AP=trust_region
+    , template<class,template<class> class >   class D_Lik//=Poisson_DLikelihood
+    , class my_PropD//=LM_MultivariateGaussian
+    , class AP//=trust_region
     ,template<
       class
       , template<class> class
@@ -1162,7 +1915,7 @@ template<
       , class
       , class
       >
-    class propDist=LevenbergMarquardt_step
+    class propDist//=LevenbergMarquardt_step
     ,template<
       class
       , template<class> class
@@ -1188,22 +1941,23 @@ public:
   static Evidence_Evaluation<mystep> *
   run
   (const MH<D,M,D_Lik,my_PropD,AP,propDist>& mcmc
-   ,   const propDist<D,M,D_Lik,my_PropD,AP>& LMLik
+   ,const propDist<D,M,D_Lik,my_PropD,AP>& LMLik
    ,const D_Lik<D,M>& lik
    ,const M<D>& model
    ,const D& data
-   ,const std::vector<std::pair<double, std::pair<std::size_t,std::size_t>>>& beta
-   , std::mt19937_64& mt
-   , std::ofstream& os
-   , const std::chrono::steady_clock::time_point& startTime
-   , double& timeOpt)
+   , const Adaptive<AP>& landa_Dist0
+   ,const std::vector<std::tuple<double,std::size_t,std::size_t>>& beta
+   ,std::mt19937_64& mt
+   ,std::ofstream& os
+   ,const std::chrono::steady_clock::time_point& startTime
+   ,double& timeOpt)
   {
 
     std::vector<std::pair<double,SamplesSeries<mystep>>> o;
-
+    Adaptive<AP> landa_Dist(landa_Dist0);
 
     M_Matrix<double> pinit;
-    double beta0=beta[0].first;
+    double beta0=std::get<0>(beta[0]);
     std::size_t ntrials=0;
     mcmc_post postL;
     while(!postL.isValid)
@@ -1213,13 +1967,17 @@ public:
         ++ntrials;
       }
 
-    mystep cDist=LMLik.get_mcmc_step(lik,model,data,pinit,std::move(postL),beta0);
+    AP landa=landa_Dist.sample(mt);
+    mystep cDist=LMLik.get_mcmc_step(lik,model,data,pinit,std::move(postL),landa,beta0);
 
     for (std::size_t i=0; i<beta.size(); ++i)
       {
-        cDist=LMLik.update_mcmc_step(lik,model,data,cDist,beta[i].first);
-        auto s=mcmc.run(LMLik,lik,model,data,cDist,beta[i].second.first,beta[i].second.second,mt,os,startTime,timeOpt);
-        o.push_back({beta[i].first,s});
+        double betaval=std::get<0>(beta[i]);
+        LMLik.update_mcmc_step(lik,model,data,cDist,landa,betaval);
+        Adaptive<AP> landa_Dist_run=landa_Dist.partialReset();
+
+        mcmc.run_new(LMLik,lik,model,data,cDist,landa_Dist_run,beta[i],mt,os,startTime,timeOpt);
+        //     o.push_back({beta[i].first,s});
       }
     auto out=new Evidence_Evaluation<mystep>(std::move(o));
     std::cout<<"LogEvidence= "<<out->logEvidence()<<"\n";

@@ -3,6 +3,8 @@
 #include <vector>
 #include <iostream>
 
+#include "mySerializer.h"
+
 std::vector< std::vector< double> >
 inv(const std::vector< std::vector< double> >& matrix);
 
@@ -84,13 +86,6 @@ T max(const std::vector<T>& o)
 }
 
 
-
-std::ostream& operator<<(
-    std::ostream& s,const std::vector< std::vector< double> >& matrix);
-
-
-std::ostream& operator<<(
-    std::ostream& s,const std::vector<  double> & aVector);
 
 
 #endif // MATRIXINVERSE_H

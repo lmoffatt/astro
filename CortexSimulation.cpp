@@ -604,8 +604,9 @@ void CortexSimulation::read(std::string& line, std::istream &s)
         }
 
 
-
+     isValid_=true;
     }
+  else isValid_=false;
 }
 
 

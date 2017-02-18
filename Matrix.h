@@ -22,20 +22,26 @@
 
 #include <iostream>
 
+#include "mySerializer.h"
+#include "myOrderOperators.h"
+
 inline double logit(double x){return std::log(x/(1.0-x));}
+
+
+
 inline std::pair<double,double> logit(double x,double sd){
   return {std::log(x/(1.0-x)),sd/(x*(1.0-x))};}
 
 
-inline double logistic(double x){return 1.0/(1.0+std::pow(10.0,x));}
+inline double logistic(double x){return 1.0/(1.0+std::exp(-x));}
 
 
 template<typename T1, typename T2>
 std::pair<T1,T2>& operator+=(std::pair<T1,T2>& x, const std::pair<T1,T2>& other)
 {
-   x.first+=other.first;
-   x.second+=other.second;
-   return x;
+  x.first+=other.first;
+  x.second+=other.second;
+  return x;
 }
 
 inline double average(double x, double y){return 0.5*(x+y);}
@@ -43,12 +49,12 @@ inline double average(double x, double y){return 0.5*(x+y);}
 inline double sqr(double x){return x*x;}
 
 
-template<typename T1, typename T2>
-std::ostream& operator<<(std::ostream& os,const std::pair<T1,T2>& other)
-{
-   os<<other.first<<" "<<other.second;
-   return os;
-}
+
+
+
+
+
+
 
 
 namespace
@@ -189,7 +195,7 @@ public:
     MyConstIterator& operator++()
     {
       ++j_;
-      if (j_>=ncols(m))
+      if (j_>=m.ncols())
         {
           j_=0;
           ++i_;
@@ -235,7 +241,7 @@ public:
 
   const_iterator end() const
   {
-    MyConstIterator out(*this,0,nrows(*this));
+    MyConstIterator out(*this,nrows(),0);
     return out;
   }
 
@@ -464,6 +470,25 @@ public:
     return _data;
   }
 
+  M_Matrix<T> toVector_of_Rows()const
+  {
+    return M_Matrix<T>(size(),1,_data);
+  }
+  M_Matrix<T> toVector_of_Cols()const
+  {
+    return M_Matrix<T>(1,size(),_data);
+  }
+
+
+  std::vector<std::vector<T>> toMatrix()const
+  {
+    std::vector<std::vector<T>> out(nrows(),std::vector<T>(ncols()));
+    for (std::size_t i=0;i<nrows();++i)
+      for (std::size_t j=0;j<ncols();++j)
+        out[i][j]=(*this)(i,j);
+    return out;
+  }
+
 
 private:
   std::size_t          _nrows;    /**< number of rows */
@@ -550,21 +575,26 @@ M_Matrix<T> eye(std::size_t n)
 
 
 template<typename T>
-M_Matrix<T>  Rand(M_Matrix<T> x)
+M_Matrix<T>  Rand(const M_Matrix<T>& x)
 {
   std::normal_distribution<> normal;
   std::random_device rd;
   std::mt19937_64 sto(rd());
-
-
-
-
-
   auto out=zeros<T>(x);
   for (std::size_t i=0; i<out.size(); ++i)
-    x[i]=normal(sto);
+    out[i]=normal(sto);
+  return out;
 }
 
+template<typename T>
+M_Matrix<T>  Rand(const M_Matrix<T>& x, std::mt19937_64& sto)
+{
+  std::normal_distribution<> normal;
+  auto out=zeros<T>(x);
+  for (std::size_t i=0; i<out.size(); ++i)
+    out[i]=normal(sto);
+  return out;
+}
 
 
 /**
@@ -1263,9 +1293,9 @@ std::ostream& operator<<(std::ostream& os,const M_Matrix<T>& x)
   os<<"[";
   for (std::size_t i=0; i<x.nrows(); ++i)
     {
-    for (std::size_t j=0; j<x.ncols(); ++j)
-      os<<x(i,j)<<" ";
-    os<<";";
+      for (std::size_t j=0; j<x.ncols(); ++j)
+        os<<x(i,j)<<" ";
+      os<<";";
     }
   os<<"]";
   return os;
@@ -1282,14 +1312,14 @@ std::istream& operator>>(std::istream& is,M_Matrix<T>& x)
   while (ch!=']')
     {
       std::string s;
-    while ((is.get(ch))&&((ch!=']')&&ch!=';'))
-      {
-        s.push_back(ch);
-      }
-    std::stringstream ss(s);
-    T e;
-    while (ss>>e) o.push_back(e);
-    if (!o.empty()) ++nrows;
+      while ((is.get(ch))&&((ch!=']')&&ch!=';'))
+        {
+          s.push_back(ch);
+        }
+      std::stringstream ss(s);
+      T e;
+      while (ss>>e) o.push_back(e);
+      if (!o.empty()) ++nrows;
     }
   std::size_t ncols=o.size()/nrows;
   x=M_Matrix<T>(nrows,ncols,o);
@@ -1297,7 +1327,14 @@ std::istream& operator>>(std::istream& is,M_Matrix<T>& x)
 
 }
 
-
+template<typename T>
+T maxAbs(const M_Matrix<T>& x)
+{
+  T m=std::abs(x[0]);
+  for (std::size_t i; i<x.size(); ++i)
+    if (std::abs(x[i])>m) m=std::abs(x[i]);
+  return m;
+}
 
 
 
@@ -1535,6 +1572,22 @@ M_Matrix<T> diag(const M_Matrix<T>& x)
     }
 
 }
+
+
+
+template<typename T>
+M_Matrix<T> diag_landa(const M_Matrix<T>& x,double landa)
+{
+  double landa1=landa+1;
+  M_Matrix<T> diagM(x);
+  for (size_t i=0; i<x.nrows(); ++i)
+    diagM(i,i)*=landa1;
+  return diagM;
+
+}
+
+
+
 
 /**
        Product of the Diagonal of a Matrix

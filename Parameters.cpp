@@ -9,15 +9,6 @@
 
 #include <random>
 
-std::istream &safeGetline(std::istream &is, std::string &t)
-{
-  is.clear();
-  std::getline(is,t);
-  auto it=t.find('\r');
-  if (it!=t.npos)
-    t.erase(it);
-  return is;
-}
 
 
 std::string Log10Tranformation::myClass()const

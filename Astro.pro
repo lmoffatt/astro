@@ -47,7 +47,13 @@ HEADERS += \
     Splines.h \
     Evidence.h \
     Matrix.h \
-    Distributions.h
+    Distributions.h \
+    Optimization.h \
+    Optimization_BFGS.h \
+    mySerializer.h \
+    myOutputSerializer.h \
+    myInputSerializer.h \
+    myOrderOperators.h
 
 DISTFILES += \
     run/script \

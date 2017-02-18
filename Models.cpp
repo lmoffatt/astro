@@ -12,8 +12,13 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
     dOmega=dOmega_dt(p,c);
   auto dRho=dRho_dt(p,c,hasOmega);
 
-  CortexState out(c);
 
+  CortexState out(c);
+  if (std::isnan(dRho[0][0]))
+    {
+      out.isValid_=false;
+      return out;
+    }
   if (hasOmega)
     {
       addStep(out.omega_T_,dOmega,dt);
@@ -337,6 +342,11 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
   while (t+dt<0)
     {
       c=nextEuler(p,c,dt);
+      if (!c.isValid_)
+        {
+          s.isValid_=false;
+          return s;
+        }
       t+=dt;
       if (t+sp.teq_>=sp.sample_time_*(i+1))
         {
@@ -356,6 +366,11 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
   while (t+dt<sp.tsim_)
     {
       c=nextEuler(p,c,dt);
+      if (!c.isValid_)
+        {
+          s.isValid_=false;
+          return s;
+        }
       t+=dt;
       if (t+sp.teq_>=sp.sample_time_*(i+1))
         {
@@ -373,6 +388,7 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
         }
 
     }
+  s.isValid_=true;
   return s;
 
 
@@ -411,44 +427,58 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
   double t=-tequilibrio;
   unsigned i=0;
 
-  while (t+dtmax<=0)
+  while ((t+dtmax<=0)&&(c.isValid_))
     {
       c=nextEuler(p,c,dtmax);
       t+=dtmax;
     }
-
-  addDamp(c,p);
-  double dt_run=dtmin;
-  while (i<sp.numSimPoints())
+  if (!c.isValid_)
+    {  s.isValid_=false;
+      return s;
+    }
+  else
     {
-      t+=dt_run;
-
-      c=nextEuler(p,c,dt_run);
-
-      if (t>=sp.tSimul(i))
+      addDamp(c,p);
+      double dt_run=dtmin;
+      while ((i<sp.numSimPoints())&&(c.isValid_))
         {
-          s.t_[i]=t;
-          s.sdt_[i]=dt_run;
-          s.omega_T_[i]=c.omega_T_;
-          s.psi_T_[i]=c.psi_T_;
-          s.omega_B_[i]=c.omega_B_;
-          s.psi_B_[i]=c.psi_B_;
-          s.rho_[i]=c.rho_;
-          ++i;
+          t+=dt_run;
+
+          c=nextEuler(p,c,dt_run);
+
+          if (t>=sp.tSimul(i))
+            {
+              s.t_[i]=t;
+              s.sdt_[i]=dt_run;
+              s.omega_T_[i]=c.omega_T_;
+              s.psi_T_[i]=c.psi_T_;
+              s.omega_B_[i]=c.omega_B_;
+              s.psi_B_[i]=c.psi_B_;
+              s.rho_[i]=c.rho_;
+              ++i;
+
+            }
+
+          if (dt_run<dtmax)
+            {
+              dt_run*=dtprod;
+              if (dt_run>dtmax)
+                dt_run=dtmax;
+            }
+          else
+            dt_run=dtmax;
 
         }
-
-      if (dt_run<dtmax)
-        {
-          dt_run*=dtprod;
-          if (dt_run>dtmax)
-            dt_run=dtmax;
+      if (!c.isValid_)
+        {  s.isValid_=false;
+          return s;
         }
       else
-        dt_run=dtmax;
-
+        {
+          s.isValid_=true;
+          return s;
+        }
     }
-  return s;
 }
 
 

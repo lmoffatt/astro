@@ -15,6 +15,7 @@
 class CortexState
 {
 public:
+  bool isValid_;
   std::vector<double> x_;
   std::vector<double> dx_;
 
@@ -35,13 +36,15 @@ public:
 
 
 
+
   CortexState(const std::vector<double>& x
               ,const std::vector<double>& dx
               ,double h
               ,double epsilon
               ,unsigned numK)
     :
-      x_(x)
+      isValid_(true)
+     , x_(x)
     ,dx_(dx)
     ,h_(h)
     ,epsilon_(epsilon)
@@ -57,7 +60,8 @@ public:
               ,double epsilon
               ,unsigned numK)
     :
-      x_(x)
+      isValid_(true)
+     ,      x_(x)
     ,dx_(x.size())
     ,h_(h)
     ,epsilon_(epsilon)
@@ -111,6 +115,9 @@ public:
 
 
 
+
+  bool isValid_=false;
+
   std::string id_;
 
   Parameters p_;
@@ -139,7 +146,8 @@ public:
 
 
   CortexSimulation(const CortexState& c,unsigned numSamples):
-    id_()
+   isValid_(false)
+    ,id_()
   ,p_(),dt_(),
     x_(c.x_),dx_(c.dx_),
     t_(std::vector<double>(numSamples)),
@@ -163,7 +171,8 @@ public:
 
 
   CortexSimulation(const std::string& id,unsigned numSamples,unsigned numNodes,unsigned numStates):
-    id_(id)
+    isValid_(false)
+    ,id_(id)
   ,p_(),dt_()
   ,x_(std::vector<double>(numNodes)),
     dx_(std::vector<double>(numNodes)),

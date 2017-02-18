@@ -289,7 +289,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
 
   BaseModel * m=BaseModel::create(parameters);
   CortexSimulation s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
-  if (s.x_.empty())
+  if (!s.isValid_)
     return{};
   std::size_t ic=0;
   unsigned is=0;

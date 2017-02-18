@@ -9,7 +9,6 @@
 #include <map>
 #include <vector>
 #include <numeric>
-
 #include <iostream>
 inline
 double MultinomialLikelihood(const std::vector<double>& n, const std::vector<double>& p, double ntot=0)
