@@ -87,6 +87,7 @@ CommandManager::CommandManager()
   cmd_["likelihood"]=new LikelihoodCommand(this);
   cmd_["optimize"]=new OptimizeCommand(this);
   cmd_["evidence"]=new EvidenceCommand(this);
+  cmd_["tempering"]=new TemperingCommand(this);
 
 
 
@@ -958,15 +959,15 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
   std::cout<<AP::ClassName()<<" "<<aps;
   for (std::size_t i=0; i<apsPar.size(); ++i)
     {
-    std::cout<<AP::ParName(i)<<" "<<apsPar;
-    for (std::size_t j=0; j<apsPar[i].size(); ++j)
-      std::cout<<apsPar[i][j]<<" ";
+      std::cout<<AP::ParName(i)<<" "<<apsPar;
+      for (std::size_t j=0; j<apsPar[i].size(); ++j)
+        std::cout<<apsPar[i][j]<<" ";
     }
 
   std::cout<<" samples "<<samples;
   std::cout<<" nskip "<<nskip;
 
-  Adaptive<AP> landa(aps,apsPar);
+  Adaptive_discrete<AP> landa(aps,apsPar);
 
   std::cout<<landa;
 
@@ -1075,7 +1076,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
       flog.flush();
 
 
-       std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now();
+      std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now();
       double timeOpt=0;
 
 
@@ -1102,6 +1103,219 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
       fout<<" initseed "<<initseed<<"\n";
       fout<<" betas "<<betas<<"\n";
+      fout<<" samples "<<samples<<"\n";
+      fout<<" nskip "<<nskip<<"\n";
+
+      fout<<*ev<<"\n";
+      fout.close();
+    }
+
+
+
+
+}
+
+
+
+
+void TemperingCommand::run(const std::__cxx11::string& line)
+{
+
+  // evidence evi experiment1 paramters_10
+  //optimize opt experiment1 parameters_10 parameters_10 10 100
+  typedef Landa AP;
+
+  std::string temperateS, eviName, experimentName, priorName;
+  double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
+  double landa0,v;
+  double pTjump;
+  std::size_t nmaxloop;
+
+  std::mt19937_64::result_type initseed=0;
+  std::size_t nPoints_per_decade,niter;
+  std::stringstream ss(line);
+  std::size_t N_betas;
+  double beta_min;
+  double nu_beta;
+  std::size_t nsamples_50_beta;
+  M_Matrix<AP> aps;
+  std::vector<std::vector<double>> apsPar;
+
+  std::size_t samples, nskip;
+
+  ss>>temperateS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>N_betas>>beta_min>>samples>>nskip>>nu_beta
+      >>nsamples_50_beta>>pTjump;
+
+  Adaptive_Beta
+      aBeta(N_betas,beta_min,nu_beta,nsamples_50_beta);
+
+
+
+  std::cout<<"evidenceS: "<<temperateS;
+  std::cout<<" eviName: "<<eviName;
+  std::cout<<" experimentName:"<<experimentName;
+  std::cout<<" priorName: "<<priorName;
+  std::cout<<" dx: "<<dx;
+  std::cout<<" dtmin: "<<dtmin;
+  std::cout<<" nPoints_per_decade: "<<nPoints_per_decade;
+  std::cout<<" dtmax: "<<dtmax;
+  std::cout<<" niter: "<<niter;
+  std::cout<<" maxduration "<<maxduration;
+  std::cout<<" landa0 "<<landa0;
+  std::cout<<" v "<<v;
+  std::cout<<" nmaxloop "<<nmaxloop;
+
+  std::cout<<" initseed "<<initseed;
+  std::cout<<" adaptive beta "<<aBeta;
+  std::cout<<AP::ClassName()<<" "<<aps;
+  for (std::size_t i=0; i<apsPar.size(); ++i)
+    {
+      std::cout<<AP::ParName(i)<<" "<<apsPar;
+      for (std::size_t j=0; j<apsPar[i].size(); ++j)
+        std::cout<<apsPar[i][j]<<" ";
+    }
+
+  std::cout<<" samples "<<samples;
+  std::cout<<" nskip "<<nskip;
+  std::cout<<" pTjump "<<pTjump;
+
+
+  Adaptive_discrete<AP> landa(aps,apsPar);
+
+  std::cout<<landa;
+
+  std::cerr<<line;
+
+  Experiment *e=new Experiment;
+  e->load(experimentName);
+  if (e->numMeasures()==0)
+    {
+      std::cerr<<"Experiment "<<experimentName<<" not found\n";
+      return;
+    }
+
+  std::string filename=priorName;
+  std::fstream f;
+
+  f.open(filename.c_str());
+  if (!f)
+    {
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+      if (!f)
+        {
+          std::cerr<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
+          f.close();
+          return;
+        }
+    }
+  std::string line2;
+  safeGetline(f,line2);
+  Parameters prior;
+
+  if (!prior.read(line2,f))
+    {
+      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      f.close();
+      return;
+    }
+
+  f.close();
+
+
+  BaseModel*m=BaseModel::create(prior);
+  if (m!=nullptr)
+    {
+      cm_->push_back(m);
+
+      auto CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+
+      MyModel<MyData> m(CL);
+      MyData d(CL);
+      Metropolis_Hastings_mcmc<
+          MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
+      LevenbergMarquardt_step<MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> LMLik;
+      Poisson_DLikelihood<MyData,MyModel> DLik;
+      TT tt;
+      std::mt19937_64 mt;
+      std::random_device rd;
+
+      if (initseed==0)
+        {
+          std::mt19937_64::result_type seed=rd();
+
+          mt.seed(seed);
+          eviName+=time_now()+"_"+std::to_string(seed);
+          std::cerr<<"\n random seed =\n"<<seed<<"\n";
+        }
+      else
+        {
+          std::mt19937_64::result_type seed=initseed;
+
+          mt.seed(seed);
+          eviName+=time_now()+"_"+std::to_string(seed);
+
+          std::cerr<<"\n provided seed =\n"<<seed<<"\n";
+
+        }
+
+
+      std::string eviNameLog=eviName+"_log.txt";
+      std::ofstream flog;
+
+      flog.open(eviNameLog.c_str(), std::ofstream::out | std::ofstream::app);
+      flog<<line<<"\n";
+      flog<<"temperateS: "<<temperateS<<"\n";
+      flog<<" eviName: "<<eviName<<"\n";
+      flog<<" experimentName:"<<experimentName<<"\n";
+      flog<<" priorName: "<<priorName<<"\n";
+      flog<<" dx: "<<dx<<"\n";
+      flog<<" dtmin: "<<dtmin<<"\n";
+      flog<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
+      flog<<" dtmax: "<<dtmax<<"\n";
+      flog<<" niter: "<<niter<<"\n";
+      flog<<" maxduration "<<maxduration<<"\n";
+      flog<<" landa0 "<<landa0<<"\n";
+      flog<<" v "<<v<<"\n";
+      flog<<" nmaxloop "<<nmaxloop<<"\n";
+
+      flog<<" initseed "<<initseed<<"\n";
+      flog<<" adaptive beta "<<aBeta<<"\n";
+      flog<<AP::ClassName()<<" "<<aps<<"\n";
+      flog<<" samples "<<samples<<"\n";
+      flog<<" nskip "<<nskip<<"\n";
+      flog<<" pTjump "<<pTjump<<"\n";
+
+      flog.flush();
+
+
+      std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now();
+      double timeOpt=0;
+
+
+      typename TT::myEvidence * ev= tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,samples,nskip,pTjump,mt,flog,startTime,timeOpt);
+      std::cout<<*ev;
+      flog<<*ev;
+      flog.close();
+      std::ofstream fout;
+      fout.open(eviName.c_str(), std::ofstream::out | std::ofstream::app);
+      fout<<line<<"\n";
+      fout<<"evidenceS: "<<temperateS<<"\n";
+      fout<<" eviName: "<<eviName<<"\n";
+      fout<<" experimentName:"<<experimentName<<"\n";
+      fout<<" priorName: "<<priorName<<"\n";
+      fout<<" dx: "<<dx<<"\n";
+      fout<<" dtmin: "<<dtmin<<"\n";
+      fout<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
+      fout<<" dtmax: "<<dtmax<<"\n";
+      fout<<" niter: "<<niter<<"\n";
+      fout<<" maxduration "<<maxduration<<"\n";
+      fout<<" landa0 "<<landa0<<"\n";
+      fout<<" v "<<v<<"\n";
+      fout<<" nmaxloop "<<nmaxloop<<"\n";
+
+      fout<<" initseed "<<initseed<<"\n";
+      fout<<" adaptive beta "<<aBeta<<"\n";
       fout<<" samples "<<samples<<"\n";
       fout<<" nskip "<<nskip<<"\n";
 

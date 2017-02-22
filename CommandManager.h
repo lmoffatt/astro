@@ -373,6 +373,25 @@ private:
 };
 
 
+class TemperingCommand:public CommandBase
+{
+  // CommandBase interface
+public:
+  virtual void run(const std::__cxx11::string &line);
+
+  virtual std::string id() const
+  {
+    return "tempering";
+  }
+  TemperingCommand(CommandManager* cm):
+    CommandBase("tempering"),
+    cm_(cm){}
+
+  ~TemperingCommand(){}
+private:
+  CommandManager* cm_;
+
+};
 
 
 

@@ -469,6 +469,10 @@ typedef
 Thermodynamic_Integration_mcmc<
 MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa,LevenbergMarquardt_step> TI;
 
+typedef
+Template_Tempering_mcmc<
+MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa,LevenbergMarquardt_step> TT;
+
 
 
 

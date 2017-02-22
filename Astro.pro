@@ -53,7 +53,8 @@ HEADERS += \
     mySerializer.h \
     myOutputSerializer.h \
     myInputSerializer.h \
-    myOrderOperators.h
+    myOrderOperators.h \
+    myTuples.h
 
 DISTFILES += \
     run/script \

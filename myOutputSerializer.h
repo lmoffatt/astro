@@ -7,6 +7,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "myTuples.h"
+
 template<typename T1, typename T2>
 std::ostream& operator<<(std::ostream& os,const std::pair<T1,T2>& other)
 {
@@ -95,5 +97,36 @@ std::ostream& operator<<(std::ostream& s, const std::multiset<T>& v)
 
 
 
+
+template<typename Last>
+std::ostream& print_impl(std::ostream& os, const Last& last)
+{
+   os<<last;
+   return os;
+}
+
+template<typename First, typename ... Rest>
+std::ostream& print_impl(std::ostream& os, const First& first, const Rest&...rest)
+{
+    print_impl(os,first);
+    os<<"\t";
+    print_impl(os,rest...);
+    return os;
+}
+
+template< int ... Indexes, typename ... Args>
+std::ostream& print_helper(std::ostream& os, index_tuple<Indexes...>, const std::tuple<Args...>& tup)
+{
+    print_impl( os, std::get<Indexes>(tup)...);
+    return os;
+}
+
+
+template<typename ...Args>
+std::ostream& operator<<(std::ostream& os, const std::tuple<Args...> tu)
+{
+  return print_helper(os,typename make_indexes<Args...>::type(),
+                      tu);
+}
 
 #endif // MYOUTPUTSERIALIZER_H

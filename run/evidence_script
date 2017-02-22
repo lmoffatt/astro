@@ -2,5 +2,11 @@
 //ss>>evidenceS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>initseed>>betas>>samples>>nskip;
 //ss>>evidenceS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>betas>>samples>>nskip;
 
-evidence ENew_log_100u_100s_LABEL ../experiment_log_250_1 LABEL 250  0.1 10 100  500  1200 0.5 1.4142135623731 60 0  [1 3 10 20 50 100 200 500 1000 3000 1e4 1e5] [[1 3 10 20 50 100 200 500 1000 3000 1e4 ][0.5  0.75 1 1.5 2] ] [ 0.01 0.1 1.0] [20] [5]
+//ss>>temperateS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>N_betas>>beta_min>>samples>>nskip>>nu_beta
+>>nsamples_50_beta>>pTjump;
+
+
+
+
+tempering ENew_log_100u_100s_LABEL ../experiment_log_250_1 LABEL 250  0.1 10 100  500  1200 0.5 1.4142135623731 60 0  [1 3 10 20 50 100 200 500 1000 3000 1e4 1e5] [[1 3 10 20 50 100 200 500 1000 3000 1e4 ][0.5  0.75 1 1.5 2] ] 24 5e-2  20 20  10 1000  0.5
 1
