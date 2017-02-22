@@ -36,7 +36,7 @@ DISTNAME      = Astro1.0.0
 DISTDIR = /home/luciano/Data/celulas/Astro/build-Astro-gcc_6-Release/.tmp/Astro1.0.0
 LINK          = ~/local/gcc-6.2.0/bin/g++
 LFLAGS        = -fopenmp -Wl,-O1,-rpath=/home/lmoffatt.inquimae/local/gcc-6.2.0/lib/
-LIBS          = $(SUBLIBS) -lblas -llapack
+LIBS          = $(SUBLIBS) -lblas -llapack -lgomp -lpthread
 AR            = ar cqs
 RANLIB        =
 SED           = sed
