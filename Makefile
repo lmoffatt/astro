@@ -224,7 +224,14 @@ DIST          = ../Astro/run/script \
 		Splines.h \
 		Evidence.h \
 		Matrix.h \
-		Distributions.h ../Astro/main.cpp \
+		Distributions.h \
+		Optimization.h \
+		Optimization_BFGS.h \
+		mySerializer.h \
+		myOutputSerializer.h \
+		myInputSerializer.h \
+		myOrderOperators.h \
+		myTuples.h ../Astro/main.cpp \
 		../Astro/CommandManager.cpp \
 		../Astro/Models.cpp \
 		../Astro/CortexSimulation.cpp \
@@ -238,6 +245,7 @@ DIST          = ../Astro/run/script \
 		../Astro/Evidence.cpp \
 		../Astro/Matrix.cpp \
 		../Astro/Distributions.cpp
+
 QMAKE_TARGET  = Astro
 DESTDIR       =
 TARGET        = Astro
@@ -286,6 +294,12 @@ compiler_clean:
 
 main.o: ../Astro/main.cpp ../Astro/CommandManager.h \
 		../Astro/BaseClass.h \
+		../Astro/Matrix.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h \
 		../Astro/CortexMeasure.h \
 		../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h
@@ -296,12 +310,19 @@ CommandManager.o: ../Astro/CommandManager.cpp ../Astro/Models.h \
 		../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h \
 		../Astro/BaseClass.h \
+		../Astro/Matrix.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h \
 		../Astro/CortexSimulation.h \
 		../Astro/CommandManager.h \
 		../Astro/CortexLikelihood.h \
 		../Astro/Evidence.h \
-		../Astro/Matrix.h \
-		../Astro/Distributions.h
+		../Astro/Distributions.h \
+		../Astro/Optimization_BFGS.h \
+		../Astro/Optimization.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CommandManager.o ../Astro/CommandManager.cpp
 
 Models.o: ../Astro/Models.cpp ../Astro/Models.h \
@@ -309,12 +330,24 @@ Models.o: ../Astro/Models.cpp ../Astro/Models.h \
 		../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h \
 		../Astro/BaseClass.h \
+		../Astro/Matrix.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h \
 		../Astro/CortexSimulation.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Models.o ../Astro/Models.cpp
 
 CortexSimulation.o: ../Astro/CortexSimulation.cpp ../Astro/CortexSimulation.h \
 		../Astro/Parameters.h \
 		../Astro/BaseClass.h \
+		../Astro/Matrix.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h \
 		../Astro/CommandManager.h \
 		../Astro/CortexMeasure.h \
 		../Astro/LevenbergMarquardt.h
@@ -322,6 +355,12 @@ CortexSimulation.o: ../Astro/CortexSimulation.cpp ../Astro/CortexSimulation.h \
 
 CortexMeasure.o: ../Astro/CortexMeasure.cpp ../Astro/CommandManager.h \
 		../Astro/BaseClass.h \
+		../Astro/Matrix.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h \
 		../Astro/CortexMeasure.h \
 		../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h
@@ -329,26 +368,47 @@ CortexMeasure.o: ../Astro/CortexMeasure.cpp ../Astro/CommandManager.h \
 
 Parameters.o: ../Astro/Parameters.cpp ../Astro/Parameters.h \
 		../Astro/BaseClass.h \
+		../Astro/Matrix.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h \
 		../Astro/MatrixInverse.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Parameters.o ../Astro/Parameters.cpp
 
-MatrixInverse.o: ../Astro/MatrixInverse.cpp ../Astro/MatrixInverse.h
+MatrixInverse.o: ../Astro/MatrixInverse.cpp ../Astro/MatrixInverse.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o MatrixInverse.o ../Astro/MatrixInverse.cpp
 
-matrixCholesky.o: ../Astro/matrixCholesky.cpp ../Astro/MatrixInverse.h
+matrixCholesky.o: ../Astro/matrixCholesky.cpp ../Astro/MatrixInverse.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o matrixCholesky.o ../Astro/matrixCholesky.cpp
 
 LevenbergMarquardt.o: ../Astro/LevenbergMarquardt.cpp ../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h \
 		../Astro/BaseClass.h \
+		../Astro/Matrix.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h \
 		../Astro/MatrixInverse.h \
 		../Astro/CortexLikelihood.h \
 		../Astro/Models.h \
 		../Astro/CortexMeasure.h \
 		../Astro/CortexSimulation.h \
 		../Astro/Evidence.h \
-		../Astro/Matrix.h \
-		../Astro/Distributions.h
+		../Astro/Distributions.h \
+		../Astro/Optimization_BFGS.h \
+		../Astro/Optimization.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o LevenbergMarquardt.o ../Astro/LevenbergMarquardt.cpp
 
 CortexLikelihood.o: ../Astro/CortexLikelihood.cpp ../Astro/CortexLikelihood.h \
@@ -357,31 +417,58 @@ CortexLikelihood.o: ../Astro/CortexLikelihood.cpp ../Astro/CortexLikelihood.h \
 		../Astro/LevenbergMarquardt.h \
 		../Astro/Parameters.h \
 		../Astro/BaseClass.h \
+		../Astro/Matrix.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h \
 		../Astro/CortexSimulation.h \
 		../Astro/Evidence.h \
-		../Astro/Matrix.h \
 		../Astro/Distributions.h \
+		../Astro/Optimization_BFGS.h \
+		../Astro/Optimization.h \
 		../Astro/CommandManager.h \
 		../Astro/Splines.h \
 		../Astro/MatrixInverse.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexLikelihood.o ../Astro/CortexLikelihood.cpp
 
 Splines.o: ../Astro/Splines.cpp ../Astro/Splines.h \
-		../Astro/MatrixInverse.h
+		../Astro/MatrixInverse.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Splines.o ../Astro/Splines.cpp
 
 Evidence.o: ../Astro/Evidence.cpp ../Astro/Evidence.h \
 		../Astro/Matrix.h \
-		../Astro/Distributions.h
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h \
+		../Astro/Distributions.h \
+		../Astro/Optimization_BFGS.h \
+		../Astro/Optimization.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Evidence.o ../Astro/Evidence.cpp
 
-Matrix.o: ../Astro/Matrix.cpp ../Astro/Matrix.h
+Matrix.o: ../Astro/Matrix.cpp ../Astro/Matrix.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Matrix.o ../Astro/Matrix.cpp
 
 Distributions.o: ../Astro/Distributions.cpp ../Astro/Distributions.h \
-		../Astro/Matrix.h
+		../Astro/Matrix.h \
+		../Astro/mySerializer.h \
+		../Astro/myOutputSerializer.h \
+		../Astro/myTuples.h \
+		../Astro/myInputSerializer.h \
+		../Astro/myOrderOperators.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Distributions.o ../Astro/Distributions.cpp
-
 ####### Install
 
 install:  FORCE
