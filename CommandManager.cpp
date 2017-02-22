@@ -1140,10 +1140,10 @@ void TemperingCommand::run(const std::__cxx11::string& line)
   std::size_t nsamples_50_beta;
   M_Matrix<AP> aps;
   std::vector<std::vector<double>> apsPar;
-
+  double maxTime;
   std::size_t samples, nskip;
 
-  ss>>temperateS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>N_betas>>beta_min>>samples>>nskip>>nu_beta
+  ss>>temperateS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>N_betas>>beta_min>>maxTime>>samples>>nskip>>nu_beta
       >>nsamples_50_beta>>pTjump;
 
   Adaptive_Beta
@@ -1174,6 +1174,7 @@ void TemperingCommand::run(const std::__cxx11::string& line)
       for (std::size_t j=0; j<apsPar[i].size(); ++j)
         std::cout<<apsPar[i][j]<<" ";
     }
+  std::cout<<" maxTime (min) "<<maxTime;
 
   std::cout<<" samples "<<samples;
   std::cout<<" nskip "<<nskip;
@@ -1282,6 +1283,8 @@ void TemperingCommand::run(const std::__cxx11::string& line)
       flog<<" initseed "<<initseed<<"\n";
       flog<<" adaptive beta "<<aBeta<<"\n";
       flog<<AP::ClassName()<<" "<<aps<<"\n";
+      flog<<" maxTime (min) "<<maxTime<"\n";
+
       flog<<" samples "<<samples<<"\n";
       flog<<" nskip "<<nskip<<"\n";
       flog<<" pTjump "<<pTjump<<"\n";
@@ -1293,7 +1296,7 @@ void TemperingCommand::run(const std::__cxx11::string& line)
       double timeOpt=0;
 
 
-      typename TT::myEvidence * ev= tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,samples,nskip,pTjump,mt,flog,startTime,timeOpt);
+      typename TT::myEvidence * ev= tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,mt,flog,startTime,timeOpt);
       std::cout<<*ev;
       flog<<*ev;
       flog.close();
@@ -1316,6 +1319,8 @@ void TemperingCommand::run(const std::__cxx11::string& line)
 
       fout<<" initseed "<<initseed<<"\n";
       fout<<" adaptive beta "<<aBeta<<"\n";
+      fout<<" maxTime (min) "<<maxTime<<"\n";
+
       fout<<" samples "<<samples<<"\n";
       fout<<" nskip "<<nskip<<"\n";
 

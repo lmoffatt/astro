@@ -2494,6 +2494,7 @@ public:
    ,const D& data
    , const Adaptive_discrete<AP>& landa_Dist0
    ,const Adaptive_Beta& beta0
+   , double maxTime
    , std::size_t nsamples
    ,std::size_t nskip
    ,double pTjump
@@ -2529,7 +2530,7 @@ public:
         LMLik.update_mcmc_step(lik,model,data,sDists[i],landa,beta0);
       }
 
-    while (!o.full())
+    while (!o.full()&&timeOpt<maxTime*60)
       {
         for (std::size_t i=0; i<n;++i)
           pars[i].actualize();
