@@ -1283,7 +1283,7 @@ void TemperingCommand::run(const std::__cxx11::string& line)
       flog<<" initseed "<<initseed<<"\n";
       flog<<" adaptive beta "<<aBeta<<"\n";
       flog<<AP::ClassName()<<" "<<aps<<"\n";
-      flog<<" maxTime (min) "<<maxTime<"\n";
+      flog<<" maxTime (min) "<<maxTime<<"\n";
 
       flog<<" samples "<<samples<<"\n";
       flog<<" nskip "<<nskip<<"\n";
