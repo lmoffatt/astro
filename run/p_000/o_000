@@ -11,7 +11,7 @@
 #$ -v OMP_NUM_THREADS=1 ### Setea la cantidad de threads a 8
 
 #$ -V  # Exporta las variables de entorno
-#$ -N W50_E2  # El nombre del job
+#$ -N W25_E2  # El nombre del job
 #$ -cwd # Cambia al directorio actual
 
 
