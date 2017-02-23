@@ -1174,7 +1174,7 @@ void TemperingCommand::run(const std::__cxx11::string& line)
       for (std::size_t j=0; j<apsPar[i].size(); ++j)
         std::cout<<apsPar[i][j]<<" ";
     }
-  std::cout<<" maxTime (min) "<<maxTime;
+  std::cout<<" maxTime (h) "<<maxTime;
 
   std::cout<<" samples "<<samples;
   std::cout<<" nskip "<<nskip;
@@ -1283,7 +1283,7 @@ void TemperingCommand::run(const std::__cxx11::string& line)
       flog<<" initseed "<<initseed<<"\n";
       flog<<" adaptive beta "<<aBeta<<"\n";
       flog<<AP::ClassName()<<" "<<aps<<"\n";
-      flog<<" maxTime (min) "<<maxTime<<"\n";
+      flog<<" maxTime (h) "<<maxTime<<"\n";
 
       flog<<" samples "<<samples<<"\n";
       flog<<" nskip "<<nskip<<"\n";
@@ -1319,7 +1319,7 @@ void TemperingCommand::run(const std::__cxx11::string& line)
 
       fout<<" initseed "<<initseed<<"\n";
       fout<<" adaptive beta "<<aBeta<<"\n";
-      fout<<" maxTime (min) "<<maxTime<<"\n";
+      fout<<" maxTime (h) "<<maxTime<<"\n";
 
       fout<<" samples "<<samples<<"\n";
       fout<<" nskip "<<nskip<<"\n";
