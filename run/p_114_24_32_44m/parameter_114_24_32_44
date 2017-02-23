@@ -104,7 +104,7 @@ M_5  <LOG>  70000   [receptors cell^-1] 10 [dB]// number of soluble mediators re
 
 M_N  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on neurons
 
-M_N  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on microglia
+M_M  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on microglia
 
 
 
