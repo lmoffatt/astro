@@ -544,7 +544,7 @@ void TissuePhoto::write(std::ostream &s)
 
 }
 
-bool TissuePhoto::align( TissuePhoto &other)
+bool TissuePhoto::align( TissuePhoto &other, std::ostream& logs)
 {
   // find common pins
 
@@ -563,7 +563,7 @@ bool TissuePhoto::align( TissuePhoto &other)
     {// calculate the displacement for all found pins
       std::vector<double> dxs;
       std::vector<double> dys;
-      std::cerr<<"\nfoto"<<other.num<<"\n";
+     // logs<<"\nfoto"<<other.num<<"\n";
       double sdx=0,sdy=0;
       for (auto aPin:commonPins)
         {
@@ -572,11 +572,11 @@ bool TissuePhoto::align( TissuePhoto &other)
           mine=pines_[aPin];
           his=other.pines_[aPin];
           dx=mine.limits().front().x-his.limits().front().x;
-          std::cerr<<"pin"<<aPin<<"\t";
-          std::cerr<<"dx="<<dx<<"\t";
+          logs<<"pin"<<aPin<<"\t";
+          logs<<"dx="<<dx<<"\t";
           dxs.push_back(dx);
           dy=mine.limits().front().y-his.limits().front().y;
-          std::cerr<<"dy="<<dy<<"\n";
+          logs<<"dy="<<dy<<"\n";
 
 
           dys.push_back(dy);
@@ -721,7 +721,7 @@ void TissuePhoto::updateMinMax()
 
 
 
-void TissueSection::align()
+void TissueSection::align(std::ostream& logs)
 {
   // use first photo as the master
 
@@ -736,7 +736,7 @@ void TissueSection::align()
     {
       for (auto it=remaining.begin(); it!=remaining.end(); ++it)
         {
-          if (f.align(fotos[*it]))
+          if (f.align(fotos[*it],logs))
             {
               it=remaining.erase(it);
             }

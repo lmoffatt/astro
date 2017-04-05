@@ -114,29 +114,31 @@ void writeTable(std::ostream& s,
 
 bool readValue(std::string& line,
                std::istream&,
-               double& val);
+               double& val, std::ostream& logs);
 
 bool readValue(std::string& line,
                std::istream&,
-               std::size_t& val);
-bool readValue(std::string& line,
-               std::istream&,
-               std::string& val);
+               std::size_t& val, std::ostream& logs);
 
 bool readValue(std::string& line,
                std::istream&,
-               bool& val);
+               std::string& val, std::ostream& logs);
+
+bool readValue(std::string& line,
+               std::istream&,
+               bool& val, std::ostream& logs);
 
 
 template<typename T>
 bool readValue(std::string& line,
                std::istream& s,
-               std::vector<T>& val)
+               std::vector<T>& val,
+               std::ostream& logs)
 {
   safeGetline(s,line);
   val.clear();
   T x;
-  while (readValue(line,s,x))
+  while (readValue(line,s,x, logs))
     val.push_back(x);
   return !val.empty();
 }
@@ -145,11 +147,12 @@ bool readValue(std::string& line,
 template<typename T>
 bool readValue(std::string& line,
                std::istream& s,
-               std::vector<std::vector<T>>& matrix)
+               std::vector<std::vector<T>>& matrix,
+               std::ostream& logs)
 {
   matrix.clear();
   std::vector<T> v;
-  while (readValue(line,s,v))
+  while (readValue(line,s,v,logs))
     {
       matrix.push_back(v);
     }
@@ -160,7 +163,8 @@ template<typename T>
 bool readField(std::string& line,
                std::istream& s
                , const std::string& fieldName
-               , T& value)
+               , T& value
+               ,std::ostream& log_stream)
 {
   while (line.empty()&& safeGetline(s,line)) {}
   std::stringstream ss(line);
@@ -170,14 +174,14 @@ bool readField(std::string& line,
   if (fieldName==fname)
     {
       safeGetline(ss,line);
-      return readValue(line,s,value);
+      return readValue(line,s,value,log_stream);
     }
   else
 
     {
-      std::cerr<<"unexpected Field\n";
-      std::cerr<<"\t\t Expected: "<<fieldName<<" \t found:";
-      std::cerr<<fname<<"\n";
+      log_stream<<"Unexpected Field\n";
+      log_stream<<"\t\t Expected: "<<fieldName<<" \t found:";
+      log_stream<<fname<<"\n";
 
       return false;
 
@@ -188,7 +192,8 @@ template<typename T>
 bool readPtrField(std::string& line,
                   std::istream& s
                   , const std::string& fieldName
-                  , T*& value)
+                  , T*& value
+                  , std::ostream & ls)
 {
   while (line.empty()&& safeGetline(s,line)) {}
   std::stringstream ss(line);
@@ -209,7 +214,12 @@ bool readPtrField(std::string& line,
           value=p;
           return value->read(line,s);
         }
-      else return false;
+      else
+        {
+          ls<<__FILE__<<" line"<<__LINE__;
+          ls<<": could not create child of class "<<clname<<"\n";
+          return false;
+        }
     }
   else return false;
 }
@@ -232,7 +242,8 @@ template<typename T>
 bool readField(std::string& line,
                std::istream& s
                , const std::string& fieldName
-               ,  std::vector<T>& value)
+               ,  std::vector<T>& value
+               , std::ostream& logs)
 {
   while (line.empty()&&safeGetline(s,line)) {}
   std::stringstream ss(line);
@@ -241,13 +252,13 @@ bool readField(std::string& line,
     {
 
       // safeGetline(s,line);
-      return readValue(line,s,value);
+      return readValue(line,s,value,logs);
     }
   else
     {
-      std::cerr<<"unexpected Field\n";
-      std::cerr<<"\t\t Expected: "<<fieldName<<" \t found:";
-      std::cerr<<fname<<"\n";
+      logs<<"unexpected Field\n";
+      logs<<"\t\t Expected: "<<fieldName<<" \t found:";
+      logs<<fname<<"\n";
 
       return false;
     }
@@ -340,7 +351,7 @@ public:
 
 
 
-  std::string load(const std::string& name)
+  std::string load(const std::string& name, std::ostream& logs)
   {
     std::string filename=name;
     std::ifstream fi;
@@ -359,28 +370,28 @@ public:
               {
                 fi.close();
 
-                std::cerr<<"cannot load "<<name<<" file "<<filename<<" not found\n";
+                logs<<"cannot load "<<name<<" file "<<filename<<" not found\n";
                 return "";
               }
             else
-              std::cout<<"file "<<filename<<" opened successfully\n";
+              logs<<"file "<<filename<<" opened successfully\n";
           }
         else
-          std::cout<<"file "<<filename<<" opened successfully\n";
+          logs<<"file "<<filename<<" opened successfully\n";
 
       }
     else
-      std::cout<<"file "<<filename<<" opened successfully\n";
+      logs<<"file "<<filename<<" opened successfully\n";
     std::string line;
-    if (read(line,fi))
+    if (read(line,fi, logs))
       {
-        std::cout<<myClass()<<" "<<id()<<" loaded successfully \n";
+        logs<<myClass()<<" "<<id()<<" loaded successfully \n";
         fi.close();
         return line;
       }
     else
       {
-        std::cerr<<myClass()<<" "<<id()<<" could not be loaded successfully \n";
+        logs<<myClass()<<" "<<id()<<" could not be loaded successfully \n";
         fi.close();
         return line;
       }
@@ -404,14 +415,14 @@ public:
 
 
 
-  bool read(std::string &line, std::istream &s)
+  bool read(std::string &line, std::istream &s, std::ostream& logs)
   {
     std::string idv;
-    if (readField(line,s,myClass(),idv))
+    if (readField(line,s,myClass(),idv,logs))
       {
         setId(idv);
         safeGetline(s,line);
-        if (readBody(line,s))
+        if (readBody(line,s,logs))
           {
             update();
             return true;
@@ -420,11 +431,11 @@ public:
           return false;
       }
     else
-        return false;
+      return false;
 
   }
 
-  virtual bool readBody(std::string& line,std::istream& s)=0;
+  virtual bool readBody(std::string& line,std::istream& s, std::ostream& logs)=0;
 
 
 protected:
@@ -460,19 +471,22 @@ std::ostream& operator<<(std::ostream& s
 inline
 bool readValue(std::string& line,
                std::istream& s,
-               BaseObject& val)
+               BaseObject& val,
+               std::ostream& logs)
 {
-  return val.read(line,s);
+  return val.read(line,s,logs);
 
 }
 
 template<typename T>
 bool readValue(std::string& line,
                std::istream& s,
-               T*& val)
+               T*& val,
+               std::ostream& logs
+               )
 {
 
-  return val->read(line,s);
+  return val->read(line,s,logs);
 
 }
 
@@ -481,7 +495,7 @@ bool readValue(std::string& line,
 inline
 bool readValue(std::string& line,
                std::istream&,
-               double& val)
+               double& val,std::ostream &)
 {
   std::stringstream ss(line);
   bool o=bool(ss>>val);
@@ -533,7 +547,7 @@ bool readValue(std::string& line,
 inline
 bool readValue(std::string& line,
                std::istream&,
-               std::string& val){
+               std::string& val,std::ostream &logs){
   std::stringstream ss(line);
   bool o=bool(ss>>val);
   safeGetline(ss,line);
@@ -543,7 +557,7 @@ bool readValue(std::string& line,
 inline
 bool readValue(std::string& line,
                std::istream&,
-               std::size_t& val){
+               std::size_t& val,std::ostream &logs){
   std::stringstream ss(line);
   bool o=bool(ss>>val);
   safeGetline(ss,line);
@@ -554,7 +568,7 @@ bool readValue(std::string& line,
 inline
 bool readValue(std::string& line,
                std::istream&,
-               bool& val)
+               bool& val,std::ostream &logs)
 {
   std::stringstream ss(line);
   bool o=bool(ss>>val);

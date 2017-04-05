@@ -193,7 +193,7 @@ public:
 
 
 
-  void read(std::string &line, std::istream &s);
+  void read(std::string &line, std::istream &s, std::ostream &logs);
 };
 
 class Experiment;

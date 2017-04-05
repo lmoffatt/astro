@@ -321,7 +321,7 @@ public:
   virtual LevenbergMarquardtDistribution *create() const override{ return nullptr;}
   virtual std::ostream &writeBody(std::ostream &s) const override{ return s;}
   virtual void clear() override{}
-  virtual bool readBody(std::string &, std::istream &) override{ return false;}
+  virtual bool readBody(std::string &, std::istream &, std::ostream& logs) override{ return false;}
 
 protected:
   virtual void update() override{}

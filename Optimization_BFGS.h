@@ -104,24 +104,28 @@ struct BFGS_optimal
                           const D& x,
                           const M_Matrix<double>& binit,
                           double alfaInit=1e-5,
-                          std::size_t maxIter=1000,
-                          double maxTime=60)
+                          std::size_t maxIter=100,
+                          double maxTime=600)
   {
 
     opt_max_run r;
     r.startTime= std::chrono::steady_clock::now();
     r.maxIter=maxIter;
     r.maxDur_in_min=maxTime;
-    r.paramChangeMin=1e-6;
-    r.GradientNormPostMin=1e-6;
+    r.paramChangeMin=1e-6*alfaInit;
+    r.GradientNormPostMin=1e-6*alfaInit;
     r.PostLogLikChangeMin=1e-6;
 
 
     opt_max_iter iter;
     iter.i=0;
     iter.sample=new_point(f,x,binit);
+    if (!iter.sample.isValid) return iter;
     iter.sample=init_H(f,x,iter.sample);
     iter.candidate=next_candidate(f,x,iter.sample,alfaInit);
+    iter.sample=compute_H(f,x,iter.sample,std::move(iter.candidate));
+    iter.candidate=next_candidate(f,x,iter.sample,alfaInit);
+    iterAct(r,iter);
 
     while (!meetCovergenceCriteria(r,iter))
       {
@@ -238,10 +242,12 @@ private:
                                       double Wolf_Condition_c1_=0.1,
                                       double Wolf_Condition_c2_=0.5)
   {
+    if (sample.G.empty()) return {};
     auto d_=  -sample.G*sample.Hinv; //that determine the direction of search.
     double df0_=multTransp(d_,sample.G)[0];
     double alfa=0;
     double beta=INFINITY;
+    double alphamin=1e-9;
     std::size_t ifevalLoop=0;
     std::size_t neval_;
     // this loop look after a value of a that satisfy Wolfe conditions
@@ -257,7 +263,7 @@ private:
             candidate1=new_point(f,x,x1);
             neval_++;
             ifevalLoop++;
-            if (candidate1.isValid)
+            if ((candidate1.isValid||(std::isnan(alpha_)))||(alpha_<alphamin))
               break;
             else
               alpha_/=10;
@@ -297,12 +303,14 @@ private:
 
     double b1=df0_+df1-3*(-candidate1.fout+sample.fout)/alpha_;
 
+    double alfa00=alpha_;
     if ((b1*b1-df0_*df1)>0)
       {
         double b2=pow((b1*b1-df0_*df1),0.5);
-        if (std::abs(df1-df0_+2*b2)>1e-7)
+        if (std::abs(df1-df0_+2*b2)>1e-6)
           alpha_=alpha_-alpha_*(df1+b2-b1)/(df1-df0_+2*b2);
       }
+    if (!std::isfinite(alpha_)) alpha_=alfa00;
     M_Matrix<double> x2=sample.b+d_*alpha_;
     opt_max_point candidate2=new_point(f,x,x2);
     neval_++;

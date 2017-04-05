@@ -21,7 +21,7 @@
 #include <iterator>     // std::iterator, std::input_iterator_tag
 
 #include <iostream>
-
+#include <algorithm>
 #include "mySerializer.h"
 #include "myOrderOperators.h"
 
@@ -380,7 +380,7 @@ public:
 
   template<class F>
   M_Matrix<T>
-  apply(const F& f)
+  apply(const F& f)const
   {
     M_Matrix<T> out(nrows(),ncols());
     for (std::size_t i=0; i<size(); ++i)
@@ -441,20 +441,120 @@ public:
   }
 
 
-  M_Matrix<T>&  operator() (std::size_t i,
-                            const std::string /*dummy*/,
-                            const M_Matrix<T>& newValues);
+
+
+  /** @name  Accesing all the values of a Row or Column at once
+     */
+  //@{
+
+  /**
+    Replacement of the ith Row.
+    @param iRow the extracted row (0 is the first as always in C)
+    @param newValues contains the numbers used to relace iRow
+    @param dummy an ignored variable to differentiate from column
+    extraction
+    @pre iRow is smaller than nrows(*this)
+    @pre size(newValues)==ncols(*this)
+    @returns *this
+    @post if the preconditions are met, the ith row is replaced by
+    newValues
+    @post newValues is treated as a vector, although is a Matrix. Its
+    internal structure (i.e., ncols and nrows) is ignored.
+    @post assert the precoditions
+    */
+
+  M_Matrix<T>&  operator() (std::size_t iRow,
+                                         std::string /*dummy*/,
+                                         const M_Matrix<T>& newValues)
+  {
+    //ASSERT_LESS(iRow,nrows());//number of rows
+    //ASSERT_EQ(size(newValues),ncols()); //number of columns
+    for (std::size_t j=0; j<std::min(ncols(),size()); j++)
+      this->operator()(iRow,j)=newValues[j];
+    return *this;
+  }
+
+
+
+
+
+  /**
+    Replacement of the jth Column.
+    @param newValues contains the numbers used to relace jth Column
+    @pre newValues is treated as a vector, although is a Matrix. Its
+    internal structure (i.e., ncols and nrows) is ignored.
+    @param jColumn the replaced column (0 is the first as always in C)
+    @param dummy an ignored variable to differentiate from column
+    extraction
+    @pre jColumn is smaller than ncols(*this)
+    @pre size(newValues)==nrows(*this)
+    \returns *this
+    @post if the preconditions are met, the jth Column is replaced by
+    newValues
+    @post assert the precoditions
+    */
+
 
   M_Matrix<T>&  operator() (const std::string /*dummy*/,
-                            std::size_t jColumn,
-                            const M_Matrix<T>& newValues);
+                                         std::size_t jColumn,
+                                         const M_Matrix<T>& newValues)
+  {
+
+    for (std::size_t i=0; i<std::min(nrows(*this),size(newValues)); i++)
+      this->operator()(i,jColumn)=newValues[i];
+    //  assert(ndim>1);
+    //  assert(i<n[0]);//number of rows
+    //  assert(j<n[1]); //number of columns
+    return *this;
+  }
+
+
+
+
+
+  /**
+    Copy of the ith Row
+    @pre iRow is smaller than nrows(*this)
+    @param iRow the extracted row (0 is the first as always in C)
+    @param dummy an ignored variable to differentiate from column
+    extraction
+    \returns a 1-row ncols Matrix with the values of the ith row
+    */
 
   M_Matrix<T>  operator() (std::size_t iRow,
-                           std::string /*dummy*/) const;
+                                        const std::string /*dummy*/
+                                        ) const
+  {
+    M_Matrix<T> out(1,ncols());
+    for (std::size_t j=0; j<ncols(); j++)
+      out[j]=this->operator()(iRow,j);
+    return out;
+  }
 
+
+
+
+
+
+  /**
+    Copy of the jth Column
+    @pre jColumn is smaller than ncols(*this)
+    @param jColumn the extracted column (0 is the first as always in C)
+    @param dummy is an ignored const string (like "") to differentiate
+    from row extraction
+    \returns a nrows 1-column Matrix with the values of the jth column
+    */
 
   M_Matrix<T>  operator() (std::string /*dummy*/,
-                           std::size_t jColumn) const;
+                                        std::size_t jColumn
+                                        ) const
+  {
+    M_Matrix<T> out(nrows(),1);
+    for (std::size_t i=0; i<nrows(); i++)
+      out[i]=(*this)(i,jColumn);
+    return out;
+  }
+
 
   void clear()
   {
@@ -572,6 +672,23 @@ M_Matrix<T> eye(std::size_t n)
 }
 
 
+template<typename T, class Predicate>
+bool all(const M_Matrix<T>& x, const Predicate& p)
+{
+  for (std::size_t i=0; i< x.size(); ++i)
+    if (!p(x[i]))
+      return false;
+  return true;
+}
+
+template<typename T, class Predicate>
+bool any(const M_Matrix<T>& x, const Predicate& p)
+{
+  for (std::size_t i=0; i< x.size(); ++i)
+    if (p(x[i]))
+      return true;
+  return false;
+}
 
 
 template<typename T>
@@ -935,6 +1052,41 @@ M_Matrix<T>& operator-=(M_Matrix<T>& itself, T x)
 
 
 
+/*
+Matrix Equality Operator
+*/
+template<typename T>
+bool operator==(const M_Matrix<T>& x,
+                const M_Matrix<T>& y)
+{
+  if (x.size()!=y.size()) return false;
+  else if (x.ncols()!=y.ncols()) return false;
+  else for (std::size_t i=0; i< x.size(); ++i)
+    if (x[i]!=y[i]) return false;
+  return true;
+
+}
+
+
+
+/*
+ Minor Operator based on a Lexicographic Comparison.
+*/
+template<typename T>
+bool operator<(const M_Matrix<T>& x, const M_Matrix<T>& y)
+{
+  if (x.size()<y.size()) return true;
+  else if (y.size()<x.size()) return false;
+  else if (x.nrows()<y.nrows()) return true;
+  else if (y.nrows()<x.nrows()) return false;
+  else for (std::size_t i=0; i< x.size(); ++x)
+    {
+    if (x[i]<y[i]) return true;
+    else if (y[i]<x[i]) return false;
+    }
+  return false;
+
+}
 
 
 /**
@@ -1301,6 +1453,25 @@ std::ostream& operator<<(std::ostream& os,const M_Matrix<T>& x)
   return os;
 }
 
+template<typename T>
+M_Matrix<double> operator<<(const M_Matrix<double>& A, const M_Matrix<T>& B)
+{
+    M_Matrix<double> out
+    (std::max(A.nrows(), B.nrows()), A.ncols()+B.ncols(), std::numeric_limits<double>::quiet_NaN());
+     for (std::size_t i=0; i<A.nrows();++i)
+       {
+         for (std::size_t j=0; j<A.ncols(); ++j)
+           out(i,j)=A(i,j);
+       }
+     for (std::size_t i=0; i<B.nrows();++i)
+       {
+         for (std::size_t j=0; j<B.ncols(); ++j)
+           out(i,j)=B(i,A.ncols()+j);
+       }
+
+    return out;
+
+}
 
 template<typename T>
 std::istream& operator>>(std::istream& is,M_Matrix<T>& x)
@@ -1309,6 +1480,9 @@ std::istream& operator>>(std::istream& is,M_Matrix<T>& x)
   std::size_t nrows=0;
   char ch;
   while ((is>>ch)&&(ch!='[')){}
+  if(ch!='[')
+    return is;
+  else
   while (ch!=']')
     {
       std::string s;
@@ -1336,6 +1510,22 @@ T maxAbs(const M_Matrix<T>& x)
   return m;
 }
 
+template<typename T, class Compare>
+M_Matrix<T> sort(const M_Matrix<T>& x, Compare comp)
+{
+  std::vector<T> o=x.toVector();
+  std::sort(o.begin(), o.end(), comp);
+  return M_Matrix<T>(x.nrows(),x.ncols(),o);
+
+}
+template<typename T>
+M_Matrix<T> sort(const M_Matrix<T>& x)
+{
+  std::vector<T> o=x.toVector();
+  std::sort(o.begin(), o.end());
+  return M_Matrix<T>(x.nrows(),x.ncols(),o);
+
+}
 
 
 template<typename T>
@@ -1431,6 +1621,37 @@ double xTSigmaX(const std::vector<double> &v, const M_Matrix<double> &matrix)
 }
 
 
+
+inline M_Matrix<double> xdiagXT(const M_Matrix<double>& x, const M_Matrix<double> Cdiag)
+{
+   M_Matrix<double> o(x.nrows(), x.nrows(),0.0);
+   for (std::size_t i=0;  i<x.nrows(); ++i)
+     for (std::size_t j=0; j<x.nrows(); ++j)
+       for (std::size_t k=0; k<x.ncols(); ++k)
+         o(i,j)+=Cdiag[k]*x(i,k)*x(j,k);
+   return o;
+}
+
+
+
+inline M_Matrix<double> MultDiag(const M_Matrix<double> &x, const M_Matrix<double> d)
+{
+  M_Matrix<double> o(x.nrows(), x.ncols());
+  for (std::size_t i=0;  i<x.nrows(); ++i)
+    for (std::size_t j=0; j<x.ncols(); ++j)
+        o(i,j)=x(i,j)*d[j];
+  return o;
+}
+
+
+inline M_Matrix<double> DiagMult( const M_Matrix<double> d,const M_Matrix<double> &x)
+{
+  M_Matrix<double> o(x.nrows(), x.ncols());
+  for (std::size_t i=0;  i<x.nrows(); ++i)
+    for (std::size_t j=0; j<x.ncols(); ++j)
+        o(i,j)=x(i,j)*d[i];
+  return o;
+}
 
 
 
@@ -1538,6 +1759,9 @@ M_Matrix<T>  Transpose(const M_Matrix<T>& x)
       tr(i,j)=x(j,i);
   return tr;
 }
+
+
+
 
 
 

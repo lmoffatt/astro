@@ -2,11 +2,12 @@
 //ss>>evidenceS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>initseed>>betas>>samples>>nskip;
 //ss>>evidenceS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>betas>>samples>>nskip;
 
-//ss>>temperateS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>N_betas>>beta_min>>samples>>nskip>>nu_beta
->>nsamples_50_beta>>pTjump;
+//ss>>temperateS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>N_betas>>beta_min>>samples>>nskip>>nu_beta>>nsamples_50_beta>>pTjump;
+
+// ss>>temperateS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>N_betasInit>>beta_min>>N_betas_max>>maxTime>>samples>>nskip>>pTjump;
+
+tempering(eviName=ENew_log_100u_100s_LABEL, experimentName=../experiment_log_250_1, priorName=LABEL, dx=250, dtmin=0.1, nPoints_per_decade=10, dtmax=100, tequilibrio=100000, niter=500, maxduration=1200, landa0=0.5, v=1.4142135623731,  nmaxloop=60, initseed=4221480432, aps=[0 1 3 10  20  50 100 200 300 500 1000 2000 3000 5000 1e4 1e5], apsPar=[[0 1 3 10 20 50 100 200 500 1000 3000 1e4 ][0.5  0.75 1 1.5 2] ], N_betasInit=20, beta_min=1e-3, mL0=10.80, sL0=5, mlogdL=15, slogdL=15, mmlogdelta=-8, smlogdelta=4, mlogslogdelta=2,  slogslogdelta=2, N_betas_max=20, maxTime=10, samples=10, nskip=20, pTjump=1)->myEvidence
 
 
-
-
-tempering ENew_log_100u_100s_LABEL ../experiment_log_250_1 LABEL 250  0.1 10 100  500  1200 0.5 1.4142135623731 60 0  [1 3 10 20 50 100 200 500 1000 3000 1e4 1e5] [[1 3 10 20 50 100 200 500 1000 3000 1e4 ][0.5  0.75 1 1.5 2] ] 100 1e-3 10 200 10  10 0  0.5
-
+//tempering ENew_log_100u_100s_LABEL ../experiment_log_250_1 LABEL 250  0.1 10 100  500  1200 0.5 1.4142135623731 60 0  [0 1 3 10  20  50 100 200 300 500 1000 2000 3000 5000 1e4 1e5] [[0 1 3 10 20 50 100 200 500 1000 3000 1e4 ][0.5  0.75 1 1.5 2] ] 20 1e-3 20 10 10 20 1
+//initseed=4221480432

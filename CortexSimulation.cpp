@@ -417,7 +417,7 @@ std::ostream &CortexSimulation::write(std::ostream &s, const std::string &var, c
 
 
 
-void CortexSimulation::read(std::string& line, std::istream &s)
+void CortexSimulation::read(std::string& line, std::istream &s, std::ostream& logs)
 {
   std::string name;
   std::stringstream ss(line);
@@ -463,7 +463,7 @@ void CortexSimulation::read(std::string& line, std::istream &s)
             }
           else if (name=="parameters")
             {
-              p_.read(line,s);
+              p_.read(line,s,logs);
             }
           else if (name=="x")
             {

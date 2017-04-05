@@ -321,7 +321,7 @@ public:
   }
   virtual std::ostream &writeBody(std::ostream &s) const override;
   virtual void clear() override;
-  virtual bool readBody(std::string &line, std::istream &s) override;
+  virtual bool readBody(std::string &line, std::istream &s, std::ostream& logs) override;
 };
 
 //std::ostream& operator<<(std::ostream& s, const Parameters& p);

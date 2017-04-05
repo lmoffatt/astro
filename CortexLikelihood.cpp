@@ -195,22 +195,22 @@ void CortexLikelihood::clear()
   ntot_.clear();
 }
 
-bool CortexLikelihood::readBody(std::string &line, std::istream &s)
+bool CortexLikelihood::readBody(std::string &line, std::istream &s, std::ostream& logs)
 {
 
-  if (!readField(line,s,"prior",prior_)) return false;
+  if (!readField(line,s,"prior",prior_,logs)) return false;
   std::string experimentName;
-  if (!readField(line,s,"experimental_results",experimentName)) return false;
+  if (!readField(line,s,"experimental_results",experimentName,logs)) return false;
   else
     e_=cm_->getExperiment(experimentName);
-  if (!readField(line,s,"grid_length",dx_)) return false;
-  if (!readField(line,s,"min_sample_time",dtmin_)) return false;
-  if (!readField(line,s,"prod_sample_time",nPoints_per_decade_)) return false;
+  if (!readField(line,s,"grid_length",dx_,logs)) return false;
+  if (!readField(line,s,"min_sample_time",dtmin_,logs)) return false;
+  if (!readField(line,s,"prod_sample_time",nPoints_per_decade_,logs)) return false;
 
-  if (!readField(line,s,"max_sample_time",dtmax_)) return false;
-  if (!readField(line,s,"tiempo_equilibrio",tequilibrio_)) return false;
-  if (!readField(line,s,"num_Astrocitos_cada_estado",nstate_)) return false;
-  if (!readField(line,s,"num_total_Astrocitos",ntot_)) return false;
+  if (!readField(line,s,"max_sample_time",dtmax_,logs)) return false;
+  if (!readField(line,s,"tiempo_equilibrio",tequilibrio_,logs)) return false;
+  if (!readField(line,s,"num_Astrocitos_cada_estado",nstate_,logs)) return false;
+  if (!readField(line,s,"num_total_Astrocitos",ntot_,logs)) return false;
   return true;
 }
 

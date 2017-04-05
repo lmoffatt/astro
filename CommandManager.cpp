@@ -42,7 +42,7 @@ std::vector<double> label_to_sequence(std::string s)
 
 
 
-int Script::run(char* filename)
+int Script::run(char* filename, std::ostream& logs)
 {
   std::ifstream f(filename);
   while (f)
@@ -50,13 +50,13 @@ int Script::run(char* filename)
       std::string line;
       safeGetline(f,line);
       removeComments(line);
-      cm_->execute(line);
+      cm_->execute(line,logs);
     }
   return 0;
 
 }
 
-int Script::runDefine(const std::string &filename, const std::vector<std::string> &label, const std::vector<std::string> &valueInplace)
+int Script::runDefine(const std::string &filename, const std::vector<std::string> &label, const std::vector<std::string> &valueInplace, std::ostream& logs)
 {
   std::ifstream f(filename);
   while (f)
@@ -66,7 +66,7 @@ int Script::runDefine(const std::string &filename, const std::vector<std::string
       removeComments(line);
 
       replaceLabel(line,label,valueInplace);
-      cm_->execute(line);
+      cm_->execute(line,logs);
     }
   return 0;
 
@@ -87,14 +87,14 @@ CommandManager::CommandManager()
   cmd_["likelihood"]=new LikelihoodCommand(this);
   cmd_["optimize"]=new OptimizeCommand(this);
   cmd_["evidence"]=new EvidenceCommand(this);
-  cmd_["tempering"]=new TemperingCommand(this);
+  //cmd_["tempering"]=new TemperingCommand(this);
 
 
 
 
 }
 
-void CommandManager::execute(std::string line)
+void CommandManager::execute(std::string line, std::ostream& logs)
 {
 
   std::stringstream ss(line);
@@ -102,7 +102,7 @@ void CommandManager::execute(std::string line)
   ss>>command;
   CommandBase* c=Command(command);
   if (c!=0)
-    c->run(line);
+    c->run(line,logs);
 
 }
 
@@ -247,7 +247,7 @@ CortexLikelihood *CommandManager::getLikelihood(const std::string &id)
 
 
 
-void AlignCommand::run(const std::string& line)
+void AlignCommand::run(const std::string& line, std::ostream &logs)
 {
 
   std::string alignName, dataName;
@@ -257,7 +257,7 @@ void AlignCommand::run(const std::string& line)
   TissueSection* s=cm_->getSection(dataName);
   if (s!=nullptr)
     {
-      s->align();
+      s->align(logs);
     }
 
 
@@ -266,7 +266,7 @@ void AlignCommand::run(const std::string& line)
 }
 
 
-void MergeCommand::run(const std::string& line)
+void MergeCommand::run(const std::string& line, std::ostream& logs)
 {
   std::string cName, dataName;
   std::stringstream ss(line);
@@ -289,7 +289,7 @@ void MergeCommand::run(const std::string& line)
 
 
 
-void DistancesCommand::run(const std::string& line)
+void DistancesCommand::run(const std::string& line, std::ostream &logs)
 {
   std::string cName, dataName;
   std::stringstream ss(line);
@@ -308,7 +308,7 @@ void DistancesCommand::run(const std::string& line)
 
 
 
-void HistogramCommand::run(const std::string& line)
+void HistogramCommand::run(const std::string& line, std::ostream &logs)
 {
 
   //histogram 3dpl d_les  0:+100:3000
@@ -363,7 +363,7 @@ void HistogramCommand::run(const std::string& line)
 }
 
 
-void ExperimentCommand::run(const std::string& line)
+void ExperimentCommand::run(const std::string& line, std::ostream& logs)
 
 {
   // experiment experiment1 1E7 seed  0  0 [0 25 50 100 250 500:500:4000]   3dpl 7dpl
@@ -398,18 +398,18 @@ void ExperimentCommand::run(const std::string& line)
   std::vector<CortexMeasure> vCM;
   for (auto s:sections)
     {
-      cm_->execute("read "+s);
+      cm_->execute("read "+s,logs);
       //cm_->execute("align "+s);
       //cm_->execute("merge "+s);
-      cm_->execute("distances "+s);
-      cm_->execute("write "+s);
+      cm_->execute("distances "+s,logs);
+      cm_->execute("write "+s,logs);
 
       cm_->execute("histogram "+s+ " d_les "
                    +std::to_string(maxnumpoints)+"  "
                    +std::to_string(initseed)+"  "
                    +std::to_string(minDistance_Tissue)+"  "
                    +std::to_string(minDistance_Vaso)+"  [ "
-                   +interval +" ]");
+                   +interval +" ]",logs);
       vCM.push_back(*cm_->getMeasure(s));
 
     }
@@ -422,7 +422,7 @@ void ExperimentCommand::run(const std::string& line)
 }
 
 
-void SimulateCommand::run(const std::string& line)
+void SimulateCommand::run(const std::string& line, std::ostream &logs)
 {
 
   //simulate opt experiment1 parameters_10 parameters_10 10 100
@@ -437,10 +437,10 @@ void SimulateCommand::run(const std::string& line)
   ss>>simulateS>>simName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>factor>>nseeds>>initseed;
 
   Experiment *e=new Experiment;
-  e->load(experimentName);
+  e->load(experimentName, logs);
   if (e->numMeasures()==0)
     {
-      std::cerr<<"Experiment "<<experimentName<<" not found\n";
+      logs<<"Experiment "<<experimentName<<" not found\n";
       return;
     }
 
@@ -454,7 +454,7 @@ void SimulateCommand::run(const std::string& line)
       f.open(filenaExt.c_str());
       if (!f)
         {
-          std::cerr<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
+          logs<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
           f.close();
           return;
         }
@@ -463,9 +463,9 @@ void SimulateCommand::run(const std::string& line)
   safeGetline(f,line2);
   Parameters prior;
 
-  if (!prior.read(line2,f))
+  if (!prior.read(line2,f,logs))
     {
-      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      logs<<"File "<<filename<<" is not a Parameters file"<<std::endl;
       f.close();
       return;
     }
@@ -481,7 +481,7 @@ void SimulateCommand::run(const std::string& line)
     }
   if (!f)
     {
-      std::cerr<<"Parameters file "<<filename<<" not found"<<std::endl;
+      logs<<"Parameters file "<<filename<<" not found"<<std::endl;
       f.close();
       return;
     }
@@ -490,9 +490,9 @@ void SimulateCommand::run(const std::string& line)
   safeGetline(f,line2);
   Parameters p;
 
-  if (!p.read(line2,f))
+  if (!p.read(line2,f,logs))
     {
-      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      logs<<"File "<<filename<<" is not a Parameters file"<<std::endl;
       f.close();
       return;
     }
@@ -526,8 +526,7 @@ void SimulateCommand::run(const std::string& line)
 
 
 
-
-void readCommand::run(const std::string& rline)
+void readCommand::run(const std::string& rline, std::ostream& logs)
 {
   std::stringstream ss(rline);
   std::string commandName;
@@ -601,7 +600,7 @@ void readCommand::run(const std::string& rline)
     while (f)
       {
         auto sim=new CortexSimulation;
-        sim->read(line,f);
+        sim->read(line,f,logs);
         if (sim->t_.size()>0)
           {
             cmd_->push_back(sim);
@@ -618,7 +617,7 @@ void readCommand::run(const std::string& rline)
 
 
 
-void writeCommand::run(const std::string& line)
+void writeCommand::run(const std::string& line, std::ostream& logs)
 {
   std::string writeName, dataName;
   std::stringstream ss(line);
@@ -740,7 +739,7 @@ void writeCommand::run(const std::string& line)
 
 
 
-void LikelihoodCommand::run(const std::string& line)
+void LikelihoodCommand::run(const std::string& line, std::ostream &logs)
 {
 
   //likelihood lik experiment1 parameters_10 parameters_10 0.5 50 1000
@@ -754,7 +753,7 @@ void LikelihoodCommand::run(const std::string& line)
   Experiment* e=cm_->getExperiment(eName);
   if (e==nullptr)
     {
-      std::cerr<<"Experiment "<<eName<<" not found\n";
+      logs<<"Experiment "<<eName<<" not found\n";
       return;
     }
 
@@ -771,7 +770,7 @@ void LikelihoodCommand::run(const std::string& line)
   safeGetline(fp,line2p);
   Parameters prior;
 
-  prior.read(line2p,fp);
+  prior.read(line2p,fp,logs);
 
   fp.close();
 
@@ -788,7 +787,7 @@ void LikelihoodCommand::run(const std::string& line)
   safeGetline(f,line2);
   Parameters p;
 
-  p.read(line2,f);
+  p.read(line2,f,logs);
 
   f.close();
 
@@ -816,7 +815,7 @@ std::string LikelihoodCommand::id() const
 }
 
 
-void OptimizeCommand::run(const std::string& line)
+void OptimizeCommand::run(const std::string& line, std::ostream &logs)
 {
 
   //optimize opt experiment1 parameters_10 parameters_10 10 100
@@ -831,10 +830,10 @@ void OptimizeCommand::run(const std::string& line)
   ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>factor>>nseeds>>initseed;
 
   Experiment *e=new Experiment;
-  e->load(experimentName);
+  e->load(experimentName,logs);
   if (e->numMeasures()==0)
     {
-      std::cerr<<"Experiment "<<experimentName<<" not found\n";
+      logs<<"Experiment "<<experimentName<<" not found\n";
       return;
     }
 
@@ -848,7 +847,7 @@ void OptimizeCommand::run(const std::string& line)
       f.open(filenaExt.c_str());
       if (!f)
         {
-          std::cerr<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
+          logs<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
           f.close();
           return;
         }
@@ -857,9 +856,9 @@ void OptimizeCommand::run(const std::string& line)
   safeGetline(f,line2);
   Parameters prior;
 
-  if (!prior.read(line2,f))
+  if (!prior.read(line2,f,logs))
     {
-      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      logs<<"File "<<filename<<" is not a Parameters file"<<std::endl;
       f.close();
       return;
     }
@@ -875,7 +874,7 @@ void OptimizeCommand::run(const std::string& line)
     }
   if (!f)
     {
-      std::cerr<<"Parameters file "<<filename<<" not found"<<std::endl;
+      logs<<"Parameters file "<<filename<<" not found"<<std::endl;
       f.close();
       return;
     }
@@ -884,9 +883,9 @@ void OptimizeCommand::run(const std::string& line)
   safeGetline(f,line2);
   Parameters p;
 
-  if (!p.read(line2,f))
+  if (!p.read(line2,f,logs))
     {
-      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      logs<<"File "<<filename<<" is not a Parameters file"<<std::endl;
       f.close();
       return;
     }
@@ -916,7 +915,7 @@ void OptimizeCommand::run(const std::string& line)
 
 
 
-void EvidenceCommand::run(const std::__cxx11::string& line)
+void EvidenceCommand::run(const std::__cxx11::string& line, std::ostream &logs)
 {
 
   // evidence evi experiment1 paramters_10
@@ -971,13 +970,13 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
   std::cout<<landa;
 
-  std::cerr<<line;
+  logs<<line;
 
   Experiment *e=new Experiment;
-  e->load(experimentName);
+  e->load(experimentName,logs);
   if (e->numMeasures()==0)
     {
-      std::cerr<<"Experiment "<<experimentName<<" not found\n";
+      logs<<"Experiment "<<experimentName<<" not found\n";
       return;
     }
 
@@ -991,7 +990,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
       f.open(filenaExt.c_str());
       if (!f)
         {
-          std::cerr<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
+          logs<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
           f.close();
           return;
         }
@@ -1000,9 +999,9 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
   safeGetline(f,line2);
   Parameters prior;
 
-  if (!prior.read(line2,f))
+  if (!prior.read(line2,f,logs))
     {
-      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      logs<<"File "<<filename<<" is not a Parameters file"<<std::endl;
       f.close();
       return;
     }
@@ -1033,7 +1032,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
           mt.seed(seed);
           eviName+=time_now()+"_"+std::to_string(seed);
-          std::cerr<<"\n random seed =\n"<<seed<<"\n";
+          logs<<"\n random seed =\n"<<seed<<"\n";
         }
       else
         {
@@ -1042,7 +1041,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
           mt.seed(seed);
           eviName+=time_now()+"_"+std::to_string(seed);
 
-          std::cerr<<"\n provided seed =\n"<<seed<<"\n";
+          logs<<"\n provided seed =\n"<<seed<<"\n";
 
         }
 
@@ -1117,8 +1116,8 @@ void EvidenceCommand::run(const std::__cxx11::string& line)
 
 
 
-
-void TemperingCommand::run(const std::__cxx11::string& line)
+/*
+void TemperingCommand::run(const std::__cxx11::string& line, std::ostream &logs)
 {
 
   // evidence evi experiment1 paramters_10
@@ -1134,20 +1133,17 @@ void TemperingCommand::run(const std::__cxx11::string& line)
   std::mt19937_64::result_type initseed=0;
   std::size_t nPoints_per_decade,niter;
   std::stringstream ss(line);
-  std::size_t N_betas;
+  std::size_t N_betasInit,N_betas_max;
   double beta_min;
-  double nu_beta;
-  std::size_t nsamples_50_beta;
   M_Matrix<AP> aps;
   std::vector<std::vector<double>> apsPar;
   double maxTime;
   std::size_t samples, nskip;
 
-  ss>>temperateS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>N_betas>>beta_min>>maxTime>>samples>>nskip>>nu_beta
-      >>nsamples_50_beta>>pTjump;
+  ss>>temperateS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>N_betasInit>>beta_min>>N_betas_max>>maxTime>>samples>>nskip>>pTjump;
 
-  Adaptive_Beta
-      aBeta(N_betas,beta_min,nu_beta,nsamples_50_beta);
+  Master_Adaptive_Beta
+      aBeta(N_betasInit,N_betas_max,beta_min,1);
 
 
 
@@ -1185,13 +1181,13 @@ void TemperingCommand::run(const std::__cxx11::string& line)
 
   std::cout<<landa;
 
-  std::cerr<<line;
+  logs<<line;
 
   Experiment *e=new Experiment;
-  e->load(experimentName);
+  e->load(experimentName,logs);
   if (e->numMeasures()==0)
     {
-      std::cerr<<"Experiment "<<experimentName<<" not found\n";
+      logs<<"Experiment "<<experimentName<<" not found\n";
       return;
     }
 
@@ -1205,7 +1201,7 @@ void TemperingCommand::run(const std::__cxx11::string& line)
       f.open(filenaExt.c_str());
       if (!f)
         {
-          std::cerr<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
+          logs<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
           f.close();
           return;
         }
@@ -1214,9 +1210,9 @@ void TemperingCommand::run(const std::__cxx11::string& line)
   safeGetline(f,line2);
   Parameters prior;
 
-  if (!prior.read(line2,f))
+  if (!prior.read(line2,f,logs))
     {
-      std::cerr<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+      logs<<"File "<<filename<<" is not a Parameters file"<<std::endl;
       f.close();
       return;
     }
@@ -1247,7 +1243,7 @@ void TemperingCommand::run(const std::__cxx11::string& line)
 
           mt.seed(seed);
           eviName+=time_now()+"_"+std::to_string(seed);
-          std::cerr<<"\n random seed =\n"<<seed<<"\n";
+          logs<<"\n random seed =\n"<<seed<<"\n";
         }
       else
         {
@@ -1256,7 +1252,7 @@ void TemperingCommand::run(const std::__cxx11::string& line)
           mt.seed(seed);
           eviName+=time_now()+"_"+std::to_string(seed);
 
-          std::cerr<<"\n provided seed =\n"<<seed<<"\n";
+          logs<<"\n provided seed =\n"<<seed<<"\n";
 
         }
 
@@ -1332,3 +1328,4 @@ void TemperingCommand::run(const std::__cxx11::string& line)
 
 
 }
+*/

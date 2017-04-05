@@ -3,8 +3,10 @@ CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= qt
 
-QMAKE_CXXFLAGS_RELEASE += -std=c++11 #-lpthread
-QMAKE_CXXFLAGS_DEBUG += -std=c++11 #-lpthread
+CONFIG += c++14
+
+#QMAKE_CXXFLAGS_RELEASE += -std=c++14 #-lpthread
+#QMAKE_CXXFLAGS_DEBUG += -std=c++14 #-lpthread
 
 
 QMAKE_CXXFLAGS += -fopenmp
@@ -54,7 +56,8 @@ HEADERS += \
     myOutputSerializer.h \
     myInputSerializer.h \
     myOrderOperators.h \
-    myTuples.h
+    myTuples.h \
+    myCommandManagement.h
 
 DISTFILES += \
     run/script \

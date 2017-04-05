@@ -60,4 +60,8 @@ void for_each( std::tuple<Args...>&& tup, Func&& f)
                    std::forward<std::tuple<Args...>>(tup) );
 }
 
+
+
+
+
 #endif // MYTUPLES_H

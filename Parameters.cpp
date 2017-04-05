@@ -98,7 +98,7 @@ Parameters::Parameters(const Parameters& other):
 ,cho_(other.cho_)
 ,logDetCov_(other.logDetCov_){}
 
-bool Parameters::readBody(std::string &line, std::istream &s)
+bool Parameters::readBody(std::string &line, std::istream &s, std::ostream& logs)
 {
   std::string name;
   std::stringstream ss(line);

@@ -19,7 +19,7 @@ public:
   CortexLikelihood();
   virtual std::ostream &writeBody(std::ostream &s) const override;
   virtual void clear() override;
-  virtual bool readBody(std::string &line, std::istream &s) override;
+  virtual bool readBody(std::string &line, std::istream &s, std::ostream& logs) override;
 
   std::vector<double> getNBins(const Experiment *e);
   // ABC_Multinomial_Model interface
@@ -269,7 +269,7 @@ public:
 
 
 
-  virtual bool readBody(std::string &, std::istream &) override{return false;}
+  virtual bool readBody(std::string &, std::istream &, std::ostream& logs) override{return false;}
 
   CortexMultinomialLikelihoodEvaluation(const CortexLikelihood& CL,
                                         const Parameters& p)
@@ -320,7 +320,7 @@ public:
 
 
 
-  virtual bool readBody(std::string &, std::istream &) override{return false;}
+  virtual bool readBody(std::string &, std::istream &, std::ostream& logs) override{return false;}
 
   CortexPoisonLikelihoodEvaluation(const CortexPoisonLikelihood& CL,
                                    const Parameters& p)

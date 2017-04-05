@@ -561,66 +561,66 @@ public:
 
     return s;
   }
-  bool readBody(std::string& line,std::istream &s) override
+  bool readBody(std::string& line,std::istream &s, std::ostream& logs) override
   {
-    if (!readField(line,s,"dia",dia_))
+    if (!readField(line,s,"dia",dia_,logs))
       {
-        std::cerr<<"dia expected; found: "<<line<<std::endl;
+        logs<<"dia expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"tissue_width",h_))
+    else if (!readField(line,s,"tissue_width",h_,logs))
       {
-        std::cerr<<"tissue_width expected; found: "<<line<<std::endl;
+        logs<<"tissue_width expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"inj_width",injWidth_))
+    else if (!readField(line,s,"inj_width",injWidth_,logs))
       {
-        std::cerr<<"inj_width expected; found: "<<line<<std::endl;
+        logs<<"inj_width expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"inj_length",injLength_))
+    else if (!readField(line,s,"inj_length",injLength_,logs))
       {
-        std::cerr<<"inj_length expected; found: "<<line<<std::endl;
+        logs<<"inj_length expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"minimal_tissue_distance",minimalTissueDistance_))
+    else if (!readField(line,s,"minimal_tissue_distance",minimalTissueDistance_,logs))
       {
-        std::cerr<<"minimal_tissue_distance expected; found: "<<line<<std::endl;
+        logs<<"minimal_tissue_distance expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"minimal_vaso_distance",minimalVasoDistance_))
+    else if (!readField(line,s,"minimal_vaso_distance",minimalVasoDistance_,logs))
       {
-        std::cerr<<"minimal_vaso_distance expected; found: "<<line<<std::endl;
+        logs<<"minimal_vaso_distance expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"x_pos",x_))
+    else if (!readField(line,s,"x_pos",x_,logs))
       {
-        std::cerr<<"x_pos expected; found: "<<line<<std::endl;
+        logs<<"x_pos expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"area_covered_by_Astrocytes",measAreaAstro_))
+    else if (!readField(line,s,"area_covered_by_Astrocytes",measAreaAstro_,logs))
       {
-        std::cerr<<"area_covered_by_Astrocytes expected; found: "<<line<<std::endl;
+        logs<<"area_covered_by_Astrocytes expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"total_number_of_Astrocytes",numAstro_))
+    else if (!readField(line,s,"total_number_of_Astrocytes",numAstro_,logs))
       {
-        std::cerr<<"total_number_of_Astrocytes expected; found: "<<line<<std::endl;
+        logs<<"total_number_of_Astrocytes expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"number_of_Astrocytes_of_each_type",meanAstro_))
+    else if (!readField(line,s,"number_of_Astrocytes_of_each_type",meanAstro_,logs))
       {
-        std::cerr<<"number_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
+        logs<<"number_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"density_of_Astrocytes_of_each_type",densAstro_))
+    else if (!readField(line,s,"density_of_Astrocytes_of_each_type",densAstro_,logs))
       {
-        std::cerr<<"density_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
+        logs<<"density_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
         return false;
       }
-    else if (!readField(line,s,"covariance_of_number_of_Astrocytes_of_each_type",covAstro_))
+    else if (!readField(line,s,"covariance_of_number_of_Astrocytes_of_each_type",covAstro_,logs))
       {
-        std::cerr<<"covariance_of_number_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
+        logs<<"covariance_of_number_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
         return false;
       }
     else  return true;
@@ -698,16 +698,16 @@ public:
     tSimulates_.clear();
   }
 
-  virtual bool readBody(std::string& line,std::istream &s) override
+  virtual bool readBody(std::string& line,std::istream &s, std::ostream& logs) override
   {
-    if (!readField(line,s,"simulation_time",tsim_))
+    if (!readField(line,s,"simulation_time",tsim_,logs))
       return false;
-    else if (!readField(line,s,"time_of_Measures",tMeasures_))
+    else if (!readField(line,s,"time_of_Measures",tMeasures_,logs))
       return false;
-    else if (!readField(line,s,"time_of_Simulated_Points",tSimulates_))
+    else if (!readField(line,s,"time_of_Simulated_Points",tSimulates_,logs))
       return false;
 
-    else if(!readField(line,s,"Measures",m_))
+    else if(!readField(line,s,"Measures",m_,logs))
       return false;
     else
       return true;
@@ -787,7 +787,7 @@ public:
   /// it makes a copy of other where the position
   /// of the elements is based on the coordinate s
   /// system of this
-  bool align(TissuePhoto& other);
+  bool align(TissuePhoto& other, std::ostream &logs);
 
   void correctPosition(double dx, double dy);
 
@@ -886,7 +886,7 @@ public:
   std::map<unsigned,TissuePhoto> fotos;
 
 
-  void align();
+  void align(std::ostream &logs);
 
   void merge();
 
