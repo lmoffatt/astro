@@ -154,11 +154,13 @@ public:
 
   // CortexLikelihood interface
 public:
-  virtual CortexSimulation simulate(const Parameters &parameters) const override
+  virtual CortexSimulation simulate(const Parameters &) const override
   {
+    return {};
   }
-  virtual std::vector<std::vector<double> > g(const Parameters &parameters, const CortexSimulation &s) const override
+  virtual std::vector<std::vector<double> > g(const Parameters &, const CortexSimulation &) const override
   {
+    return {};
   }
 };
 

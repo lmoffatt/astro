@@ -14,7 +14,8 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
 
 
   CortexState out(c);
-  if (std::isnan(dRho[0][0]))
+  for (std::size_t k=0; k<dRho[0].size(); ++k)
+  if (std::isnan(dRho[0][k])||(hasOmega&&std::isnan(dOmega[0])))
     {
       out.isValid_=false;
       return out;

@@ -184,7 +184,7 @@ inline double  Gradient_of_Normal(double  beta,const double m,double s, bool is_
 {
   double v;
   if (!is_variance)
-    double v=sqr(s);
+    v=sqr(s);
   else
     v=s;
   double g=-(beta-m)/v;
@@ -1290,6 +1290,543 @@ private:
 
 template <bool verbose>
 inline std::ostream& operator<<(std::ostream& os, const typename Newton_fit<false,verbose>::fit_iter& it)
+{
+  os<<"iteration="<<it.i<<" timeOpt="<<it.timeOpt<<"timeIter="<<it.timeIter<<"\n";
+  //os<<"landa="<<it.landa<<"\n";
+  os<<"sample logL="<<it.sample.logL<<" candidate diff="<<it.candidate.logL-it.sample.logL<<"\n";
+  os<<"Parameter change="<<it.ParamChange()<<" postLChange="<<it.postLChange();
+  os<<" normGradient="<<it.normGradien()<<"\n";
+
+
+  return os;
+}
+
+
+
+struct univariate_normal_distribution
+{
+  static std::size_t NumberOfParameters(){return 2;}
+
+  static double logL(double y,double m,double var)
+  {
+    double chi=0.5*sqr(y-m)/var;
+    return -std::log(2*PI*var)-chi;
+  }
+
+  static M_Matrix<double> G(double y,double m, double var)
+  {
+    M_Matrix<double> o(1,2);
+    o[0]=(y-m)/var;
+    o[1]=0.5/var*(sqr(y/m)/var-1.0);
+    return o;
+  }
+
+  static M_Matrix<double> H(double var)
+  {
+    M_Matrix<double> o(2,2,0.0);
+    o(0,0)=-1.0/var;
+    o(1,1)=-0.5/sqr(var);
+    return o;
+  }
+
+
+  template<class V>
+  static double logL(double y,const V& m)
+  {
+    return logL(y,m[0],m[1]);
+  }
+  template<class V>
+  static double G(double y,const V& m)
+  {
+    return G(y,m[0],m[1]);
+  }template<class V>
+  static double H(double y,const V& m)
+  {
+    return H(m[1]);
+  }
+
+};
+
+
+struct symmetric_matrix
+{
+  static std::pair<std::size_t, std::size_t> k_to_ij(std::size_t k)
+  {
+    std::size_t i=(std::sqrt(8*k+1)+1)/2;
+    std::size_t j=k-i*(i-1)/2;
+    return {i,j};
+  }
+  static std::size_t ij_to_k(std::size_t i, std::size_t j)
+  {
+    std::size_t k;
+    if (j<i)
+      k=i*(i-1)/2+j;
+    else
+      k=j*(j-1)/2+i;
+
+    return k;
+  }
+
+  static std::pair<std::size_t, std::size_t> k_to_ij(std::size_t k, std::size_t n)
+  {
+    std::size_t N=(n*(n+1))/2;
+    auto p=k_to_ij(N-k);
+    auto i=n-p.first;
+    auto j=p.first-p.second;
+    return {i,j};
+
+  }
+
+  static std::size_t ij_to_k(std::size_t i, std::size_t j, std::size_t n)
+  {
+    if (j<i)
+      {
+        auto first=n-i;
+        auto second=first-j;
+        return ij_to_k(first,second);
+      }
+    else
+      {
+        auto first=n-j;
+        auto second=first-i;
+        return ij_to_k(first,second);
+
+      }
+  }
+
+};
+
+
+struct multivariate_normal_distribution
+{
+  std::size_t numberOfVariables;
+  std::size_t NumberOfParameters(){return (numberOfVariables*numberOfVariables+3)/2;}
+
+  static double logL(const M_Matrix<double>& y,const M_Matrix<double>& m,const M_Matrix<double>& Sinv)
+  {
+    std::size_t n=m.size();
+    assert(Sinv.ncols()==n);
+    assert(Sinv.nrows()==n);
+    return xTSigmaX(y-m,Sinv);
+  }
+
+
+
+
+
+  static M_Matrix<double> G_mu(const M_Matrix<double>& y,const M_Matrix<double>& m,const M_Matrix<double>& Sinv)
+  {
+    std::size_t n=m.size();
+    assert(Sinv.ncols()==n);
+    assert(Sinv.nrows()==n);
+
+    auto out=(y-m)*Sinv;
+    return out;
+  }
+
+
+  static M_Matrix<double> G(const M_Matrix<double>& y,const M_Matrix<double>& m,const M_Matrix<double>& Sinv)
+  {
+    std::size_t n=m.size();
+    std::size_t r=(n*(n+3))/2;
+    assert(Sinv.ncols()==n);
+    assert(Sinv.nrows()==n);
+
+    auto G_mu=(y-m)*Sinv;
+    auto G_S=(TranspMult(G_mu,G_mu)-Sinv)*0.5;
+    M_Matrix<double> Go(1,r,0);
+    for (std::size_t i=0; i<n; ++i)
+      Go[i]=G_mu[i];
+    for (std::size_t i=0; i<n; ++i)
+      {
+        Go[n+i]=G_S(i,i);
+        for (std::size_t j=i+1; j<n; ++j)
+          {
+            auto k=symmetric_matrix::ij_to_k(i,j,n);
+            Go[n+k]=2*G_S(i,j);
+          }
+      }
+    return Go;
+  }
+
+
+  static M_Matrix<double> H(const M_Matrix<double>& Sinv)
+  {
+    std::size_t n=Sinv.nrows();
+    std::size_t k=(n*(n+3))/2;
+    assert(Sinv.nrows()==n);
+
+    M_Matrix<double> Ho(k,k,0);
+
+
+    for (std::size_t i=0; i<n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        {
+          Ho(i,j)=-Sinv(i,j);
+
+        }
+
+    for (std::size_t i1=0; i1<n; ++i1)
+      {
+        for (std::size_t i2=0; i2<n; ++i2)
+          {
+
+            Ho(n+i1,n+i2)=-0.5*sqr(Sinv(i1,i2));
+            for (std::size_t j2=i2+1; j2<n; ++j2)
+              {
+                auto k2=symmetric_matrix::ij_to_k(i2,j2,n);
+                Ho(n+i1,n+k2)=-Sinv(i1,i2)*Sinv(i1,j2);
+              }
+            for (std::size_t j1=i1+1; j1<n; ++j1)
+              {
+                auto k1=symmetric_matrix::ij_to_k(i1,j1,n);
+                Ho(n+k1,n+i2)=-Sinv(i1,i2)*Sinv(j1,i2);
+                for (std::size_t j2=i2+1; j2<n; ++j2)
+                  {
+                    auto k2=symmetric_matrix::ij_to_k(i2,j2,n);
+                    Ho(n+k1,n+k2)=-2*Sinv(i1,i2)*Sinv(j1,j2);
+
+                  }
+
+              }
+          }
+      }
+    return Ho;
+
+  }
+  template<class V>
+  static double logL(double y,const V& m)
+  {
+    return logL(y,m[0],m[1]);
+  }
+  template<class V>
+  static double G(double y,const V& m)
+  {
+    return G(y,m[0],m[1]);
+  }template<class V>
+  static double H(double y,const V& m)
+  {
+    return H(m[1]);
+  }
+
+};
+
+
+
+
+struct Gauss_Newton
+{
+  template<class D, template<class>class M, class Y, class P>
+  std::tuple<double,M_Matrix<double>, M_Matrix<double> >
+  GH(const D& dist, const M<D>& model,const Y& data, const P& parameters )
+  {
+    std::size_t n=data.size();
+    std::size_t k=parameters.size();
+    std::size_t r=dist.NumberOfParameters();
+    std::vector<M_Matrix<double>> yfit=model.f(dist,parameters,data);
+    assert(yfit.size()==n);
+    assert(yfit[0].nrows()==1);
+    assert(yfit[0].ncols()==r);
+
+    std::vector<M_Matrix<double>>  J=model.J(dist,parameters,data);
+    assert(J.size()==n);
+    assert(J[0].nrows()==r);
+    assert(J[0].ncols()==k);
+
+    double logL=0;
+    for (std::size_t i=0; i<n; ++i)
+      {
+        double L=dist.logL(data[i],yfit[i]);
+        logL+=L;
+      }
+
+
+
+    M_Matrix<double> G(1,k,0.0);
+    for (std::size_t i=0; i<n; ++i)
+      {
+        M_Matrix<double> Gd=dist.G(data[i],yfit[i]);
+        G+=Gd*J[i];
+      }
+    M_Matrix<double> H(k,k,0.0);
+    for (std::size_t i=0; i<n; ++i)
+      {
+        M_Matrix<double> Hd=dist.G(data[i],yfit[i]);
+        H+=TranspMult(J[i],Hd)*J[i];
+      }
+    return {logL,G,H};
+
+  }
+
+};
+
+
+
+
+
+
+
+template<bool minimize, bool verbose>
+struct Newton_opt
+{
+
+  struct fit_point
+  {
+    fit_point(const M_Matrix<double>& xs,double logLs ): x(xs),logL(logLs),isValid(std::isfinite(logLs)){}
+    fit_point(){}
+
+    M_Matrix<double> x;
+    double logL;
+    bool isValid=false;
+  };
+
+
+  struct fit_step:public fit_point
+  {
+    fit_step(){}
+    fit_step(fit_point p): fit_point(p),G(),H(){}
+    M_Matrix<double> G;
+    M_Matrix<double> H;
+  };
+
+
+  class fit_iter
+  {
+  public:
+
+
+    std::size_t i;
+    double timeOpt;
+    double timeIter;
+    fit_step sample;
+    double landa;
+    M_Matrix<double> Hlinv;
+    bool validCov=false;
+    M_Matrix<double> d;
+    double alfa;
+    fit_point candidate;
+    double ParamChange()const
+    {
+      return maxAbs(sample.x-candidate.x);
+    }
+    double postLChange() const
+    {
+      return candidate.logL-sample.logL;
+    }
+    double normGradien()const
+    {
+      return maxAbs(sample.G);
+    }
+
+
+  };
+
+  struct fit_run
+  {
+    std::chrono::steady_clock::time_point startTime;
+    std::size_t maxIter;
+    std::size_t maxEvalLoop;
+    double maxDur_in_min;
+    double maxLanda=1e10;
+    double minLanda=1e-3;
+    double paramChangeMin=1e-7;
+    double PostLogLikChangeMin=1e-7;
+    double GradientNormPostMin=1e-5;
+
+    double vlanda=3;
+    double min_alfa=0.3;
+
+  };
+
+  struct landa_H
+  {
+    double landa;
+    M_Matrix<double> Hlinv;
+    bool validCov;
+  };
+
+  static bool isValidCov(const M_Matrix<double>& HlandaInv)
+  {
+    if (HlandaInv.empty()) return false;
+    else
+      {
+
+        for (std::size_t i=0; i<HlandaInv.nrows(); ++i)
+          {
+            if (minimize)
+              {
+                if(HlandaInv(i,i)<=0) return false;
+              }
+            else
+              {
+                if(HlandaInv(i,i)>=0) return false;
+
+              }
+          }
+        return true;
+
+      }
+  }
+
+  template<class Hinv>
+  static landa_H compute_landaH(const Hinv& hinv,const M_Matrix<double> H, double landa0, double v,double landamax)
+  {
+
+    auto Hl=H;
+    if (minimize)
+      {
+        for (std::size_t i=0; i<H.nrows(); ++i)
+          Hl(i,i)+=std::abs(H(i,i))*landa0;
+      }
+    else
+      {
+        for (std::size_t i=0; i<H.nrows(); ++i)
+          Hl(i,i)-=std::abs(H(i,i))*landa0;
+      }
+    auto Hlinv=hinv(Hl);
+
+    if (isValidCov(Hlinv))
+      return {landa0,Hlinv,true};
+    else if (landa0*v>=landamax)
+      return {landa0,Hlinv,false};
+    else
+      return compute_landaH(hinv,H,landa0*v,v,landamax);
+  }
+
+
+  template<class L, class G, class H, class Hinv>
+  static fit_iter step(const L& logL, const G& g, const H& h, const Hinv& hinv, fit_run r,
+                       fit_iter iter)
+  {
+    if (meetCovergenceCriteria(r,iter))
+      return iter;
+    else
+      {
+        auto i=iter.i+1;
+
+        double newLanda;
+        fit_step sample(iter.candidate);
+        sample.G=g(sample.x);
+        sample.H=h(sample.x);
+
+        if (iter.alfa<r.min_alfa)
+          newLanda=iter.landa*r.vlanda;
+        else if (iter.alfa>0.9)
+          newLanda=iter.landa/r.vlanda;
+        else
+          newLanda=iter.landa;
+
+
+        return candidate_point(logL,g,h,hinv,r,sample,newLanda,i);
+      }
+
+
+
+  }
+
+  template<class L, class G, class H, class Hinv>
+  static fit_iter candidate_point(const L& logL,
+                                  const G& g,
+                                  const H& h,
+                                  const Hinv& hinv,
+                                  fit_run r,
+                                  fit_step sample,
+                                  double landa,
+                                  std::size_t i)
+  {
+    landa_H lH=compute_landaH(hinv,sample.H,landa,r.vlanda,r.maxLanda);
+    auto newd=-sample.G*lH.Hlinv;
+    wolf_conditions<minimize> w;
+    typename wolf_conditions<minimize>::termination run=w.opt(logL,g,sample.x,sample.logL,sample.G,newd,r.maxEvalLoop);
+
+    if ((!run.isGood())&&lH.landa<r.maxLanda)
+      return candidate_point(logL,g,h,hinv,r,sample,lH.landa*r.vlanda,i);
+    else
+      {
+
+        fit_iter iter;
+        iter.i=i;
+        auto tnow=std::chrono::steady_clock::now();
+        auto dur=tnow-r.startTime;
+        double t0=iter.timeOpt;
+        iter.timeOpt=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(dur).count()/60.0;
+        iter.timeIter=60*(iter.timeOpt-t0);
+        iter.sample=sample;
+        iter.landa=lH.landa;
+        iter.Hlinv=lH.Hlinv;
+        iter.d=newd;
+        iter.alfa=run.alfa;
+        fit_point candidate(run.x,run.f);
+        iter.candidate=std::move(candidate);
+        if (verbose) std::cerr<<iter;
+        return step(logL,g,h,hinv,r,iter);
+      }
+  }
+
+
+
+
+  template<class L, class G,class H, class Inv>
+  static fit_iter opt(const L& logL,
+                      const G& g,
+                      const H& h,
+                      const Inv& inverse,
+                      const M_Matrix<double>& x,
+                      double landa=1e-3,
+                      double vlanda=3,
+                      std::size_t maxIter=1000,
+                      double maxTime=60)
+  {
+    fit_run r;
+    r.startTime= std::chrono::steady_clock::now();
+    r.maxIter=maxIter;
+    r.maxDur_in_min=maxTime;
+    r.maxEvalLoop=20;
+    r.vlanda=vlanda;
+    r.min_alfa=1.0/vlanda;
+
+    fit_step sample(fit_point(x,logL(x)));
+    sample.G=g(x);
+    sample.H=h(x);
+
+    return  candidate_point(logL,g,h,inverse,r,sample,landa,0);
+
+  }
+
+  friend
+  std::ostream& operator<<(std::ostream &os,const fit_iter& iter)
+  {
+    os<<iter.i<<" "<<iter.timeOpt<<" "<<iter.timeIter<<" "<<iter.sample.logL<<" "<<iter.landa<<"\n";
+    return os;
+  }
+
+private:
+
+
+
+
+  static bool meetCovergenceCriteria(const fit_run& r,const fit_iter& iter)
+  {
+    bool surpassDuration_=iter.timeOpt+iter.timeIter/60.0>=r.maxDur_in_min;
+    bool surpassIter_=iter.i>=r.maxIter;
+    bool  smallGradient_=iter.normGradien()<r.GradientNormPostMin;
+    bool surpass_MaxLanda=iter.landa>r.maxLanda;
+
+
+    return surpassIter_||
+        surpassDuration_||
+        surpass_MaxLanda||
+        smallGradient_||
+        !iter.sample.isValid||
+        !iter.candidate.isValid;
+
+  }
+
+};
+
+
+template <bool verbose>
+inline std::ostream& operator<<(std::ostream& os, const typename Newton_opt<false,verbose>::fit_iter& it)
 {
   os<<"iteration="<<it.i<<" timeOpt="<<it.timeOpt<<"timeIter="<<it.timeIter<<"\n";
   //os<<"landa="<<it.landa<<"\n";

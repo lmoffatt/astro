@@ -547,7 +547,7 @@ bool readValue(std::string& line,
 inline
 bool readValue(std::string& line,
                std::istream&,
-               std::string& val,std::ostream &logs){
+               std::string& val,std::ostream &){
   std::stringstream ss(line);
   bool o=bool(ss>>val);
   safeGetline(ss,line);
@@ -557,7 +557,7 @@ bool readValue(std::string& line,
 inline
 bool readValue(std::string& line,
                std::istream&,
-               std::size_t& val,std::ostream &logs){
+               std::size_t& val,std::ostream &){
   std::stringstream ss(line);
   bool o=bool(ss>>val);
   safeGetline(ss,line);
@@ -568,7 +568,7 @@ bool readValue(std::string& line,
 inline
 bool readValue(std::string& line,
                std::istream&,
-               bool& val,std::ostream &logs)
+               bool& val,std::ostream &)// logs ostream
 {
   std::stringstream ss(line);
   bool o=bool(ss>>val);

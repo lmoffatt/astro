@@ -81,7 +81,7 @@ std::ostream& operator<<(std::ostream& os, const opt_max_step& iter)
   os<<i;
   os<<"\nG\n"<<iter.G;
   os<<"\nHinv\n"<<iter.Hinv;
- return os;
+  return os;
 
 }
 
@@ -150,22 +150,26 @@ private:
 
   static bool meetCovergenceCriteria(const opt_max_run& r,const opt_max_iter& iter)
   {
-    bool surpassDuration_=iter.timeOpt+iter.timeIter/60.0>=r.maxDur_in_min;
-    bool surpassIter_=iter.i>=r.maxIter;
-    bool  smallParamChange_=iter.ParamChange()<r.paramChangeMin;
-    bool  smallPostLikChange=iter.foutChange()<r.PostLogLikChangeMin;
-    bool  smallGradient_=iter.normGradien()<r.GradientNormPostMin;
+    if (iter.sample.G.empty()|| iter.sample.b.empty()) return true;
+    else
+      {
+        bool surpassDuration_=iter.timeOpt+iter.timeIter/60.0>=r.maxDur_in_min;
+        bool surpassIter_=iter.i>=r.maxIter;
+        bool  smallParamChange_=iter.ParamChange()<r.paramChangeMin;
+        bool  smallPostLikChange=iter.foutChange()<r.PostLogLikChangeMin;
+        bool  smallGradient_=iter.normGradien()<r.GradientNormPostMin;
 
 
 
-    return surpassIter_||
-        surpassDuration_||
-        smallParamChange_||
-        smallPostLikChange||
-        smallGradient_||
-        !iter.sample.isValid||
-        !iter.candidate.isValid;
+        return surpassIter_||
+            surpassDuration_||
+            smallParamChange_||
+            smallPostLikChange||
+            smallGradient_||
+            !iter.sample.isValid||
+            !iter.candidate.isValid;
 
+      }
   }
 
 
@@ -204,30 +208,34 @@ private:
   {
     opt_max_step out(std::move(p));
     out.G=compute_G(f,x,out.b,out.fout);
-    out.Hinv=p0.Hinv;
-
-    M_Matrix<double> delta_x_=-out.b+p0.b;
-    M_Matrix<double> delta_G=-out.G+p0.G;
-
-    double s2=(multTransp(delta_x_,delta_G))[0];
-    if (s2>0)
+    if (out.G.empty()) return {};
+    else
       {
+        out.Hinv=p0.Hinv;
 
-        double sigma=pow(s2,0.5);
-        M_Matrix<double> s=delta_x_/sigma;
-        M_Matrix<double> y=delta_G/sigma;
-        M_Matrix<double> ds=s-(y*p0.Hinv);
-        M_Matrix<double> Hx=TranspMult(ds,s);
+        M_Matrix<double> delta_x_=-out.b+p0.b;
+        M_Matrix<double> delta_G=-out.G+p0.G;
 
-        out.Hinv+=Hx+Transpose(Hx)-TranspMult(s,s)*(multTransp(ds,y))[0] ;
+        double s2=(multTransp(delta_x_,delta_G))[0];
+        if (s2>0)
+          {
 
-        /**     last formula is from
+            double sigma=pow(s2,0.5);
+            M_Matrix<double> s=delta_x_/sigma;
+            M_Matrix<double> y=delta_G/sigma;
+            M_Matrix<double> ds=s-(y*p0.Hinv);
+            M_Matrix<double> Hx=TranspMult(ds,s);
+
+            out.Hinv+=Hx+Transpose(Hx)-TranspMult(s,s)*(multTransp(ds,y))[0] ;
+
+            /**     last formula is from
     http://www.math.washington.edu/~burke/crs/408f/notes/nlp/direction.pdf
 
     */
 
+          }
+        return out;
       }
-    return out;
   }
 
 

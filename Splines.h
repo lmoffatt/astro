@@ -776,7 +776,7 @@ public:
   , x_(x)
   , YM_(sumy)
   , yM_(std::vector<std::vector<double>>(n_knots_,std::vector<double>(n_cols_)))
-  , bM_(std::vector<std::vector<double>>(n_knots_,std::vector<double>(n_cols_)))
+  , bM_(std::vector<std::vector<double>>(n_knots_,std::vector<double>(n_cols_,0.0)))
   {
     for (std::size_t i=0; i<x.size(); ++i)
       x_map_[x[i]]=i;
@@ -796,7 +796,7 @@ public:
         {
           double b=inv_.eval((YM_[i+1][j]-YM_[i][j])/yM_[i-1][j]/(x_[i+1]-x_[i]))/(x_[i+1]-x_[i]);
           bM_[i][j]=b;
-          double y=yM_[i-1][j]*exp(bM_[i][j]*(x_[i+1]-x_[i]));
+          double y=yM_[i-1][j]*std::exp(b*(x_[i+1]-x_[i]));
           yM_[i][j]=y;
 
         }

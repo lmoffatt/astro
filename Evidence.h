@@ -394,8 +394,8 @@ public:
 
 
 private:
-  std::vector<double> samples_;
   std::size_t n_;
+  std::vector<double> samples_;
   std::uniform_int_distribution<std::size_t> u_;
 };
 
@@ -807,11 +807,15 @@ struct Optimal_Lagrange_Distribution
     opt_max_iter res;
     // M_Matrix<double> init=init0;
     res=BFGS_optimal::opt(g_logit,data,init);
+    if (res.sample.G.empty()) return {};
+    else
+      {
     out=logit_to_distribution(res.sample.b,initDistribution);
     //  std::cerr<<"res\n"<<res;
     //  std::cerr<<out;
     return out;
 
+  }
   }
 
   template<typename T>
@@ -1392,10 +1396,10 @@ public:
 
 private:
   std::size_t nsamples;
-  double nu_;  // reciprocal of the initial amplitude of adjustments
-  std::size_t t0_;  //lag parameter
   double beta_min_;  // minimal value of beta
   std::size_t N_; // number of beta intervals
+  double nu_;  // reciprocal of the initial amplitude of adjustments
+  std::size_t t0_;  //lag parameter
 
   Beta beta_;
   std::vector<std::pair<std::size_t,std::size_t>> accepts_;
@@ -2085,16 +2089,16 @@ struct Master_Tempering_Likelihood
     M_Matrix<double> cov_L0dLj(double L0,const M_Matrix<double>& dLs,
                                const M_Matrix<double>& Hinv)const
     {
-      std::size_t n=1+dLs.size();
-      M_Matrix<double> cov(n, n);
+      std::size_t n=dLs.size();
+      M_Matrix<double> cov(1+n, 1+n);
       cov(0,0)=Hinv(0,0)*sqr(L0);
-      for (std::size_t i=1; i<n; ++i)
+      for (std::size_t i=0; i<n; ++i)
         {
-          cov(0,i)=Hinv(0,2+i)*L0*dLs[i];
-          cov(i,0)=cov(0,i);
-          for (std::size_t j=1; j<n; ++j)
+          cov(0,1+i)=Hinv(0,3+i)*L0*dLs[i];
+          cov(1+i,0)=cov(0,1+i);
+          for (std::size_t j=0; j<n; ++j)
             {
-              cov(i,j)=Hinv(2+i,2+j)*dLs[i]*dLs[j];
+              cov(1+i,1+j)=Hinv(3+i,3+j)*dLs[i]*dLs[j];
             }
         }
       return cov;
@@ -2175,6 +2179,8 @@ struct Master_Tempering_Likelihood
     double L0;  // likelihood at beta=0;
     double mlogdelta; // mean log of delta
     double logvlogdelta;
+    double sigma_logdL;
+    double landa_beta_dL;
     M_Matrix<double> dL_j;
     std::vector<std::vector<double>> delta_ij;
     M_Matrix<double> log_dL_j;
@@ -2203,7 +2209,7 @@ struct Master_Tempering_Likelihood
         double dL_dL0,
         double dL_dmlogdelta,
         double dL_dslogdelta,
-        M_Matrix<double> dL_dlogdLj,
+        M_Matrix<double> dL_dlogdLj,  
         M_Matrix<double> dL_dlogdelta)
     {
       std::vector<double> o;
@@ -2380,6 +2386,25 @@ struct Master_Tempering_Likelihood
 
       }
 
+      static double getAcceptanceRatio(const std::vector<Likelihood_Record>& r)
+      {
+        std::size_t nA=0;
+        std::size_t n=0;
+
+        for (const Likelihood_Record& e:r)
+          for (auto& pv:e.particle)
+             for (auto& p:pv)
+               {
+                 ++n;
+               if (p.isValid) ++nA;
+               }
+        double ratio=1.0*nA/n;
+        return ratio;
+
+      }
+
+
+
       static
       M_Matrix<double> getLeq(const std::vector<Likelihood_Record>& r,  std::size_t nsteps,double delta, double L0)
       {
@@ -2436,6 +2461,7 @@ struct Master_Tempering_Likelihood
       {
         const double mindelta=0.05;
         std::size_t numsteps=getNumSteps(r);
+        double pACC=getAcceptanceRatio(r);
         double L0=0;
         double L1=0;
         double L2=0;
@@ -2454,9 +2480,9 @@ struct Master_Tempering_Likelihood
         double del=dL1/dL0-1;
         double delta;
         if (del<1)
-          delta=-log(del)/numsteps*2;
+          delta=-log(del)/numsteps*2*pACC;
         else
-          delta=mindelta/numsteps*2;
+          delta=mindelta/numsteps*2*pACC;
         return log(delta);
       }
 
@@ -2474,7 +2500,7 @@ struct Master_Tempering_Likelihood
     {
       L0=getX::getL0(s[0]);
       mlogdelta=getX::get_logdelta(s);
-      logvlogdelta=std::log(std::abs(mlogdelta));
+      logvlogdelta=std::log(std::abs(mlogdelta))*2;
       std::size_t nsteps=getX::getNumSteps(s);
       auto Lq=getX::getLeq(s,nsteps,exp(mlogdelta),L0);
       dL_j=getX::L_to_dL(s.back().desc_beta,L0,Lq);
@@ -2556,22 +2582,62 @@ struct Master_Tempering_Likelihood
 
 
 
-    double L0_se()const {
-      return std::sqrt(CovHinv(0,0));
+    double L0_er()const {
+      return std::exp(std::sqrt(CovHinv(0,0)))-1.0;
     }
+    double L0_se()const {
+      return std::sqrt(CovHinv(0,0))*L0;
+    }
+
     double mlogdelta_se() const {
       return std::sqrt(CovHinv(1,1));
     }
+    double mlogdelta_re() const {
+      return std::sqrt(CovHinv(1,1))/std::abs(mlogdelta);
+    }
+
+
+
     double logvlogdelta_se()const {
       return std::sqrt(CovHinv(2,2));
     }
+
+    double vlogdelta_re()const {
+      return std::exp(std::sqrt(CovHinv(2,2)))-1.0;
+    }
+
+
+    double vlogdelta_se()const {
+      return std::sqrt(CovHinv(2,2))*std::exp(logvlogdelta);
+    }
+
+
+
     M_Matrix<double> logdL_j_se()const {
       M_Matrix<double> o(1,log_dL_j.size());
       for (std::size_t i=0; i<o.size();++i)
         o[i]=std::sqrt(CovHinv(3+i,3+i));
       return o;
+    }
+
+    M_Matrix<double> dL_j_se()const {
+      M_Matrix<double> o(1,log_dL_j.size());
+      for (std::size_t i=0; i<o.size();++i)
+        o[i]=std::sqrt(CovHinv(3+i,3+i))*dL_j[i];
+      return o;
+    }
+
+
+
+    M_Matrix<double> logdL_j_er()const {
+      M_Matrix<double> o(1,log_dL_j.size());
+      for (std::size_t i=0; i<o.size();++i)
+        o[i]=std::exp(CovHinv(3+i,3+i)/2)-1.0;
+      return o;
 
     }
+
+
     std::vector<std::vector<double>> log_delta_ij_se()const {
       std::vector<std::vector<double>> o(log_delta_ij);
 
@@ -2593,7 +2659,7 @@ struct Master_Tempering_Likelihood
       for (std::size_t i=0; i<delta_ij.size();++i)
         for (std::size_t j=0; j<delta_ij[i].size();++j)
           {
-            o[i][j]=std::exp(std::sqrt(CovHinv(iD,iD)));
+            o[i][j]=std::exp(std::sqrt(CovHinv(iD,iD)))-1.0;
             ++iD;
           }
       return o;
@@ -2609,7 +2675,7 @@ struct Master_Tempering_Likelihood
 
           for (std::size_t j=0; j<delta_ij[i].size();++j)
             {
-              double er=std::exp(std::sqrt(CovHinv(iD,iD)));
+              double er=std::exp(std::sqrt(CovHinv(iD,iD)))-1.0;
               e.push_back({delta_ij[i][j],er});
               ++iD;
             }
@@ -2618,12 +2684,6 @@ struct Master_Tempering_Likelihood
       return o;
     }
 
-    M_Matrix<double> dL_j_se()const {
-      M_Matrix<double> o(1,dL_j.size());
-      for (std::size_t i=0; i<o.size();++i)
-        o[i]=std::sqrt(CovHinv(3+i,3+i))*dL_j[i];
-      return o;
-    }
 
     M_Matrix<double> dL_j_er()const {
       M_Matrix<double> o(1,dL_j.size());
@@ -3113,7 +3173,7 @@ std::ostream& operator<<(std::ostream& os, const Master_Tempering_Likelihood::Pa
   os<<" L0="<<par.L0<<"\t"<<par.L0_se()<<"\n";
   os<<" mlogdelta="<<par.mlogdelta<<"\t"<<par.mlogdelta_se()<<"\n";
   os<<" logvlogdelta="<<par.logvlogdelta<<"\t"<<par.logvlogdelta_se()<<"\n";
-  os<<" deltaLikelihoods\n"<<(par.dL_j<<par.dL_j_se()<<par.dL_j_er())<<"\n";
+  os<<" deltaLikelihoods\n"<<(Transpose(par.dL_j)<<Transpose(par.dL_j_se())<<Transpose(par.dL_j_er()))<<"\n";
   os<<" deltas\n"<<par.delta_ij_m_er()<<"\n";
   auto Lse=par.L_j_se();
   auto L=par.Ls();
@@ -3809,8 +3869,8 @@ public:
         mcmc_step<pDist> cDist;
         n_steps_try(LM_Lik,lik,model,data,sDist,cDist,landa,mt,nskip,os,startTime,timeOpt);
         landa.actualize();
-        std::cerr<<landa;
-        os<<landa;
+        //std::cerr<<landa;
+        //os<<landa;
         landa=landa.partialReset();
 
         while (!o.full())
@@ -3932,16 +3992,16 @@ public:
     landa.actualize();
     n_steps_try(LM_Lik,lik,model,data,sDist,cDist,landa,mt,nsamples_per_par,os,startTime,timeOpt);
     landa.actualize();
-    std::cerr<<landa;
-    os<<landa;
+   // std::cerr<<landa;
+   // os<<landa;
     landa=landa.partialReset();
 
     for (std::size_t i=0; i< 5; ++i)
       {
         n_steps_try(LM_Lik,lik,model,data,sDist,cDist,landa,mt,nsamples_per_par,os,startTime,timeOpt);
         landa.actualize();
-        std::cerr<<landa;
-        os<<landa;
+      //  std::cerr<<landa;
+      //  os<<landa;
       }
   }
 
@@ -4317,7 +4377,7 @@ public:
     std::vector<bool> out(sDist.size());
     aBeta.push_step();
 
-#pragma omp parallel for
+  #pragma omp parallel for
     for(std::size_t i=0; i<sDist.size(); ++i)
       {
         AP landa;
@@ -4692,8 +4752,8 @@ public:
 
     while (!o.full()&&timeOpt<maxTime*60)
       {
-        for (std::size_t i=0; i<n;++i)
-          pars[i].actualize();
+//        for (std::size_t i=0; i<n;++i)
+//          pars[i].actualize();
 
 
 

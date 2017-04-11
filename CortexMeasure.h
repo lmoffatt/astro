@@ -118,10 +118,11 @@ public:
   ,prob_(prob)
   ,distance_to_lession_(std::numeric_limits<double>::infinity())
   ,distance_to_tissue_(std::numeric_limits<double>::infinity())
+  ,distance_to_vaso_(std::numeric_limits<double>::infinity())
   ,distance_to_superior_(std::numeric_limits<double>::infinity())
   ,distance_to_inferior_(std::numeric_limits<double>::infinity())
   ,distance_to_posterior_(std::numeric_limits<double>::infinity())
-    ,distance_to_vaso_(std::numeric_limits<double>::infinity())
+
   {}
 private:
 

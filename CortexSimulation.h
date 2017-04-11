@@ -33,6 +33,8 @@ public:
 
   std::vector<std::vector<double> > rho_;
 
+  CortexState()=default;
+
 
 
 

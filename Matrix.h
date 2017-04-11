@@ -1607,6 +1607,8 @@ double xTSigmaX(const M_Matrix<double> &vector, const M_Matrix<double> &matrix)
     }
   return sum;
 }
+
+
 inline
 double xTSigmaX(const std::vector<double> &v, const M_Matrix<double> &matrix)
 {
