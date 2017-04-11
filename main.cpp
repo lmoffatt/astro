@@ -8,7 +8,7 @@ int main(int argc, char **argv)
 
 
   typedef myCommandManager<Cls,TissueSection,CortexMeasure,Experiment,
-      mcmc,BaseModel,CortexSimulation,CortexLikelihood> CM;
+      BaseModel,CortexSimulation,CortexLikelihood> CM;
 
   CM cm;
 

@@ -121,8 +121,8 @@ std::string kind="lower";
     int LDA=N;
     int INFO;
     double* A=new double[x.size()*x[0].size()];
-    for (size_t i = 0; i < n; i++)
-        for (size_t j = 0; j < n; j++)
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
             *(A+i+n*j) = res[i][j];
 
 
@@ -131,8 +131,8 @@ std::string kind="lower";
 
 
     std::vector< std::vector<double> > result(n,std::vector<double>(n));
-    for (size_t i = 0; i < n; i++)
-        for (size_t j = 0; j < n; j++)
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
             result[i][j]=*(A+i+n*j);
 
     delete [] A;

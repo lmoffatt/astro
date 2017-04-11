@@ -271,7 +271,7 @@ public:
 
 
 
-  virtual bool readBody(std::string &, std::istream &, std::ostream& logs) override{return false;}
+  virtual bool readBody(std::string &, std::istream &, std::ostream& ) override{return false;}
 
   CortexMultinomialLikelihoodEvaluation(const CortexLikelihood& CL,
                                         const Parameters& p)
@@ -322,7 +322,7 @@ public:
 
 
 
-  virtual bool readBody(std::string &, std::istream &, std::ostream& logs) override{return false;}
+  virtual bool readBody(std::string &, std::istream &, std::ostream& ) override{return false;}
 
   CortexPoisonLikelihoodEvaluation(const CortexPoisonLikelihood& CL,
                                    const Parameters& p)
@@ -390,13 +390,13 @@ public:
 
 
   }
-  mcmc_prior prior(const Data& data, M_Matrix<double> param)const
+  mcmc_prior prior(const Data& , M_Matrix<double> param)const
   {
     mcmc_prior out;
     out.param=param;
 
     auto& p=CL_->getPrior();
-    std::size_t npar=param.size();
+//    std::size_t npar=param.size();
 
     Parameters Pa=p.toParameters(param.toVector());
 
@@ -411,7 +411,7 @@ public:
     return out;
 
   }
-  M_Matrix<double> f(const Data& data, M_Matrix<double> param)const{
+  M_Matrix<double> f(const Data& , M_Matrix<double> param)const{
     auto ff=CL_->f(param.toVector());
     std::size_t nrows= ff.size();
     if (nrows>0)

@@ -725,9 +725,9 @@ protected:
 private:
   std::vector<CortexMeasure> m_;
   std::vector<double> tMeasures_;
+  double tsim_;
   std::vector<double> tSimulates_;
 
-  double tsim_;
 
 
 

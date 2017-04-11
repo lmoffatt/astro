@@ -6,6 +6,7 @@
 //#include "BayesIteration.h"
 #include <sstream>
 #include <iostream>
+#include <string>
 
 
 std::vector<double> label_to_sequence(std::string s)
@@ -173,8 +174,8 @@ CommandManager::~CommandManager()
     delete elem.second;
   for (auto elem: experiments)
     delete elem.second;
-  for (auto elem: mcmcs)
-    delete elem.second;
+  //for (auto elem: mcmcs)
+  //  delete elem.second;
   for (auto elem: likelihoods)
     delete elem.second;
 
@@ -218,14 +219,6 @@ Experiment *CommandManager::getExperiment(const std::string& id)
 }
 
 
-mcmc *CommandManager::getMcmc(const std::string& id)
-{
-  auto it=mcmcs.find(id);
-  if(it!=mcmcs.end())
-    return it->second;
-  else
-    return nullptr;
-}
 
 
 
@@ -266,7 +259,7 @@ void AlignCommand::run(const std::string& line, std::ostream &logs)
 }
 
 
-void MergeCommand::run(const std::string& line, std::ostream& logs)
+void MergeCommand::run(const std::string& line, std::ostream& /*logs*/)
 {
   std::string cName, dataName;
   std::stringstream ss(line);
@@ -289,7 +282,7 @@ void MergeCommand::run(const std::string& line, std::ostream& logs)
 
 
 
-void DistancesCommand::run(const std::string& line, std::ostream &logs)
+void DistancesCommand::run(const std::string& line, std::ostream &/*logs*/)
 {
   std::string cName, dataName;
   std::stringstream ss(line);
@@ -308,7 +301,7 @@ void DistancesCommand::run(const std::string& line, std::ostream &logs)
 
 
 
-void HistogramCommand::run(const std::string& line, std::ostream &logs)
+void HistogramCommand::run(const std::string& line, std::ostream &/*logs*/)
 {
 
   //histogram 3dpl d_les  0:+100:3000
@@ -617,7 +610,7 @@ void readCommand::run(const std::string& rline, std::ostream& logs)
 
 
 
-void writeCommand::run(const std::string& line, std::ostream& logs)
+void writeCommand::run(const std::string& line, std::ostream& /*logs*/)
 {
   std::string writeName, dataName;
   std::stringstream ss(line);

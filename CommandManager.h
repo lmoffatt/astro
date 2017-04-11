@@ -24,7 +24,7 @@
 class BaseModel;
 class CortexSimulation;
 class CortexLikelihood;
-class mcmc;
+//class mcmc;
 
 inline std::string& removeComments(std::string& line)
 {
@@ -125,7 +125,7 @@ public:
   CortexLikelihood* getLikelihood(const std::string& idLik);
   void push_back(Experiment *experiment);
   // void push_back(mcmc *mcmc);
-  mcmc *getMcmc(const std::string& id);
+  //mcmc *getMcmc(const std::string& id);
 private:
   std::map <std::string, CommandBase*> cmd_;
   std::map <std::string,TissueSection*> sections;
@@ -134,7 +134,7 @@ private:
 
   std::map <std::string,Experiment*> experiments;
 
-  std::map <std::string,mcmc*> mcmcs;
+  //std::map <std::string,mcmc*> mcmcs;
 
   std::map <std::string,BaseModel*> models;
 
@@ -193,7 +193,7 @@ bool read_from_stream(std::istream&,std::ostream&,... )
 
 
 template<typename T>
-auto read_from_stream(std::istream& is,std::ostream& logstream,T& x)
+auto read_from_stream(std::istream& is,std::ostream& /*logstream*/,T& x)
 ->decltype (bool(is>>x))
 {
 

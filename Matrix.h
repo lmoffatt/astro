@@ -8,7 +8,6 @@
 
 
 #include <limits> // for std::numeric_limits
-#include <cstddef> //  for std::size_t
 #include <ostream>
 #include <istream>
 #include <string>
@@ -180,9 +179,9 @@ public:
 
   class MyConstIterator : public std::iterator<std::input_iterator_tag, T>
   {
+    const M_Matrix<T>& m;
     std::size_t i_;
     std::size_t j_;
-    const M_Matrix<T>& m;
   public:
     std::size_t iRow()const{return i_;}
     std::size_t jCol()const{return j_;}
@@ -1505,7 +1504,7 @@ template<typename T>
 T maxAbs(const M_Matrix<T>& x)
 {
   T m=std::abs(x[0]);
-  for (std::size_t i; i<x.size(); ++i)
+  for (std::size_t i=0; i<x.size(); ++i)
     if (std::abs(x[i])>m) m=std::abs(x[i]);
   return m;
 }

@@ -226,11 +226,11 @@ public:
 
 
 template <class Cm,template<typename>class Cls,class F, typename... Argsout>
-void run_void_impl_1(Cm* cm,
+void run_void_impl_1(Cm* /*cm*/,
                      Co<Cls>,
                      const F& f,
-                     std::ostream& log,
-                     std::map<std::string, std::string> in,
+                     std::ostream& /*log*/,
+                     std::map<std::string, std::string> /*in*/,
                      Argsout...argsOut)
 {
   f(argsOut...);
@@ -387,7 +387,7 @@ private:
   // myBaseCommand interface
 public:
   virtual void  run(Cm* cm,
-                    const std::string& idResult,
+                    const std::string& ,
                     const std::map<std::string,std::string>& args,
                     std::ostream& logstream)
   {
@@ -411,7 +411,7 @@ myCommand<Cm,Cls,F,R,Args...>* make_Command
 
 
 template<typename T, typename...Ts>
-bool get_impl_1(const std::string& id, T& x)
+bool get_impl_1(const std::string& /*id*/, T& /*x*/)
 {
   return false;
 }
