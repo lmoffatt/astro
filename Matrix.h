@@ -22,7 +22,6 @@
 #include <iostream>
 #include <algorithm>
 #include "mySerializer.h"
-#include "myOrderOperators.h"
 
 inline double logit(double x){return std::log(x/(1.0-x));}
 
@@ -1551,6 +1550,8 @@ T norm_inf(const M_Matrix<T>& x)
 template<typename T>
 M_Matrix<T> TranspMult(const M_Matrix<T>& x,const M_Matrix<T>& y);
 
+inline
+double TranspMult(double x,double y){return x*y;}
 
 template<typename T>
 M_Matrix<T> multTransp(const M_Matrix<T>& x,const M_Matrix<T>& y);

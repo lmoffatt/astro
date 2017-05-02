@@ -55,9 +55,14 @@ HEADERS += \
     mySerializer.h \
     myOutputSerializer.h \
     myInputSerializer.h \
-    myOrderOperators.h \
     myTuples.h \
-    myCommandManagement.h
+    myCommandManagement.h \
+    Cartesian.h \
+    Derivatives.h \
+    DerivativesProduct.h \
+    ParametersT.h \
+    DirectSum.h \
+    FunctionT.h
 
 DISTFILES += \
     run/script \

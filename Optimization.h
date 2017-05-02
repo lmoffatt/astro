@@ -2,7 +2,11 @@
 #define OPTIMIZATION_H
 
 #include "Matrix.h"
-
+#include "Cartesian.h"
+#include "Derivatives.h"
+#include "ParametersT.h"
+#include "DerivativesProduct.h"
+#include "FunctionT.h"
 #include <chrono>
 
 #ifndef PI____
@@ -191,6 +195,10 @@ inline double  Gradient_of_Normal(double  beta,const double m,double s, bool is_
   return g;
 
 }
+
+
+
+
 
 
 
@@ -1303,11 +1311,67 @@ inline std::ostream& operator<<(std::ostream& os, const typename Newton_fit<fals
 
 
 
+
+
+
 struct univariate_normal_distribution
 {
+  struct mean
+  {
+     typedef double field_value_type;
+     constexpr const char* ClassName(){return "mean";};
+  };
+
+  struct variance
+  {
+     typedef double field_value_type;
+     constexpr const char* ClassName(){return "variance";};
+  };
+
+  struct stddev
+  {
+     typedef double field_value_type;
+     constexpr const char* ClassName(){return "stddev";};
+  };
+
+
+  typedef ParametersT<mean,variance> parameters;
+
+
+  struct logL
+  {
+    typedef double field_value_type;
+    constexpr const char* ClassName(){return "logL";};
+
+
+  };
+
+
+
+
+
+  struct Gradient
+  {
+    typedef Diff<logL,parameters> field_value_type;
+    constexpr const char* ClassName(){return "Gradient";};
+  };
+
+  struct Hessian
+  {
+    typedef Diff2<logL,parameters,parameters> field_value_type;
+    constexpr const char* ClassName(){return "Hessian";};
+
+  };
+
+
+
+
+  typedef ParametersT<logL,Gradient,Hessian> LGH;
+
+
   static std::size_t NumberOfParameters(){return 2;}
 
-  static double logL(double y,double m,double var)
+  static double logLik(double y,double m,double var)
   {
     double chi=0.5*sqr(y-m)/var;
     return -std::log(2*PI*var)-chi;
@@ -1329,21 +1393,73 @@ struct univariate_normal_distribution
     return o;
   }
 
+  static Gradient::field_value_type Gr(const parameters& p, double y)
+  {
+    Gradient::field_value_type out;
+    out.get<Diff<logL,mean>>()=(y-p.get<mean>())/p.get<variance>();
+    out.get<Diff<logL,variance>>()=
+        0.5/p.get<variance>()*(sqr(y/p.get<mean>())/p.get<variance>()-1.0);
+    return out;
+  }
+
+  static Hessian::field_value_type He(const parameters& p, double y)
+  {
+     Hessian::field_value_type out;
+
+    out.get<Diff2<logL,mean,mean> >()=-1.0/p.get<variance>();
+    out.get<Diff2<logL,variance,variance>>()=
+        0.5/p.get<variance>()*(sqr(y/p.get<mean>())/p.get<variance>()-1.0);
+    return out;
+  }
+
+
+  static LGH get_logLFGH(const parameters& p, double y)
+  {
+     LGH out;
+     out.get<logL>()=logLik(p,y);
+     out.get<Gradient>()=Gr(p,y);
+     out.get<Hessian>()=He(p,y);
+     return out;
+  }
 
   template<class V>
-  static double logL(double y,const V& m)
+  std::tuple<double,M_Matrix<double>, M_Matrix<double> >
+  fGH(const V& m,double y)
   {
-    return logL(y,m[0],m[1]);
+    return {logLik(m,y),G(m,y),H(m,y)};
+  }
+
+  template<class V>
+  static double logLik(const V& m,double y)
+  {
+    return logLik(y,m[0],m[1]);
   }
   template<class V>
-  static double G(double y,const V& m)
+  static double G(const V& m,double y)
   {
     return G(y,m[0],m[1]);
-  }template<class V>
-  static double H(double y,const V& m)
+  }
+  template<class V>
+  static double H(const V& m,double y)
   {
     return H(m[1]);
   }
+
+  static double logLik( parameters& m,double y)
+  {
+    return logLik(y,m.get<mean>(),m.get<variance>());
+  }
+  static M_Matrix<double> G(const parameters& m,double y)
+  {
+    return G(y,m.get<mean>(),m.get<variance>());
+  }
+  static M_Matrix<double> H(const parameters& m,double y)
+  {
+    return H(m.get<variance>());
+  }
+
+
+
 
 };
 
@@ -1400,7 +1516,30 @@ struct symmetric_matrix
 struct multivariate_normal_distribution
 {
   std::size_t numberOfVariables;
-  std::size_t NumberOfParameters(){return (numberOfVariables*numberOfVariables+3)/2;}
+  std::size_t NumberOfParameters()const{return (numberOfVariables*numberOfVariables+3)/2;}
+
+  struct mean
+  {
+     typedef M_Matrix<double> field_value_type;
+     constexpr const char* ClassName(){return "mean";};
+  };
+
+  struct covariance
+  {
+     typedef M_Matrix<double> field_value_type;
+     constexpr const char* ClassName(){return "covariance";};
+  };
+
+  struct logLikelihood
+  {
+     typedef double field_value_type;
+    constexpr const char* ClassName(){return "logLikelihood";};
+
+  };
+
+
+
+  typedef ParametersT<mean,covariance> parameters;
 
   static double logL(const M_Matrix<double>& y,const M_Matrix<double>& m,const M_Matrix<double>& Sinv)
   {
@@ -1449,6 +1588,19 @@ struct multivariate_normal_distribution
     return Go;
   }
 
+  static
+   Diff<logLikelihood,parameters> Gradient(const M_Matrix<double>& y,const parameters& p)
+  {
+    Diff<logLikelihood,parameters> out;
+
+    out.get<Diff<logLikelihood,mean>>()=G_mu(y,p.get<mean>(),p.get<covariance>());
+    return out;
+  }
+
+
+
+
+
 
   static M_Matrix<double> H(const M_Matrix<double>& Sinv)
   {
@@ -1494,68 +1646,393 @@ struct multivariate_normal_distribution
     return Ho;
 
   }
+
+
   template<class V>
-  static double logL(double y,const V& m)
+  double
+  logL(const V& m, const M_Matrix<double>& y) const
   {
-    return logL(y,m[0],m[1]);
+    std::size_t n=numberOfVariables;
+    assert(m.size()==NumberOfParameters());
+    M_Matrix<double> mu(1,numberOfVariables);
+    M_Matrix<double>S(numberOfVariables,numberOfVariables);
+    for (std::size_t i=0; i<n; ++i)
+      mu[i]=m[i];
+    for (std::size_t i=0; i<n; ++i)
+      {
+        S(i,i)=m[n+i];
+        for (std::size_t j=0; j<n; ++j)
+          {
+            auto k=symmetric_matrix::ij_to_k(i,j,n);
+            S(i,j)=m[n+k];
+            S(j,i)=S(i,j);
+          }
+      }
+    auto Sinv=invSafe(S);
+    auto L=logL(y,mu,Sinv);
+    return L;
+
   }
+
+  double
+  logL(const parameters& m, const M_Matrix<double>& y) const
+  {
+    std::size_t n=numberOfVariables;
+    assert(m.size()==NumberOfParameters());
+    M_Matrix<double> mu=m.get<mean>();
+    M_Matrix<double>S=m.get<covariance>();
+    auto Sinv=invSafe(S);
+    auto L=logL(y,mu,Sinv);
+    return L;
+
+  }
+
+
+  std::tuple<double,M_Matrix<double>, M_Matrix<double> >
+  fgH(const parameters& m, const M_Matrix<double>& y) const
+  {
+    std::size_t n=numberOfVariables;
+    assert(m.size()==NumberOfParameters());
+    M_Matrix<double> mu=m.get<mean>();
+    M_Matrix<double>S=m.get<covariance>();
+    auto Sinv=invSafe(S);
+    auto L=logL(y,mu,Sinv);
+    auto g=G(y,mu,Sinv);
+    auto h=H(Sinv);
+    return {L,g,h};
+  }
+
+
   template<class V>
-  static double G(double y,const V& m)
+  std::tuple<double,M_Matrix<double>, M_Matrix<double> >
+  fgH(const V& m, const M_Matrix<double>& y) const
   {
-    return G(y,m[0],m[1]);
-  }template<class V>
-  static double H(double y,const V& m)
-  {
-    return H(m[1]);
+    std::size_t n=numberOfVariables;
+    assert(m.size()==NumberOfParameters());
+    M_Matrix<double> mu(1,numberOfVariables);
+    M_Matrix<double>S(numberOfVariables,numberOfVariables);
+    for (std::size_t i=0; i<n; ++i)
+      mu[i]=m[i];
+    for (std::size_t i=0; i<n; ++i)
+      {
+        S(i,i)=m[n+i];
+        for (std::size_t j=0; j<n; ++j)
+          {
+            auto k=symmetric_matrix::ij_to_k(i,j,n);
+            S(i,j)=m[n+k];
+            S(j,i)=S(i,j);
+          }
+      }
+    auto Sinv=invSafe(S);
+    auto L=logL(y,mu,Sinv);
+    auto g=G(y,mu,Sinv);
+    auto h=H(Sinv);
+    return {L,g,h};
+
   }
+
+
+};
+
+
+struct univariate_gaussian_process_distribution
+{
+  std::size_t NumberOfParameters()const{return x.size()+2;}
+
+  struct mean
+  {
+     typedef M_Matrix<double> field_value_type;
+     constexpr const char* ClassName(){return "mean";};
+  };
+
+  struct variance
+  {
+     typedef double field_value_type;
+     constexpr const char* ClassName(){return "variance";};
+  };
+
+  struct lambda
+  {
+     typedef double field_value_type;
+     constexpr const char* ClassName(){return "lambda";};
+  };
+
+  typedef ParametersT<mean,variance,lambda> parameters;
+
+
+  M_Matrix<double> x;
+
+  univariate_gaussian_process_distribution(const M_Matrix<double>& x_ ):x(x_){}
+
+  template<class V>
+  univariate_gaussian_process_distribution(const V& x_ )
+  {
+    x=M_Matrix<double>(x_.size(),1);
+    for (std::size_t i=0; i<x_.size(); ++i)
+      x[i]=x_[i];
+  }
+
+  template<class V>
+  static M_Matrix<double> rcov(const V& x, double lambda)
+  {
+    std::size_t n=x.size();
+    double l2=sqr(lambda);
+    M_Matrix<double> out(n,n);
+    for (std::size_t i=0; i<n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        out(i,j)=exp(-0.5*sqr(x[i]-x[j])/l2);
+    return out;
+  }
+
+  static double calc_sigma2(const M_Matrix<double>& y, const M_Matrix<double>& m, const M_Matrix<double>& rcov, const M_Matrix<double>& rcovinv)
+  {
+    std::size_t n=y.size();
+    auto rcym=rcovinv*(y-m);
+    auto rc=multTransp(rcym,rcym);
+    double sum=0;
+    for (std::size_t i=0; i< n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        sum+=rcov(i,j)*rc(i,j);
+    return sum/n;
+  }
+
+  static M_Matrix<double> G(const M_Matrix<double>& y, const M_Matrix<double>& m,const M_Matrix<double>& x,const M_Matrix<double>& rcov, const M_Matrix<double>& rcovinv, double sigma2, double lambda)
+  {
+    std::size_t n=m.size();
+    std::size_t r=n+2;
+    assert(rcov.ncols()==n);
+    assert(rcov.nrows()==n);
+
+    auto G_mu=(y-m)*rcovinv/sigma2;
+
+    auto rcym=rcovinv*(y-m);
+    auto rc=multTransp(rcym,rcym);
+
+    double sum=0;
+    for (std::size_t i=0; i< n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        sum+=rcov(i,j)*rc(i,j);
+    sum/=sigma2;
+    double dLdlogsigma=(sum-n)/2;
+
+    auto rcs=rc/sigma2-rcovinv;
+
+    double sum2=0;
+    for (std::size_t i=0; i< n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        sum2+=rcov(i,j)*rcs(i,j)*sqr(x[i]-x[j]);
+
+    double dLdloglambda=sum2/sqr(lambda)/2;
+    M_Matrix<double> Go(1,r,0);
+    for (std::size_t i=0; i<n; ++i)
+      Go[i]=G_mu[i];
+    Go[n]=dLdlogsigma;
+    Go[n+1]=dLdloglambda;
+    return Go;
+  }
+
+
+  static M_Matrix<double> H(const M_Matrix<double>& x,const M_Matrix<double>& rcov, const M_Matrix<double>& rcovinv,  double sigma2,double lambda)
+  {
+    std::size_t n=rcov.nrows();
+    std::size_t k=n+2;
+
+    M_Matrix<double> Ho(k,k,0);
+
+
+    for (std::size_t i=0; i<n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        {
+          Ho(i,j)=-rcovinv(i,j)/sigma2;
+
+        }
+
+    double sum=0;
+    for (std::size_t i=0; i<n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        {
+          sum+=rcov(i,j)*rcovinv(i,j)*sqr(x[i]-x[j]);
+        }
+
+    double dL2dloglambda2=-0.5*sqr(sum/sqr(lambda));
+    double dLdlogsigma2_dloglambda=-0.5*n*sum/sqr(lambda);
+    double dLdlogsimga2=0.5*sqr(n);
+    Ho(n,n)=dLdlogsimga2;
+    Ho(n+1,n)=dLdlogsigma2_dloglambda;
+    Ho(n,n+1)=dLdlogsigma2_dloglambda;
+    Ho(n+1,n+1)=dL2dloglambda2;
+
+
+    return Ho;
+
+  }
+
+
+  template<class V>
+  double
+  static logL(const V& m, const M_Matrix<double>& y,const M_Matrix<double>& x)
+  {
+    std::size_t n=x.size();
+    M_Matrix<double> mu(1,n);
+    double sigma2=std::exp(m[n]);
+    double lambda=std::exp(m[n+1]);
+    for (std::size_t i=0; i<n; ++i)
+      mu[i]=m[i];
+    auto rCov=rcov(x, lambda);
+    auto rCovinv=invSafe(rCov);
+    auto L=multivariate_normal_distribution::logL(y,mu,rCovinv*sigma2);
+    return L;
+
+  }
+
+  double
+  static logL(const parameters& m, const M_Matrix<double>& y,const M_Matrix<double>& x)
+  {
+    std::size_t n=x.size();
+    M_Matrix<double> mu=m.get<mean>();
+    double sigma2=m.get<variance>();
+    double mylambda=m.get<lambda>();
+    auto rCov=rcov(x, mylambda);
+    auto rCovinv=invSafe(rCov);
+    auto L=multivariate_normal_distribution::logL(y,mu,rCovinv*sigma2);
+    return L;
+
+  }
+
+
+  template<class V>
+  std::tuple<double,M_Matrix<double>, M_Matrix<double> >
+   fgH(const V& m, const M_Matrix<double>& y) const
+  {
+    std::size_t n=x.size();
+    M_Matrix<double> mu(1,n);
+    double sigma2=std::exp(m[n]);
+    double lambda=std::exp(m[n+1]);
+    for (std::size_t i=0; i<n; ++i)
+      mu[i]=m[i];
+    auto rCov=rcov(x, lambda);
+    auto rCovinv=invSafe(rCov);
+    auto L=multivariate_normal_distribution::logL(y,mu,rCovinv*sigma2);
+    auto g=G(y,mu,x,rCov,rCovinv,sigma2,lambda);
+    auto h=H(x,rCov,rCovinv,sigma2,lambda);
+    return {L,g,h};
+
+  }
+
 
 };
 
 
 
 
+
 struct Gauss_Newton
 {
-  template<class D, template<class>class M, class Y, class P>
-  std::tuple<double,M_Matrix<double>, M_Matrix<double> >
-  GH(const D& dist, const M<D>& model,const Y& data, const P& parameters )
+  template<class M,  class P, class X,class Ys>
+  struct  fun
   {
-    std::size_t n=data.size();
-    std::size_t k=parameters.size();
+ const M& model;
+ const P& parameters;
+ const X& xdataConditions;
+ const Ys& ydataPrediction;
+ std::tuple<double,M_Matrix<double>, M_Matrix<double> >
+ fGH(const P& myparameters) const
+ {
+   return get_fGH(model,myparameters,xdataConditions,ydataPrediction);
+ }
+
+ double
+f( const P& myparameters)const
+ {
+   return get_f(model,myparameters,xdataConditions,ydataPrediction);
+ }
+
+
+  };
+
+
+
+  template<class M,  class P, class X,class Ys>
+  static std::tuple<double,M_Matrix<double>, M_Matrix<double> >
+  get_fGH(const M& model, const P& param,
+      const X& xdataConditions ,const Ys& ydataPrediction)
+  {
+    std::size_t n=xdataConditions.size();
+    std::size_t k=param.size();
+    auto dist=model.getDistribution(xdataConditions);
     std::size_t r=dist.NumberOfParameters();
-    std::vector<M_Matrix<double>> yfit=model.f(dist,parameters,data);
+    std::vector<typename decltype(dist)::parameters> yfit=model.f(param,xdataConditions);
     assert(yfit.size()==n);
     assert(yfit[0].nrows()==1);
     assert(yfit[0].ncols()==r);
 
-    std::vector<M_Matrix<double>>  J=model.J(dist,parameters,data);
+    typedef Diff<typename decltype(dist)::parameters, P> Jt;
+
+
+    std::vector<Jt>  J=model.J(param,xdataConditions);
     assert(J.size()==n);
     assert(J[0].nrows()==r);
     assert(J[0].ncols()==k);
 
     double logL=0;
+    Diff<typename decltype(dist)::logL,P> G;
+    Diff2<typename decltype(dist)::logL,P,P> H;
     for (std::size_t i=0; i<n; ++i)
       {
-        double L=dist.logL(data[i],yfit[i]);
-        logL+=L;
-      }
-
-
-
-    M_Matrix<double> G(1,k,0.0);
-    for (std::size_t i=0; i<n; ++i)
-      {
-        M_Matrix<double> Gd=dist.G(data[i],yfit[i]);
-        G+=Gd*J[i];
-      }
-    M_Matrix<double> H(k,k,0.0);
-    for (std::size_t i=0; i<n; ++i)
-      {
-        M_Matrix<double> Hd=dist.G(data[i],yfit[i]);
+        auto t=dist.get_logLGH(yfit[i],ydataPrediction[i]);
+        logL+=std::get<typename decltype(dist)::logL>(t);
+        auto Gd=std::get<typename decltype(dist)::Gradient>(t);
+        G+=P_Mult(Gd,J[i]);
+        auto Hd=std::get<typename decltype(dist)::Hessian>(t);
         H+=TranspMult(J[i],Hd)*J[i];
       }
     return {logL,G,H};
 
+  }
+
+
+  template<class D, template<class>class M,  class P, class X,class Ys>
+  static
+  double
+  get_f(const M<D>& model, const P& parameters,
+    const X& xdataConditions ,const Ys& ydataPrediction)
+  {
+    std::size_t n=xdataConditions.size();
+    std::size_t k=parameters.size();
+    const D& dist=model.getDistribution(xdataConditions);
+    std::size_t r=dist.NumberOfParameters();
+    std::vector<M_Matrix<double>> yfit=model.f(parameters,xdataConditions);
+    assert(yfit.size()==n);
+    assert(yfit[0].nrows()==1);
+    assert(yfit[0].ncols()==r);
+
+
+    double logL=0;
+    for (std::size_t i=0; i<n; ++i)
+      {
+        logL+=dist.logL(yfit[i],ydataPrediction[i]);;
+      }
+    return logL;
+
+  }
+
+};
+
+
+
+template <class P,class... Models>
+struct ModelComposite
+{
+  std::tuple<double,M_Matrix<double>, M_Matrix<double> >
+  fGH(const P& myparameters) const
+  {
+    return get_fGH(model,myparameters,xdataConditions,ydataPrediction);
+  }
+
+  double
+ f( const P& myparameters)const
+  {
+    return get_f(model,myparameters,xdataConditions,ydataPrediction);
   }
 
 };
@@ -1570,26 +2047,32 @@ template<bool minimize, bool verbose>
 struct Newton_opt
 {
 
+  template<class Parameters>
   struct fit_point
   {
-    fit_point(const M_Matrix<double>& xs,double logLs ): x(xs),logL(logLs),isValid(std::isfinite(logLs)){}
+    fit_point(const Parameters& xs,double logLs ): x(xs),logL(logLs),isValid(std::isfinite(logLs)){}
     fit_point(){}
 
-    M_Matrix<double> x;
+    Parameters x;
     double logL;
     bool isValid=false;
   };
 
 
-  struct fit_step:public fit_point
+  template<class P>
+  struct fit_step:public fit_point<P>
   {
+    fit_step(const P& param, std::tuple<double,M_Matrix<double>,M_Matrix<double>> t):
+      fit_point<P>(param,std::get<0>(t)),
+      G(std::move(std::get<1>(t))), H(std::move(std::get<2>(t))){}
     fit_step(){}
-    fit_step(fit_point p): fit_point(p),G(),H(){}
+    fit_step(fit_point<P> p): fit_point<P>(p),G(),H(){}
     M_Matrix<double> G;
     M_Matrix<double> H;
   };
 
 
+  template<class P>
   class fit_iter
   {
   public:
@@ -1598,13 +2081,13 @@ struct Newton_opt
     std::size_t i;
     double timeOpt;
     double timeIter;
-    fit_step sample;
+    fit_step<P> sample;
     double landa;
     M_Matrix<double> Hlinv;
     bool validCov=false;
     M_Matrix<double> d;
     double alfa;
-    fit_point candidate;
+    fit_point<P> candidate;
     double ParamChange()const
     {
       return maxAbs(sample.x-candidate.x);
@@ -1705,7 +2188,7 @@ struct Newton_opt
         auto i=iter.i+1;
 
         double newLanda;
-        fit_step sample(iter.candidate);
+        fit_step<P> sample(iter.candidate);
         sample.G=g(sample.x);
         sample.H=h(sample.x);
 
@@ -1724,17 +2207,14 @@ struct Newton_opt
 
   }
 
-  template<class L, class G, class H, class Hinv>
-  static fit_iter candidate_point(const L& logL,
-                                  const G& g,
-                                  const H& h,
-                                  const Hinv& hinv,
-                                  fit_run r,
-                                  fit_step sample,
-                                  double landa,
-                                  std::size_t i)
+  template<class F,  class P>
+  static fit_iter<P>  candidate_point(const F& fmodel,
+                                      fit_run r,
+                                      fit_step<P> sample,
+                                      double landa,
+                                      std::size_t i)
   {
-    landa_H lH=compute_landaH(hinv,sample.H,landa,r.vlanda,r.maxLanda);
+    landa_H lH=compute_landaH(model.hinv,sample.H,landa,r.vlanda,r.maxLanda);
     auto newd=-sample.G*lH.Hlinv;
     wolf_conditions<minimize> w;
     typename wolf_conditions<minimize>::termination run=w.opt(logL,g,sample.x,sample.logL,sample.G,newd,r.maxEvalLoop);
@@ -1764,19 +2244,32 @@ struct Newton_opt
   }
 
 
-
-
-  template<class L, class G,class H, class Inv>
-  static fit_iter opt(const L& logL,
-                      const G& g,
-                      const H& h,
-                      const Inv& inverse,
-                      const M_Matrix<double>& x,
-                      double landa=1e-3,
-                      double vlanda=3,
-                      std::size_t maxIter=1000,
-                      double maxTime=60)
+  template<class F,  class P>
+  static fit_step<P>  computeSample(const F& fmodel,
+                                    const P& parameters)
   {
+    auto t=fmodel.fGH(parameters);
+    fit_step<P> out(parameters,std::move(t));
+    return out;
+  }
+
+
+
+
+
+  template<class M,  class P, class X,class Y>
+  static fit_iter<P> opt(const M& model,
+                         const P& parameters,
+                         const X& xdataConditions ,
+                         const Y& ydataPredictions,
+                         const M_Matrix<double>& x,
+                         double landa=1e-3,
+                         double vlanda=3,
+                         std::size_t maxIter=1000,
+                         double maxTime=60)
+  {
+
+    Gauss_Newton::fun<M,P,X,Y> f(model,parameters,xdataConditions,ydataPredictions);
     fit_run r;
     r.startTime= std::chrono::steady_clock::now();
     r.maxIter=maxIter;
@@ -1785,9 +2278,9 @@ struct Newton_opt
     r.vlanda=vlanda;
     r.min_alfa=1.0/vlanda;
 
-    fit_step sample(fit_point(x,logL(x)));
-    sample.G=g(x);
-    sample.H=h(x);
+
+    auto sample=computeSample
+        (model,parameters,xdataConditions,ydataPredictions);
 
     return  candidate_point(logL,g,h,inverse,r,sample,landa,0);
 

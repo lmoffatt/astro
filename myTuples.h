@@ -2,7 +2,54 @@
 #define MYTUPLES_H
 #include <tuple>
 
+
+template<class...>
+using void_t=void;
+
+
+template<typename...Ts>
+class TypeCo
+{
+
+};
+
+
+struct bottom{
+  int x;
+};
+
+struct top:public bottom{};
+
+
+
+
+
+
+
+
+
+
+
+
+template<typename T>
+constexpr std::size_t sum_Is(T x)
+{
+  return x;
+}
+
+
+template<typename I,typename...Is>
+constexpr std::size_t sum_Is(I x, Is... xs)
+{
+  return x+sum_Is(xs...);
+}
+
+
+
 // ------------- UTILITY---------------
+
+
+
 template<int...> struct index_tuple{};
 
 template<int I, typename IndexTuple, typename... Types>
@@ -59,6 +106,65 @@ void for_each( std::tuple<Args...>&& tup, Func&& f)
                    typename make_indexes<Args...>::type(),
                    std::forward<std::tuple<Args...>>(tup) );
 }
+
+
+template<typename T, typename...Ts>
+constexpr std::size_t index_of_impl(std::size_t I,TypeCo<T>,TypeCo<>)
+{
+   return I+1;
+}
+
+
+
+template<typename T, typename...Ts>
+constexpr std::size_t index_of_impl(std::size_t I,TypeCo<T>,TypeCo<T,Ts...>)
+{
+   return I;
+}
+
+template<typename T,typename S, typename...Ts>
+constexpr std::size_t index_of_impl(std::size_t I,TypeCo<T>,TypeCo<S,Ts...>)
+{
+   return index_of_impl(I+1,TypeCo<T>(),TypeCo<Ts...>());
+}
+
+
+template<typename T,template<typename...>class C,typename...Ts>
+constexpr std::size_t index_of(C<Ts...>)
+{
+   return index_of_impl(0,TypeCo<T>(),TypeCo<Ts...>());
+}
+
+
+inline std::size_t mySize(double){return 1;}
+
+template<typename M>
+std::size_t mySize(const M& x){return x.size();}
+
+
+template <typename... Ts>
+std::tuple<Ts...>& self_add_impl(std::tuple<Ts...>& me, const std::tuple<Ts...> , std::index_sequence<>)
+{
+    return me;
+}
+
+
+template <std::size_t I,std::size_t...Is,typename... Ts>
+std::tuple<Ts...>& self_add_impl(std::tuple<Ts...>& me, const std::tuple<Ts...> other, std::index_sequence<I,Is...>)
+{
+    std::get<I>(me)+=std::get<I>(other);
+    return self_add_impl(me, other, std::index_sequence<Is...>());
+}
+
+
+
+
+template <typename... Ts>
+std::tuple<Ts...>& operator+=(std::tuple<Ts...>& me, const std::tuple<Ts...> other)
+{
+    return self_add_impl(me, other, std::index_sequence_for<Ts...>());
+}
+
 
 
 
