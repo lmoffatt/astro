@@ -1718,6 +1718,32 @@ struct Gradient_Finite_Difference
 };
 
 
+template<class function>
+struct Jacobian_Finite_Difference
+{
+    static std::string ClassName(){return "Jacobian_Finite_Difference";}
+    Jacobian_Finite_Difference(const function& l, double dx=1e-6):fun(l),dx_(dx){}
+    const function& fun;
+    double dx_;
+    M_Matrix<double> operator()(const M_Matrix<double>& x)const
+    {
+	auto y=fun(x);
+	M_Matrix<double> o(y.size(),x.size());
+	for (std::size_t i=0; i<x.size(); ++i)
+	    {
+		auto xp=x;
+		auto xn=x;
+		xp[i]+=dx_;
+		xn[i]-=dx_;
+		M_Matrix<double> Lp(y.size(),1,fun(xp));
+		M_Matrix<double> Ln(y.size(),1,fun(xn));
+		o(":",i,(Lp-Ln)*(0.5/dx_));
+
+	    }
+	return o;
+    }
+
+};
 
 template<class logLikelihood>
 struct Hessian_Finite_Difference
@@ -1779,6 +1805,16 @@ Gradient_Finite_Difference<logLikelihood> make_Gradient_Finite_Difference(const 
 {
     return Gradient_Finite_Difference<logLikelihood>(l,dx);
 }
+
+template<class function>
+Jacobian_Finite_Difference<function> make_Jacobian_Finite_Difference(const function& l, double dx=1e-8)
+{
+    return Jacobian_Finite_Difference<function>(l,dx);
+}
+
+
+
+
 template<class logLikelihood>
 Hessian_Finite_Difference<logLikelihood> make_Hessian_Finite_Difference(const logLikelihood& l, double dx=1e-5)
 {
@@ -1786,8 +1822,10 @@ Hessian_Finite_Difference<logLikelihood> make_Hessian_Finite_Difference(const lo
 }
 
 
+
+
 template<class F0, class F1>
-bool test_against(const F0& f0, const F1& f1, const M_Matrix<double>& x, double tolerance)
+bool test_against(const F0& f0, const F1& f1, const M_Matrix<double>& x, double resolution,double tolerance)
 {
     std::cout<<"test  "<<F0::ClassName();
     std::cout<<"against  "<<F1::ClassName()<<"\n";
@@ -1802,7 +1840,7 @@ bool test_against(const F0& f0, const F1& f1, const M_Matrix<double>& x, double 
 	    std::cout<<i<<"\t"<<Gf[i]<<"\t"<<Gd[i]<<"\t";
 	    if (Gf[i]==0)
 		{
-		    if (std::abs(Gd[i])>tolerance)
+		    if (std::abs(Gd[i])>resolution)
 			{
 			    std::cout<<Gd[i]<<"\trejected\n";
 			    out=false;
@@ -1851,15 +1889,71 @@ bool test_against(const F0& f0, const F1& f1, const M_Matrix<double>& x, double 
 
 struct Master_Tempering_Likelihood
 {
+    struct Prior{
+	std::vector<double> desc_beta_for_dL;
+	std::vector<double> log_desc_beta_for_dL;
+
+	double mL0;
+	double sL0;
+
+	double mmlogdL;
+	double smlogdL;
+
+	double mlogslogdL;
+	double slogslogdL;
+
+	double mloglandalogdL;
+	double sloglandalogdL;
+
+	double mlogepsilon2logdL;
+	double slogepsilon2logdL;
+
+
+	double mmlogdelta;
+	double smlogdelta;
+
+	double mlogslogdelta;
+	double slogslogdelta;
+	Prior(std::vector<double> _beta_for_dL,
+	double _mL0,
+	double _sL0,
+	double _mmlogdL,
+	double _smlogdL,
+	double _mlogslogdL,
+	double _slogslogdL,
+
+	double _mloglandalogdL,
+	double _sloglandalogdL,
+	double _mlogepsilon2logdL,
+	double _slogepsilon2logdL,
+	double _mmlogdelta,
+	double _smlogdelta,
+	double _mlogslogdelta,
+	double _slogslogdelta):
+	desc_beta_for_dL(_beta_for_dL),log_desc_beta_for_dL(_beta_for_dL.size()),
+	mL0(_mL0),sL0(_sL0),mmlogdL(_mmlogdL),smlogdL(_smlogdL),
+	mlogslogdL(_mlogslogdL),slogslogdL(_slogslogdL),
+	mloglandalogdL(_mloglandalogdL),sloglandalogdL(_sloglandalogdL),
+	mlogepsilon2logdL(_mlogepsilon2logdL),slogepsilon2logdL(_slogepsilon2logdL),
+	mmlogdelta(_mmlogdelta),smlogdelta(_smlogdelta), mlogslogdelta(_mlogslogdelta),slogslogdelta(_slogslogdelta){
+	    for(std::size_t i=0; i<log_desc_beta_for_dL.size(); ++i)
+		log_desc_beta_for_dL[i]=std::log(desc_beta_for_dL[i]);
+
+	}
+
+
+
+    };
+
     class Lfit
     {
     public:
 
-	Lfit(std::vector<double>betas):asc_beta(betas.rbegin(),betas.rend())
+	Lfit(std::vector<double>betas):b(betas.rbegin(),betas.rend())
 	{
 
-	    for (std::size_t i=0; i<asc_beta.size(); ++i)
-		this->betas_[asc_beta[i]]=i;
+	    for (std::size_t i=0; i<b.size(); ++i)
+		this->betas_[b[i]]=i;
 	}
 
 	double dL(double beta,const M_Matrix<double>& dLs)const
@@ -1912,7 +2006,7 @@ struct Master_Tempering_Likelihood
 
 	M_Matrix<double> dL(const std::vector<double>& beta,const M_Matrix<double>& dLs)const
 	{
-	    if (beta==asc_beta)
+	    if (beta==b)
 		return dLs;
 	    else {
 		    M_Matrix<double> out(1,beta.size());
@@ -1924,7 +2018,7 @@ struct Master_Tempering_Likelihood
 
 	M_Matrix<double> ddL_ddL(const std::vector<double>& beta,const M_Matrix<double>& dLs)const
 	{
-	    if (beta==asc_beta)
+	    if (beta==b)
 		return eye<double>(dLs.size());
 	    else {
 		    M_Matrix<double> out(beta.size(),beta.size());
@@ -1985,7 +2079,7 @@ struct Master_Tempering_Likelihood
 	M_Matrix<double> L(const std::vector<double>& beta,double L0,const M_Matrix<double>& dLs)const
 	{
 	    M_Matrix<double> Ls=Lis(L0,dLs);
-	    if (beta==asc_beta)
+	    if (beta==b)
 		return Ls;
 	    else
 		{
@@ -2001,7 +2095,7 @@ struct Master_Tempering_Likelihood
 	M_Matrix<double> dL_ddL(const std::vector<double>& beta,const M_Matrix<double>& dLs)const
 	{
 	    M_Matrix<double> dLs_ddL=dLis_ddLj(dLs);
-	    if (beta==asc_beta)
+	    if (beta==b)
 		return dLs_ddL;
 	    else
 		{
@@ -2023,11 +2117,11 @@ struct Master_Tempering_Likelihood
 	    double dLr=dLs[0];
 	    for (std::size_t i=0; i<dLs.size(); ++i )
 		{
-		    double db=asc_beta[i]-br;
+		    double db=b[i]-br;
 		    double dLv=(dLs[i]+dLr)*0.5;
 		    r+=db*(dLv);
 		    out[i]=r;
-		    br=asc_beta[i];
+		    br=b[i];
 		    dLr=dLs[i];
 
 		}
@@ -2043,13 +2137,13 @@ struct Master_Tempering_Likelihood
 	    std::size_t ir=0;
 	    for (std::size_t i=0; i<dLs.size(); ++i )
 		{
-		    double db=(asc_beta[i]-br);
+		    double db=(b[i]-br);
 		    for (std::size_t j=i; j<dLs.size(); ++j)
 			{
 			    out(j,i)+=db*0.5;
 			    out(j,ir)+=db*0.5;
 			}
-		    br=asc_beta[i];
+		    br=b[i];
 		    ir=i;
 		}
 	    return out;
@@ -2070,13 +2164,13 @@ struct Master_Tempering_Likelihood
 		}
 	    for (std::size_t i=0; i<dLs.size(); ++i )
 		{
-		    double db=(asc_beta[i]-br);
+		    double db=(b[i]-br);
 		    for (std::size_t j=i; j<dLs.size(); ++j)
 			{
 			    out(j,1+i)+=db*0.5;
 			    out(j,1+ir)+=db*0.5;
 			}
-		    br=asc_beta[i];
+		    br=b[i];
 		    ir=i;
 		}
 
@@ -2091,14 +2185,14 @@ struct Master_Tempering_Likelihood
 	{
 	    std::size_t n=dLs.size();
 	    M_Matrix<double> cov(1+n, 1+n);
-	    cov(0,0)=Hinv(0,0)*sqr(L0);
+	    cov(0,0)=Hinv(0,0);
 	    for (std::size_t i=0; i<n; ++i)
 		{
-		    cov(0,1+i)=Hinv(0,3+i)*L0*dLs[i];
+		    cov(0,1+i)=Hinv(0,7+i)*dLs[i];
 		    cov(1+i,0)=cov(0,1+i);
 		    for (std::size_t j=0; j<n; ++j)
 			{
-			    cov(1+i,1+j)=Hinv(3+i,3+j)*dLs[i]*dLs[j];
+			    cov(1+i,1+j)=Hinv(7+i,7+j)*dLs[i]*dLs[j];
 			}
 		}
 	    return cov;
@@ -2115,16 +2209,44 @@ struct Master_Tempering_Likelihood
 
 	double E(double L0,const M_Matrix<double>& dLs)const
 	{
-	    auto n=asc_beta.size()-1;
+	    auto n=b.size()-1;
 	    double o=L0;
-	    o+= (0.5*(asc_beta[n]-asc_beta[1])*(asc_beta[1])+1.0/3.0*asc_beta[1]*asc_beta[1])*dLs[0];
+	    o+=(
+	    +0.5*(b[n]-b[0])*(b[0])
+	    +1.0/3.0*sqr(b[0])
+	    +0.5*(b[n]-b[1+1])*(b[1+1]-b[1])
+	    +0.5*(b[n]-b[1])*(b[1]-b[1-1])
+	    +1.0/6.0*sqr(b[1]-b[1-1])
+	    +1.0/3.0*sqr(b[1+1]-b[1])
+	    )*dLs[0];
 	    for (std::size_t i=1; i<n; ++i)
 		{
-		    o+=(0.5*((asc_beta[n]-asc_beta[i+1])*(asc_beta[i+1]-asc_beta[i])
-		    +(asc_beta[n]-asc_beta[i])*(asc_beta[i]-asc_beta[i-1]))
-		    +1.0/3.0*(sqr(asc_beta[i+1])+(asc_beta[i+1]-asc_beta[i-1])*asc_beta[i]-sqr(asc_beta[i-1])))*dLs[i];
+		    o+=
+		    (+0.5*(b[n]-b[i+1])*(b[i+1]-b[i])
+		    +0.5*(b[n]-b[i])*(b[i]-b[i-1])
+		    +1.0/6.0*sqr(b[i]-b[i-1])
+		    +1.0/3.0*sqr(b[i+1]-b[i])
+		    )*dLs[i];
 		}
-	    o+=1.0/6.0*(sqr(asc_beta[n])-2*sqr(asc_beta[n-1])-2*asc_beta[n]*asc_beta[n-1])*dLs[n];
+	    o+=(1.0/6.0*sqr(b[n]-b[n-1])
+	    )*dLs[n];
+	    auto Li=Lis(L0,dLs);
+	    double out;
+	    double rL=L0;
+	    double br=0;
+	    double dLr=dLs[0];
+	    for (std::size_t i=0; i<dLs.size(); ++i )
+		{
+		    double db=b[i]-br;
+		    double dLv=(dLs[i]+2*dLr)/6.0;
+		    out+=rL*db+dLv*sqr(db);
+		    br=b[i];
+		    dLr=dLs[i];
+		    rL=Li[i];
+
+		}
+	    // return out;
+
 	    return o;
 	}
 
@@ -2132,16 +2254,27 @@ struct Master_Tempering_Likelihood
 	M_Matrix<double>  dE_dL0dLj(const M_Matrix<double>& dLs)const
 	{
 	    M_Matrix<double> out(1, 1+dLs.size());
-	    auto n=asc_beta.size()-1;
-	    out(0,0)=1;
-	    out(0,1)= (0.5*(asc_beta[n]-asc_beta[1])*(asc_beta[1])+1.0/3.0*asc_beta[1]*asc_beta[1]);
+	    auto n=b.size()-1;
+	    out(0,0)=b[n];
+	    out(0,1)= (
+	    +0.5*(b[n]-b[0])*(b[0])
+	    +1.0/3.0*sqr(b[0])
+	    +0.5*(b[n]-b[1+1])*(b[1+1]-b[1])
+	    +0.5*(b[n]-b[1])*(b[1]-b[1-1])
+	    +1.0/6.0*sqr(b[1]-b[1-1])
+	    +1.0/3.0*sqr(b[1+1]-b[1])
+	    );
 	    for (std::size_t i=1; i<n; ++i)
 		{
-		    out(0,i+1)=(0.5*((asc_beta[n]-asc_beta[i+1])*(asc_beta[i+1]-asc_beta[i])
-		    +(asc_beta[n]-asc_beta[i])*(asc_beta[i]-asc_beta[i-1]))
-		    +1.0/3.0*(sqr(asc_beta[i+1])+(asc_beta[i+1]-asc_beta[i-1])*asc_beta[i]-sqr(asc_beta[i-1])));
+		    out(0,i+1)=
+		    (+0.5*(b[n]-b[i+1])*(b[i+1]-b[i])
+		    +0.5*(b[n]-b[i])*(b[i]-b[i-1])
+		    +1.0/6.0*sqr(b[i]-b[i-1])
+		    +1.0/3.0*sqr(b[i+1]-b[i])
+		    );
 		}
-	    out(0,n+1)=1.0/6.0*(sqr(asc_beta[n])-2*sqr(asc_beta[n-1])-2*asc_beta[n]*asc_beta[n-1]);
+	    out(0,n+1)=(1.0/6.0*sqr(b[n]-b[n-1])
+	    );
 	    return out;
 	}
 
@@ -2168,34 +2301,59 @@ struct Master_Tempering_Likelihood
 	}
 
 
-	std::vector<double> beta()const { return asc_beta;}
+	std::vector<double> beta()const { return b;}
 
     private:
 	std::map<double,std::size_t> betas_;
-	std::vector<double> asc_beta;
+	std::vector<double> b; //ascending
     };
 
     struct Parameters{
 	double L0;  // likelihood at beta=0;
+	double mlogdL;  //
+	double logvlogdL;
+	double logrlandalogdL;
+	double logepsilon2logL;
+
 	double mlogdelta; // mean log of delta
 	double logvlogdelta;
-	double sigma_logdL;
-	double landa_beta_dL;
-	M_Matrix<double> dL_j;
-	std::vector<std::vector<double>> delta_ij;
-	M_Matrix<double> log_dL_j;
-	std::vector<std::vector<double>> log_delta_ij;
 
+	M_Matrix<double> dL_j;
+	// std::vector<std::vector<double>> delta_ij;
+	M_Matrix<double> log_dL_j;
+	// std::vector<std::vector<double>> log_delta_ij;
+
+	// auxiliares
+	double delta;
+	double d0;
+	double d1;
+	double d4;
+
+	double vlogdelta;
 	Lfit lfit_;
 	std::size_t size()const
 	{
-	    return 1+1+1+dL_j.size()+ncells(delta_ij);
+	    return 7+dL_j.size();
 	}
 
 
 	double E()const
 	{
-	    return lfit_.E(L0,dL_j);
+	    double e= lfit_.E(L0,dL_j);
+
+	    auto de=lfit_.dE_dL0dLj(dL_j);
+	    auto b=lfit_.beta();
+	    double br=0;
+	    double sum=L0;
+	    double Lr=L0;
+	    auto Li=Ls();
+	    for (std::size_t i=0; i<Li.size(); ++i)
+		{
+		    sum+=(Li[i])*(b[i]-br)/2.0;
+		    Lr=Li[i]; br=b[i];
+		}
+	    return e;
+
 	}
 
 	M_Matrix<double> Ls()const
@@ -2207,18 +2365,25 @@ struct Master_Tempering_Likelihood
 
 	static M_Matrix<double> G(
 	double dL_dL0,
+	double dL_dmlogdL,
+	double dL_dslogdL,
+	double dL_dlandalogdL,
+	double dL_depsilonlogdL,
 	double dL_dmlogdelta,
 	double dL_dslogdelta,
-	M_Matrix<double> dL_dlogdLj,
-	M_Matrix<double> dL_dlogdelta)
+	M_Matrix<double> dL_dlogdLj)
 	{
 	    std::vector<double> o;
 	    o.push_back(dL_dL0);
+	    o.push_back(dL_dmlogdL);
+	    o.push_back(dL_dslogdL);
+	    o.push_back(dL_dlandalogdL);
+	    o.push_back(dL_depsilonlogdL);
+
+
 	    o.push_back(dL_dmlogdelta);
 	    o.push_back(dL_dslogdelta);
 	    std::vector<double> v=dL_dlogdLj.toVector();
-	    o.insert(o.end(),v.begin(),v.end());
-	    v=dL_dlogdelta.toVector();
 	    o.insert(o.end(),v.begin(),v.end());
 	    return M_Matrix<double>(1,o.size(),o);
 
@@ -2226,71 +2391,71 @@ struct Master_Tempering_Likelihood
 
 
 	static M_Matrix<double> H(
-	double d2L_dL02,
-	M_Matrix<double> d2L_dL0_dlogdL,
-	M_Matrix<double> d2L_dL0_dlogdelta,
+	double d2L_dL02,double d2L_dL0_dmdelta,double d2L_dL0_dsdelta,M_Matrix<double> d2L_dL0_dlogdL,
 
-	double d2L_dmlogdelta2,
-	double d2L_dmlogdelta_dslogdelta,
-	M_Matrix<double> d2L_dmlogdelta_dlogdelta,
-
-	double d2L_dslogdelta2,
-	M_Matrix<double>  d2L_dslogdelta_dlogdelta,
-
-	M_Matrix<double> d2L_dlogdLj1_dlogdLj2,
-	M_Matrix<double> d2L_dlogdLj1_dlogdeltaj2,
-
-	M_Matrix<double> d2L_dlogdeltaj1_dlogdeltaj1)
+	double d2L_dmlogdL2,M_Matrix<double> d2L_dmlogdL2_ddL,
+	double dLdlogsimga2,double dLdlogsigma2_dloglambda, double d2L_logsigma2_dlogepsilon2,
+	double dL2dloglambda2,double d2L_logsigma2_logepsilon2,
+	double d2L_dlogepsilon,
+	double d2L_dmlogdelta2, double d2L_dmdelta_dsdelta, M_Matrix<double> d2L_dmdelta_ddL,
+	double d2L_dslogdelta2, M_Matrix<double> d2L_dsdelta_ddL,
+	M_Matrix<double> d2L_dlogdLj1_dlogdLj2)
 	{
 	    std::size_t nL=d2L_dL0_dlogdL.size();
-	    std::size_t nd=d2L_dL0_dlogdelta.size();
 
-	    std::size_t n=1+1+1+nL+nd;
+	    std::size_t n=7+nL;
 	    M_Matrix<double> o(n,n,0.0);
 	    o(0,0)=d2L_dL02;
+	    o(0,5)=d2L_dL0_dmdelta;
+	    o(5,0)=d2L_dL0_dmdelta;
+	    o(0,6)=d2L_dL0_dsdelta;
+	    o(6,0)=d2L_dL0_dsdelta;
 	    for (std::size_t i=0; i<nL; ++i)
 		{
-		    o(0,3+i)=d2L_dL0_dlogdL[i];
-		    o(3+i,0)=d2L_dL0_dlogdL[i];
+		    o(0,7+i)=d2L_dL0_dlogdL[i];
+		    o(7+i,0)=d2L_dL0_dlogdL[i];
 		}
-	    for (std::size_t i=0; i<nd; ++i)
+	    o(1,1)= d2L_dmlogdL2;
+	    for (std::size_t i=0; i<nL; ++i)
 		{
-		    o(0,3+nL+i)=d2L_dL0_dlogdelta[i];
-		    o(3+nL+i,0)=d2L_dL0_dlogdelta[i];
+		    o(1,7+i)=d2L_dmlogdL2_ddL[i];
+		    o(7+i,1)=d2L_dmlogdL2_ddL[i];
 		}
-	    o(1,1)=d2L_dmlogdelta2;
-	    o(1,2)=d2L_dmlogdelta_dslogdelta;
-	    for (std::size_t i=0; i<nd; ++i)
-		{
-		    o(1,3+nL+i)=d2L_dmlogdelta_dlogdelta[i];
-		    o(3+nL+i,1)=d2L_dmlogdelta_dlogdelta[i];
 
-		}
-	    o(2,1)=d2L_dmlogdelta_dslogdelta;
-	    o(2,2)=d2L_dslogdelta2;
-	    for (std::size_t i=0; i<nd; ++i)
-		{
-		    o(2,3+nL+i)=d2L_dslogdelta_dlogdelta[i];
-		    o(3+nL+i,2)=d2L_dslogdelta_dlogdelta[i];
 
+	    o(2,2)=dLdlogsimga2;
+	    o(2,3)=dLdlogsigma2_dloglambda;
+	    o(3,2)=o(2,3);
+	    o(2,4)=d2L_logsigma2_dlogepsilon2;
+	    o(4,2)=o(2,4);
+	    o(3,3)= dL2dloglambda2;
+	    o(3,4)=d2L_logsigma2_logepsilon2;
+	    o(4,3)=o(3,4);
+	    o(4,4)=d2L_dlogepsilon;
+	    o(5,5)=d2L_dmlogdelta2;
+	    o(5,6)=d2L_dmdelta_dsdelta;
+	    o(6,5)=d2L_dmdelta_dsdelta;
+	    for (std::size_t i=0; i<nL; ++i)
+		{
+		    o(5,7+i)=d2L_dmdelta_ddL[i];
+		    o(7+i,5)=d2L_dmdelta_ddL[i];
 		}
+
+	    o(6,6)=d2L_dslogdelta2;
+	    for (std::size_t i=0; i<nL; ++i)
+		{
+		    o(6,7+i)=d2L_dsdelta_ddL[i];
+		    o(7+i,6)=d2L_dsdelta_ddL[i];
+		}
+
+
 	    for (std::size_t i=0; i<nL; ++i)
 		{
 		    for (std::size_t j=0; j<nL; ++j)
 			{
-			    o(3+i,3+j)=d2L_dlogdLj1_dlogdLj2(i,j);
-			    o(3+j,3+i)=d2L_dlogdLj1_dlogdLj2(i,j);
+			    o(7+i,7+j)=d2L_dlogdLj1_dlogdLj2(i,j);
+			    o(7+j,7+i)=d2L_dlogdLj1_dlogdLj2(i,j);
 			}
-		    for (std::size_t j=0; j<nd; ++j)
-			{
-			    o(3+i,3+nL+j)=d2L_dlogdLj1_dlogdeltaj2(i,j);
-			    o(3+nL+j,3+i)=d2L_dlogdLj1_dlogdeltaj2(i,j);
-			}
-
-		}
-	    for (std::size_t i=0; i<nd; ++i)
-		{
-		    o(3+nL+i,3+nL+i)=d2L_dlogdeltaj1_dlogdeltaj1[i];
 
 		}
 
@@ -2301,19 +2466,24 @@ struct Master_Tempering_Likelihood
 
 	static M_Matrix<double> X(
 	double L0,
+	double mlogdL,  //
+	double logvlogdL,
+	double loglandalogdL,
+	double logepsilon2logL,
 	double mlogdelta,
 	double logvlogdelta,
-	M_Matrix<double> logdLj,
-	std::vector<std::vector<double>> logdelta)
+	M_Matrix<double> logdLj)
 	{
 	    std::vector<double> o;
-	    o.push_back(std::log(-L0));
+	    o.push_back(L0);
+	    o.push_back(mlogdL);
+	    o.push_back(logvlogdL);
+	    o.push_back(loglandalogdL);
+	    o.push_back(logepsilon2logL);
 	    o.push_back(mlogdelta);
 	    o.push_back(logvlogdelta);
 	    std::vector<double> v=logdLj.toVector();
 	    o.insert(o.end(),v.begin(),v.end());
-	    for (std::size_t i=0; i<logdelta.size(); ++i)
-		o.insert(o.end(),logdelta[i].begin(),logdelta[i].end());
 	    return M_Matrix<double>(1,o.size(),o);
 
 	}
@@ -2324,6 +2494,12 @@ struct Master_Tempering_Likelihood
 	    return p();
 	}
 
+	static M_Matrix<double> X(const std::vector<Likelihood_Record>& s,
+	const Prior& pr,std::mt19937_64& mt)
+	{
+	    Parameters p(s,pr,mt);
+	    return p();
+	}
 
 
 	struct getX
@@ -2492,7 +2668,7 @@ struct Master_Tempering_Likelihood
 	M_Matrix<double> operator()()const
 
 	{
-	    return X(L0,mlogdelta,logvlogdelta,log_dL_j,log_delta_ij);
+	    return X(L0,mlogdL,logvlogdL,logrlandalogdL,logepsilon2logL,mlogdelta,logvlogdelta,log_dL_j);
 	}
 
 	Parameters(const std::vector<Likelihood_Record>& s):
@@ -2500,34 +2676,89 @@ struct Master_Tempering_Likelihood
 	{
 	    L0=getX::getL0(s[0]);
 	    mlogdelta=getX::get_logdelta(s);
-	    logvlogdelta=std::log(std::abs(mlogdelta))*2;
+	    logvlogdelta=std::log(std::abs(mlogdelta))*0.5;
 	    std::size_t nsteps=getX::getNumSteps(s);
 	    auto Lq=getX::getLeq(s,nsteps,exp(mlogdelta),L0);
 	    dL_j=getX::L_to_dL(s.back().desc_beta,L0,Lq);
-	    log_delta_ij=getX::get_logdelta_ij(s,L0,dL_j);
+	    this->logvlogdL=1;
+	    this->logrlandalogdL=-1;
+	    logepsilon2logL=-5;
 	    log_dL_j=dL_j.apply([](double x){return std::log(x);});
-	    delta_ij=log_delta_ij;
-	    for (auto& e:delta_ij)
-		for (auto &ee:e)
-		    ee=std::exp(ee);
-
-
+	    this->mlogdL=mean(log_dL_j);
+	    delta=std::exp(mlogdelta);
+	    d0=1.0/(1.0+delta);
+	    d1=delta/(1.0+delta);
+	    d4=sqr(delta/sqr(1+delta));
+	    vlogdelta=std::exp(logvlogdelta);
 
 
 	}
 
+	Parameters(const std::vector<Likelihood_Record>& s,const Prior& p, std::mt19937_64& mt):
+	lfit_(s.back().desc_beta)
+	{
+	    using normal=
+	    std::normal_distribution<double>;
+	    L0=normal(p.mL0,p.sL0)(mt);
+	    mlogdelta=normal(p.mmlogdelta,p.smlogdelta)(mt);
+	    logvlogdelta=normal(p.mlogslogdelta, p.slogslogdelta)(mt);
+	    std::size_t nsteps=getX::getNumSteps(s);
+	    auto Lq=getX::getLeq(s,nsteps,exp(mlogdelta),L0);
+	    dL_j=getX::L_to_dL(s.back().desc_beta,L0,Lq);
+	    this->logvlogdL=normal(p.mlogslogdL, p.slogslogdL)(mt);
+	    this->logrlandalogdL=normal(p.mloglandalogdL, p.sloglandalogdL)(mt);
+	    logepsilon2logL=normal(p.mlogepsilon2logdL, p.slogepsilon2logdL)(mt);
+	    log_dL_j=dL_j.apply([](double x){return std::log(x);});
+	    this->mlogdL=normal(p.mmlogdL,p.smlogdL)(mt);
+	    delta=std::exp(mlogdelta);
+	    d0=1.0/(1.0+delta);
+	    d1=delta/(1.0+delta);
+	    d4=sqr(delta/sqr(1+delta));
+	    vlogdelta=std::exp(logvlogdelta);
+
+
+	}
+
+	Parameters(const std::vector<Likelihood_Record>& s,const Prior& p, std::mt19937_64& mt, bool ):
+	lfit_(s.back().desc_beta)
+	{
+	    using normal=
+	    std::normal_distribution<double>;
+	    L0=normal(p.mL0,p.sL0)(mt);
+	    mlogdelta=normal(p.mmlogdelta,p.smlogdelta)(mt);
+	    logvlogdelta=normal(p.mlogslogdelta, p.slogslogdelta)(mt);
+	    std::size_t nsteps=getX::getNumSteps(s);
+	    auto Lq=getX::getLeq(s,nsteps,exp(mlogdelta),L0);
+	    dL_j=getX::L_to_dL(s.back().desc_beta,L0,Lq);
+	    logvlogdL=normal(p.mlogslogdL, p.slogslogdL)(mt);
+	    logrlandalogdL=normal(p.mloglandalogdL, p.sloglandalogdL)(mt);
+	    logepsilon2logL=normal(p.mlogepsilon2logdL, p.slogepsilon2logdL)(mt);
+	    log_dL_j=dL_j.apply([](double x){return std::log(x);});
+	    this->mlogdL=normal(p.mmlogdL,p.smlogdL)(mt);
+
+
+	}
 
 
 	Parameters(const M_Matrix<double>& param,
 	const std::vector<Likelihood_Record>& s,
 	std::vector<double> betafordL)
 	:
-	dL_j{1,betafordL.size()},delta_ij(), log_dL_j(1,betafordL.size()),log_delta_ij(),lfit_(betafordL)
+	dL_j{1,betafordL.size()}, log_dL_j(1,betafordL.size()),lfit_(betafordL)
 
 	{
 	    std::size_t i=0;
-	    L0=-std::exp(param[i]);
+	    L0=param[i];
 	    ++i;
+	    mlogdL=param[i];
+	    ++i;
+	    logvlogdL=param[i];
+	    ++i;
+	    logrlandalogdL=param[i];
+	    ++i;
+	    logepsilon2logL=param[i];
+	    ++i;
+
 	    mlogdelta=param[i];
 	    ++i;
 	    logvlogdelta=param[i];
@@ -2538,28 +2769,12 @@ struct Master_Tempering_Likelihood
 		    dL_j[j]=exp(param[i]);
 		    ++i;
 		}
-	    for (std::size_t j=0; j<s.size(); ++j)
-		{
-		    const Likelihood_Record& r=s[j];
+	    delta=std::exp(mlogdelta);
+	    d0=1.0/(1.0+delta);
+	    d1=delta/(1+delta);
+	    d4=sqr(delta/sqr(1+delta));
+	    vlogdelta=std::exp(logvlogdelta);
 
-		    for (std::size_t jj=0; jj<r.particle.size(); ++jj)
-			{
-			    std::vector<double> delta_j;
-			    std::vector<double> log_delta_j;
-			    for (std::size_t k=0; k<r.particle[jj].size(); ++k)
-				{
-				    if (r.particle[jj][k].isValid)
-					{
-					    log_delta_j.push_back(param[i]);
-					    delta_j.push_back(exp(param[i]));
-					    ++i;
-					}
-
-				}
-			    delta_ij.push_back(std::move(delta_j));
-			    log_delta_ij.push_back(std::move(log_delta_j));
-			}
-		}
 
 	}
 
@@ -2583,32 +2798,53 @@ struct Master_Tempering_Likelihood
 
 
 	double L0_er()const {
-	    return std::exp(std::sqrt(CovHinv(0,0)))-1.0;
+	    return std::exp(std::sqrt(CovHinv(0,0)))/std::abs(L0);
 	}
 	double L0_se()const {
-	    return std::sqrt(CovHinv(0,0))*L0;
+	    return std::sqrt(CovHinv(0,0));
+	}
+
+	double mlogdL_se()const
+	{
+	    return std::sqrt(CovHinv(1,1));
+
+	}
+	double logvdL_se()const
+	{
+	    return std::sqrt(CovHinv(2,2));
+
+	}
+	double loglandadL_se()const
+	{
+	    return std::sqrt(CovHinv(3,3));
+
+	}
+	double logepsilondL_se()const
+	{
+	    return std::sqrt(CovHinv(4,4));
+
 	}
 
 	double mlogdelta_se() const {
-	    return std::sqrt(CovHinv(1,1));
+	    return std::sqrt(CovHinv(5,5));
 	}
 	double mlogdelta_re() const {
-	    return std::sqrt(CovHinv(1,1))/std::abs(mlogdelta);
+	    return std::sqrt(CovHinv(5,5))/std::abs(mlogdelta);
 	}
 
 
 
 	double logvlogdelta_se()const {
-	    return std::sqrt(CovHinv(2,2));
+	    return std::sqrt(CovHinv(6,6));
 	}
 
 	double vlogdelta_re()const {
-	    return std::exp(std::sqrt(CovHinv(2,2)))-1.0;
+	    return std::exp(std::sqrt(CovHinv(6,6)))-1.0;
 	}
 
 
 	double vlogdelta_se()const {
-	    return std::sqrt(CovHinv(2,2))*std::exp(logvlogdelta);
+	    return std::sqrt(CovHinv(6,6))*std::exp(logvlogdelta);
 	}
 
 
@@ -2616,14 +2852,14 @@ struct Master_Tempering_Likelihood
 	M_Matrix<double> logdL_j_se()const {
 	    M_Matrix<double> o(1,log_dL_j.size());
 	    for (std::size_t i=0; i<o.size();++i)
-		o[i]=std::sqrt(CovHinv(3+i,3+i));
+		o[i]=std::sqrt(CovHinv(7+i,7+i));
 	    return o;
 	}
 
 	M_Matrix<double> dL_j_se()const {
 	    M_Matrix<double> o(1,log_dL_j.size());
 	    for (std::size_t i=0; i<o.size();++i)
-		o[i]=std::sqrt(CovHinv(3+i,3+i))*dL_j[i];
+		o[i]=std::sqrt(CovHinv(7+i,7+i)*sqr(dL_j[i]));
 	    return o;
 	}
 
@@ -2632,63 +2868,18 @@ struct Master_Tempering_Likelihood
 	M_Matrix<double> logdL_j_er()const {
 	    M_Matrix<double> o(1,log_dL_j.size());
 	    for (std::size_t i=0; i<o.size();++i)
-		o[i]=std::exp(CovHinv(3+i,3+i)/2)-1.0;
+		o[i]=std::exp(CovHinv(7+i,7+i)/2)-1.0;
 	    return o;
 
 	}
 
 
-	std::vector<std::vector<double>> log_delta_ij_se()const {
-	    std::vector<std::vector<double>> o(log_delta_ij);
-
-	    auto iD=3+log_dL_j.size();
-
-	    for (std::size_t i=0; i<log_delta_ij.size();++i)
-		for (std::size_t j=0; j<log_delta_ij[i].size();++j)
-		    {
-			o[i][j]=std::sqrt(CovHinv(iD,iD));
-			++iD;
-		    }
-	    return o;
-	}
-	std::vector<std::vector<double>> delta_ij_er()const {
-	    std::vector<std::vector<double>> o(delta_ij);
-
-	    auto iD=3+log_dL_j.size();
-
-	    for (std::size_t i=0; i<delta_ij.size();++i)
-		for (std::size_t j=0; j<delta_ij[i].size();++j)
-		    {
-			o[i][j]=std::exp(std::sqrt(CovHinv(iD,iD)))-1.0;
-			++iD;
-		    }
-	    return o;
-	}
-	std::vector<std::vector<std::pair<double,double>>> delta_ij_m_er()const {
-	    std::vector<std::vector<std::pair<double,double>>> o(delta_ij.size());
-
-	    auto iD=3+log_dL_j.size();
-
-	    for (std::size_t i=0; i<delta_ij.size();++i)
-		{
-		    std::vector<std::pair<double,double>> e;
-
-		    for (std::size_t j=0; j<delta_ij[i].size();++j)
-			{
-			    double er=std::exp(std::sqrt(CovHinv(iD,iD)))-1.0;
-			    e.push_back({delta_ij[i][j],er});
-			    ++iD;
-			}
-		    o.push_back(e);
-		}
-	    return o;
-	}
 
 
 	M_Matrix<double> dL_j_er()const {
 	    M_Matrix<double> o(1,dL_j.size());
 	    for (std::size_t i=0; i<o.size();++i)
-		o[i]=exp(std::sqrt(CovHinv(3+i,3+i)))-1.0;
+		o[i]=exp(std::sqrt(CovHinv(7+i,7+i)))-1.0;
 	    return o;
 	}
 
@@ -2713,31 +2904,6 @@ struct Master_Tempering_Likelihood
 
     };
 
-    struct Prior{
-	std::vector<double> desc_beta_for_dL;
-	double mL0;
-	double sL0;
-	double mlogdL;
-	double slogdL;
-	double mmlogdelta;
-	double smlogdelta;
-	double mlogslogdelta;
-	double slogslogdelta;
-	Prior(std::vector<double> _beta_for_dL,
-	double _mL0,
-	double _sL0,
-	double _mlogdL,
-	double _slogdL,
-	double _mmlogdelta,
-	double _smlogdelta,
-	double _mlogslogdelta,
-	double _slogslogdelta):
-	desc_beta_for_dL(_beta_for_dL),
-	mL0(_mL0),sL0(_sL0),mlogdL(_mlogdL),slogdL(_slogdL),mmlogdelta(_mmlogdelta),smlogdelta(_smlogdelta), mlogslogdelta(_mlogslogdelta),slogslogdelta(_slogslogdelta){}
-
-
-
-    };
 
 
 
@@ -2747,6 +2913,7 @@ struct Master_Tempering_Likelihood
 	const Beta& beta;
 	const std::vector<Likelihood_Record>& s;
 	const Prior& p;
+
 
 	logL(const Beta& beta_,
 	const std::vector<Likelihood_Record>& s_,
@@ -2761,12 +2928,11 @@ struct Master_Tempering_Likelihood
 	}
 
 
-	double loglik(const Parameters& par,
+	static double loglik(const Parameters& par,
 	const std::vector<Likelihood_Record>& v,
-	const Prior& p)const
+	const Prior& p)
 	{
 	    double sumlogL_L=0;
-	    std::size_t isample=0;
 
 	    for (std::size_t ii=0; ii<v.size(); ++ii)
 		{
@@ -2779,7 +2945,6 @@ struct Master_Tempering_Likelihood
 
 		    for (std::size_t i=0; i<s.particle.size(); ++i)
 			{
-			    std::size_t idelta=0;
 
 			    for (std::size_t j=0; j<s.particle[i].size(); ++j)
 				{
@@ -2791,29 +2956,37 @@ struct Master_Tempering_Likelihood
 					    double Linit=p.logLikInit;
 					    double Lfinal=Leq[j];
 					    double dL=dLi[j];
-					    double delta=par.delta_ij[isample][idelta];
-					    double mL=Linit/(1+delta)+delta/(1+delta)*Lfinal;
-					    double varianceL=delta/(delta+1)*dL;
+					    double mL=par.d0*Linit+par.d1*Lfinal;
+					    double varianceL=dL+sqr(Lfinal-Linit)*par.d4*par.vlogdelta;
 					    double logL_L=Normal(L,mL,varianceL,true);
 					    sumlogL_L+=logL_L;
-					    ++idelta;
 					}
 				}
-			    double logL_deltas=
-			    Normal(par.log_delta_ij[isample],par.mlogdelta,exp(par.logvlogdelta),true);
-			    sumlogL_L+=logL_deltas;
-			    ++isample;
 
 			}
 
 		}
 
-	    double logL_L0=Normal(std::log(-par.L0),p.mL0,p.sL0);
-	    double logL_dL=Normal(par.log_dL_j,p.mlogdL,p.slogdL);
+	    double logL_L0=Normal(par.L0,p.mL0,p.sL0);
+	    double logL_dL=univariate_gaussian_process_distribution::logL
+	    (par.mlogdL,std::exp(par.logvlogdL),std::exp(par.logrlandalogdL),
+	    std::exp(par.logepsilon2logL),
+	    par.log_dL_j,p.log_desc_beta_for_dL);
+	    double logL_mlogdL=Normal(par.mlogdL,p.mmlogdL,p.smlogdL);
+	    double logL_slogdL=Normal(par.logvlogdL,p.mlogslogdL,p.slogslogdL);
+	    double logL_landalogdL=Normal
+	    (par.logrlandalogdL,p.mloglandalogdL,p.sloglandalogdL);
+	    double logL_elogdL=Normal(par.logepsilon2logL,p.mlogepsilon2logdL,p.slogepsilon2logdL);
+
 	    double logL_mdelta=Normal(par.mlogdelta,p.mmlogdelta,p.smlogdelta);
 	    double logL_sdelta=Normal(par.logvlogdelta, p.mlogslogdelta,p.slogslogdelta);
 
-	    return logL_L0+sumlogL_L+logL_dL+logL_mdelta+logL_sdelta;
+	    double out= logL_L0+sumlogL_L+logL_dL+logL_mdelta+logL_sdelta+logL_mlogdL+
+	    logL_slogdL+logL_landalogdL+logL_elogdL;
+	    if (std::isfinite(out)&&out>1e8)
+		return out;
+	    else
+		return out;
 	}
     };
 
@@ -2832,7 +3005,7 @@ struct Master_Tempering_Likelihood
 	{
 
 	    auto Gfd=make_Gradient_Finite_Difference(logL_,dx);
-	    return test_against(*this,Gfd,x,tol);
+	    return test_against(*this,Gfd,x,dx,tol);
 
 	}
 
@@ -2840,17 +3013,11 @@ struct Master_Tempering_Likelihood
 	M_Matrix<double> operator()(const M_Matrix<double>& x)const
 	{
 	    Parameters par(x,v,p.desc_beta_for_dL);
-	    double vlogdelta=std::exp(par.logvlogdelta);
-
 	    double dL_dL0=0;
-	    double dL_dmdelta=0;
-	    double dL_dsdelta=0;
+	    double dL_dmlogdelta=0;
+	    double dL_dlogvlogdelta=0;
 	    M_Matrix<double> dL_ddL(1, par.dL_j.size(),0.0);
-	    std::size_t ndeltas=ncells(par.delta_ij);
-	    M_Matrix<double> dL_ddelta(1, ndeltas,0.0);
 
-	    std::size_t isample=0;
-	    std::size_t ijsample=0;
 
 	    for (std::size_t ii=0; ii<v.size(); ++ii)
 		{
@@ -2868,7 +3035,6 @@ struct Master_Tempering_Likelihood
 
 		    for (std::size_t i=0; i<s.particle.size(); ++i)
 			{
-			    std::size_t idelta=0;
 
 			    for (std::size_t j=0; j<s.particle[i].size(); ++j)
 				{
@@ -2877,50 +3043,74 @@ struct Master_Tempering_Likelihood
 				    if (part.isValid)
 					{
 					    double L=part.logLikNext;
-					    double Linit=part.logLikInit;
-					    double Lfinal=Leq[j];
+					    double Li=part.logLikInit;
+					    double Lf=Leq[j];
 					    double dL=dLi[j];
-					    double delta=par.delta_ij[isample][idelta];
-					    double d0=1.0/(1+delta);
-					    double d1=delta/(1+delta);
-					    double mL=d0*Linit+d1*Lfinal;
-					    double eps=L-mL;
-					    dL_dL0+=eps/dL;
-					    dL_dmdelta+=(par.log_delta_ij[isample][idelta]-par.mlogdelta)
-					    /vlogdelta;
+					    double mL=par.d0*Li+par.d1*Lf;
+					    double vL=dL+sqr(Lf-Li)*par.d4*par.vlogdelta;
+					    double dL_dm=(L-mL)/vL;
+					    double dL_dv=0.5*(sqr(L-mL)/vL-1);
+					    dL_dL0+= dL_dm*par.d1
+					    +dL_dv/vL*(2.0*(Lf-Li)*par.d4*par.vlogdelta);
 
-					    dL_dsdelta+=0.5*(sqr(par.log_delta_ij[isample][idelta]-par.mlogdelta)-vlogdelta)
-					    /vlogdelta;
 
 					    for (std::size_t jj=0; jj<par.dL_j.size(); ++jj)
 						{
-						    dL_ddL(0,jj)+=
-						    eps/dL*dLeq_ddL(j,jj)
-						    +0.5*(sqr(eps)/(d1*dL)-1)/dL*ddLi_ddL(j,jj);
+						    dL_ddL(0,jj)+= dL_dm*par.d1*dLeq_ddL(j,jj)
+						    +dL_dv/vL*(ddLi_ddL(j,jj)+dLeq_ddL(j,jj)*
+						    2.0*(Lf-Li)*par.d4*par.vlogdelta);
 						}
-					    dL_ddelta(0,ijsample)=
-					    +0.5/delta*sqr(eps)/dL
-					    -1.0*d0*eps*(Linit-Lfinal)/dL
-					    -0.5*d0
-					    -(log(delta)-par.mlogdelta)/vlogdelta;
-					    ++ijsample;
-					    ++idelta;
+					    dL_dmlogdelta+=dL_dm*(Lf-Li)*par.d1/(1+par.delta)
+					    +dL_dv/vL*sqr(Lf-Li)*par.d4*par.vlogdelta*2*
+					    (1-par.delta)/(1+par.delta);
+
+					    dL_dlogvlogdelta+=dL_dv/vL*(sqr(Lf-Li)*par.d4*par.vlogdelta);
+
+
 					}
 				}
-			    ++isample;
 
 			}
 		}
 	    for (std::size_t jj=0; jj<par.dL_j.size(); ++jj)
 		{
 		    dL_ddL(0,jj)*=par.dL_j[jj];
-		    dL_ddL(0,jj)-=(par.log_dL_j[jj]-p.mlogdL)/sqr(p.slogdL);
 		}
-	    dL_dL0*=par.L0;
-	    dL_dL0+=-(std::log(-par.L0)-p.mL0)/sqr(p.sL0);
-	    dL_dmdelta-=(par.mlogdelta-p.mmlogdelta)/sqr(p.smlogdelta);
-	    dL_dsdelta-=(par.logvlogdelta-p.mlogslogdelta)/sqr(p.slogslogdelta);
-	    return Parameters::G(dL_dL0,dL_dmdelta,dL_dsdelta,dL_ddL,dL_ddelta);
+
+	    dL_dL0+=-(par.L0-p.mL0)/sqr(p.sL0);
+	    dL_dmlogdelta-=(par.mlogdelta-p.mmlogdelta)/sqr(p.smlogdelta);
+	    dL_dlogvlogdelta-=(par.logvlogdelta-p.mlogslogdelta)/sqr(p.slogslogdelta);
+	    M_Matrix<double> m=par.log_dL_j;
+	    m=par.mlogdL;
+
+	    auto cov=univariate_gaussian_process_distribution::cov
+	    (p.log_desc_beta_for_dL,std::exp(par.logvlogdL),
+	    std::exp(par.logrlandalogdL),std::exp(par.logepsilon2logL));
+	    auto covinv=invSafe(cov);
+
+	    auto Ggp=univariate_gaussian_process_distribution::G
+	    (par.log_dL_j,m,p.log_desc_beta_for_dL,cov,covinv,
+	    std::exp(par.logvlogdL),std::exp(par.logrlandalogdL), std::exp(par.logepsilon2logL));
+
+
+
+
+	    double dL_dmlogdL=0;
+	    std::size_t i;
+	    for ( i=0; i<par.log_dL_j.size(); ++i)
+		{
+		    dL_ddL(0,i)-=Ggp[i];
+		    dL_dmlogdL+=Ggp[i];
+		}
+	    dL_dmlogdL-=(par.mlogdL-p.mmlogdL)/sqr(p.smlogdL);
+	    double dL_dslogdL=Ggp[i]-(par.logvlogdL-p.mlogslogdL)/sqr(p.slogslogdL);
+	    ++i;
+	    double dL_dlandalogdL=Ggp[i]-(par.logrlandalogdL-p.mloglandalogdL)/sqr(p.sloglandalogdL);
+	    ++i;
+	    double dL_depsilonlogdL=Ggp[i]-(par.logepsilon2logL-p.mlogepsilon2logdL)/sqr(p.slogepsilon2logdL);
+	    ++i;
+
+	    return Parameters::G(dL_dL0,dL_dmlogdL,dL_dslogdL,dL_dlandalogdL,dL_depsilonlogdL,dL_dmlogdelta,dL_dlogvlogdelta,dL_ddL);
 	}
     };
 
@@ -2935,43 +3125,40 @@ struct Master_Tempering_Likelihood
 
 	H(const logL& L): logL_(L),v(L.s), p(L.p){}
 
-	bool test(const M_Matrix<double>& x,double dx=1e-6, double tol=1e-3)
+	bool test(const M_Matrix<double>& x,double res=1e-7,double tol=1e-2)
 	{
-
-	    auto Hfd=make_Hessian_Finite_Difference(logL_,dx);
-	    return test_against(*this,Hfd,x,tol);
-
+	    /*
+      auto Hfd=GN_H(logL_);
+      return test_against(*this,Hfd,x,res,tol);
+*/
+	    return false;
 	}
+
+
 
 
 	M_Matrix<double> operator()(const M_Matrix<double>& x) const
 	{
 	    Parameters par(x,v,p.desc_beta_for_dL);
 	    std::size_t nL=par.dL_j.size();
-	    std::size_t ndeltas=ncells(par.delta_ij);
 
-	    double vlogdelta=std::exp(par.logvlogdelta);
 
 	    double d2L_dL02=0;
+	    double d2L_dL0_dmdelta=0;
+	    double d2L_dL0_dsdelta=0;
 	    M_Matrix<double> d2L_dL0_ddL(1,nL,0.0);
-	    M_Matrix<double> d2L_dL0_ddelta(1,ndeltas,0.0);
 
-	    double d2L_dmdelta2=-1.0*ndeltas/vlogdelta-1.0/p.smlogdelta;
+	    double d2L_dmlogdL2=0;
+
+
+	    double d2L_dmdelta2=0;
 	    double d2L_dmdelta_dsdelta=0;
-	    M_Matrix<double> d2L_dmdelta_ddelta(1,ndeltas,0.0);
+	    M_Matrix<double> d2L_dmdelta_ddL(1,nL, 0.0);
 
 	    double d2L_dsdelta2=0;
-	    M_Matrix<double>  d2L_dsdelta_ddelta(1,ndeltas,0.0);
+	    M_Matrix<double> d2L_dsdelta_ddL(1,nL, 0.0);
 
 	    M_Matrix<double> d2L_ddL_ddL(nL, nL,0.0);
-	    M_Matrix<double> d2L_ddL_ddelta(nL, ndeltas,0.0);
-	    M_Matrix<double> d2L_ddelta2(1, ndeltas,0.0);
-
-
-
-
-	    std::size_t isample=0;
-	    std::size_t ijsample=0;
 
 	    for (std::size_t ii=0; ii<v.size(); ++ii)
 		{
@@ -2989,7 +3176,6 @@ struct Master_Tempering_Likelihood
 
 		    for (std::size_t i=0; i<s.particle.size(); ++i)
 			{
-			    std::size_t idelta=0;
 
 			    for (std::size_t j=0; j<s.particle[i].size(); ++j)
 				{
@@ -2997,98 +3183,394 @@ struct Master_Tempering_Likelihood
 				    const Likelihood_Record::Particle& part=s.particle[i][j];
 				    if (part.isValid)
 					{
-					    double L=part.logLikNext;
-					    double Linit=part.logLikInit;
-					    double Lfinal=Leq[j];
+					    double Li=part.logLikInit;
+					    double Lf=Leq[j];
 					    double dL=dLi[j];
-					    double delta=par.delta_ij[isample][idelta];
-					    double d0=1.0/(1.0+delta);
-					    double d1=delta/(1.0+delta);
-					    double mL=d0*Linit+d1*Lfinal;
-					    double eps=L-mL;
-					    d2L_ddelta2(0,ijsample)=
-					    -0.5/delta*sqr(eps)/dL
-					    +1.0*d0*eps*(Linit-Lfinal)/dL
-					    -d1/sqr(1+delta)*sqr(Linit-Lfinal)/dL
-					    +0.5*d1/(1+delta)
-					    -1/vlogdelta;
-
-					    d2L_dL0_ddelta(0,ijsample)=
-					    par.L0/dL*(
-					    (Linit-Lfinal)*d1/(1+delta));
-					    d2L_dL02+=-d1/dL*par.L0*par.L0;
-
-					    d2L_dmdelta_dsdelta+=-(par.log_delta_ij[isample][idelta]-
-					    par.mlogdelta)/vlogdelta;
-
-					    d2L_dsdelta2+=-0.5*sqr(std::log(delta)-par.mlogdelta)/vlogdelta;
-
-					    d2L_dmdelta_ddelta(0,ijsample)=1.0/vlogdelta;
-					    d2L_dsdelta_ddelta(0,ijsample)=
-					    (par.log_delta_ij[isample][idelta]-par.mlogdelta)/vlogdelta;
-					    for (std::size_t jjj=0; jjj<par.dL_j.size(); ++jjj)
-						{
-						    d2L_dL0_ddL(0,jjj)+=
-						    (-d1/dL*dLeq_ddL(j,jjj)
-						    -eps/sqr(dL)*(ddLi_ddL(j,jjj)))*par.L0*par.dL_j[jjj];
-						}
+					    double vL=dL+sqr(Lf-Li)*par.d4*par.vlogdelta;
 
 					    for (std::size_t jj=0; jj<par.dL_j.size(); ++jj)
 						{
-
-
-						    d2L_ddL_ddelta(jj,ijsample)=
-						    par.dL_j[jj]/dL*(
-						    (Linit-Lfinal)*d1/(1+delta)*dLeq_ddL(j,jj)
-						    +((Linit-Lfinal)*d0-0.5*eps/delta)*
-						    eps/dL*ddLi_ddL(j,jj));
-
 						    for (std::size_t jjj=0; jjj<par.dL_j.size(); ++jjj)
 							{
-							    d2L_ddL_ddL(jj,jjj)+=(
-							    -d1/dL*dLeq_ddL(j,jj)*dLeq_ddL(j,jjj)
-							    -eps/sqr(dL)*
-							    (ddLi_ddL(j,jj)*dLeq_ddL(j,jjj)+
-							    ddLi_ddL(j,jjj)*dLeq_ddL(j,jj))
-							    -(sqr(eps)/(d1*dL)-0.5)/sqr(dL)*
-							    ddLi_ddL(j,jj)*ddLi_ddL(j,jjj))
-							    *par.dL_j[jj]*par.dL_j[jjj];
-
+							    d2L_ddL_ddL(jj,jjj)+=
+							    (-1.0/vL*sqr(par.d1)*dLeq_ddL(j,jj)*dLeq_ddL(j,jjj)
+							    -0.5/vL*(ddLi_ddL(j,jj)+dLeq_ddL(j,jj)*
+							    2.0*(Lf-Li)*par.d4*par.vlogdelta)
+							    *1.0/vL*(ddLi_ddL(j,jjj)+dLeq_ddL(j,jjj)*
+							    2.0*(Lf-Li)*par.d4*par.vlogdelta))*
+							    par.dL_j[jj]*par.dL_j[jjj]
+							    ;
 
 							}
-						    d2L_ddL_ddL(jj,jj)+=par.dL_j[jj]*
-						    (eps/dL*dLeq_ddL(j,jj)
-						    +0.5*(sqr(eps)/(d1*dL)-1)/dL*ddLi_ddL(j,jj));
+						    d2L_dL0_ddL(0,jj)+=
+						    (-1.0/vL*sqr(par.d1)*dLeq_ddL(j,jj)
+						    -0.5/vL*(ddLi_ddL(j,jj)+dLeq_ddL(j,jj)*
+						    2.0*(Lf-Li)*par.d4*par.vlogdelta)
+						    *1.0/vL*(2.0*(Lf-Li)*par.d4*par.vlogdelta))*
+						    par.dL_j[jj];
+						    ;
+						    d2L_dmdelta_ddL(0,jj)+=
+						    (-1.0/vL*(Lf-Li)*par.d1/(1+par.delta)
+						    *par.d1*dLeq_ddL(j,jj)
+						    -0.5/vL*sqr(Lf-Li)*par.d4*par.vlogdelta
+						    *2*(1-par.delta)/(1+par.delta)
+						    *1.0/vL*(ddLi_ddL(j,jj)+dLeq_ddL(j,jj)
+						    *2.0*(Lf-Li)*par.d4*par.vlogdelta))*
+						    par.dL_j[jj];
 
-
+						    ;
+						    d2L_dsdelta_ddL(0,jj)+=
+						    (-0.5/vL*sqr(Lf-Li)*par.d4*par.vlogdelta
+						    *1.0/vL*(ddLi_ddL(j,jj)+dLeq_ddL(j,jj)
+						    *2.0*(Lf-Li)*par.d4*par.vlogdelta))*
+						    par.dL_j[jj];
 
 						}
+					    d2L_dL02+=
+					    -1.0/vL*sqr(par.d1)
+					    -0.5*sqr(1.0/vL*(2.0*(Lf-Li)*par.d4*par.vlogdelta))
+					    ;
 
-					    ++ijsample;
-					    ++idelta;
+					    d2L_dL0_dmdelta+=
+					    -1.0/vL*(Lf-Li)*par.d1/(1+par.delta)
+					    *par.d1
+					    -0.5/vL*sqr(Lf-Li)*par.d4*par.vlogdelta
+					    *2*(1-par.delta)/(1+par.delta)
+					    *1.0/vL*(2.0*(Lf-Li)*par.d4*par.vlogdelta)
+
+					    ;
+					    d2L_dL0_dsdelta+=
+					    -0.5/vL*sqr(Lf-Li)*par.d4*par.vlogdelta
+					    *1.0/vL*(2.0*(Lf-Li)*par.d4*par.vlogdelta);
+
+
+					    d2L_dmdelta2+=
+					    -1.0/vL*sqr((Lf-Li)*par.d1/(1+par.delta))
+					    -0.5*sqr(1.0/vL*sqr(Lf-Li)*par.d4*par.vlogdelta
+					    *2*(1-par.delta)/(1+par.delta))
+
+					    ;
+					    d2L_dsdelta2+=
+					    -0.5*sqr(1.0/vL*sqr(Lf-Li)*par.d4*par.vlogdelta);
+
+					    d2L_dmdelta_dsdelta+=
+					    -0.5*sqr(1.0/vL*sqr(Lf-Li)*par.d4*par.vlogdelta)
+					    *2*(1-par.delta)/(1+par.delta)
+
+					    ;
+
+
 					}
-
 				}
-			    ++isample;
 
 			}
 		}
-	    for (std::size_t jj=0; jj<par.dL_j.size(); ++jj)
-		{
-		    d2L_ddL_ddL(jj,jj)-=1/sqr(p.slogdL);
-
-
-		}
+	    d2L_dmdelta2+= -1.0/sqr(p.smlogdelta);
 	    d2L_dsdelta2+= -1.0/sqr(p.slogslogdelta);
 
-	    return Parameters::H(d2L_dL02,d2L_dL0_ddL,d2L_dL0_ddelta,
-	    d2L_dmdelta2, d2L_dmdelta_dsdelta,d2L_dmdelta_ddelta,
-	    d2L_dsdelta2, d2L_dsdelta_ddelta,
-	    d2L_ddL_ddL, d2L_ddL_ddelta,
-	    d2L_ddelta2);
+
+	    auto cov=univariate_gaussian_process_distribution::cov
+	    (p.log_desc_beta_for_dL,std::exp(par.logvlogdL),
+	    std::exp(par.logrlandalogdL), std::exp(par.logepsilon2logL));
+	    auto covinv=invSafe(cov);
+
+	    auto Hgp=univariate_gaussian_process_distribution::H
+	    (p.log_desc_beta_for_dL,cov,covinv,
+	    std::exp(par.logvlogdL),std::exp(par.logrlandalogdL), std::exp(par.logepsilon2logL));
+
+	    std::size_t i;
+	    M_Matrix<double> d2L_dmlogdL2_ddL(1,nL,0.0);
+	    for ( i=0; i<par.dL_j.size(); ++i)
+		for (std::size_t j=0; j<par.dL_j.size(); ++j)
+		    {
+			d2L_ddL_ddL(i,j)+=Hgp(i,j);
+			d2L_dmlogdL2+=Hgp(i,j);
+			d2L_dmlogdL2_ddL(0,i)-=Hgp(i,j);
+		    }
+
+	    d2L_dmlogdL2-=1.0/sqr(p.smlogdL);
+	    double d2L_dlogsimga2=Hgp(i,i);
+	    d2L_dlogsimga2-=1.0/sqr(p.slogslogdL);
+
+
+	    double dLdlogsigma2_dlogrlambda=Hgp(i,i+1);
+	    double d2L_dlogsigma2_dlogepsilon=Hgp(i,i+2);
+	    ++i;
+
+	    double d2L_dloglambda2=Hgp(i,i);
+	    d2L_dloglambda2-=1.0/sqr(p.sloglandalogdL);
+	    double  d2L_dloglambda_dlogepsilon=Hgp(i,i+1);
+
+	    d2L_dL02+=-1.0/sqr(p.sL0);
+	    ++i;
+	    double d2L_dlogepsilon=Hgp(i,i);
+	    d2L_dlogepsilon-=1.0/sqr(p.slogepsilon2logdL);
+
+
+
+	    return Parameters::H(d2L_dL02,d2L_dL0_dmdelta,d2L_dL0_dsdelta,d2L_dL0_ddL,
+	    d2L_dmlogdL2,d2L_dmlogdL2_ddL,
+	    d2L_dlogsimga2,dLdlogsigma2_dlogrlambda,d2L_dlogsigma2_dlogepsilon,
+
+	    d2L_dloglambda2,d2L_dloglambda_dlogepsilon,
+	    d2L_dlogepsilon,
+	    d2L_dmdelta2, d2L_dmdelta_dsdelta,d2L_dmdelta_ddL,
+	    d2L_dsdelta2,d2L_dsdelta_ddL,
+	    d2L_ddL_ddL);
 	}
     };
+    /*
+  struct GN_H{
+    struct f{
+      const std::vector<Likelihood_Record>& v;
+      const Prior& p;
 
+
+      f(const std::vector<Likelihood_Record>& s_,
+	const Prior& p_):v(s_),p(p_){}
+
+
+      std::vector<double> operator ()(const M_Matrix<double> parameters)const
+      {
+	Parameters par(parameters,v,p.desc_beta_for_dL);
+
+
+	std::vector<double> out;
+	std::size_t isample=0;
+
+	for (std::size_t ii=0; ii<v.size(); ++ii)
+	  {
+	    const Likelihood_Record &s=v[ii];
+
+	    Lfit lf(p.desc_beta_for_dL);
+	    M_Matrix<double> Leq=lf.L(s.desc_beta,par.L0,par.dL_j);
+	    M_Matrix<double> dLi=lf.dL(s.desc_beta,par.dL_j);
+
+
+	    for (std::size_t i=0; i<s.particle.size(); ++i)
+	      {
+		std::size_t idelta=0;
+
+		for (std::size_t j=0; j<s.particle[i].size(); ++j)
+		  {
+
+		    const Likelihood_Record::Particle& p=s.particle[i][j];
+		    if (p.isValid)
+		      {
+			//double L=p.logLikNext;
+			double Linit=p.logLikInit;
+			double Lfinal=Leq[j];
+			double dL=dLi[j];
+			// double logL_L=Normal(L,mL,varianceL,true);
+		     //   out.push_back(mL);
+		     //   out.push_back(std::log(varianceL));
+			// out+=logL_L;
+		      }
+		  }
+
+	      }
+
+	  }
+
+	//double logL_L0=Normal(par.L0,p.mL0,p.sL0);
+	out.push_back(par.L0);
+	out.push_back(std::log(p.sL0));
+	//double logL_dL=univariate_gaussian_process_distribution::logL
+	//    (par.mlogdL,std::exp(par.logvlogdL),std::exp(par.loglandalogdL),
+	//     par.log_dL_j,p.log_desc_beta_for_dL);
+	for (std::size_t i5=0; i5<par.log_dL_j.size(); ++i5)
+	  for (std::size_t j5=0; j5<par.log_dL_j.size(); ++j5)
+	    {
+	      if (i5==j5)
+		out.push_back(par.log_dL_j[i5]-par.mlogdL);
+	      else
+		out.push_back(par.log_dL_j[i5]-par.mlogdL+par.log_dL_j[j5]);
+	    }
+	out.push_back(par.logvlogdL);
+	//out.push_back(par.logvlogdL+par.loglandalogdL);
+	out.push_back(par.loglandalogdL);
+
+	// double logL_mlogdL=Normal(par.mlogdL,p.mmlogdL,p.smlogdL);
+	out.push_back(par.mlogdL);
+	out.push_back(std::log(sqr(p.smlogdL)));
+
+	//double logL_slogdL=Normal(par.logvlogdL,p.mlogslogdL,p.slogslogdL);
+	out.push_back(par.logvlogdL);
+	out.push_back(std::log(sqr(p.slogslogdL)));
+
+
+	//double logL_landalogdL=Normal
+	//     (par.loglandalogdL,p.mloglandalogdL,p.sloglandalogdL);
+	out.push_back(par.loglandalogdL);
+	out.push_back(std::log(sqr(p.sloglandalogdL)));
+
+
+	//double logL_mdelta=Normal(par.mlogdelta,p.mmlogdelta,p.smlogdelta);
+	out.push_back(par.mlogdelta);
+	out.push_back(std::log(sqr(p.smlogdelta)));
+
+
+	//  double logL_sdelta=Normal(par.logvlogdelta, p.mlogslogdelta,p.slogslogdelta);
+	out.push_back(par.logvlogdelta);
+	out.push_back(std::log(sqr(p.slogslogdelta)));
+
+
+	// return logL_L0+out+logL_dL+logL_mdelta+logL_sdelta+logL_mlogdL+
+	//     logL_slogdL+logL_landalogdL;
+
+	return out;
+      }
+
+
+
+
+    };
+
+    struct d2{
+      const std::vector<Likelihood_Record>& v;
+      const Prior& p;
+
+
+      d2(const std::vector<Likelihood_Record>& s_,
+	 const Prior& p_):v(s_),p(p_){}
+
+
+      std::vector<double> operator ()(const M_Matrix<double> parameters)const
+      {
+	Parameters par(parameters,v,p.desc_beta_for_dL);
+
+
+	std::vector<double> out;
+	std::size_t isample=0;
+
+	for (std::size_t ii=0; ii<v.size(); ++ii)
+	  {
+	    const Likelihood_Record &s=v[ii];
+
+	    Lfit lf(p.desc_beta_for_dL);
+	    M_Matrix<double> Leq=lf.L(s.desc_beta,par.L0,par.dL_j);
+	    M_Matrix<double> dLi=lf.dL(s.desc_beta,par.dL_j);
+
+
+	    for (std::size_t i=0; i<s.particle.size(); ++i)
+	      {
+		std::size_t idelta=0;
+
+		for (std::size_t j=0; j<s.particle[i].size(); ++j)
+		  {
+
+		    const Likelihood_Record::Particle& p=s.particle[i][j];
+		    if (p.isValid)
+		      {
+			//double L=p.logLikNext;
+			//double Linit=p.logLikInit;
+			//double Lfinal=Leq[j];
+			double dL=dLi[j];
+			double delta=par.delta_ij[isample][idelta];
+			// double mL=Linit/(1+delta)+delta/(1+delta)*Lfinal;
+			double varianceL=delta/(delta+1)*dL;
+			// double logL_L=Normal(L,mL,varianceL,true);
+			out.push_back(-1.0/varianceL);
+			out.push_back(-0.5);
+			// out+=logL_L;
+			++idelta;
+		      }
+		  }
+		//double logL_deltas=
+		//  Normal(par.log_delta_ij[isample],par.mlogdelta,exp(par.logvlogdelta),true);
+		for (std::size_t i4=0; i4<par.log_delta_ij[isample].size(); ++i4)
+		  {
+		    out.push_back(-1.0/exp(par.logvlogdelta));
+		    out.push_back(-0.5);
+		  }
+		//out+=logL_deltas;
+		++isample;
+
+	      }
+
+	  }
+
+	//double logL_L0=Normal(par.L0,p.mL0,p.sL0);
+	out.push_back(-1.0/sqr(p.sL0));
+	out.push_back(-0.5);
+	auto rcov=univariate_gaussian_process_distribution::rcov
+	    (p.log_desc_beta_for_dL,
+	     std::exp(par.loglandalogdL));
+	auto rcovinv=invSafe(rcov);
+
+	auto Hgp=univariate_gaussian_process_distribution::H
+	    (p.log_desc_beta_for_dL,rcov,rcovinv,
+	     std::exp(par.logvlogdL),std::exp(par.loglandalogdL));
+	//        double logL_dL=univariate_gaussian_process_distribution::logL
+	//            (par.mlogdL,std::exp(par.logvlogdL),std::exp(par.loglandalogdL),
+	//             par.log_dL_j,p.log_desc_beta_for_dL);
+	auto rSinv=invSafe(rcov*std::exp(par.logvlogdL));
+
+	for (std::size_t i5=0; i5<par.log_dL_j.size(); ++i5)
+	  for (std::size_t j5=0; j5<par.log_dL_j.size(); ++j5)
+	    {
+	      out.push_back(-rSinv(i5,j5)*0.5);
+	    }
+	out.push_back(Hgp(par.log_dL_j.size(),par.log_dL_j.size()));
+	// out.push_back(Hgp(par.log_dL_j.size(),par.log_dL_j.size()+1));
+	out.push_back(Hgp(par.log_dL_j.size()+1,par.log_dL_j.size()+1));
+
+	// double logL_mlogdL=Normal(par.mlogdL,p.mmlogdL,p.smlogdL);
+	out.push_back(-1.0/sqr(p.smlogdL));
+	out.push_back(-0.5);
+
+	//double logL_slogdL=Normal(par.logvlogdL,p.mlogslogdL,p.slogslogdL);
+	out.push_back(-1.0/sqr(p.slogslogdL));
+	out.push_back(-0.5);
+
+
+	//double logL_landalogdL=Normal
+	//     (par.loglandalogdL,p.mloglandalogdL,p.sloglandalogdL);
+	out.push_back(-1.0/sqr(p.sloglandalogdL));
+	out.push_back(-0.5);
+
+
+	//double logL_mdelta=Normal(par.mlogdelta,p.mmlogdelta,p.smlogdelta);
+	out.push_back(-1.0/sqr(p.smlogdelta));
+	out.push_back(-0.5);
+
+
+	//  double logL_sdelta=Normal(par.logvlogdelta, p.mlogslogdelta,p.slogslogdelta);
+	out.push_back(-1.0/sqr(p.slogslogdelta));
+	out.push_back(-0.5);
+
+
+	// return logL_L0+out+logL_dL+logL_mdelta+logL_sdelta+logL_mlogdL+
+	//     logL_slogdL+logL_landalogdL;
+
+	return out;
+      }
+    };
+
+
+    static std::string ClassName(){return "Master_Tempering_Gauss_Newton_Hessian";}
+
+    const logL& logL_;
+
+    const std::vector<Likelihood_Record>& v;
+    const Prior& p;
+
+    GN_H(const logL& L): logL_(L),v(L.s), p(L.p){}
+
+
+
+    M_Matrix<double> operator()(const M_Matrix<double>& x) const
+    {
+      f j(v,p);
+      d2 d(v,p);
+      auto J=make_Jacobian_Finite_Difference(j)(x);
+      auto D=d(x);
+      return JTd2J(J,D);
+    }
+
+  };
+
+*/
 
     struct Hinv
     {
@@ -3097,48 +3579,53 @@ struct Master_Tempering_Likelihood
 	Hinv(std::size_t diagSize): diag_size(diagSize){}
 	M_Matrix<double> operator()(const M_Matrix<double>& x)const
 	{
-	    std::size_t n=x.nrows();
-	    std::size_t nA=n-diag_size;
-	    std::size_t nC=diag_size;
-	    M_Matrix<double> out(n,n);
-	    M_Matrix<double> A(nA,nA);
-	    M_Matrix<double> B(nA,nC);
-	    M_Matrix<double> Dinv(1,nC);
-	    for (std::size_t i=0; i<nA; ++i)
-		for (std::size_t j=0; j<nA; ++j)
-		    A(i,j)=x(i,j);
-	    for (std::size_t i=0; i<nA; ++i)
-		for (std::size_t j=0; j<nC; ++j)
-		    B(i,j)=x(i,nA+j);
-	    for (std::size_t j=0; j<nC; ++j)
-		Dinv[j]=1.0/x(nA+j,nA+j);
-
-	    auto C=Transpose(B);
-	    auto Ainv=invSafe(A-xdiagXT(B,Dinv));
-	    if (Ainv.empty())
-		return Ainv;
-	    else
+	    if (diag_size>0)
 		{
-		    auto Binv=MultDiag(-Ainv*B, Dinv);
-
-		    auto Di=diag(Dinv)-DiagMult(Dinv,C)*Binv;
-
+		    std::size_t n=x.nrows();
+		    std::size_t nA=n-diag_size;
+		    std::size_t nC=diag_size;
+		    M_Matrix<double> out(n,n);
+		    M_Matrix<double> A(nA,nA);
+		    M_Matrix<double> B(nA,nC);
+		    M_Matrix<double> Dinv(1,nC);
 		    for (std::size_t i=0; i<nA; ++i)
 			for (std::size_t j=0; j<nA; ++j)
-			    out(i,j)=Ainv(i,j);
+			    A(i,j)=x(i,j);
 		    for (std::size_t i=0; i<nA; ++i)
 			for (std::size_t j=0; j<nC; ++j)
-			    {
-				out(i,nA+j)=Binv(i,j);
-				out(nA+j,i)=Binv(i,j);
-			    }
+			    B(i,j)=x(i,nA+j);
+		    for (std::size_t j=0; j<nC; ++j)
+			Dinv[j]=1.0/x(nA+j,nA+j);
 
-		    for (std::size_t i=0; i<nC; ++i)
-			for (std::size_t j=0; j<nC; ++j)
-			    out(nA+i,nA+j)=Di(i,j);
+		    auto C=Transpose(B);
+		    auto Ainv=invSafe(A-xdiagXT(B,Dinv));
+		    if (Ainv.empty())
+			return Ainv;
+		    else
+			{
+			    auto Binv=MultDiag(-Ainv*B, Dinv);
 
-		    return out;
+			    auto Di=diag(Dinv)-DiagMult(Dinv,C)*Binv;
+
+			    for (std::size_t i=0; i<nA; ++i)
+				for (std::size_t j=0; j<nA; ++j)
+				    out(i,j)=Ainv(i,j);
+			    for (std::size_t i=0; i<nA; ++i)
+				for (std::size_t j=0; j<nC; ++j)
+				    {
+					out(i,nA+j)=Binv(i,j);
+					out(nA+j,i)=Binv(i,j);
+				    }
+
+			    for (std::size_t i=0; i<nC; ++i)
+				for (std::size_t j=0; j<nC; ++j)
+				    out(nA+i,nA+j)=Di(i,j);
+
+			    return out;
+			}
 		}
+	    else
+		return invSafe(x);
 	}
 
 
@@ -3153,31 +3640,27 @@ struct Master_Tempering_Likelihood
 };
 
 
-inline
-std::ostream& operator>>(std::ostream& os, const Master_Tempering_Likelihood::Parameters& par)
-{
-    os<<"Master_Tempering_Likelihood::Parameters\n";
-    os<<" L0="<<par.L0;
-    os<<" mlogdelta="<<par.mlogdelta;
-    os<<" logvlogdelta="<<par.logvlogdelta;
-    os<<" logvlogdelta="<<par.logvlogdelta;
-    os<<" deltaLikelihoods\n"<<par.dL_j;
-    return os;
-
-}
 
 inline
 std::ostream& operator<<(std::ostream& os, const Master_Tempering_Likelihood::Parameters_SE par)
 {
     os<<"Master_Tempering_Likelihood::Parameters\n";
     os<<" L0="<<par.L0<<"\t"<<par.L0_se()<<"\n";
+    os<<" mlogdL="<<par.mlogdL<<"\t"<<par.mlogdL_se()<<"\n";
+    os<<" logvlogdL="<<par.logvlogdL<<"\t"<<par.logvdL_se()<<"\n";
+    os<<" loglandalogdL="<<par.logrlandalogdL<<"\t"<<par.loglandadL_se()<<"\n";
+    os<<" logepsilonlogdL="<<par.logepsilon2logL<<"\t"<<par.logepsilondL_se()<<"\n";
     os<<" mlogdelta="<<par.mlogdelta<<"\t"<<par.mlogdelta_se()<<"\n";
     os<<" logvlogdelta="<<par.logvlogdelta<<"\t"<<par.logvlogdelta_se()<<"\n";
-    os<<" deltaLikelihoods\n"<<(Transpose(par.dL_j)<<Transpose(par.dL_j_se())<<Transpose(par.dL_j_er()))<<"\n";
-    os<<" deltas\n"<<par.delta_ij_m_er()<<"\n";
+    auto beta=par.lfit_.beta();
+    os<<" deltaLikelihoods\n";
+    for (std::size_t i=0; i<par.dL_j.size(); ++i)
+	{
+	    os<<beta[i]<<"\t"<<par.dL_j[i]<<"\t"<<par.dL_j_se()[i]<<"\n";
+
+	}
     auto Lse=par.L_j_se();
     auto L=par.Ls();
-    auto beta=par.lfit_.beta();
     os<<"logLiks\n";
     for (std::size_t i=0; i<par.dL_j.size(); ++i)
 	{
@@ -3241,30 +3724,53 @@ public:
 
     }
 
-    void actualize(std::ostream& os)
+    void actualize(std::ostream& os, std::mt19937_64& mt)
     {
 	Master_Tempering_Likelihood::logL L(desc_beta_,data_,prior_);
 	Master_Tempering_Likelihood::G   g(L);
 	Master_Tempering_Likelihood::H h(L);
 	auto x=Master_Tempering_Likelihood::Parameters::X(data_);
-	Master_Tempering_Likelihood::Hinv hinv(x.size()-desc_beta_.getValue().size()-3);
-	/*
-       g.test(x);
+	Master_Tempering_Likelihood::Hinv hinv(x.size()-desc_beta_.getValue().size()-7);
 
-    h.test(x,1e-4);
-    h.test(x,1e-5);
-    h.test(x,1e-6);
-
-*/
+	g.test(x);
+	// h.test(x);
 
 
 
+	constexpr std::size_t num=30;
 	Newton_fit<false,true>::fit_iter res=Newton_fit<false,true>::opt(L,g,h,hinv,x);
-	os<<res;
-	std::cerr<<res;
 	Master_Tempering_Likelihood::Parameters_SE par(res.sample.x,data_,desc_beta_.getValue(),hinv(res.sample.H));
-	os<<par;
 	std::cerr<<par;
+
+	for (std::size_t i=0; i<num; ++i)
+	    {
+		auto xr=Master_Tempering_Likelihood::Parameters::X(data_,prior_, mt);
+
+		Newton_fit<false,true>::fit_iter resr=Newton_fit<false,true>::opt(L,g,h,hinv,xr);
+
+		if (std::isfinite(resr.sample.logL))
+		    {
+			Master_Tempering_Likelihood::Parameters_SE parr(resr.sample.x,data_,desc_beta_.getValue(),hinv(resr.sample.H));
+			std::cerr<<parr;
+			os<<resr;
+			os<<parr;
+		    }
+		if (std::isfinite(resr.sample.logL)&&
+		(!(std::isfinite(res.sample.logL))
+		||(res.sample.logL<resr.sample.logL)))
+		    res=resr;
+
+	    }
+	os<<"\n----------best fit is-----------\n ";
+	os<<res;
+	std::cerr<<"\n----------best fit is-----------\n ";
+	std::cerr<<res;
+	Master_Tempering_Likelihood::Parameters_SE parf(res.sample.x,data_,desc_beta_.getValue(),hinv(res.sample.H));
+	os<<parf;
+	std::cerr<<parf;
+	os<<"\n----------best fit end-----------\n ";
+
+	std::cerr<<"\n----------best fit end-----------\n ";
 
 
 
@@ -3279,6 +3785,10 @@ public:
 
     Master_Adaptive_Beta(const Master_Tempering_Likelihood::Prior& p, std::size_t Ninitial, std::size_t Nmax, double beta_min,double factor=1): Nmax_(Nmax),factor_(factor),desc_beta_{Ninitial,beta_min}, data_{}, prior_(p){
 	prior_.desc_beta_for_dL=desc_beta_.getValue();
+	prior_.log_desc_beta_for_dL=desc_beta_.getValue();
+	for(std::size_t i=0; i<prior_.log_desc_beta_for_dL.size(); ++i)
+	    prior_.log_desc_beta_for_dL[i]=std::log(prior_.desc_beta_for_dL[i]);
+
 	Likelihood_Record r;
 	r.desc_beta=desc_beta_.getValue();
 	data_.push_back(r);
@@ -4768,11 +5278,11 @@ public:
 		    {
 			pars[i].actualize();
 		    }
-		std::cerr<<pars;
+		// std::cerr<<pars;
 		os<<pars;
-		std::cout<<beta;
+		// std::cout<<beta;
 		os<<beta;
-		beta.actualize(os);
+		beta.actualize(os,mt);
 		if (n!=beta.size())
 		    {
 			for (std::size_t i=n; i<beta.size(); ++i)

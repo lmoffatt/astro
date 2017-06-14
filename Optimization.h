@@ -53,7 +53,7 @@ inline double Normal(double x,double m,double  s , bool is_Variance=false)
   else
     v=sqr(s);
 
-  double logL=-(sqr(x-m)/v+std::log(2*PI*v))/2;
+  double logL=-(sqr(x-m)/v+std::log(2*PI*v))/2.0;
   return logL;
 }
 
@@ -400,7 +400,7 @@ struct wolf_conditions
       M_Matrix<double> p,
       std::size_t maxEvals,
       double a_max=1.0,
-      double a_min=0)const
+      double a_min=1e-9)const
   {
     std::size_t nEvals=0;
     double next_alfa=1;
@@ -1090,11 +1090,11 @@ struct Newton_fit
     std::size_t maxIter;
     std::size_t maxEvalLoop;
     double maxDur_in_min;
-    double maxLanda=1e10;
+    double maxLanda=1e8;
     double minLanda=1e-3;
     double paramChangeMin=1e-7;
     double PostLogLikChangeMin=1e-7;
-    double GradientNormPostMin=1e-5;
+    double GradientNormPostMin=1e-3;
 
     double vlanda=3;
     double min_alfa=0.3;
@@ -1118,11 +1118,13 @@ struct Newton_fit
           {
             if (minimize)
               {
-                if(HlandaInv(i,i)<=0) return false;
+                if(HlandaInv(i,i)<=0)
+                  return false;
               }
             else
               {
-                if(HlandaInv(i,i)>=0) return false;
+                if(HlandaInv(i,i)>=0)
+                  return false;
 
               }
           }
@@ -1132,34 +1134,28 @@ struct Newton_fit
   }
 
   template<class Hinv>
-  static landa_H compute_landaH(const Hinv& hinv,const M_Matrix<double> H, double landa0, double v,double landamax)
+  static landa_H compute_landaH(const Hinv& hinv,const M_Matrix<double>& H, double landa0, double /*v*/,double /*landamax*/)
   {
 
-    auto Hl=H;
-    if (minimize)
-      {
-        for (std::size_t i=0; i<H.nrows(); ++i)
-          Hl(i,i)+=std::abs(H(i,i))*landa0;
-      }
-    else
-      {
-        for (std::size_t i=0; i<H.nrows(); ++i)
-          Hl(i,i)-=std::abs(H(i,i))*landa0;
-      }
+    M_Matrix<double> Hl=H;
+    for (std::size_t i=0; i<H.nrows(); ++i)
+      Hl(i,i)*=1.0+landa0;
     auto Hlinv=hinv(Hl);
+    // auto d=diag(H);
+    // auto dd=diag(Hlinv);
 
     if (isValidCov(Hlinv))
       return {landa0,Hlinv,true};
-    else if (landa0*v>=landamax)
+    else //if (landa0*v>=landamax)
       return {landa0,Hlinv,false};
-    else
-      return compute_landaH(hinv,H,landa0*v,v,landamax);
+    // else
+    //   return compute_landaH(hinv,H,landa0*v,v,landamax);
   }
 
 
   template<class L, class G, class H, class Hinv>
   static fit_iter step(const L& logL, const G& g, const H& h, const Hinv& hinv, fit_run r,
-                       fit_iter iter)
+                       fit_iter iter, std::ostream& os)
   {
     if (meetCovergenceCriteria(r,iter))
       return iter;
@@ -1180,7 +1176,7 @@ struct Newton_fit
           newLanda=iter.landa;
 
 
-        return candidate_point(logL,g,h,hinv,r,sample,newLanda,i);
+        return candidate_point(logL,g,h,hinv,r,sample,newLanda,i,os);
       }
 
 
@@ -1195,7 +1191,8 @@ struct Newton_fit
                                   fit_run r,
                                   fit_step sample,
                                   double landa,
-                                  std::size_t i)
+                                  std::size_t i,
+                                  std::ostream& os)
   {
     landa_H lH=compute_landaH(hinv,sample.H,landa,r.vlanda,r.maxLanda);
     auto newd=-sample.G*lH.Hlinv;
@@ -1203,7 +1200,7 @@ struct Newton_fit
     typename wolf_conditions<minimize>::termination run=w.opt(logL,g,sample.x,sample.logL,sample.G,newd,r.maxEvalLoop);
 
     if ((!run.isGood())&&lH.landa<r.maxLanda)
-      return candidate_point(logL,g,h,hinv,r,sample,lH.landa*r.vlanda,i);
+      return candidate_point(logL,g,h,hinv,r,sample,lH.landa*r.vlanda,i,os);
     else
       {
 
@@ -1221,8 +1218,9 @@ struct Newton_fit
         iter.alfa=run.alfa;
         fit_point candidate(run.x,run.f);
         iter.candidate=std::move(candidate);
-        if (verbose) std::cerr<<iter;
-        return step(logL,g,h,hinv,r,iter);
+        if (verbose)
+          os<<iter;
+        return step(logL,g,h,hinv,r,iter,os);
       }
   }
 
@@ -1235,8 +1233,9 @@ struct Newton_fit
                       const H& h,
                       const Inv& inverse,
                       const M_Matrix<double>& x,
-                      double landa=1e-3,
+                      double landa=1e-2,
                       double vlanda=3,
+                      std::ostream& os=std::cerr,
                       std::size_t maxIter=1000,
                       double maxTime=60)
   {
@@ -1244,15 +1243,17 @@ struct Newton_fit
     r.startTime= std::chrono::steady_clock::now();
     r.maxIter=maxIter;
     r.maxDur_in_min=maxTime;
-    r.maxEvalLoop=20;
+    r.maxEvalLoop=200;
     r.vlanda=vlanda;
     r.min_alfa=1.0/vlanda;
+    if (verbose)
+      os<<"start optimization\n";
 
     fit_step sample(fit_point(x,logL(x)));
     sample.G=g(x);
     sample.H=h(x);
 
-    return  candidate_point(logL,g,h,inverse,r,sample,landa,0);
+    return  candidate_point(logL,g,h,inverse,r,sample,landa,0,os);
 
   }
 
@@ -1402,12 +1403,27 @@ struct multivariate_normal_distribution
   std::size_t numberOfVariables;
   std::size_t NumberOfParameters(){return (numberOfVariables*numberOfVariables+3)/2;}
 
-  static double logL(const M_Matrix<double>& y,const M_Matrix<double>& m,const M_Matrix<double>& Sinv)
+  static double logL(const M_Matrix<double>& y,const M_Matrix<double>& m,const M_Matrix<double>& S)
   {
     std::size_t n=m.size();
-    assert(Sinv.ncols()==n);
-    assert(Sinv.nrows()==n);
-    return xTSigmaX(y-m,Sinv);
+    assert(S.ncols()==n);
+    assert(S.nrows()==n);
+    auto d0=Transpose(S)-S;
+
+    M_Matrix<double> Sinv=invSafe(S);
+    auto ide= S*Sinv;
+    auto d=Transpose(Sinv)-Sinv;
+    if (Sinv.empty())
+      return std::numeric_limits<double>::quiet_NaN();
+    M_Matrix<double> cho_cov_(chol(S,"upper"));
+    double logDetCov_(log(diagProduct(cho_cov_)));
+
+    double out= -0.5*y.size()*log(PI)-logDetCov_-0.5*xTSigmaX(y-m,Sinv);
+    if (std::isfinite(out) && out>1e8)
+
+      return out;
+    else
+      return out;
   }
 
 
@@ -1513,6 +1529,218 @@ struct multivariate_normal_distribution
 
 
 
+struct univariate_gaussian_process_distribution
+{
+  std::size_t NumberOfParameters()const{return x.size()+2;}
+
+
+
+  M_Matrix<double> x;
+  univariate_gaussian_process_distribution(const M_Matrix<double>& x_ ):x(x_){}
+
+  template<class V>
+  univariate_gaussian_process_distribution(const V& x_ )
+  {
+    x=M_Matrix<double>(x_.size(),1);
+    for (std::size_t i=0; i<x_.size(); ++i)
+      x[i]=x_[i];
+  }
+
+
+  template<class V>
+  static M_Matrix<double> cov(const V& x, double sigma2,double lambda, double epsilon2)
+  {
+    std::size_t n=x.size();
+    double l2=sqr(lambda);
+    M_Matrix<double> out(n,n);
+    for (std::size_t i=0; i<n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        out(i,j)=exp(-0.5*sqr(x[i]-x[j])/l2);
+    return out*sigma2+eye<double>(n)*epsilon2;
+  }
+
+  static double calc_sigma2(const M_Matrix<double>& y, const M_Matrix<double>& m, const M_Matrix<double>& rcov, const M_Matrix<double>& rcovinv)
+  {
+    std::size_t n=y.size();
+    auto rcym=rcovinv*(y-m);
+    auto rc=multTransp(rcym,rcym);
+    double sum=0;
+    for (std::size_t i=0; i< n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        sum+=rcov(i,j)*rc(i,j);
+    return sum/n;
+  }
+
+  template<typename V>
+  static M_Matrix<double> G(const M_Matrix<double>& y,
+                            const M_Matrix<double>& m,
+                            const V& x
+                            ,const M_Matrix<double>& cov,
+                            const M_Matrix<double>& covinv,
+                            double sigma2,
+                            double lambda,
+                            double epsilon2)
+  {
+    std::size_t n=m.size();
+    std::size_t r=n+3;
+    assert(cov.ncols()==n);
+    assert(cov.nrows()==n);
+
+    auto G_mu=(y-m)*covinv;
+    auto SyyS=TranspMult(G_mu,G_mu);
+    auto laCov=cov-eye<double>(x.size())*epsilon2;
+
+    double sum=0;
+    for (std::size_t i=0; i< n; ++i)
+      {
+        for (std::size_t j=0; j<n; ++j)
+          sum+=laCov(i,j)*(SyyS(i,j)-covinv(i,j));
+      }
+    double dLdlogsigma=sum/2;
+
+    double dLdlogepsilon=0;
+    for (std::size_t i=0; i< n; ++i)
+      {
+        dLdlogepsilon+=(SyyS(i,i)-covinv(i,i));
+      }
+    dLdlogepsilon*=epsilon2/2.0;
+
+    auto SyySCovinv=SyyS-covinv;
+    for (std::size_t i=0; i< n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        laCov(i,j)*=sqr(x[i]-x[j])/sqr(lambda);
+    double sum2=0;
+    for (std::size_t i=0; i< n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        sum2+=SyySCovinv(i,j)*laCov(i,j);
+
+    double dLdloglambda=sum2/2;
+    M_Matrix<double> Go(1,r,0);
+    for (std::size_t i=0; i<n; ++i)
+      Go[i]=G_mu[i];
+    Go[n]=dLdlogsigma;
+    Go[n+1]=dLdloglambda;
+    Go[n+2]=dLdlogepsilon;
+    return Go;
+  }
+
+
+
+  template<typename V>
+  static M_Matrix<double> H(const V& x,const M_Matrix<double>& cov, const M_Matrix<double>& covinv,  double sigma2,double lambda, double epsilon2)
+  {
+    std::size_t n=cov.nrows();
+    std::size_t k=n+3;
+
+    M_Matrix<double> Ho(k,k,0);
+
+
+    for (std::size_t i=0; i<n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        {
+          Ho(i,j)=-covinv(i,j);
+
+        }
+    auto laCov=cov-eye<double>(x.size())*epsilon2;
+
+
+
+    double sum=0;
+    for (std::size_t i=0; i<n; ++i)
+
+      for (std::size_t j=0; j<n; ++j)
+        sum+=laCov(i,j)*covinv(i,j);
+    double sum2=0;
+    for (std::size_t i=0; i<n; ++i)
+      for (std::size_t j=0; j<n; ++j)
+        sum2+=laCov(i,j)*covinv(i,j)*sqr(x[i]-x[j]);
+
+
+    double d2Ldloglambda2=-0.5*sqr(sum2/sqr(lambda));
+    double d2Ldlogsigma2_dloglambda=-0.5*sum*sum2/sqr(lambda);
+    double d2Ldlogsimga2=-0.5*sqr(sum);
+    double d2Ldlogepsilon2=-0.5*sqr(Trace(covinv)*epsilon2);
+    double d2Ldlogsigma2_dlogepsilon2=-0.5*Trace(covinv)*epsilon2*sum;
+    double d2Ldloglambda_logepsilon2=-0.5*Trace(covinv)*epsilon2*sum2/sqr(lambda);
+
+
+    Ho(n,n)=d2Ldlogsimga2;
+    Ho(n+1,n)=d2Ldlogsigma2_dloglambda;
+    Ho(n,n+1)=d2Ldlogsigma2_dloglambda;
+
+    Ho(n,n+2)=d2Ldlogsigma2_dlogepsilon2;
+    Ho(n+2,n)=d2Ldlogsigma2_dlogepsilon2;
+
+    Ho(n+1,n+1)=d2Ldloglambda2;
+    Ho(n+1,n+2)=d2Ldloglambda_logepsilon2;
+    Ho(n+2,n+1)=d2Ldloglambda_logepsilon2;
+
+    Ho(n+2,n+2)=d2Ldlogepsilon2;
+
+
+    return Ho;
+
+  }
+
+  template <typename V>
+  double
+  static logL(double m,double sigma2,double lambda, double epsilon2,const M_Matrix<double>& y,const V& x)
+  {
+    std::size_t n=x.size();
+    M_Matrix<double>mu (1,n);
+    for (std::size_t i=0; i<n; ++i)
+      mu[i]=m;
+    auto Cov=cov(x, sigma2,lambda, epsilon2);
+    //auto rCovinv=invSafe(rCov);
+    auto L=multivariate_normal_distribution::logL(y,mu,Cov);
+    return L;
+
+  }
+
+  template<class V>
+  double
+  static logL(const V& m, const M_Matrix<double>& y,const M_Matrix<double>& x)
+  {
+    std::size_t n=x.size();
+    M_Matrix<double> mu(1,n);
+    double sigma2=std::exp(m[n]);
+    double lambda=std::exp(m[n+1]);
+    double epsilon2=std::exp(m[n+2]);
+    for (std::size_t i=0; i<n; ++i)
+      mu[i]=m[i];
+    auto Cov=cov(x, sigma2,lambda,epsilon2);
+    //auto rCovinv=invSafe(rCov);
+    auto L=multivariate_normal_distribution::logL(y,mu,Cov);
+    return L;
+
+  }
+
+
+
+  template<class V>
+  std::tuple<double,M_Matrix<double>, M_Matrix<double> >
+  fgH(const V& m, const M_Matrix<double>& y) const
+  {
+    std::size_t n=x.size();
+    M_Matrix<double> mu(1,n);
+    double sigma2=std::exp(m[n]);
+    double lambda=std::exp(m[n+1]);
+    double epsilon2=std::exp(m[n+2]);
+    for (std::size_t i=0; i<n; ++i)
+      mu[i]=m[i];
+    auto Cov=cov(x, sigma2,lambda,epsilon2);
+    auto Covinv=invSafe(Cov);
+    auto L=multivariate_normal_distribution::logL(y,mu,Cov);
+    auto g=G(y,mu,x,Cov,Covinv,sigma2,lambda,epsilon2);
+    auto h=H(x,Cov,Covinv,sigma2,lambda,epsilon2);
+    return {L,g,h};
+
+  }
+
+
+};
+
+
 
 struct Gauss_Newton
 {
@@ -1559,8 +1787,6 @@ struct Gauss_Newton
   }
 
 };
-
-
 
 
 

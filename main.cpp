@@ -60,8 +60,17 @@ int main(int argc, char **argv)
                    std::pair<double,std::string>{0,"beta_min"},
                    std::pair<double,std::string>{0,"mL0"},
                    std::pair<double,std::string>{0,"sL0"},
-                   std::pair<double,std::string>{0,"mlogdL"},
-                   std::pair<double,std::string>{0,"slogdL"},
+
+                   std::pair<double,std::string>{0,"mmlogdL"},
+                   std::pair<double,std::string>{0,"smlogdL"},
+                   std::pair<double,std::string>{0,"mlogslogdL"},
+                   std::pair<double,std::string>{0,"slogslogdL"},
+                   std::pair<double,std::string>{0,"mloglandalogdL"},
+                   std::pair<double,std::string>{0,"sloglandalogdL"},
+
+                   std::pair<double,std::string>{0,"mlogepsilonlogdL"},
+                   std::pair<double,std::string>{0,"slogepsilonlogdL"},
+
                    std::pair<double,std::string>{0,"mmlogdelta"},
                    std::pair<double,std::string>{0,"smlogdelta"},
                    std::pair<double,std::string>{0,"mlogslogdelta"},

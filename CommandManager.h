@@ -232,7 +232,7 @@ public:
   static std::string name()
   {
     return ClassName_imp<T>(typename has_ClassName_traits<T>::tag());
-    }
+  }
   static
   bool read(std::istream& is,T& x,std::ostream& logstream)
   {
@@ -627,7 +627,7 @@ void Tempering(Cm* cm_,
                std::string priorName,
                double dtmin,
                double dtmax,
-                double dx,
+               double dx,
                double tequilibrio,
                double  maxduration,
                double landa0,
@@ -642,8 +642,18 @@ void Tempering(Cm* cm_,
                double beta_min,
                double mL0,
                double sL0,
-               double mlogdL,
-               double slogdL,
+               double mmlogdL,
+               double smlogdL,
+
+               double mlogslogdL,
+               double slogslogdL,
+
+               double mloglandalogdL,
+               double sloglandalogdL,
+
+               double mlogepsilonlogdL,
+               double slogepsilonlogdL,
+
                double mmlogdelta,
                double smlogdelta,
                double mlogslogdelta,
@@ -660,9 +670,11 @@ void Tempering(Cm* cm_,
   //optimize opt experiment1 parameters_10 parameters_10 10 100
   typedef Landa AP;
 
-  Master_Tempering_Likelihood::Prior MTLP({},mL0,sL0,mlogdL,slogdL,
-                                          mmlogdelta,smlogdelta,mlogslogdelta,slogslogdelta);
 
+  Master_Tempering_Likelihood::Prior MTLP
+      ({},mL0,sL0,mmlogdL,smlogdL,mlogslogdL,slogslogdL,mloglandalogdL,
+       sloglandalogdL,mlogepsilonlogdL,slogepsilonlogdL,
+       mmlogdelta,smlogdelta,mlogslogdelta,slogslogdelta);
   Master_Adaptive_Beta
       aBeta(MTLP,N_betasInit,N_betas_max,beta_min,1);
 

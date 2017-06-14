@@ -325,7 +325,7 @@ public:
   {
     //  if (_data>0)
     //	delete [] _data;
-  }
+    }
 
 
 
@@ -493,13 +493,13 @@ public:
     @post assert the precoditions
     */
 
-
+  template <typename V>
   M_Matrix<T>&  operator() (const std::string /*dummy*/,
                                          std::size_t jColumn,
-                                         const M_Matrix<T>& newValues)
+                                         const V& newValues)
   {
 
-    for (std::size_t i=0; i<std::min(nrows(*this),size(newValues)); i++)
+    for (std::size_t i=0; i<std::min(nrows(),newValues.size()); i++)
       this->operator()(i,jColumn)=newValues[i];
     //  assert(ndim>1);
     //  assert(i<n[0]);//number of rows
@@ -1472,6 +1472,9 @@ M_Matrix<double> operator<<(const M_Matrix<double>& A, const M_Matrix<T>& B)
 
 }
 
+
+
+
 template<typename T>
 std::istream& operator>>(std::istream& is,M_Matrix<T>& x)
 {
@@ -1526,6 +1529,26 @@ M_Matrix<T> sort(const M_Matrix<T>& x)
 
 }
 
+
+template <class V>
+double mean(const V& x)
+{
+  double sum=0;
+  for (std::size_t i=0; i<x.size(); ++i)
+    sum+=x[i];
+  return sum/x.size();
+}
+template <class V>
+double stddev(const V& x)
+{
+  double sum=0;
+  double sum2=0;
+  for (std::size_t i=0; i<x.size(); ++i)
+    {
+    sum+=x[i];sum2+=sqr(x[i]);
+    }
+  return std::sqrt(sum2/x.size()-sqr(sum/x.size()));
+}
 
 template<typename T>
 T norm_inf(const M_Matrix<T>& x)
@@ -1620,6 +1643,8 @@ double xTSigmaX(const std::vector<double> &v, const M_Matrix<double> &matrix)
     }
   return sum;
 }
+
+
 
 
 
@@ -1832,6 +1857,19 @@ T diagProduct(const M_Matrix<T>& x)
 
 }
 
+template<typename T>
+T Trace(const M_Matrix<T>& x)
+{
+  size_t nr=x.nrows();
+  size_t nc=x.ncols();
+  T out=0;
+  std::size_t n=std::min(nr,nc);
+  for (size_t i=0; i<n; ++i)
+    out+=x(i,i);
+  return out;
+
+
+}
 
 
 
@@ -1854,6 +1892,19 @@ M_Matrix<T> row_vector(const M_Matrix<T>& x)
 
 
 
+template<typename V>
+M_Matrix<double> JTd2J(const M_Matrix<double>& J, const V& D2)
+{
+  assert(J.nrows()==D2.size());
+  M_Matrix<double> out(J.ncols(),J.ncols());
+  M_Matrix<double> Jc=Transpose(J);
+  for (std::size_t i=0; i<Jc.nrows(); ++i)
+    for (std::size_t j=0; j<Jc.ncols(); ++j)
+      Jc(i,j)*=D2[j];
+  out=Jc*J;
+ return out;
+
+}
 
 
 
