@@ -1255,12 +1255,16 @@ public:
     static std::string ClassName(){return "Beta";}
 
 
-    Beta(std::size_t n, double min_beta):asc_beta_(n)
+    Beta(std::size_t n, double med_beta, std::size_t n2=4, double min_beta=1e-7):asc_beta_(n+n2)
     {
-	asc_beta_[0]=1;
-	double f=std::pow(min_beta,1.0/(n-1));
-	for (std::size_t i=1; i<n; ++i)
-	    asc_beta_[i]=asc_beta_[i-1]*f;
+	double f=std::pow(med_beta,1.0/(n-1));
+	double f2=std::pow(med_beta/min_beta,1.0/n2);
+
+	for (std::size_t i=0; i<n; ++i)
+	    asc_beta_[i]=(std::pow(f,i)+(n-i-1)*med_beta)/(1.0+(n-i-1)*med_beta);
+	for (std::size_t i=0; i<n2; ++i)
+	    asc_beta_[n+i]=med_beta/(std::pow(f2,i+1));
+
 
     }
 
@@ -3724,56 +3728,8 @@ public:
 
     }
 
-    void actualize(std::ostream& os, std::mt19937_64& mt)
+    void actualize(std::ostream& , std::mt19937_64& ) const
     {
-	Master_Tempering_Likelihood::logL L(desc_beta_,data_,prior_);
-	Master_Tempering_Likelihood::G   g(L);
-	Master_Tempering_Likelihood::H h(L);
-	auto x=Master_Tempering_Likelihood::Parameters::X(data_);
-	Master_Tempering_Likelihood::Hinv hinv(x.size()-desc_beta_.getValue().size()-7);
-
-	g.test(x);
-	// h.test(x);
-
-
-
-	constexpr std::size_t num=30;
-	Newton_fit<false,true>::fit_iter res=Newton_fit<false,true>::opt(L,g,h,hinv,x);
-	Master_Tempering_Likelihood::Parameters_SE par(res.sample.x,data_,desc_beta_.getValue(),hinv(res.sample.H));
-	std::cerr<<par;
-
-	for (std::size_t i=0; i<num; ++i)
-	    {
-		auto xr=Master_Tempering_Likelihood::Parameters::X(data_,prior_, mt);
-
-		Newton_fit<false,true>::fit_iter resr=Newton_fit<false,true>::opt(L,g,h,hinv,xr);
-
-		if (std::isfinite(resr.sample.logL))
-		    {
-			Master_Tempering_Likelihood::Parameters_SE parr(resr.sample.x,data_,desc_beta_.getValue(),hinv(resr.sample.H));
-			std::cerr<<parr;
-			os<<resr;
-			os<<parr;
-		    }
-		if (std::isfinite(resr.sample.logL)&&
-		(!(std::isfinite(res.sample.logL))
-		||(res.sample.logL<resr.sample.logL)))
-		    res=resr;
-
-	    }
-	os<<"\n----------best fit is-----------\n ";
-	os<<res;
-	std::cerr<<"\n----------best fit is-----------\n ";
-	std::cerr<<res;
-	Master_Tempering_Likelihood::Parameters_SE parf(res.sample.x,data_,desc_beta_.getValue(),hinv(res.sample.H));
-	os<<parf;
-	std::cerr<<parf;
-	os<<"\n----------best fit end-----------\n ";
-
-	std::cerr<<"\n----------best fit end-----------\n ";
-
-
-
 
     }
 
@@ -4931,9 +4887,9 @@ public:
 	timeOpt=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
 	auto timeIter_=60*(timeOpt-t0);
 	double evidence=Tempered_Evidence_Evaluation<mcmc_step<pDist>>::Evidence(aBeta.getBeta(),sDist);
-	std::cout<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSamples<<"\t"<<timeOpt<<"\t"<<timeIter_<<"Evidence\t"<<evidence<<"\n";
+	std::cout<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSamples<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<"Evidence\t"<<evidence<<"\n";
 
-	os<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSamples<<"\t"<<timeOpt<<"\t"<<timeIter_<<"Evidence\t"<<evidence<<"\n";
+	os<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSamples<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<"Evidence\t"<<evidence<<"\n";
 
 	put(os,sDist,out,dHd);
 	put(std::cout,sDist,out,dHd);
