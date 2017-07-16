@@ -197,8 +197,10 @@ auto read_from_stream(std::istream& is,std::ostream& /*logstream*/,T& x)
 ->decltype (bool(is>>x))
 {
 
-  if (is>>x) return true;
-  else return false;
+  if (is>>x)
+    return true;
+  else
+    return false;
 }
 
 template<typename T>
@@ -206,7 +208,7 @@ auto read_from_stream(std::istream& is,std::ostream& logstream,T*& x)
 ->decltype (bool(is>>*x))
 {
 
-  return (is>>*x);
+  return bool(is>>*x);
 }
 
 
@@ -225,6 +227,57 @@ auto read_from_stream(std::istream& is,std::ostream& logstream,T& x)
   std::string s;
   return x.read(s,is,logstream);
 }
+
+
+inline
+bool write_to_stream(std::ostream&,std::ostream&,... )
+{
+  return true;
+}
+
+
+
+
+template<typename T>
+auto write_to_stream(std::ostream& os,std::ostream& /*logstream*/,T& x)
+->decltype (bool(os<<x))
+{
+
+  if (os<<x) return true;
+  else return false;
+}
+
+template<typename T>
+auto write_to_stream(std::ostream& os,std::ostream& /*logstream*/,T*& x)
+->decltype (bool(os<<*x))
+{
+
+  return bool(os<<*x);
+}
+
+
+template<typename T>
+auto write_to_stream(std::ostream& os,std::ostream& logstream,T*& x)
+->decltype (x->write(std::string(),os,logstream))
+{
+  std::string s;
+  return x->write(s,os,logstream);
+}
+
+template<typename T>
+auto write_to_stream(std::ostream& os,std::ostream& logstream,T& x)
+->decltype (x.write(std::string(),os,logstream))
+{
+  std::string s;
+  return x.write(s,os,logstream);
+}
+
+
+
+
+
+
+
 template<class T>
 class Cls
 {
@@ -238,6 +291,15 @@ public:
   {
     return read_from_stream(is,logstream,x);
   }
+
+  static
+  bool write (std::ostream& os, const T& x, std::ostream& logstream)
+  {
+    return write_to_stream(os,logstream,x);
+
+  }
+
+
 };
 
 
@@ -255,6 +317,13 @@ public:
   {
     return read_from_stream(is,logstream,x);
   }
+  static
+  bool write (std::ostream& os, const T* x, std::ostream& logstream)
+  {
+    return write_to_stream(os,logstream,x);
+
+  }
+
 };
 
 
@@ -294,6 +363,7 @@ public:
         std::string line;
         safeGetline(f,line);
         removeComments(line);
+        std::cerr<<line;
         cm_->execute(line,logs);
       }
     return 0;
@@ -327,86 +397,11 @@ private:
 
 };
 
-template<class Cm>
-void read(Cm* cm,const std::string& filename, std::ostream* logs)
-{
-
-  std::ifstream f(filename.c_str());
-  if (!f)
-    {
-      std::string filenaExt=filename+".txt";
-      f.open(filenaExt.c_str());
-      if (!f)
-        {
-          f.close();
-          std::string below="../"+filenaExt;
-          f.open(below);
-        }
-    }
-  std::string line;
-  safeGetline(f,line);
-  double dia=0;
-  std::size_t rata=0;
-  if (line.find("experiment")!=line.npos)
-    {
-      safeGetline(f,line);
-      while (f && line.empty())
-        safeGetline(f,line);
-
-      if (line.find("dia")!=line.npos)
-        {
-          std::stringstream ss(line);
-          std::string diastr;
-
-          ss>>diastr>>dia;
-          safeGetline(f,line);
-
-        }
 
 
-      auto  s=new TissueSection(filename,dia);
 
-      while (f)
-        {
 
-          if (line.find("rata")!=line.npos)
-            {
-              std::stringstream ss(line);
-              std::string ratastr;
 
-              ss>>ratastr>>rata;
-              TissuePhoto foto;
-
-              foto.read(line,f);
-              s->fotos[foto.rata]=foto;
-
-            }
-          else if (line.find("foto")!=line.npos)
-            {
-              TissuePhoto foto;
-
-              foto.read(line,f);
-              s->fotos[foto.num]=foto;
-            }
-          else
-            safeGetline(f,line);
-
-        }
-      cm->push_back(s->id(),s);
-    }
-  else  if (line.find("simulation")!=line.npos)
-    while (f)
-      {
-        auto sim=new CortexSimulation;
-        sim->read(line,f,*logs);
-        if (sim->t_.size()>0)
-          {
-            cm->push_back(sim->id_,sim);
-          }
-
-      }
-
-}
 
 
 class readCommand: public CommandBase
@@ -510,21 +505,6 @@ private:
 
 
 
-class HistogramCommand:public CommandBase
-{
-  // CommandBase interface
-public:
-  virtual void run(const std::string& line, std::ostream& logs);
-  HistogramCommand(CommandManager* cm):
-    CommandBase("histogram"),
-    cm_(cm){}
-  ~HistogramCommand(){}
-
-private:
-  CommandManager* cm_;
-
-};
-
 
 class ExperimentCommand:public CommandBase
 {
@@ -619,9 +599,343 @@ private:
   CommandManager* cm_;
 
 };
+template<typename T>
+class WriteIt
+{
+public:
+  static
+  void apply(const T& x,
+             const std::string& idname,
+             std::ostream* f,
+             std::ostream* logs)
+  {
+    *f<<idname<<"\n"<<Cls<T>::name()<<"\n";
+    Cls<T>::write(*f,x,*logs);
+    *f<<"\n";
+  }
+
+};
+
+
+template<typename,class=void>
+struct doesWriteDataFrame: std::false_type{};
+
+template< class ... > using void_t = void;
+
+
+template<typename T>
+struct doesWriteDataFrame<T, void_t<decltype(std::declval<T>().writeDataFrame(std::declval<std::ostream&>())) >> : std::true_type{};
+
+
+
+template <bool, typename T>
+struct writeDataFrame
+{
+  static void write(const T&,std::ostream*, std::ostream* log)
+  {
+    *log<<Cls<T>::name()<<" writeDataFrame is not implemented\n";
+
+  }
+
+};
+
+template <typename T>
+struct writeDataFrame<true,T>
+{
+  static void write(const T& x,std::ostream* f, std::ostream* log)
+  {
+    x.writeDataFrame(*f);
+    *f<<"\n";
+  }
+
+};
+
+template <typename T>
+struct writeDataFrame<true,T*>
+{
+  static void write(const T* x,std::ostream* f, std::ostream* /*log*/)
+  {
+    x->writeDataFrame(*f);
+    *f<<"\n";
+
+  }
+
+};
+
+
+
+
+
+template <typename T>
+class DataFrameIt
+{
+public:
+  static void apply(const T& x,std::ostream* f,std::ostream* log)
+  {
+    writeDataFrame<doesWriteDataFrame<std::remove_pointer_t<T>>::value,T>::write(x,f,log);
+  }
+
+};
+
+
+
+
+
+
+
 
 template<class Cm>
-void Tempering(Cm* cm_,
+struct read
+{
+void operator()(Cm* cm,const std::string& filename, std::ostream* logs  )const
+{
+  std::cerr<<"here\n";
+  std::ifstream f(filename.c_str());
+  if (!f)
+    {
+      std::string filenaExt=filename+".txt";
+      f.open(filenaExt.c_str());
+      if (!f)
+        {
+          *logs<<"could not open file"<<filenaExt<<"\n";
+          f.close();
+          std::string below="../"+filenaExt;
+          f.open(below.c_str(),std::ios_base::in);
+          if (!f)
+            {
+              *logs<<"could not open file"<<below<<"\n";
+            }
+          else
+            {
+              *logs<<"file opened successfully "<<below<<"\n";
+
+            }
+        }
+      *logs<<"file opened successfully "<<filenaExt<<"\n";
+
+    }
+  std::string line;
+  safeGetline(f,line);
+  double dia=0;
+  std::size_t rata=0;
+  if (line.find("experiment")!=line.npos)
+    {
+      safeGetline(f,line);
+      while (f && line.empty())
+        safeGetline(f,line);
+
+      if (line.find("dia")!=line.npos)
+        {
+          std::stringstream ss(line);
+          std::string diastr;
+
+          ss>>diastr>>dia;
+          safeGetline(f,line);
+
+        }
+
+
+      auto  s=new TissueSection(filename,dia);
+
+      while (f)
+        {
+
+          if (line.find("rata")!=line.npos)
+            {
+              std::stringstream ss(line);
+              std::string ratastr;
+
+              ss>>ratastr>>rata;
+              TissuePhoto* foto=new TissuePhoto;
+              foto->dia_=dia;
+              foto->read(line,f,*logs);
+              s->fotos[foto->rata]=foto;
+
+            }
+          else if (line.find("foto")!=line.npos)
+            {
+              TissuePhoto* foto=new TissuePhoto;;
+              foto->dia_=dia;
+              foto->read(line,f,*logs);
+              s->fotos[foto->num]=foto;
+            }
+          else
+            safeGetline(f,line);
+
+        }
+      cm->push_back(s->id(),s);
+
+    }
+  else  if (line.find("simulation")!=line.npos)
+    while (f)
+      {
+        auto sim=new CortexSimulation;
+        sim->read(line,f,*logs);
+        if (sim->t_.size()>0)
+          {
+            cm->push_back(sim->id_,sim);
+          }
+
+      }
+
+}
+
+};
+
+template<class Cm>
+struct write{
+bool operator()(Cm* cm,const std::string& idname, std::ostream* logs,  std::string fname, bool append) const
+
+
+{
+  if (fname.empty())
+    fname=idname+"_out.txt";
+  std::ofstream f;
+  if (append)
+    f.open(fname, std::ofstream::app | std::ofstream::out);
+  else
+    f.open(fname,  std::ofstream::out);
+
+  if (!f)
+    {
+      *logs<<"could not open file "+fname+" for writing";
+      return false;
+    }
+  else
+    {
+      f<<idname<<"\n";
+      cm->apply(Co<WriteIt>(),idname,idname,&f,logs);
+      if (f)
+        {
+          *logs<<idname<<" written in file "<<fname;
+          f.close();
+          return true;
+        }
+      else
+        {
+          *logs<<idname<<" something wrong when written in file "<<fname;
+          f.close();
+          return false;
+        }
+
+    }
+}
+
+};
+
+template<class Cm>
+struct dataFrame
+{
+bool operator()(Cm* cm,const std::string& idname, std::ostream* logs,  std::string fname) const
+{
+  if (fname.empty())
+    fname=idname+"_data_frame.txt";
+  std::ofstream f;
+  f.open(fname,  std::ofstream::out);
+
+  if (!f)
+    {
+      *logs<<"could not open file "+fname+" for writing";
+      return false;
+    }
+  else
+    {
+      f<<idname<<"\n";
+      cm->apply(Co<DataFrameIt>(),idname,&f,logs);
+      if (f)
+        {
+          *logs<<idname<<" written in file "<<fname;
+          f.close();
+          return true;
+        }
+      else
+        {
+          *logs<<idname<<" something wrong when written in file "<<fname;
+          f.close();
+          return false;
+        }
+
+    }
+}
+};
+
+
+
+template<class Cm>
+struct Measure
+{
+void operator()(Cm* cm_,
+             std::vector<TissueSection *> sections,
+             bool average,
+             std::size_t maxnumpoints,
+             std::size_t initseed,
+             double minDistance_Tissue,
+             double minDistance_Vaso,
+             std::vector<double> limits, std::string expName) const
+{
+  std::mt19937_64 mt;
+  if (initseed==0)
+    {
+      std::random_device rd;
+      auto seed=rd();
+      mt.seed(seed);
+      std::cout<<"experiment uses seed="<<seed<<std::endl;
+    }
+  else if (initseed==1)
+    {
+      mt.seed();
+      std::cout<<"experiment uses default seed"<<std::endl;
+    }
+  else
+    {
+      mt.seed(initseed);
+      std::cout<<"experiment uses provided seed="<<initseed<<std::endl;
+
+    }
+
+
+  std::vector<CortexMeasure> vCM;
+  for (auto s:sections)
+    {
+      auto p=s->measure(mt,limits,minDistance_Tissue, minDistance_Vaso,maxnumpoints);
+      if (average)
+        {
+          for (auto it= p.begin(); it!= p.end(); ++it)
+            {
+              auto it2= vCM.begin();
+              while(it2!=vCM.end())
+                {
+                  if (it2->add(*it))
+                    break;
+                  else
+                    ++it2;
+                }
+              if (it2==vCM.end())
+                vCM.push_back(*it);
+            }
+        }
+      else
+        {
+          vCM.insert(vCM.begin(),p.begin(),p.end());
+        }
+    }
+
+
+  auto e=new Experiment(expName,vCM,{});
+  std::ofstream fo;
+  fo.open(expName.c_str());
+  e->write(fo);
+  cm_->push_back(e->id(),e);
+}
+
+};
+
+
+
+template<class Cm>
+struct Tempering
+{
+void operator ()(Cm* cm_,
                std::string eviName,
                std::string experimentName,
                std::string priorName,
@@ -663,7 +977,7 @@ void Tempering(Cm* cm_,
                double maxTime,
                std::size_t samples,
                std::size_t nskip
-               , std::ostream *logs)
+               , std::ostream *logs)const
 {
 
   // evidence evi experiment1 paramters_10
@@ -765,28 +1079,26 @@ void Tempering(Cm* cm_,
       LevenbergMarquardt_step<MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> LMLik;
       Poisson_DLikelihood<MyData,MyModel> DLik;
       TT tt;
-      std::mt19937_64 mt;
+
       std::random_device rd;
 
+      std::mt19937_64::result_type seed;
       if (initseed==0)
         {
-          std::mt19937_64::result_type seed=rd();
+           seed=rd();
 
-          mt.seed(seed);
           eviName+=time_now()+"_"+std::to_string(seed);
           *logs<<"\n random seed =\n"<<seed<<"\n";
         }
       else
         {
-          std::mt19937_64::result_type seed=initseed;
+          seed=initseed;
 
-          mt.seed(seed);
           eviName+=time_now()+"_"+std::to_string(seed);
 
           *logs<<"\n provided seed =\n"<<seed<<"\n";
 
         }
-
 
       std::string eviNameLog=eviName+"_log.txt";
       std::ofstream flog;
@@ -821,7 +1133,7 @@ void Tempering(Cm* cm_,
       double timeOpt=0;
 
 
-      typename TT::myEvidence * ev= tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,mt,flog,startTime,timeOpt);
+      typename TT::myEvidence * ev= tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,seed,eviName,flog,startTime,timeOpt);
       std::cout<<*ev;
       flog<<*ev;
       flog.close();
@@ -855,6 +1167,8 @@ void Tempering(Cm* cm_,
 
 
 }
+
+};
 
 /*
 class TemperingCommand:public CommandBase

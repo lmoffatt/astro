@@ -1014,6 +1014,15 @@ M_Matrix<T> operator-(M_Matrix<T>&& x)
 }
 
 
+template<template<typename...>class M,typename... Ts>
+M<Ts...>& operator+=(M<Ts...>& itself, const M<Ts...>&  x)
+{
+  for (size_t i=0; i<itself.size(); i++)
+    itself[i]+=x[i];
+  return itself;
+}
+
+
 
 
 
@@ -1027,13 +1036,14 @@ M_Matrix<T> operator-(M_Matrix<T>&& x)
      @post all the values of the matrix are summed up by the value x
      */
 
-template<typename T>
-M_Matrix<T>& operator+=(M_Matrix<T>& itself, T x)
+template<template<typename...>class M,typename T, typename... Ts>
+M<Ts...>& operator+=(M<Ts...>& itself, T x)
 {
   for (size_t i=0; i<itself.size(); i++)
     itself[i]+=x;
   return itself;
 }
+
 
 
 /**

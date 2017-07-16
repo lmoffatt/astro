@@ -111,8 +111,10 @@ public:
   }
 
 
-  Astrocyte(std::string name,double xpos,double ypos,unsigned type,double prob):
+  Astrocyte(std::string name,std::size_t rata, double dia, double xpos,double ypos,unsigned type,double prob):
     id_(name)
+  , rata_(rata)
+  ,dia_(dia)
   ,p_(xpos,ypos)
   ,type_(type)
   ,prob_(prob)
@@ -128,6 +130,8 @@ private:
 
 
   std::string id_;
+  std::size_t rata_;
+  double dia_;
   position p_;
   unsigned type_;
   double prob_;  // of current type (1-prob) is of previous type,
@@ -162,6 +166,45 @@ public:
     limits_.insert(limits_.end(),be,en);
     updateMinMax();
   }
+
+  virtual void insert(const std::vector<position>& v )
+  {
+    double hh=limits_.begin()->distance(*v.begin());
+    double hb=limits_.begin()->distance(v.back());
+    double bh=limits_.back().distance(*v.begin());
+    double bb=limits_.back().distance(v.back());
+
+    std::vector<double> d={hh,hb,bh,bb};
+    unsigned imin=0;
+    unsigned i;
+    double min=d[imin];
+    for (i=1;i<4; ++i)
+      if (d[i]<d[imin])
+        {
+          imin=i;
+        }
+    switch (imin) {
+      case 0:
+        limits_.insert(limits_.begin(),v.rbegin(),v.rend());
+        break;
+      case 1:
+        limits_.insert(limits_.begin(),v.begin(),v.end());
+        break;
+      case 2:
+        limits_.insert(limits_.end(),v.rbegin(),v.rend());
+        break;
+      case 3:
+        limits_.insert(limits_.end(),v.begin(),v.end());
+        break;
+      default:
+        break;
+      }
+
+    updateMinMax();
+  }
+
+
+
 
   virtual const std::vector<position>& limits()const
   {
@@ -292,6 +335,14 @@ public:
   LimiteFoto(std::vector<position> lim):
     tissueElement("Limite_Foto",lim){}
 
+  LimiteFoto(const LimiteLesion& le,const LimiteSuperior& su,
+             const LimitePosterior& po,const LimiteInferior& in):
+    tissueElement("Limite_Foto",{le.limits()})
+  {
+    insert(su.limits());
+    insert(po.limits());
+    insert(in.limits());
+  }
   LimiteFoto(){}
 
 };
@@ -359,6 +410,11 @@ public:
     return inj_Width()*injLength_;
   }
 
+  double inj_Length()const
+  {
+    return injLength_;
+  }
+
   const std::vector<double>& xpos()const
   {
     return x_;
@@ -384,6 +440,39 @@ public:
   }
 
 
+  bool add(const CortexMeasure& other)
+  {
+     if ((other.dia_==dia_)&&
+         (other.h_==h_)&&
+         (other.x_==x_))
+       {
+         injWidth_+=other.injWidth_*other.rata_.size();
+         injWidth_/=1.0+other.rata_.size();
+         injLength_+=other.injLength_;
+
+         rata_.insert(rata_.begin(),other.rata_.begin(),other.rata_.end());
+         measAreaAstro_+=other.measAreaAstro_;
+         meanAstro_+=other.meanAstro_;
+         covAstro_+=other.covAstro_;
+         for (unsigned i=0; i<meanAstro_.size(); ++i)
+           {
+             for (unsigned j=0; j<meanAstro_[i].size();++j)
+               {
+                 numAstro_[i]+=meanAstro_[i][j];
+               }
+             densAstro_[i]=numAstro_[i]/measAreaAstro_[i];
+
+           }
+
+         return true;
+       }
+     else {
+         return false;
+       }
+
+
+
+  }
 
   const std::vector<std::vector<double>>& meanAstro()const
   {
@@ -472,8 +561,9 @@ public:
 
   CortexMeasure(std::string id,
                 double dia,
-                double h
-                ,double minimalTissueDistance
+                double h,
+                std::size_t rata,
+                double minimalTissueDistance
                 ,double minimalVasoDistance
                 ,double injWidth
                 ,double injLength
@@ -481,13 +571,13 @@ public:
                 ,std::vector<double> measAreaAstro
                 ,std::vector<std::vector<double>> meanAstro
                 ,std::vector<std::vector<std::vector<double>>> covAstro)
-    :dia_(dia),h_(h)
+    :dia_(dia),h_(h),rata_(1,rata)
     ,minimalTissueDistance_(minimalTissueDistance)
     ,minimalVasoDistance_(minimalVasoDistance)
     ,injWidth_(injWidth)
     ,injLength_(injLength)
     ,x_(dx)
-      ,measAreaAstro_(measAreaAstro)
+    ,measAreaAstro_(measAreaAstro)
     ,numAstro_(std::vector<double>(meanAstro.size(),0))
     ,meanAstro_(meanAstro),densAstro_(numAstro_),
       covAstro_(covAstro){
@@ -511,7 +601,7 @@ public:
 
 
 protected:
-  void update()
+  void update() override
   {}
 
 
@@ -519,11 +609,11 @@ protected:
 private:
   double dia_;
   double h_; // in um
+  std::vector<std::size_t> rata_;
   double minimalTissueDistance_;
   double minimalVasoDistance_;
   double injWidth_;
   double injLength_;
-  std::size_t rata_;
   std::vector<double> x_;
   std::vector<double> measAreaAstro_;
   std::vector<double> numAstro_;
@@ -562,6 +652,58 @@ public:
 
     return s;
   }
+
+  void writeDataFrameHeader(std::ostream& os)const
+  {
+    os<<"id"<<"\t";
+    os<<"rata"<<"\t";
+    os<<"dia"<<"\t";
+    os<<"h"<<"\t";
+    os<<"minimalTissueDistance"<<"\t";
+    os<<"minimalVasoDistance"<<"\t";
+    os<<"injWidth"<<"\t";
+    os<<"x_start"<<"\t";
+    os<<"x_end"<<"\t";
+    os<<"Area"<<"\t";
+    os<<"astroType"<<"\t";
+    os<<"numAstrocites"<<"\t";
+    os<<"densityAstrocites"<<"\t";
+    os<<"pAstrocites"<<"\t";
+
+  }
+  void writeDataFrame(std::ostream& os, std::size_t idx, std::size_t type) const
+  {
+    os<<id()<<"\t";
+    os<<rata_<<"\t";
+    os<<dia_<<"\t";
+    os<<h_<<"\t";
+    os<<minimalTissueDistance_<<"\t";
+    os<<minimalVasoDistance_<<"\t";
+    os<<injWidth_<<"\t";
+    os<<x_[idx]<<"\t";
+    os<<x_[idx+1]<<"\t";
+    os<<measAreaAstro_[idx]<<"\t";
+    os<<type<<"\t";
+    os<<meanAstro_[idx][type]<<"\t";
+    os<<meanAstro_[idx][type]/measAreaAstro_[idx]<<"\t";
+    os<<meanAstro_[idx][type]/numAstro_[idx]<<"\t";
+
+  }
+
+
+  void writeDataFrame(std::ostream& os) const
+  {
+    writeDataFrameHeader(os);
+    os<<"\n";
+    for (std::size_t idx=0; idx<meanAstro_.size(); ++idx)
+      for (std::size_t type=0; type<meanAstro_[0].size(); ++type)
+        {
+          writeDataFrame(os,idx,type);
+          os<<"\n";
+        }
+  }
+
+
   bool readBody(std::string& line,std::istream &s, std::ostream& logs) override
   {
     if (!readField(line,s,"dia",dia_,logs))
@@ -635,6 +777,7 @@ public:
 
 
 
+
 class Experiment: public BaseObject
 {
   // BaseClass interface
@@ -670,7 +813,7 @@ public:
 
   void insert_tSim(double t);
 
-
+ void push_back(CortexMeasure c);
 
 
   Experiment(std::string ide, std::vector<CortexMeasure> mv,const std::vector<double>& tsimul);
@@ -716,6 +859,27 @@ public:
 
   double tSimul(unsigned i) const;
   std::size_t numSimPoints() const;
+
+
+
+
+  void writeDataFrame(std::ostream& os) const
+  {
+    m_[0].writeDataFrameHeader(os);
+    os<<"\n";
+    for (auto& m:m_)
+      {
+        for (std::size_t idx=0; idx<m.meanAstro().size(); ++idx)
+          for (std::size_t type=0; type<m.meanAstro()[0].size(); ++type)
+            {
+              m.writeDataFrame(os,idx,type);
+              os<<"\n";
+            }
+      }
+  }
+
+
+
 protected:
   void update(){}
 
@@ -778,11 +942,10 @@ class TissuePhoto
 {
 public:
 
+  bool read(std::string& line, std::istream& s, std::ostream& logs);
 
-  void read(std::string& line,std::istream& s);
 
-
-  void write(std::ostream& s);
+  void write(std::ostream& s, bool headers=false);
 
 
   /// it makes a copy of other where the position
@@ -830,7 +993,7 @@ public:
   std::size_t rata;
 
   std::string id;
-  double h_;
+  double dia_;
   std::vector<Astrocyte> astr_;
 
   LimiteTejido lt_;
@@ -865,14 +1028,14 @@ public:
   }
 
 
-  CortexMeasure* measure(std::mt19937_64 &mt, std::string id, double dia, std::vector<double> x, double minimal_distance_to_tissue=0, double minimal_distance_to_vaso=0, std::size_t maxpoints=1E4);
+  CortexMeasure measure(std::mt19937_64 &mt, std::string id, double dia, std::vector<double> x, double minimal_distance_to_tissue=0, double minimal_distance_to_vaso=0, std::size_t maxpoints=1E4);
 };
 
 
 
 
 
-class TissueSection
+class TissueSection : public BaseObject
 {
 public:
   TissueSection (std::string name,double dia):
@@ -880,11 +1043,18 @@ public:
     dia_(dia)
 
   {}
+  TissueSection()=default;
+
+  ~TissueSection(){}
+
+
+
+  void write(std::ostream& s);
 
 
   std::string id()const{return id_;}
 
-  std::map<unsigned,TissuePhoto> fotos;
+  std::map<std::size_t,TissuePhoto*> fotos;
 
 
   void align(std::ostream &logs);
@@ -894,15 +1064,58 @@ public:
   void distances();
 
 
-  CortexMeasure* measure(std::mt19937_64& mt,std::vector<double> x,double minimalDistanceTissue,double minimalDistanceVaso,std::size_t maxpoints);
+  std::vector<CortexMeasure> measure(std::mt19937_64& mt,std::vector<double> x,double minimalDistanceTissue,double minimalDistanceVaso,std::size_t maxpoints);
 
-  void measure(CommandManager* cm,std::mt19937_64& mt,std::vector<double> x,double minimalDistanceTissue,double minimalDistanceVaso,std::size_t maxpoints);
+  template<class CM>
+  void measure(CM* cm,std::mt19937_64& mt,std::vector<double> x,double minimalDistanceTissue,double minimalDistanceVaso,std::size_t maxpoints)
+  {
+    {
+      for (auto& f:fotos)
+        cm->push_back(f.second->measure(mt,id(),dia_,x,minimalDistanceTissue,minimalDistanceVaso,maxpoints));
+    }
+
+  }
 
 
 private:
   std::string id_;
   double dia_;
- };
+
+  // BaseClass interface
+public:
+  virtual std::string myClass() const override
+  {
+    return "TissueSections";
+  }
+
+  // BaseObject interface
+public:
+  virtual BaseObject *create() const override
+  {
+    return new TissueSection();
+  }
+  virtual std::ostream &writeBody(std::ostream &s) const override
+  {
+    writeField(s,"id",id_);
+    writeField(s,"dia",dia_);
+    s<<fotos.begin()->second->astr_.front().getHeader()<<"\n";
+    for (auto e:fotos)
+      e.second->write(s,false);
+    return s;
+
+  }
+  virtual void clear() override{}
+  virtual bool readBody(std::string &line, std::istream &s, std::ostream &logs) override
+  {
+    if (!readField(line,s,"id",id_,logs)) return false;
+    if (!readField(line,s,"dia",dia_,logs)) return false;
+    if (!readField(line,s,"ratones",fotos,logs)) return false;
+    return true;
+  }
+
+protected:
+  virtual void update() override{}
+};
 
 
 
@@ -948,12 +1161,12 @@ std::vector<double>& addStep(
 {
 
   for (unsigned i=0; i<x.size(); ++i)
-   {
-    x[i]+=y[i]*h;
-    if (x[i]<0)
-      {
-      x[i]=std::numeric_limits<double>::quiet_NaN();
-      }
+    {
+      x[i]+=y[i]*h;
+      if (x[i]<0)
+        {
+          x[i]=std::numeric_limits<double>::quiet_NaN();
+        }
     }
   return x;
 }
@@ -1067,9 +1280,9 @@ std::vector<std::vector<double>>& addMStep(
   for (unsigned i=0; i<x.size(); ++i)
     for (unsigned j=0; j<x.front().size(); ++j)
       {
-      x[i][j]+=y[i][j]*h;
-      if ((x[i][j])<0)
-        x[i][j]=std::numeric_limits<double>::quiet_NaN();
+        x[i][j]+=y[i][j]*h;
+        if ((x[i][j])<0)
+          x[i][j]=std::numeric_limits<double>::quiet_NaN();
       }
   return x;
 }
@@ -1105,7 +1318,7 @@ std::vector<std::vector<double>> operator*(
 
 inline
 std::vector<std::vector<double>> operator*(
-     std::vector<std::vector<double>> && x
+    std::vector<std::vector<double>> && x
     ,double t)
 {
 

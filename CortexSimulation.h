@@ -114,9 +114,75 @@ public:
   std::ostream& write(std::ostream& s);
 
   std::ostream& write(std::ostream& s, const std::string& var, const std::string& par );
+  void writeHeaderDataFrame(std::ostream& os)const
+  {
+    os<<"x"<<"\t";
+    os<<"t"<<"\t";
+    os<<"type"<<"\t";
+    os<<"psi_T"<<"\t";
+    os<<"psi_B"<<"\t";
+    os<<"omega_T"<<"\t";
+    os<<"omega_B"<<"\t";
+    os<<"rho";
+
+  }
+
+  void writeDataFrameHeader(std::ostream& os)const
+  {
+    os<<"x"<<"\t";
+    os<<"t"<<"\t";
+    os<<"type"<<"\t";
+    os<<"psi_T"<<"\t";
+    os<<"psi_B"<<"\t";
+    os<<"omega_T"<<"\t";
+    os<<"omega_B"<<"\t";
+    os<<"rho"<<"\t";
+
+  }
+  void writeDataFrame(std::ostream& os,
+                      std::size_t idt,
+                      std::size_t idx,
+                      std::size_t type) const
+  {
+    os<<x_[idx]<<"\t";
+    os<<t_[idt]<<"\t";
+    os<<type<<"\t";
+    os<<psi_T_[idt][idx]<<"\t";
+    os<<psi_B_[idt][idx]<<"\t";
+    os<<omega_T_[idt][idx]<<"\t";
+    os<<omega_B_[idt][idx]<<"\t";
+    os<<rho_[idt][idx][type];
+  }
 
 
+  void writeDataFrame(std::ostream& os) const
+  {
+    writeDataFrameHeader(os);
+    os<<"\n";
 
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+    for (std::size_t idx=0; idx<x_.size(); ++idx)
+      for (std::size_t type=0; type<rho_[0][0].size(); ++type)
+        {
+          writeDataFrame(os,idt,idx,type);
+          os<<"\n";
+        }
+    os<<"\n";
+
+  }
+
+  void writeRowDataFrame(std::ostream& os, std::string s) const
+  {
+
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+    for (std::size_t idx=0; idx<x_.size(); ++idx)
+      for (std::size_t type=0; type<rho_[0][0].size(); ++type)
+        {
+          os<<s;
+          writeDataFrame(os,idt,idx,type);
+          os<<"\n";
+        }
+  }
 
   bool isValid_=false;
 

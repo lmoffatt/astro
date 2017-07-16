@@ -21,6 +21,13 @@ kcat_psi  <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega cle
 kcat_omega <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
 
 
+g_M1M2  <LOG> 5E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+
+
+g_M2M1  <LOG> 0.5E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+
+
+
 g_01 <LOG>  1E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
 
 
@@ -33,10 +40,10 @@ g_12  <LOG> 1E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
 g_21  <LOG> 3E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
 
-
-
-
 g_23 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
+
+
+g_max_psi_M2 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from M2 to M1
 
 
 g_max_psi_2 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
@@ -50,6 +57,9 @@ g_max_psi_4 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 
 
 
 g_max_psi_5 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+g_max_omega_M2 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from M2 to M1
 
 
 g_max_omega_2 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
@@ -82,8 +92,9 @@ N_5  <LOG>  70000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on re
 
 N_N  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of DAMP receptors on neurons
 
-N_M  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of DAMP receptors on microglia
+N_M1  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of DAMP receptors on M1 microglia
 
+N_M2  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of DAMP receptors on M2 microglia
 
 
 M_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on resting cells
@@ -104,8 +115,9 @@ M_5  <LOG>  70000   [receptors cell^-1] 10 [dB]// number of soluble mediators re
 
 M_N  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on neurons
 
-M_M  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on microglia
+M_M1  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on M1 microglia
 
+M_M2  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on M2 microglia
 
 
 N_Astr <LOG>  1E10  [cells L^-1] 3 [dB]//1E10
@@ -125,7 +137,10 @@ a_factor <LOG> 2   [s^0]  10  [dB]// increase in apoptosis rate per state change
 
 a_max_psi_Neuron <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
-a_max_psi_Microglia <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+a_max_psi_M1 <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_M2 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
 
 a_max_psi_1 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
@@ -140,8 +155,9 @@ a_max_psi_5 <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturat
 
 a_max_omega_Neuron <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
-a_max_omega_Microglia <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+a_max_omega_M1 <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
+a_max_omega_M2 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
 a_max_omega_1 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
@@ -181,8 +197,9 @@ k_sig_max_omega_4 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secrea
 
 k_sig_max_omega_5 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
 
-k_sig_max_omega_microglia <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate of microglia cells at saturation of psi  mediator
+k_sig_max_omega_M1 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate of microglia cells at saturation of psi  mediator
 
+k_sig_max_omega_M2 <LOG> 100  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate of microglia cells at saturation of psi  mediator
 
 
 k_sig_max_psi_1 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
@@ -195,7 +212,10 @@ k_sig_max_psi_4 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreati
 
 k_sig_max_psi_5 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
 
-k_sig_max_psi_microglia <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate of microglia at saturation of DAMP
+k_sig_max_psi_M1 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate of microglia at saturation of DAMP
+
+k_sig_max_psi_M2 <LOG> 100  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate of microglia at saturation of DAMP
+
 
 
 inj_width_3dpl <LOG> 50 [um] 1 [dB] // ancho de la injuria a tres dias

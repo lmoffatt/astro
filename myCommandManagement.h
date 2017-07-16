@@ -3,12 +3,15 @@
 
 #include <string>
 #include <map>
+
+#include <vector>
 #include <initializer_list>
 #include <sstream>
 #include <fstream>
 
 
 #include "myTuples.h"
+#include "myInputSerializer.h"
 
 template<typename T>
 class C
@@ -22,15 +25,83 @@ class Cs
 
 };
 
-template<template<typename> class C>
+template<template<typename...> class C>
 class Co
 {
 
 };
 
 
-template<template<typename> class Cls,typename T>
-bool load_from_file(const std::string& file_name, T& x, std::ostream& logstream)
+
+template<typename...>
+struct is_container
+{
+  static constexpr bool value=false;
+};
+
+template<template<typename T,typename> class Co,typename T, typename Alloc>
+struct is_container<Co<T,Alloc>>
+{
+  static constexpr bool value=true;
+};
+
+
+
+
+
+
+
+template<template<typename> class Cls,template<typename, typename> class Co, typename T, typename Alloc,typename std::enable_if<!std::is_pointer<T>::value, int>::type=0>
+bool load_from_file(C<Co<T,Alloc>>, const std::string& file_name, Co<T,Alloc>& v, std::ostream& logstream)
+{
+  std::vector<std::string> names;
+  std::stringstream ss(file_name);
+  if (ss>>names)
+    {
+      for (std::string filename:names)
+        {
+
+          T x;
+          if (load_from_file<Cls>(C<T>(),filename,x,logstream))
+            v.push_back(x);
+          else
+            return false;
+        }
+      return true;
+    }
+  else
+    return false;
+}
+
+
+template<template<typename> class Cls,template<typename, typename> class Co, typename T, typename Alloc>
+bool load_from_file(C<Co<T*,Alloc>>,const std::string& file_name, Co<T*,Alloc>& v, std::ostream& logstream)
+{
+  std::vector<std::string> names;
+  std::stringstream ss(file_name);
+  if (ss>>names)
+    {
+      for (std::string filename:names)
+        {
+
+          T* x=new T;
+          if (load_from_file<Cls>(C<T*>(),filename,x,logstream))
+            v.push_back(x);
+          else
+            {
+              delete x;
+              return false;
+            }
+        }
+      return true;
+    }
+  else
+    return false;
+}
+
+
+template<template<typename> class Cls,typename T,typename std::enable_if<!is_container<T>::value, int>::type=0>
+bool load_from_file(C<T>,const std::string& file_name, T& x, std::ostream& logstream)
 {
   std::string filename=file_name;
   std::ifstream fi;
@@ -75,11 +146,13 @@ bool load_from_file(const std::string& file_name, T& x, std::ostream& logstream)
 
 }
 
+
+
 template<typename Cm>
 class myBaseCommand
 {
 public:
-  virtual void run(Cm* cm,
+  virtual bool run(Cm* cm,
                    const std::string& idResult,
                    const std::map<std::string,std::string>& args,
                    std::ostream& logstream)=0;
@@ -87,39 +160,84 @@ public:
 
 
 
-template <class Cm,template<typename>class Cls,class F,class R, typename... Argsout>
-R run_impl_1(C<R>,Cm* cm,Co<Cls>,
-             const F& f,
-             std::ostream& log,
-             std::map<std::string, std::string> in,
-             Argsout...argsOut)
+template <class Cm,template<typename>class Cls,class F, typename R,typename... Argsout>
+std::pair<R,bool> run_R_impl_1(Cm* /*cm*/,
+                               Co<Cls>,
+                               Cs<R>,
+                               const F& f,
+                               std::ostream& /*log*/,
+                               std::map<std::string, std::string> /*in*/,
+                               Argsout...argsOut)
 {
-  return f(argsOut...);
+  return {f(argsOut...),true};
 
 }
 
 
-template <class Cm,template<typename>class Cls,class F,class R, typename T,typename... ArgsIn,typename... Argsout>
-R run_impl_1(C<R>,Cm* cm,Co<Cls>,
-             const F& f,
-             std::ostream& log,
-             std::pair<std::string,T> a,
-             std::pair<ArgsIn,std::string>... argsIn,
-             const std::map<std::string, std::string>& in,
-             Argsout...argsOut)
+template <class Cm,template<typename>class Cls,class F,typename R,typename T,typename... ArgsIn,typename... Argsout>
+std::pair<R,bool> run_R_impl_1(Cm* cm,
+                               Co<Cls>,
+                               Cs<R>,
+                               const F& f,
+                               std::ostream& log,
+                               const std::map<std::string, std::string>& in,
+                               std::pair<T, std::string> a,
+                               std::pair<ArgsIn,std::string>... argsIn,
+                               Argsout...argsOut)
 {
-  auto it=in.find(a.first);
+  auto it=in.find(a.second);
   if (it==in.end())
     {
-      log<<a.first<<"=  [not listed, use default], ";
+      log<<a.second<<"=  [not listed, use default], ";
     }
   else
     {
-      if (cm->template get<T>(it->second,a.second))
+      std::stringstream ss(it->second);
+      if (Cls<T>::read(ss,a.first,log))
+        {
+          log<<it->first<<"="+it->second<<", ";
+        }
+      else if (cm->get(C<T>(),it->second,a.first))
         {
           log<<it->first<<"="<<it->second<<" [variable], ";
         }
-      else  if (cm->template load<T>(it->second,a.second))
+      else  if (load_from_file<Cls>(C<T>(),it->second,a.first,log))
+        {
+          log<<it->first<<"="<<it->second<<" [in file], ";
+        }
+      else
+        {
+          return {{},false};
+
+
+        }
+    }
+  return run_R_impl_1(cm,Co<Cls>(),Cs<R>(),f,log,in,argsIn...,argsOut...,a.first );
+}
+
+
+template <class Cm,template<typename>class Cls,class F,class R,typename T,typename... ArgsIn>
+std::pair<R,bool> run_R_impl_1(Cm* cm,
+                               Co<Cls>,
+                               Cs<R>,
+                               const F& f,
+                               std::ostream& log,
+                               const std::map<std::string, std::string>& in,
+                               std::pair<T, std::string> a,
+                               std::pair<ArgsIn,std::string>... argsIn)
+{
+  auto it=in.find(a.second);
+  if (it==in.end())
+    {
+      log<<a.second<<"=  [not listed, use default], ";
+    }
+  else
+    {
+      if (cm->template get<T>(it->second,a.first))
+        {
+          log<<it->first<<"="<<it->second<<" [variable], ";
+        }
+      else  if (load_from_file<Cls,T>(it->second,a.first,log))
         {
           log<<it->first<<"="<<it->second<<" [in file], ";
         }
@@ -132,24 +250,33 @@ R run_impl_1(C<R>,Cm* cm,Co<Cls>,
             }
           else
             {
-              log<<it->first<<"="<<it->second<<" [error, use default],";
+              return {{},false};
 
             }
         }
     }
-  return run_impl_1(C<R>(),cm,Co<Cls>(),f,log,argsIn...,in,argsOut...,a.second);
+  return run_R_impl_1(cm,Co<Cls>(),Cs<R>(),f,log,in,argsIn...,a.first );
 }
 
 
-template <class Cm,template<typename>class Cls,class F,class R, typename T,int... Is,typename... ArgsIn>
-R run_impl_0
-(C<R> ,Cm* cm,Co<Cls>,const F& f,std::ostream& ls,
- index_tuple<Is...>,
- std::tuple<std::pair<ArgsIn,std::string>...> argsIn,
- const std::map<std::string, std::string>& in)
+
+template <class Cm,template <typename T>class Cls,class F, class R,std::size_t... Is,typename... ArgsIn>
+std::pair<R,bool> run_R_impl_0
+(Cm* cm,
+ Co<Cls>,
+ Cs<R>,
+ const F& f,
+ std::ostream& ls,
+ const std::map<std::string, std::string>& in,
+ std::index_sequence<Is...>,
+ std::tuple<std::pair<ArgsIn,std::string>...> argsIn
+ )
 {
-  return run_impl_1(C<R>(),cm,Co<Cls>(),f,ls,std::get<Is...>(argsIn,in));
+  return run_R_impl_1(cm,Co<Cls>(),Cs<R>(),f,ls,in,std::get<Is>(argsIn)...);
 }
+
+
+
 
 
 
@@ -161,10 +288,10 @@ R run_impl_0
  * \tparam R return type
  * \tparam Args ordered list of function arguments
  */
-template <class Cm,template<typename>class Cls,class F,class R, typename... Args>
+template <class Cm,template<typename>class Cls,class F,class R,typename... Args>
 class myCommand: public myBaseCommand<Cm>
 {
-
+public:
 
   /*!
    * \brief run run command on line input
@@ -176,46 +303,40 @@ class myCommand: public myBaseCommand<Cm>
    *
    * the arguments could be in any order. If an argument is absent, its default value is used instead. The log strean receives all the arguments actually used with their origin
    */
-  R runit(Cm* cm_,Co<Cls>(),std::map<std::string, std::string> m, std::ostream& logstream)
+  std::pair<R,bool> runit(Cm* cm_,const std::map<std::string, std::string>& m, std::ostream& logstream)
   {
-
-    return run_impl_0(cm_,f_,Co<Cls>(),logstream,typename make_indexes<Args...>::type(),args_,m);
+    return  run_R_impl_0(cm_,
+                         Co<Cls>(),
+                         Cs<R>(),
+                         f_,
+                         logstream,
+                         m,
+                         std::index_sequence_for<Args...>(),
+                         args_);
   }
 
-  myCommand(const F& f,std::pair<std::string,Args>... args):
+  myCommand(const F& f,std::pair<Args,std::string>... args):
     f_(f),
     args_{args...}{}
 
 private:
   const F& f_;
-  std::tuple<std::pair<std::string,Args>...> args_;
+  std::tuple<std::pair<Args,std::string>...> args_;
 
-  static std::map<std::string, std::string>
-  parse_args(const std::string& line)
-  {
-    std::map<std::string, std::string> out;
-    // name0=value0, name1=value1,
-
-    std::stringstream ss(line);
-    std::string s;
-    while (std::getline(ss,s,','))
-      {
-        auto npos=s.find('=');
-        out[s.substr(0,npos)]=s.substr(npos+1);
-      }
-    return out;
-  }
 
   // myBaseCommand interface
 public:
-  virtual void run(Cm *cm,
-                   const std::string& idResult,
-                   std::map<std::string, std::string> args,
-                   std::ostream& logstream) override
+  virtual bool  run(Cm* cm,
+                    const std::string& idResult,
+                    const std::map<std::string,std::string>& args,
+                    std::ostream& logstream) override
   {
 
-    R o=runit(cm,Co<Cls>(),args,logstream);
-    cm->template push_back<R>(idResult,o);
+    std::pair<R,bool> o=runit(cm,args,logstream);
+    if (o.second)
+      cm->template push_back<R>(idResult,o.first);
+    return o.second;
+
   }
 };
 
@@ -226,20 +347,22 @@ public:
 
 
 template <class Cm,template<typename>class Cls,class F, typename... Argsout>
-void run_void_impl_1(Cm* /*cm*/,
-                     Co<Cls>,
-                     const F& f,
-                     std::ostream& /*log*/,
-                     std::map<std::string, std::string> /*in*/,
-                     Argsout...argsOut)
+bool  run_void_impl_1(Cm* /*cm*/,
+                      Co<Cls>,
+                      const F& f,
+                      std::ostream& /*log*/,
+                      std::map<std::string, std::string> /*in*/,
+                      Argsout...argsOut)
 {
+  std::cerr<<"f(argsOut..)\n";
   f(argsOut...);
+  return true;
 
 }
 
 
 template <class Cm,template<typename>class Cls,class F,typename T,typename... ArgsIn,typename... Argsout>
-void run_void_impl_1(Cm* cm,
+bool run_void_impl_1(Cm* cm,
                      Co<Cls>,
                      const F& f,
                      std::ostream& log,
@@ -260,27 +383,25 @@ void run_void_impl_1(Cm* cm,
         {
           log<<it->first<<"="+it->second<<", ";
         }
-      else if (cm->template get<T>(it->second,a.first))
+      else if (cm->template get(C<T>(),it->second,a.first))
         {
           log<<it->first<<"="<<it->second<<" [variable], ";
         }
-      else  if (load_from_file<Cls,T>(it->second,a.first,log))
+      else  if (load_from_file<Cls>(C<T>(),it->second,a.first,log))
         {
           log<<it->first<<"="<<it->second<<" [in file], ";
         }
       else
         {
-
-              log<<it->first<<"="<<it->second<<" [error, use default],";
-
+          return false;
         }
     }
-  run_void_impl_1(cm,Co<Cls>(),f,log,in,argsIn...,argsOut...,a.first );
+  return run_void_impl_1(cm,Co<Cls>(),f,log,in,argsIn...,argsOut...,a.first );
 }
 
 
 template <class Cm,template<typename>class Cls,class F,typename T,typename... ArgsIn>
-void run_void_impl_1(Cm* cm,
+bool run_void_impl_1(Cm* cm,
                      Co<Cls>,
                      const F& f,
                      std::ostream& log,
@@ -312,18 +433,18 @@ void run_void_impl_1(Cm* cm,
             }
           else
             {
-              log<<it->first<<"="<<it->second<<" [error, use default],";
+              return false;
 
             }
         }
     }
-  run_void_impl_1(cm,Co<Cls>(),f,log,in,argsIn...,a.first );
+  return run_void_impl_1(cm,Co<Cls>(),f,log,in,argsIn...,a.first );
 }
 
 
 
 template <class Cm,template <typename T>class Cls,class F, std::size_t... Is,typename... ArgsIn>
-void run_void_impl_0
+bool run_void_impl_0
 (Cm* cm,
  Co<Cls>,
  const F& f,
@@ -333,7 +454,7 @@ void run_void_impl_0
  std::tuple<std::pair<ArgsIn,std::string>...> argsIn
  )
 {
-  run_void_impl_1(cm,Co<Cls>(),f,ls,in,std::get<Is>(argsIn)...);
+  return run_void_impl_1(cm,Co<Cls>(),f,ls,in,std::get<Is>(argsIn)...);
 }
 
 
@@ -364,15 +485,15 @@ public:
    *
    * the arguments could be in any order. If an argument is absent, its default value is used instead. The log strean receives all the arguments actually used with their origin
    */
-  void runit(Cm* cm_,const std::map<std::string, std::string>& m, std::ostream& logstream)
+  bool runit(Cm* cm_,const std::map<std::string, std::string>& m, std::ostream& logstream)
   {
-    run_void_impl_0(cm_,
-                    Co<Cls>(),
-                    f_,
-                    logstream,
-                    m,
-                    std::index_sequence_for<Args...>(),
-                    args_);
+    return run_void_impl_0(cm_,
+                           Co<Cls>(),
+                           f_,
+                           logstream,
+                           m,
+                           std::index_sequence_for<Args...>(),
+                           args_);
   }
 
   myCommand(const F& f,std::pair<Args,std::string>... args):
@@ -386,17 +507,15 @@ private:
 
   // myBaseCommand interface
 public:
-  virtual void  run(Cm* cm,
+  virtual bool  run(Cm* cm,
                     const std::string& ,
                     const std::map<std::string,std::string>& args,
-                    std::ostream& logstream)
+                    std::ostream& logstream) override
   {
 
-    runit(cm,args,logstream);
+    return runit(cm,args,logstream);
   }
 };
-
-
 
 
 
@@ -407,6 +526,7 @@ myCommand<Cm,Cls,F,R,Args...>* make_Command
 {
   return new myCommand<Cm,Cls,F,R,Args...>(f,args...);
 }
+
 
 
 
@@ -428,7 +548,7 @@ bool get_impl_1(const std::string& id, T& x,
 template<typename T, typename...Ts>
 bool get_impl_1(const std::string& id, T& x,
                 std::map<std::string,T> mymap,
-                std::map<std::string,Ts>... m)
+                std::map<std::string,Ts>... )
 {
   auto it=mymap.find(id);
   if (it!=mymap.end())
@@ -454,6 +574,30 @@ bool get_map(const std::string& id, T& x, std::tuple<std::map<std::string,Ts>...
   return get_impl_0(id,x,std::index_sequence_for<Ts...>(),m);
 }
 
+template<template<typename> class Cls,typename...Ts>
+class myCommandManager;
+
+template<template<typename...> class F, class Cm,typename... Args>
+bool apply_impl(const Co<F>&,Cm* ,const std::string& , Cs<>, Args... )
+{
+  return false;
+}
+
+
+
+template<template<typename...> class F, class Cm,typename... Args, typename T,typename... Ts>
+bool apply_impl(const Co<F>& f,Cm* cm,const std::string& id, Cs<T,Ts...>, Args... args)
+{
+  T x;
+  if (cm->get(C<T>(),id,x))
+    {
+      F<T>::apply(x,args...);
+      return true;
+    }
+  else return apply_impl(f,cm,id,Cs<Ts...>(),args...);
+}
+
+
 
 
 
@@ -462,8 +606,8 @@ bool get_map(const std::string& id, T& x, std::tuple<std::map<std::string,Ts>...
  * Cls<T>::name()
  * Cls<T>::read(std::istream&,T& x,std::ostream& logstream)
  */
-template<template<typename> class Cls,class...Ts>
-class myCommandManager
+template<template<typename> class Cls,typename...Ts, class... Tptrs>
+class myCommandManager<Cls,Cs<Ts...>,Cs<Tptrs...>>
 {
 public:
   template<typename T>
@@ -480,7 +624,9 @@ public:
     auto n2=line.find_first_of('>',n1);
     std::string commandName=line.substr(0,n0);
     std::string argsList=line.substr(n0+1,n1-n0-1);
-    std::string resultName=line.substr(n2+1);
+    std::string resultName;
+    if (n2!=line.npos)
+      resultName=line.substr(n2+1);
     std::map<std::string, std::string> out;
     // name0=value0, name1=value1,
 
@@ -506,11 +652,20 @@ public:
         auto o=line_to_CommandName_Arg_Result(line);
         if (!std::get<0>(o).empty())
           {
-            Command* c=command(std::get<0>(o));
-            if (c!=0)
+            auto cv=command(std::get<0>(o));
+            if (!cv.empty())
               {
-                logstream<<line<<"\n";
-                c->run(this,std::get<1>(o),std::get<2>(o),logstream);
+                std::size_t i;
+                for (i=0; i<cv.size();++i)
+                  {
+                    if(cv[i]->run(this,std::get<1>(o),std::get<2>(o),logstream))
+                      {
+                        logstream<<line<<"\n";
+                        break;
+                      }
+                  }
+                if (i==cv.size())
+                  logstream<<"error in"<<line<<" "<<std::get<0>(o)<<" substitution error";
               }
             else
               logstream<<"error in"<<line<<" "<<std::get<0>(o)<<" is not a command";
@@ -521,41 +676,125 @@ public:
 
   //CommandBase* Command(std::string commandName);
 
-  template<typename T>
-  bool get(const std::string& id, T& x)
+  template<typename T, typename std::enable_if<!is_container<T>::value,int>::type=0>
+  bool get(C<T>,const std::string& id, T& x)
   {
     return get_map(id,x,data_);
   }
+  template<typename T, typename std::enable_if<!is_container<T>::value,int>::type=0>
+  bool get(C<T*>,const std::string& id, T*& x)
+  {
+    return get_map(id,x,dataPtr_);
+  }
 
+  template< typename T, typename Alloc,
+            typename std::enable_if<!std::is_pointer<T>::value,int>::type = 0>
+  bool get(C<std::vector<T, Alloc>>,const std::string& id, std::vector<T,Alloc>& v)
+  {
+    if (get_map(id,v,data_))
+      return true;
+    else
+      {
+        std::vector<std::string> ids;
+        std::stringstream ss(id);
+        if (ss>>ids)
+          {
+            for (std::string name:ids)
+              {
+                T x;
+                if (!get_map(name,x,data_))
+                  return false;
+                else
+                  v.push_back(x);
+              }
+            return true;
+          }
+        else return false;
+      }
+  }
+
+  template< typename T, typename Alloc>
+  bool get(C<std::vector<T*, Alloc>>, const std::string& id, std::vector<T*,Alloc>& v)
+  {
+    if (get_map(id,v,data_))
+      return true;
+    else
+      {
+        std::vector<std::string> ids;
+        std::stringstream ss(id);
+        if (ss>>ids)
+          {
+            for (std::string name:ids)
+              {
+                T *x=new T;
+                if (!get_map(name,x,dataPtr_))
+                  {
+                    delete x;
+                    return false;
+                  }
+                else
+                  v.push_back(x);
+              }
+            return true;
+          }
+        else return false;
+      }
+  }
+
+
+
+  template<template<typename...>class F, typename... Args>
+  bool apply(const Co<F>& f,const std::string& id, Args... args)
+  {
+    if (apply_impl(f,this,id,Cs<Tptrs*...>(),std::forward<Args>(args)...))
+      return true;
+    else return apply_impl(f,this,id,Cs<Ts...>(),args...);
+  }
 
 
 
   template <typename T>
   void push_back(const std::string& id, T* x)
   {
-    auto m=std::get<typename std::map<std::string,T*>>(data_);
+    auto& m=std::get<typename std::map<std::string,T*>>(dataPtr_);
     m[id]=x;
   }
+
+  template <typename T>
+  void push_back(const std::string& id, T x)
+  {
+    auto m=std::get<typename std::map<std::string,T>>(data_);
+    m[id]=x;
+  }
+
+
   void push_command(const std::string& id, Command * cmd)
   {
-    cmds_[id]=cmd;
+    cmds_.insert({id,cmd});
   }
 
-  Command* command(const std::string& id)
+  std::vector<Command*> command(const std::string& id)
   {
-    auto it=cmds_.find(id);
-    if (it!=cmds_.end())
-      return it->second;
-    else
-      return nullptr;
-
+    auto p=cmds_.equal_range(id);
+    std::vector<Command*> o;
+    for (auto it=p.first; it!=p.second; ++it)
+      o.push_back(it->second);
+    return o;
   }
+
+   myCommandManager():
+     data_{},
+     dataPtr_{},
+     cmds_{}{}
+
 
 
 private:
-  std::tuple<std::map <std::string, Ts*>...> data_;
+  std::tuple<std::map <std::string, Ts>...> data_;
+  std::tuple<std::map <std::string, Tptrs*>...> dataPtr_;
 
-  std::map<std::string,myBaseCommand<myCommandManager>*> cmds_;
+  std::multimap<std::string,myBaseCommand<myCommandManager>*> cmds_;
+
 
 };
 

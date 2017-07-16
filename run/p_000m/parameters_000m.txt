@@ -1,6 +1,6 @@
-parameters parameters_zero
+parameters parameters_000m
 
-model 0.0
+model 10.0
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
 
@@ -18,9 +18,15 @@ g_12  <LOG> 1E-5   [s-1] 10 [dB]// 1E-5 cell type change rate from 1 to 0
 
 g_21  <LOG> 3E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
-g_23 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
+g_23 <LOG> 5E-7   [s-1] 10 [dB]//   cell type change rate from 2 to 3
+
+g_32 <LOG> 5E-7   [s-1] 10 [dB]//   cell type change rate from 3 to 2
 
 g_max <LOG> 5E-5  [s-1] 10 [dB]// 5E-5 maximal cell type change rate from 1 to 2
+
+g_M1M2 <LOG>  1E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
+
+g_M2M1  <LOG> 3E-5   [s-1] 10 [dB]// 3E-5 cell type change rate from 1 to 0
 
 N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
 
@@ -40,8 +46,6 @@ a_factor <LOG> 2   [s^0]  10  [dB]// increase in apoptosis rate per state change
 
 a_max_Neuron <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
-a_max_Microglia <LOG> 5E-7 [s^-1] 10 [dB] // microglia apoptosis rate at saturated DAMP
-
 a_max <LOG>  5E-7 [s-1] 10 [dB]// 1E-6 cell apoptosis rate at saturated DAMP
 
 inj_width <LOG>  1E-6   [m] 3 [dB]//  width of the injury
@@ -52,9 +56,10 @@ prot_concentration <LOG>  200  [g/ml]  2.12 [dB]// protein density
 
 DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
 
-inj_width_3dpl <LOG> 50 [um] 1 [dB] // ancho de la injuria a tres dias
+inj_width_3 <LOG> 535 [um] 3.66 [dB] // ancho de la injuria a tres dias
 
-inj_width_7dpl2 <LOG> 1000 [um]  1  [dB] // ancho de la injuria a siete dias
+inj_width_7 <LOG> 881 [um]  3.30  [dB] // ancho de la injuria a siete dias
+
 
 
 

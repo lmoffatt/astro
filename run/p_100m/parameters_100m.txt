@@ -48,6 +48,7 @@ a_factor <LOG> 2   [s^0]  10  [dB]// increase in apoptosis rate per state change
 a_max_Neuron <LOG> 2E-5   [s^-1]  10  [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
 a_max_Microglia <LOG> 5E-7   [s^-1]  10  [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+// microglia puede ser M2 (antiinflamatoria) o M1 (proinflamatoria)
 
 
 a_max <LOG>  5E-7   [s^-1]  10  [dB]//  2E-5 neuron apoptosis rate at saturated DAMP

@@ -15,11 +15,11 @@ CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const Cortex
 
   CortexState out(c);
   for (std::size_t k=0; k<dRho[0].size(); ++k)
-  if (std::isnan(dRho[0][k])||(hasOmega&&std::isnan(dOmega[0])))
-    {
-      out.isValid_=false;
-      return out;
-    }
+    if (std::isnan(dRho[0][k])||(hasOmega&&std::isnan(dOmega[0])))
+      {
+        out.isValid_=false;
+        return out;
+      }
   if (hasOmega)
     {
       addStep(out.omega_T_,dOmega,dt);
@@ -39,17 +39,41 @@ CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExper
 {
 
   CortexState o(s.x_,s.dx_,s.h_,p.epsilon_,p.N_.size());
-
-  double r0=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
-
-  unsigned numX=o.x_.size();
-  for (unsigned x=0; x<numX; ++x)
+  double rmicro,r0;
+  if (p.N_.size()==9)
     {
-      o.rho_[x][0]=p.dens_Neur_*std::pow(s.h_,2)*s.dx_[x]*1000;  // dens is in cells per liter
+      rmicro=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
+      r0=p.g_left_[4]/(p.g_rigth_[3]+p.g_left_[4]);
+    }
+  else
+    {
+      r0=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
+
+    }
+  unsigned numX=o.x_.size();
+  if (p.N_.size()==9)
+    {
+      for (unsigned x=0; x<numX; ++x)
+        {
+          o.rho_[x][0]=p.dens_Neur_*std::pow(s.h_,2)*s.dx_[x]*1000;  // dens is in cells per liter
+          o.rho_[x][1]=p.dens_Microglia_*std::pow(s.h_,2)*s.dx_[x]*1000*rmicro;
+          o.rho_[x][2]=p.dens_Microglia_*std::pow(s.h_,2)*s.dx_[x]*1000*(1-rmicro);
 
 
-      o.rho_[x][1]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000*r0;
-      o.rho_[x][2]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000*(1-r0);
+          o.rho_[x][3]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000*r0;
+          o.rho_[x][4]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000*(1-r0);
+        }
+    }
+  else
+    {
+      for (unsigned x=0; x<numX; ++x)
+        {
+          o.rho_[x][0]=p.dens_Neur_*std::pow(s.h_,2)*s.dx_[x]*1000;  // dens is in cells per liter
+
+
+          o.rho_[x][1]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000*r0;
+          o.rho_[x][2]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000*(1-r0);
+        }
     }
   o.psi_B_=Psi_Bound(p,o);
   o.omega_B_=Omega_Bound(p,o);
@@ -67,18 +91,44 @@ CortexState SimplestModel::init(const SimplestModel::Param &p,
 
   CortexState o(x_grid_in_m,s.h(),p.epsilon_,p.N_.size());
 
-  double r0=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
-
-  unsigned numX=o.x_.size();
-  for (unsigned x=0; x<numX; ++x)
+  double rmicro,r0;
+  if (p.N_.size()==9)
     {
-
-      o.rho_[x][0]=p.dens_Neur_*std::pow(s.h(),2)*o.dx_[x]*1000;  // dens is in cells per liter
-
-      o.rho_[x][1]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000*r0;
-      o.rho_[x][2]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000*(1-r0);
+      rmicro=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
+      r0=p.g_left_[4]/(p.g_rigth_[3]+p.g_left_[4]);
+    }
+  else
+    {
+      r0=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
 
     }
+
+  unsigned numX=o.x_.size();
+  if (p.N_.size()==9)
+    {
+      for (unsigned x=0; x<numX; ++x)
+        {
+          o.rho_[x][0]=p.dens_Neur_*std::pow(s.h(),2)*o.dx_[x]*1000;  // dens is in cells per liter
+          o.rho_[x][1]=p.dens_Microglia_*std::pow(s.h(),2)*o.dx_[x]*1000*rmicro;
+          o.rho_[x][2]=p.dens_Microglia_*std::pow(s.h(),2)*o.dx_[x]*1000*(1-rmicro);
+          o.rho_[x][3]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000*r0;
+          o.rho_[x][4]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000*(1-r0);
+        }
+    }
+  else
+    {
+      for (unsigned x=0; x<numX; ++x)
+        {
+
+          o.rho_[x][0]=p.dens_Neur_*std::pow(s.h(),2)*o.dx_[x]*1000;  // dens is in cells per liter
+
+          o.rho_[x][1]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000*r0;
+          o.rho_[x][2]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000*(1-r0);
+
+        }
+    }
+
+
   o.psi_B_=Psi_Bound(p,o);
   o.omega_B_=Omega_Bound(p,o);
   return o;
@@ -528,10 +578,10 @@ std::vector<double> BaseModel::getObservedNumberFromData(const std::vector<doubl
 {
   std::vector<double>  v(5);
   v[0]=modelRho[0];
-  v[1]=modelRho[2];
-  v[2]=modelRho[3];
-  v[3]=modelRho[4];
-  v[4]=modelRho[5];
+  v[1]=modelRho[1];
+  v[2]=modelRho[2];
+  v[3]=modelRho[3];
+  v[4]=modelRho[4];
   return v;
 }
 
@@ -629,6 +679,10 @@ std::map<double, BaseModel *> BaseModel::getModels()
 
   o[Model214::number()]=new Model214;
   o[Model215::number()]=new Model215;
+
+
+  o[Model00m::number()]=new Model00m;
+
 
   return o;
 

@@ -58,7 +58,7 @@ public:
   const BaseModel* getModel()const;
 
 protected:
-  void update();
+  void update() override;
 
   std::vector<std::vector<double>> getstate(const Experiment* e);
 
@@ -242,7 +242,7 @@ public:
   {
     return CortexLikelihood::getPrior();
   }
-  CortexSimulation simulate(const Parameters &parameters) const;
+  CortexSimulation simulate(const Parameters &parameters) const override;
   std::vector<std::vector<double> > g(const Parameters &parameters, const CortexSimulation &s) const;
 };
 
@@ -432,6 +432,32 @@ public:
     return out;
 
   }
+
+  std::string id()const {return CL_->getPrior().id();}
+
+
+  Parameters getPrior()const
+  {
+    return CL_->getPrior();
+  }
+
+
+  Parameters getParameter(const M_Matrix<double>& par)const
+  {
+       return CL_->getPrior().toParameters(par.toVector());
+  }
+
+  CortexSimulation getSimulation(const Parameters& par)const
+  {
+       return CL_->simulate(par);
+  }
+
+  CortexSimulation getSimulation(const M_Matrix<double>& par)const
+  {
+       return CL_->simulate(getParameter(par));
+  }
+
+
 
   MyModel(CortexLikelihood* CL):CL_(CL){}
  private:

@@ -82,7 +82,6 @@ CommandManager::CommandManager()
   cmd_["write"]=new writeCommand(this);
   cmd_["merge"]=new MergeCommand(this);
   cmd_["distances"]=new DistancesCommand(this);
-  cmd_["histogram"]=new HistogramCommand(this);
   cmd_["simulate"]=new SimulateCommand(this);
   cmd_["experiment"]=new ExperimentCommand(this);
   cmd_["likelihood"]=new LikelihoodCommand(this);
@@ -299,61 +298,59 @@ void DistancesCommand::run(const std::string& line, std::ostream &/*logs*/)
 }
 
 
+//void HistogramCommand::run(const std::string& line, std::ostream &/*logs*/)
+//{
+
+//  //histogram 3dpl d_les  0:+100:3000
+//  // histogram 3dpl d_les 1E7 1 0  0 [0 25 50 100 200 500:500:4000]   3dpl 7dpl
+
+//  std::size_t maxnumpoints,initseed;
+//  double minDistance_Tissue, minDistance_Vaso;
+
+//  std::string cName, dataName,kind;
+//  std::stringstream ss(line);
+//  ss>>cName>>dataName>>kind>>maxnumpoints>>initseed
+//      >>minDistance_Tissue>>minDistance_Vaso;
+
+//  std::string ch;
+//  while ((ss>>ch)&&(ch!="[")){}
+//  std::string interval;
+//  while ((ss>>ch)&&(ch!="]"))
+//    interval+=ch+" ";
+
+//  TissueSection* s=cm_->getSection(dataName);
+
+//  std::vector<double> limits=label_to_sequence(interval);
+
+//  std::mt19937_64 mt;
+//  if (initseed==0)
+//    {
+//      std::random_device rd;
+//      auto seed=rd();
+//      mt.seed(seed);
+//      std::cout<<"experiment uses seed="<<seed<<std::endl;
+//    }
+//  else if (initseed==1)
+//    {
+//      mt.seed();
+//      std::cout<<"experiment uses default seed"<<std::endl;
+//    }
+//  else
+//    {
+//      mt.seed(initseed);
+//      std::cout<<"experiment uses provided seed="<<initseed<<std::endl;
+
+//    }
 
 
-void HistogramCommand::run(const std::string& line, std::ostream &/*logs*/)
-{
+//  if (s!=nullptr)
+//    {
+//      s->measureIt(cm_,mt,limits,minDistance_Tissue, minDistance_Vaso,maxnumpoints);
 
-  //histogram 3dpl d_les  0:+100:3000
-  // histogram 3dpl d_les 1E7 1 0  0 [0 25 50 100 200 500:500:4000]   3dpl 7dpl
-
-  std::size_t maxnumpoints,initseed;
-  double minDistance_Tissue, minDistance_Vaso;
-
-  std::string cName, dataName,kind;
-  std::stringstream ss(line);
-  ss>>cName>>dataName>>kind>>maxnumpoints>>initseed
-      >>minDistance_Tissue>>minDistance_Vaso;
-
-  std::string ch;
-  while ((ss>>ch)&&(ch!="[")){}
-  std::string interval;
-  while ((ss>>ch)&&(ch!="]"))
-    interval+=ch+" ";
-
-  TissueSection* s=cm_->getSection(dataName);
-
-  std::vector<double> limits=label_to_sequence(interval);
-
-  std::mt19937_64 mt;
-  if (initseed==0)
-    {
-      std::random_device rd;
-      auto seed=rd();
-      mt.seed(seed);
-      std::cout<<"experiment uses seed="<<seed<<std::endl;
-    }
-  else if (initseed==1)
-    {
-      mt.seed();
-      std::cout<<"experiment uses default seed"<<std::endl;
-    }
-  else
-    {
-      mt.seed(initseed);
-      std::cout<<"experiment uses provided seed="<<initseed<<std::endl;
-
-    }
+//    }
 
 
-  if (s!=nullptr)
-    {
-      s->measure(cm_,mt,limits,minDistance_Tissue, minDistance_Vaso,maxnumpoints);
-
-    }
-
-
-}
+//}
 
 
 void ExperimentCommand::run(const std::string& line, std::ostream& logs)
@@ -529,13 +526,14 @@ void readCommand::run(const std::string& rline, std::ostream& logs)
   std::ifstream f(filename.c_str());
   if (!f)
     {
+
       std::string filenaExt=filename+".txt";
       f.open(filenaExt.c_str());
       if (!f)
         {
           f.close();
           std::string below="../"+filenaExt;
-          f.open(below);
+          f.open(below.c_str(),std::ios_base::in);
         }
     }
   std::string line;
@@ -570,18 +568,18 @@ void readCommand::run(const std::string& rline, std::ostream& logs)
               std::string ratastr;
 
               ss>>ratastr>>rata;
-              TissuePhoto foto;
+              auto  foto=new TissuePhoto;
 
-              foto.read(line,f);
-              s->fotos[foto.rata]=foto;
+              foto->read(line,f,logs);
+              s->fotos[foto->rata]=foto;
 
             }
           else if (line.find("foto")!=line.npos)
             {
-              TissuePhoto foto;
+              TissuePhoto* foto=new TissuePhoto;
 
-              foto.read(line,f);
-              s->fotos[foto.num]=foto;
+              foto->read(line,f,logs);
+              s->fotos[foto->num]=foto;
             }
           else
             safeGetline(f,line);
@@ -624,7 +622,7 @@ void writeCommand::run(const std::string& line, std::ostream& /*logs*/)
       f.open(filename.c_str(),std::ofstream::out);
 
       for (auto fotop:s->fotos)
-        fotop.second.write(f);
+        fotop.second->write(f);
 
       f.close();
 
@@ -662,14 +660,14 @@ void writeCommand::run(const std::string& line, std::ostream& /*logs*/)
               newName=dataName+"_"+std::to_string(num);
               filename=newName+"_sim.txt";
               fi.close();
-              fi.open(filename);
+              fi.open(filename.c_str(),std::ios_base::in);
               while (fi)
                 {
                   ++num;
                   newName=dataName+"_"+std::to_string(num);
                   filename=newName+"_sim.txt";
                   fi.close();
-                  fi.open(filename);
+                  fi.open(filename.c_str(),std::ios_base::in);
 
                 }
             }
@@ -691,13 +689,13 @@ void writeCommand::run(const std::string& line, std::ostream& /*logs*/)
               unsigned num=0;
               filename=dataName+"_"+std::to_string(num)+"_"+var+".txt";
               fi.close();
-              fi.open(filename);
+              fi.open(filename.c_str(),std::ios_base::in);
               while (fi)
                 {
                   ++num;
                   filename=dataName+"_"+std::to_string(num)+"_"+var+".txt";
                   fi.close();
-                  fi.open(filename);
+                  fi.open(filename.c_str(),std::ios_base::in);
 
                 }
             }

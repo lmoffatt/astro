@@ -1577,7 +1577,7 @@ struct univariate_gaussian_process_distribution
                             const V& x
                             ,const M_Matrix<double>& cov,
                             const M_Matrix<double>& covinv,
-                            double sigma2,
+                            double /*sigma2*/,
                             double lambda,
                             double epsilon2)
   {
@@ -1627,7 +1627,7 @@ struct univariate_gaussian_process_distribution
 
 
   template<typename V>
-  static M_Matrix<double> H(const V& x,const M_Matrix<double>& cov, const M_Matrix<double>& covinv,  double sigma2,double lambda, double epsilon2)
+  static M_Matrix<double> H(const V& x,const M_Matrix<double>& cov, const M_Matrix<double>& covinv,  double /* sigma2*/,double lambda, double epsilon2)
   {
     std::size_t n=cov.nrows();
     std::size_t k=n+3;

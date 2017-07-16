@@ -10,7 +10,7 @@
 
 #include "Parameters.h"
 
-void TissuePhoto::read(std::string& line, std::istream &s)
+bool TissuePhoto::read(std::string& line, std::istream &s, std::ostream &logs)
 {
   std::string name;
   std::stringstream ss(line);
@@ -51,7 +51,7 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                   std::stringstream sid(idAstro);
                   sid<<this->id<<"a"<<astr_.size();
 
-                  astr_.push_back(Astrocyte(sid.str(),x,y,typo,prob));
+                  astr_.push_back(Astrocyte(sid.str(),rata,dia_,x,y,typo,prob));
                   safeGetline(s,line);
                   ss2.str(line);
                   ss2.clear();
@@ -74,7 +74,7 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                   std::stringstream sid(idAstro);
                   sid<<this->id<<"a"<<astr_.size();
 
-                  astr_.push_back(Astrocyte(sid.str(),x,y,typo,prob));
+                  astr_.push_back(Astrocyte(sid.str(),rata,dia_,x,y,typo,prob));
                   safeGetline(s,line);
                   ss2.str(line);
                   ss2.clear();
@@ -147,7 +147,6 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                   ss2.clear();
                 }
               ls_=LimiteSuperior(v);
-              limiteFoto_.back().insert(v.begin(),v.end());
 
             }
 
@@ -285,7 +284,7 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                     std::stringstream sid(idAstro);
                     sid<<this->id<<"a"<<astr_.size();
 
-                    astr_.push_back(Astrocyte(sid.str(),x,y,typo,prob));
+                    astr_.push_back(Astrocyte(sid.str(),rata,dia_,x,y,typo,prob));
                     safeGetline(s,line);
                     ss2.str(line);
                     ss2.clear();
@@ -308,7 +307,7 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                     std::stringstream sid(idAstro);
                     sid<<this->id<<"a"<<astr_.size();
 
-                    astr_.push_back(Astrocyte(sid.str(),x,y,typo,prob));
+                    astr_.push_back(Astrocyte(sid.str(),rata,dia_,x,y,typo,prob));
                     safeGetline(s,line);
                     ss2.str(line);
                     ss2.clear();
@@ -385,7 +384,8 @@ void TissuePhoto::read(std::string& line, std::istream &s)
 
               }
 
-            else if (line.find("limite inferior")!=std::string::npos)
+            else if ((line.find("limite inferior")!=std::string::npos)
+                     || (line.find("limite inferrior")!=std::string::npos))
               {
                 safeGetline(s,line);
                 safeGetline(s,line);
@@ -477,16 +477,28 @@ void TissuePhoto::read(std::string& line, std::istream &s)
                 safeGetline(s,line);
 
               }
-            else break;
+            else
+              break;
 
           }
       }
+  if (this->limiteFoto_.empty())
+    {   if (!(ll_.limits().empty()||ls_.limits().empty()||
+              lp_.limits().empty()||li_.limits().empty()))
+        limiteFoto_.push_back(LimiteFoto(ll_,ls_,lp_,li_));
+      else
+        logs<<"limite de la foto no definido!!!";
 
+    }
+
+
+  calculate_distances();
 }
 
-void TissuePhoto::write(std::ostream &s)
+void TissuePhoto::write(std::ostream &s, bool headers)
 {
-  s<<"foto"<<"\t"<<num<<"\n";
+  if (headers)
+    s<<"foto"<<"\t"<<num<<"\n";
 
   for (auto e:pines_)
     {
@@ -498,48 +510,88 @@ void TissuePhoto::write(std::ostream &s)
       s<<"\n";
     }
 
-  s<<"celulas"<<"\n";
-  s<<astr_.front().getHeader()<<"\n";
+  if (headers)
+    s<<"celulas"<<"\n";
+  if (headers)
+    {
+      s<<astr_.front().getHeader()<<"\n";
+      headers=false;
+    }
   for (Astrocyte a:astr_)
     {
       a.write(s);
     }
-  s<<"\n";
+  if (headers)
+    s<<"\n";
 
   for (LimiteVaso v:vasos_)
     {
-      s<<"vaso"<<"\n";
-      s<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
+      if (headers)
+        s<<"vaso"<<"\n";
+      if (headers)
+        s<<"\tCat\t\tdia\trata\t"<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
       for (auto e:v.limits())
-        s<<e.x<<"\t"<<e.y<<"\n";
-      s<<"\n";
+        s<<"\tLimite vaso\t\t"<<dia_<<"\t"<<rata<<"\t"<<e.x<<"\t"<<e.y<<"\n";
+      if (headers)
+        s<<"\n";
     }
 
 
   if (!ll_.limits().empty())
     {
-      s<<"limite lesion"<<"\n";
-      s<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
+      if (headers)
+        s<<"limite lesion"<<"\n";
+      if (headers)
+        s<<"\tCat\t\tdia\trata\t"<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
       for (auto e:ll_.limits())
-        s<<e.x<<"\t"<<e.y<<"\n";
-      s<<"\n";
+        s<<"\tLimite lesio\t\t"<<dia_<<"\t"<<rata<<"\t"<<e.x<<"\t"<<e.y<<"\n";
+      if (headers)
+        s<<"\n";
     }
 
   if (!lt_.limits().empty())
     {
-      s<<"limite tejido"<<"\n";
-      s<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
+      if (headers)
+        s<<"limite tejido"<<"\n";
+      if (headers)
+        s<<"\tCat\t\tdia\trata\t"<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
       for (auto e:lt_.limits())
-        s<<e.x<<"\t"<<e.y<<"\n";
-      s<<"\n";
+        s<<"\tLimite tejido\t\t"<<dia_<<"\t"<<rata<<"\t"<<e.x<<"\t"<<e.y<<"\n";
+      if (headers)
+        s<<"\n";
+    }
+  if (!li_.limits().empty())
+    {
+      if (headers)
+        s<<"limite inferior"<<"\n";
+      if (headers)
+        s<<"\tCat\t\tdia\trata\t"<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
+      for (auto e:li_.limits())
+        s<<"\tLimite inferior\t\t"<<dia_<<"\t"<<rata<<"\t"<<e.x<<"\t"<<e.y<<"\n";
+      if (headers)
+        s<<"\n";
+    }
+  if (!ls_.limits().empty())
+    {
+      if (headers)
+        s<<"limite superior"<<"\n";
+      if (headers)
+        s<<"\tCat\t\tdia\trata\t"<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
+      for (auto e:lt_.limits())
+        s<<"\tLimite superior\t\t"<<dia_<<"\t"<<rata<<"\t"<<e.x<<"\t"<<e.y<<"\n";
+      if (headers)
+        s<<"\n";
     }
   for (LimiteFoto v:limiteFoto_)
     {
-      s<<"limite foto"<<"\n";
-      s<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
+      if (headers)
+        s<<"limite foto"<<"\n";
+      if (headers)
+        s<<"\tCat\t\tdia\trata\t"<<"X (um)"<<"\t"<<"Y (um)"<<"\n";
       for (auto e:v.limits())
-        s<<e.x<<"\t"<<e.y<<"\n";
-      s<<"\n";
+        s<<"\tLimite foto\t\t"<<dia_<<"\t"<<rata<<"\t"<<e.x<<"\t"<<e.y<<"\n";
+      if (headers)
+        s<<"\n";
     }
 
 }
@@ -563,7 +615,7 @@ bool TissuePhoto::align( TissuePhoto &other, std::ostream& logs)
     {// calculate the displacement for all found pins
       std::vector<double> dxs;
       std::vector<double> dys;
-     // logs<<"\nfoto"<<other.num<<"\n";
+      // logs<<"\nfoto"<<other.num<<"\n";
       double sdx=0,sdy=0;
       for (auto aPin:commonPins)
         {
@@ -648,6 +700,15 @@ void TissuePhoto::updateMinMax()
   xmax_=-std::numeric_limits<double>::infinity();
   ymin_=+std::numeric_limits<double>::infinity();
   ymax_=-std::numeric_limits<double>::infinity();
+
+  if (limiteFoto_.empty())
+    {
+      limiteFoto_.back().insert(ll_.limits().begin(),ll_.limits().end());
+
+
+    }
+
+
   for (const LimiteFoto& lf:limiteFoto_ )
     {
       if (lf.xmin_<xmin_)
@@ -659,55 +720,55 @@ void TissuePhoto::updateMinMax()
       if (lf.ymax_>ymax_)
         ymax_=lf.ymax_;
     }
-   if (true){
-    const LimiteInferior& lf=li_;
-    if (lf.xmin_<xmin_)
-      xmin_=lf.xmin_;
-    if (lf.xmax_>xmax_)
-      xmax_=lf.xmax_;
-    if (lf.ymin_<ymin_)
-      ymin_=lf.ymin_;
-    if (lf.ymax_>ymax_)
-      ymax_=lf.ymax_;
+  if (true){
+      const LimiteInferior& lf=li_;
+      if (lf.xmin_<xmin_)
+        xmin_=lf.xmin_;
+      if (lf.xmax_>xmax_)
+        xmax_=lf.xmax_;
+      if (lf.ymin_<ymin_)
+        ymin_=lf.ymin_;
+      if (lf.ymax_>ymax_)
+        ymax_=lf.ymax_;
 
-  }
+    }
 
-   if (true){
-    const LimiteSuperior& lf=ls_;
-    if (lf.xmin_<xmin_)
-      xmin_=lf.xmin_;
-    if (lf.xmax_>xmax_)
-      xmax_=lf.xmax_;
-    if (lf.ymin_<ymin_)
-      ymin_=lf.ymin_;
-    if (lf.ymax_>ymax_)
-      ymax_=lf.ymax_;
+  if (true){
+      const LimiteSuperior& lf=ls_;
+      if (lf.xmin_<xmin_)
+        xmin_=lf.xmin_;
+      if (lf.xmax_>xmax_)
+        xmax_=lf.xmax_;
+      if (lf.ymin_<ymin_)
+        ymin_=lf.ymin_;
+      if (lf.ymax_>ymax_)
+        ymax_=lf.ymax_;
 
-  }
-   if (true){
-    const LimitePosterior& lf=lp_;
-    if (lf.xmin_<xmin_)
-      xmin_=lf.xmin_;
-    if (lf.xmax_>xmax_)
-      xmax_=lf.xmax_;
-    if (lf.ymin_<ymin_)
-      ymin_=lf.ymin_;
-    if (lf.ymax_>ymax_)
-      ymax_=lf.ymax_;
+    }
+  if (true){
+      const LimitePosterior& lf=lp_;
+      if (lf.xmin_<xmin_)
+        xmin_=lf.xmin_;
+      if (lf.xmax_>xmax_)
+        xmax_=lf.xmax_;
+      if (lf.ymin_<ymin_)
+        ymin_=lf.ymin_;
+      if (lf.ymax_>ymax_)
+        ymax_=lf.ymax_;
 
-  }
-   if (true){
-    const LimiteLesion& lf=ll_;
-    if (lf.xmin_<xmin_)
-      xmin_=lf.xmin_;
-    if (lf.xmax_>xmax_)
-      xmax_=lf.xmax_;
-    if (lf.ymin_<ymin_)
-      ymin_=lf.ymin_;
-    if (lf.ymax_>ymax_)
-      ymax_=lf.ymax_;
+    }
+  if (true){
+      const LimiteLesion& lf=ll_;
+      if (lf.xmin_<xmin_)
+        xmin_=lf.xmin_;
+      if (lf.xmax_>xmax_)
+        xmax_=lf.xmax_;
+      if (lf.ymin_<ymin_)
+        ymin_=lf.ymin_;
+      if (lf.ymax_>ymax_)
+        ymax_=lf.ymax_;
 
-  }
+    }
 
 }
 
@@ -730,13 +791,13 @@ void TissueSection::align(std::ostream& logs)
     remaining.push_back(it.first);
   unsigned master=remaining.front();
   remaining.pop_front();
-  TissuePhoto& f=fotos[master];
+  TissuePhoto* f=fotos[master];
 
   while (!remaining.empty())
     {
       for (auto it=remaining.begin(); it!=remaining.end(); ++it)
         {
-          if (f.align(fotos[*it],logs))
+          if (f->align(*fotos[*it],logs))
             {
               it=remaining.erase(it);
             }
@@ -749,17 +810,17 @@ void TissueSection::align(std::ostream& logs)
 
 void TissueSection::merge()
 {
-  TissuePhoto foto;
+  TissuePhoto* foto=new TissuePhoto;
 
   for (auto it:fotos)
     {
-      foto.include(it.second);
+      foto->include(*it.second);
     }
-  foto.updateMinMax();
+  foto->updateMinMax();
 
 
-  foto.id="Merged";
-  foto.num=0;
+  foto->id="Merged";
+  foto->num=0;
   fotos.clear();
   fotos[0]=foto;
 
@@ -770,18 +831,15 @@ void TissueSection::merge()
 void TissueSection::distances()
 {
   for (auto& f:fotos)
-    f.second.calculate_distances();
+    f.second->calculate_distances();
 }
 
-CortexMeasure *TissueSection::measure(std::mt19937_64 &mt, std::vector<double> x, double minimalDistanceTissue, double minimalDistanceVaso, std::size_t maxpoints)
+std::vector<CortexMeasure> TissueSection::measure(std::mt19937_64 &mt, std::vector<double> x, double minimalDistanceTissue, double minimalDistanceVaso, std::size_t maxpoints)
 {
-  return fotos.begin()->second.measure(mt,id(),dia_,x,minimalDistanceTissue,minimalDistanceVaso,maxpoints);
-}
-
-void TissueSection::measure(CommandManager *cm, std::mt19937_64 &mt, std::vector<double> x, double minimalDistanceTissue, double minimalDistanceVaso, std::size_t maxpoints)
-{
-  for (auto& f:fotos)
-    cm->push_back(f.second.measure(mt,id(),dia_,x,minimalDistanceTissue,minimalDistanceVaso,maxpoints));
+  std::vector<CortexMeasure> o;
+  for (auto f:fotos)
+    o.push_back(f.second->measure(mt,id(),dia_,x,minimalDistanceTissue,minimalDistanceVaso,maxpoints));
+  return o;
 }
 
 
@@ -847,8 +905,8 @@ private:
 
 };
 
-CortexMeasure *TissuePhoto::measure(std::mt19937_64& mt,std::string id,double dia,std::vector<double> x,double minimal_distance_to_tissue,double minimal_distance_to_vaso
-                                    , std::size_t maxpoints)
+CortexMeasure TissuePhoto::measure(std::mt19937_64& mt,std::string id,double dia,std::vector<double> x,double minimal_distance_to_tissue,double minimal_distance_to_vaso
+                                   , std::size_t maxpoints)
 {
 
 
@@ -869,9 +927,14 @@ CortexMeasure *TissuePhoto::measure(std::mt19937_64& mt,std::string id,double di
       if (IsInside(pos))
         {
           double distance_to_lession=ll_.distance(pos);
-          double distance_to_tissue=lt_.distance(pos);
+          double distance_to_superior=ls_.distance(pos);
+          double distance_to_inferior=li_.distance(pos);
+          double distance_to_posterior=lp_.distance(pos);
+
           double distance_to_vaso=distance_to_neareast_Vaso(pos);
-          if ((distance_to_tissue>minimal_distance_to_tissue)
+          if ((distance_to_superior>minimal_distance_to_tissue)
+              &&(distance_to_inferior>minimal_distance_to_tissue)
+              &&(distance_to_posterior>minimal_distance_to_tissue)
               &&(distance_to_vaso>minimal_distance_to_vaso))
             {
               auto i=p.getIndex(distance_to_lession);
@@ -965,19 +1028,21 @@ CortexMeasure *TissuePhoto::measure(std::mt19937_64& mt,std::string id,double di
       }
 
 
+  if (injury_Width_==0)
+    injury_Width_=injury_Area_/injlength;
 
 
-  CortexMeasure* m=new CortexMeasure(id,
-                                     dia,
-                                     100e-6
-                                     ,minimal_distance_to_tissue
-                                     ,minimal_distance_to_vaso
-                                     ,injury_Width_
-                                     ,injlength
-                                     ,p.limits()
-                                     ,area
-                                     ,numx
-                                     ,covar);
+  CortexMeasure m(id,dia,
+                  100e-6
+                  ,rata
+                  ,minimal_distance_to_tissue
+                  ,minimal_distance_to_vaso
+                  ,injury_Width_
+                  ,injlength
+                  ,p.limits()
+                  ,area
+                  ,numx
+                  ,covar);
   return m;
 
 
@@ -1061,7 +1126,8 @@ bool tissueElement::isInside(const position &p)const
 
 std::ostream &Astrocyte::write(std::ostream &s)
 {
-  s<<id()<<"\t";
+  s<<"\tAstrocito\t"<<id()<<"\t"<<dia_<<"\t"<<rata_<<"\t";
+  s<<pos().x<<"\t"<<pos().y<<"\t"<<type()<<"\t"<<prob()<<"\t";
   if (distance_to_tissue_<std::numeric_limits<double>::infinity())
     s<<distance_to_lession_<<"\t"<<distance_to_tissue_<<"\t"
     <<distance_to_vaso_<<"\t";
@@ -1069,8 +1135,7 @@ std::ostream &Astrocyte::write(std::ostream &s)
     s<<distance_to_lession_<<"\t"<<distance_to_superior_<<"\t"
     <<distance_to_inferior_<<"\t"<<distance_to_posterior_<<"\t"
     <<distance_to_vaso_<<"\t";
-
-  s<<pos().x<<"\t"<<pos().y<<"\t"<<type()<<"\t"<<prob()<<"\n";
+  s<<"\n";
   return s;
 }
 
@@ -1078,15 +1143,15 @@ std::string Astrocyte::getHeader()
 {
   std::string ss;
   std::stringstream s(ss);
-  s<<"ID"<<"\t";
+  s<<"Cat"<<"\t"<<"ID"<<"\t"<<"dia"<<"\t"<<"rata"<<"\t";
+  s<<"X (um)"<<"\t"<<"Y (um)"<<"\t"<<"TIPO"<<"\t"<<"PB"<<"\t";
   if (distance_to_tissue_<std::numeric_limits<double>::infinity())
     s<<"d_les (um)"<<"\t"<<"d_tej (um)"<<"\t"<<"d_vaso (um)"<<"\t";
   else if (distance_to_superior_<std::numeric_limits<double>::infinity())
     s<<"d_les (um)"<<"\t"<<"d_sup (um)"<<"\t"<<"d_inf (um)"<<"\t"<<"d_pos (um)"<<"\t"
     <<"d_vaso (um)"<<"\t";
 
-  s<<"X (um)"<<"\t"<<"Y (um)"<<"\t"<<"TIPO"<<"\t"<<"PB"<<"\n";
-
+  s<<"\n";
   return s.str();
 }
 
@@ -1286,6 +1351,7 @@ double Experiment::tMeas(unsigned i) const
 {
   return tMeasures_[i];
 }
+
 
 double Experiment::tSimul(unsigned i) const
 {

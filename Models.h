@@ -76,8 +76,9 @@ public:
     std::vector<double> M_;
 
     double dens_Astr_;
-
     double dens_Neur_;
+    double dens_Microglia_;
+
     double inj_width_;
     double DAMP_psi_ratio_;
     double DAMP_omega_ratio_;
@@ -209,8 +210,8 @@ public:
 
 
 
-  std::size_t getNumberOfObservedStates() const;
-  std::size_t getNumberOfSimulatedStates() const;
+  virtual std::size_t getNumberOfObservedStates() const;
+  virtual std::size_t getNumberOfSimulatedStates() const;
 private:
   static std::map<double,BaseModel*> models_;
   static std::map<double,BaseModel*> getModels();
@@ -220,6 +221,53 @@ private:
 
 
 
+class MicrogliaModel: public BaseModel
+{
+public:
+
+  virtual ~MicrogliaModel(){}
+
+  virtual std::vector<double> getObservedProbFromModel(const std::vector<double>& modelRho)const override
+{
+  std::vector<double>  v(5);
+  double n=modelRho[4]+modelRho[5]+modelRho[6]+modelRho[7]+modelRho[8];
+  v[0]=modelRho[4]/n;
+  v[1]=modelRho[5]/n;
+  v[2]=modelRho[6]/n;
+  v[3]=modelRho[7]/n;
+  v[4]=modelRho[8]/n;
+  return v;
+}
+  virtual std::vector<double> getObservedNumberFromModel(const std::vector<double>& modelRho)const override
+  {
+    std::vector<double>  v(5);
+    v[0]=modelRho[4];
+    v[1]=modelRho[5];
+    v[2]=modelRho[6];
+    v[3]=modelRho[7];
+    v[4]=modelRho[8];
+    return v;
+
+  }
+
+
+
+  virtual std::vector<double> getObservedNumberFromData(const std::vector<double>& modelRho)const override
+  {
+    std::vector<double>  v(5);
+    v[0]=modelRho[0];
+    v[1]=modelRho[1];
+    v[2]=modelRho[2];
+    v[3]=modelRho[3];
+    v[4]=modelRho[4];
+    return v;
+  }
+
+  std::size_t getNumberOfSimulatedStates() const override
+  {
+    return 9;
+  }
+};
 
 
 
@@ -417,8 +465,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3",p_.inj_width_3dpl_);
+    out.push_back("inj_width_7",p_.inj_width_7dpl2_);
 
 
 
@@ -455,8 +503,8 @@ public:
     p_.a_factor_=p.get("a_factor");
     p_.a_max_Neuron_=p.get("a_max_Neuron");
     p_.a_max_=p.get("a_max");
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3dpl_=p.get("inj_width_3");
+    p_.inj_width_7dpl2_=p.get("inj_width_7");
 
 
   }
@@ -481,6 +529,298 @@ public:
 
 
   Model00(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
+
+
+
+class Model00m:public MicrogliaModel
+{
+  SimplestModel m;
+
+   Model00m* clone()const { return new Model00m;}
+
+
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_;
+    double kcat_;
+    double g_M1M2_;
+    double g_M2M1_;
+
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+
+    double g_23_;
+    double g_32_;
+
+
+    double g_max_;
+    double N_0_;
+    double N_2_;
+    double N_N_;
+    double N_Astr_;
+    double N_Neuron_;
+    double N_Microglia_;
+
+
+    double a_2_;
+    double a_factor_;
+    double a_max_Neuron_;
+    double a_max_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+    double inj_width_3_;
+    double inj_width_7_;
+
+   };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_omega_ratio_=0;
+
+     s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=0;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_/p.Keq_;
+    s.kcat_psi_=p.kcat_;
+    s.kon_omega_=0;
+    s.kcat_omega_=0;
+
+    s.Keq_gmax_psi_=std::vector<double>(9,p.Keq_);
+    s.Keq_gmax_omega_=std::vector<double>(9,0);
+
+    s.ksig_omega_=std::vector<double>(9,0);
+    s.ksig_max_omega_=std::vector<double>(9,0);
+    s.ksig_max_psi_=std::vector<double>(9,0);
+
+    s.g_left_=std::vector<double> (9,0);
+    s.g_left_[2]=p.g_M2M1_;
+
+    s.g_left_[4]=p.g_10_;
+    s.g_left_[5]=p.g_21_;
+    s.g_left_[6]=p.g_32_;
+    s.g_left_[7]=p.g_32_;
+    s.g_left_[8]=p.g_32_;
+
+
+
+
+    s.g_rigth_=std::vector<double> (9,0);
+    s.g_rigth_[1]=p.g_M1M2_;
+
+    s.g_rigth_[3]=p.g_01_;
+    s.g_rigth_[4]=p.g_12_;
+    s.g_rigth_[5]=p.g_23_;
+    s.g_rigth_[6]=p.g_23_;
+    s.g_rigth_[7]=p.g_23_;
+
+    s.g_max_omega_=std::vector<double> (9,0);
+
+
+    s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[3]=p.g_max_;
+    s.g_max_psi_[4]=p.g_max_;
+    s.g_max_psi_[5]=p.g_max_;
+    s.g_max_psi_[6]=p.g_max_;
+    s.g_max_psi_[7]=p.g_max_;
+
+
+    s.a_=std::vector<double> (9,0);
+    s.a_[5]=p.a_2_;
+    s.a_[6]=p.a_2_*p.a_factor_;
+    s.a_[7]=s.a_[6]*p.a_factor_;
+    s.a_[8]=s.a_[7]*p.a_factor_;
+
+    s.a_omega_=std::vector<double> (9,0);
+    s.a_psi_=std::vector<double> (9,0);
+
+    s.a_psi_[0]=p.a_max_Neuron_;
+    s.a_psi_[1]=p.a_max_Neuron_;
+    s.a_psi_[2]=p.a_max_Neuron_;
+
+    s.a_psi_[3]=p.a_max_;
+    s.a_psi_[4]=p.a_max_*p.a_factor_;
+    s.a_psi_[5]=s.a_psi_[4]*p.a_factor_;
+    s.a_psi_[6]=s.a_psi_[5]*p.a_factor_;
+
+
+    s.N_=std::vector<double> (9,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_N_;
+    s.N_[2]=p.N_N_;
+
+    s.N_[3]=p.N_0_;
+    s.N_[4]=p.N_0_;
+    s.N_[5]=p.N_2_;
+    s.N_[6]=p.N_2_*1.5;
+    s.N_[7]=p.N_2_*3;
+    s.N_[8]=p.N_2_*6;
+
+
+
+    s.M_=std::vector<double> (9,0);
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    s.dens_Microglia_=p.N_Microglia_;
+
+    return s;
+  }
+
+
+  myParameters p_;
+
+
+  // BaseModel interface
+public:
+  Model00m(){}
+  ~Model00m(){}
+  virtual std::string id() const
+  {
+    return "Model_10.0";
+  }
+  static double number()
+  {
+    return 10.0;
+  }
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq",p_.Keq_);
+    out.push_back("kcat", p_.kcat_);
+    out.push_back("g_M1M2",p_.g_M1M2_);
+    out.push_back("g_M2M1",p_.g_M2M1_);
+
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+    out.push_back("g_32",p_.g_32_ );
+    out.push_back("g_23",p_.g_23_ );
+
+    out.push_back("g_max",p_.g_max_ );
+    out.push_back("N_0",p_.N_0_ );
+    out.push_back("N_2",p_.N_2_ );
+    out.push_back("N_N",p_.N_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron",p_.N_Neuron_);
+    out.push_back("N_Microglia",p_.N_Microglia_);
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_factor",p_.a_factor_ );
+
+    out.push_back("a_max_Neuron",p_.a_max_Neuron_ );
+    out.push_back("a_max",p_.a_max_ );
+
+
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+    out.push_back("inj_width_3",p_.inj_width_3_);
+    out.push_back("inj_width_7",p_.inj_width_7_);
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_=p.get("Keq_psi");
+    p_.kcat_=p.get("kcat_psi");
+    p_.g_M1M2_=p.get("g_M1M2");
+    p_.g_M2M1_=p.get("g_M2M1");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+
+
+    p_.g_23_=p.get("g_23");
+    p_.g_32_=p.get("g_32");
+
+    p_.g_max_=p.get("g_max");
+    p_.N_0_=p.get("N_0");
+    p_.N_2_=p.get("N_2");
+    p_.N_N_=p.get("N_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.N_Microglia_=p.get("N_Microglia");
+
+    p_.a_factor_=p.get("a_factor");
+    p_.a_max_Neuron_=p.get("a_max_Neuron");
+    p_.a_max_=p.get("a_max");
+    p_.inj_width_3_=p.get("inj_width_3");
+    p_.inj_width_7_=p.get("inj_width_7");
+
+
+  }
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+  }
+
+
+
+
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+
+
+
+  Model00m(const Parameters& p)
   {
     loadParameters(p);
   }

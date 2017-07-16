@@ -14,7 +14,7 @@ enum TRANSFORM {LINEAR,LOG,LOGRATIO};
 
 #ifndef PI____
 #define PI____
- const double PI  =3.141592653589793238463;
+const double PI  =3.141592653589793238463;
 #endif
 
 class Transformation
@@ -78,10 +78,6 @@ class Parameters: public BaseObject
 {
 public:
 
-  std::string id()const
-  {
-    return id_;
-  }
 
 
   double model()const;
@@ -206,7 +202,7 @@ public:
 
   Parameters toParameters(const std::vector<double>& o)const
   {
-    return Parameters(id_,model_,name_to_i_,names_,o,trans_,unit_);
+    return Parameters(id(),model_,name_to_i_,names_,o,trans_,unit_);
   }
 
 
@@ -244,10 +240,9 @@ protected:
              std::vector<double> meanoftr,
              std::vector<TRANSFORM> trans,
              std::vector<std::string> unit):
-id_(id)
-  ,model_(model)
+  model_(model)
   ,name_to_i_(nametoi)
-    ,names_(names)
+  ,names_(names)
   ,mean_of_tr_(meanoftr)
   ,trans_(trans)
   ,unit_(unit)
@@ -257,7 +252,9 @@ id_(id)
   ,cov_{}
   ,cov_inv_{}
   ,cho_{}
-  ,logDetCov_(){}
+  ,logDetCov_(){
+    setId(id);
+  }
 
 
 
@@ -281,7 +278,6 @@ private:
 
   /// this variables
 
-  std::string id_;
 
   double model_;
 
@@ -322,6 +318,135 @@ public:
   virtual std::ostream &writeBody(std::ostream &s) const override;
   virtual void clear() override;
   virtual bool readBody(std::string &line, std::istream &s, std::ostream& logs) override;
+
+
+  void writeHeaderDataFrame(std::ostream& os)const
+  {
+    os<<"paramName\t";
+    os<<"Value\t";
+    os<<"transfParam\t";
+    os<<"TrasnfValue";
+  }
+
+  void writeRowDataFrame(std::ostream& os, std::string pre)const
+  {
+    for (std::size_t i=0; i<size(); ++i)
+      {
+        os<<pre;
+        os<<indexToName(i)<<"\t";
+        os<<mean(i)<<"\t";
+        os<<Tr(trans_[i])->myClass()<<indexToName(i)<<"\t";
+        os<<(*this)[i];
+        os<<"\n";
+      }
+  }
+
+
+
+  void writeValueInSingleRowHeader(std::ostream& os)const
+  {
+    for (std::size_t i=0; i<size(); ++i)
+      os<<indexToName(i)<<"\t";
+    for (std::size_t i=0; i<size(); ++i)
+      os<<Tr(trans_[i])->myClass()<<indexToName(i)<<"\t";
+  }
+
+
+  void writeValueInSingleRow(std::ostream& os)const
+  {
+    for (std::size_t i=0; i<size(); ++i)
+      os<<mean(i)<<"\t";
+    for (std::size_t i=0; i<size(); ++i)
+      os<<(*this)[i]<<"\t";
+  }
+
+
+
+  void writeDataFrameHeader(std::ostream& os)const
+  {
+    writeDataFrameHeaderRow(os);
+    writeDataFrameHeaderRow(os,"_i");
+    writeDataFrameHeaderRow(os,"_i","_j");
+
+  }
+
+
+
+  void writeDataFrameRow(std::ostream& os)const
+  {
+    os<<id()<<"\t";
+    os<<model()<<"\t";
+    os<<logDetCov()<<"\t";
+  }
+
+  void writeDataFrameRow(std::ostream& os,
+                         std::size_t ipar) const
+  {
+    os<<indexToName(ipar)<<"\t";
+    os<<unit_[ipar]<<"\t";
+    os<<Tr(trans_[ipar])->myClass()<<"\t";
+    os<<comment_[ipar]<<"\t";
+    os<<mean(ipar)<<"\t";
+    os<<(*this)[ipar]<<"\t";
+    os<<pStds()[ipar]<<"\t";
+  }
+  void writeDataFrameRow(std::ostream& os,
+                         std::size_t ipar,
+                         std::size_t jpar) const
+  {
+    os<<cov_[ipar][jpar]<<"\t";
+    os<<corr_[ipar][jpar]<<"\t";
+    os<<cov_inv_[ipar][jpar]<<"\t";
+    os<<cho_[ipar][jpar]<<"\t";
+
+  }
+  void writeDataFrameHeaderRow(std::ostream& os) const
+  {
+    os<<"id"<<"\t";
+    os<<"model"<<"\t";
+    os<<"logDetCov"<<"\t";
+  }
+
+  void writeDataFrameHeaderRow(std::ostream& os,
+                               const std::string s) const
+  {
+    os<<"parameterName"<<s<<"\t";
+    os<<"unit"<<s<<"\t";
+    os<<"transformation"<<s<<"\t";
+    os<<"comment"<<s<<"\t";
+    os<<"value"<<s<<"\t";
+    os<<"transValue"<<s<<"\t";
+    os<<"stddev"<<s<<"\t";
+  }
+  void writeDataFrameHeaderRow(std::ostream& os,
+                               std::string ipar,
+                               std::string jpar) const
+  {
+    os<<"cov"<<ipar<<jpar<<"\t";
+    os<<"corr"<<ipar<<jpar<<"\t";
+    os<<"cov_inv"<<ipar<<jpar<<"\t";
+    os<<"cholesky"<<ipar<<jpar<<"\t";
+
+  }
+
+  void writeDataFrame(std::ostream& os) const
+  {
+    writeDataFrameHeader(os);
+    os<<"\n";
+
+    for (std::size_t ipar=0; ipar<size(); ++ipar)
+      for (std::size_t jpar=0; jpar<size(); ++jpar)
+        {
+          writeDataFrameRow(os);
+          writeDataFrameRow(os,ipar);
+          writeDataFrameRow(os,ipar,jpar);
+          os<<"\n";
+        }
+    os<<"\n";
+
+  }
+
+
 };
 
 //std::ostream& operator<<(std::ostream& s, const Parameters& p);

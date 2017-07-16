@@ -63,6 +63,7 @@ void writePtrField(std::ostream& s
 }
 
 
+
 inline
 void writeTable(std::ostream& s,
                 const std::string& tableTitle,
@@ -110,8 +111,6 @@ void writeTable(std::ostream& s,
 
 
 
-
-
 bool readValue(std::string& line,
                std::istream&,
                double& val, std::ostream& logs);
@@ -143,6 +142,20 @@ bool readValue(std::string& line,
   return !val.empty();
 }
 
+template<typename K,typename T>
+bool readValue(std::string& line,
+               std::istream& s,
+               std::map<K,T>& val,
+               std::ostream& logs)
+{
+  safeGetline(s,line);
+  val.clear();
+  K ke;T xx;
+  readValue(line,s,ke, logs);
+  readValue(line,s,xx,logs);
+    val[ke]=xx;
+  return !val.empty();
+}
 
 template<typename T>
 bool readValue(std::string& line,
@@ -187,6 +200,37 @@ bool readField(std::string& line,
 
     }
 }
+
+template<typename K, typename T>
+bool readField(std::string& line,
+               std::istream& s
+               , const std::string& fieldName
+               , std::map<K,T>& value
+               ,std::ostream& log_stream)
+{
+  while (line.empty()&& safeGetline(s,line)) {}
+  std::stringstream ss(line);
+  std::string fname;
+  ss>>fname;
+
+  if (fieldName==fname)
+    {
+      safeGetline(ss,line);
+      return readValue(line,s,value,log_stream);
+    }
+  else
+
+    {
+      log_stream<<"Unexpected Field\n";
+      log_stream<<"\t\t Expected: "<<fieldName<<" \t found:";
+      log_stream<<fname<<"\n";
+
+      return false;
+
+    }
+}
+
+
 
 template<typename T>
 bool readPtrField(std::string& line,
@@ -264,6 +308,49 @@ bool readField(std::string& line,
     }
 }
 
+
+
+template<class T>
+auto writeValue(std::ostream& os, T*const& x)
+->std::add_lvalue_reference_t <decltype (x->write(os))>
+{
+  return x->write(os);
+}
+
+
+template<typename T,
+         typename std::enable_if<std::is_pointer<T>::value,int>::type = 0>
+
+auto writeValue(std::ostream& os,T const & x)
+->std::add_lvalue_reference_t <decltype (os<<*x)>
+{
+
+  return os<<*x;
+}
+
+
+
+
+template<typename T,
+         typename std::enable_if<!std::is_pointer<T>::value,int>::type = 0>
+
+auto writeValue(std::ostream& os,const T& x)
+->std::add_lvalue_reference_t <decltype (os<<x)>
+{
+
+  return os<<x;
+}
+
+
+template<typename T>
+auto writeValue(std::ostream& os,const T& x)
+->std::add_lvalue_reference_t <decltype (x.write(os))>
+{
+  x.write(os);
+}
+
+
+
 template<typename T>
 void writeField(std::ostream& s
                 , const std::string& fieldName
@@ -278,6 +365,28 @@ void writeField(std::ostream& s
     }
   s<<"\n";
 }
+
+
+
+template<typename K, typename T>
+void writeField(std::ostream& s
+                , const std::string& fieldName
+                , const std::map<T,K>& map)
+{
+  s<<fieldName<<"\n";
+  for (auto it=map.cbegin(); it!=map.cend(); ++it)
+    {
+      writeValue(s,it->first);
+      s<<"\t:\n";
+      writeValue(s,it->second);
+      s<<"\n";
+    }
+  s<<"\n";
+}
+
+
+
+
 
 
 

@@ -83,8 +83,7 @@ std::string LinearTranformation::ClassName()
 
 
 Parameters::Parameters(const Parameters& other):
-  id_(other.id_)
-  ,model_(other.model_)
+  model_(other.model_)
 ,name_to_i_(other.name_to_i_)
 , names_(other.names_)
 ,mean_of_tr_(other.mean_of_tr_)
@@ -96,7 +95,9 @@ Parameters::Parameters(const Parameters& other):
 ,cov_(other.cov_)
 ,cov_inv_(other.cov_inv_)
 ,cho_(other.cho_)
-,logDetCov_(other.logDetCov_){}
+,logDetCov_(other.logDetCov_){
+  setId(other.id());
+}
 
 bool Parameters::readBody(std::string &line, std::istream &s, std::ostream& /*logs*/)
 {
@@ -194,7 +195,9 @@ Parameters& Parameters::operator=(const Parameters& other)
 
 void swap(Parameters& one, Parameters& other)
 {
-  std::swap(one.id_,other.id_);
+  std::string id=one.id();
+  one.setId(other.id());
+  other.setId(id);
   std::swap(one.model_,other.model_);
   std::swap(one.name_to_i_,other.name_to_i_);
   std::swap(one.names_,other.names_);

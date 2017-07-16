@@ -48,9 +48,9 @@ prot_concentration <LOG>  200  [g/ml]  2.12 [dB]// protein density
 
 DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
 
-inj_width_3dpl <LOG> 50 [um] 1 [dB] // ancho de la injuria a tres dias
+inj_width_3 <LOG> 535 [um] 3.66 [dB] // ancho de la injuria a tres dias
 
-inj_width_7dpl2 <LOG> 1000 [um]  1  [dB] // ancho de la injuria a siete dias
+inj_width_7 <LOG> 881 [um]  3.30  [dB] // ancho de la injuria a siete dias
 
 
 
@@ -59,6 +59,9 @@ inj_width_7dpl2 <LOG> 1000 [um]  1  [dB] // ancho de la injuria a siete dias
 ------------------------------------------------------------------------------------------
 
 REFERENCIAS
+
+la media de la injuria se determino midiendo el area de la injuria de cada rata. Se tomo la media del logaritmo y su desviacion estandard. Se dividio por la media del largo de la "injuria" de las ratas contralaterales. No se dividio por el largo de cada injuria individual ya que de hacerlo la injuria era mas pequeña en el dia 7 que en le dia 3.
+
 
 •	D  1E-10  [m⁻2 s-1]  // diffusion coefficient for psi
 Para proteinas entre 13.3  a 67 kd 1.1 E-10 a 5.9 E-11 m2 s-1[1]

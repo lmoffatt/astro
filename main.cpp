@@ -5,10 +5,12 @@
 
 int main(int argc, char **argv)
 {
+  std::cerr<<argv[0]<<"\n";
+  std::cerr<<argv[1]<<"\n";
 
 
-  typedef myCommandManager<Cls,TissueSection,CortexMeasure,Experiment,
-      BaseModel,CortexSimulation,CortexLikelihood> CM;
+  typedef myCommandManager<Cls,Cs<bool,CortexMeasure>,Cs<TissueSection,CortexMeasure,Experiment,
+      BaseModel,CortexSimulation,CortexLikelihood>> CM;
 
   CM cm;
 
@@ -28,17 +30,50 @@ int main(int argc, char **argv)
 
   cm.push_command("read",
                   make_Command
-                  (C<CM>(),C<void>(),Co<Cls>(),&read<CM>,
+                  (C<CM>(),C<void>(),Co<Cls>(),read<CM>(),
                    std::pair<CM*,std::string>{&cm,"CommandManager"},
                    std::pair<std::string,std::string>{"","filename"},
                    std::pair<std::ostream*,std::string>{&std::cerr,"log_stream"}));
 
+  cm.push_command("write",
+                  make_Command
+                  (C<CM>(),C<bool>(),Co<Cls>(),write<CM>(),
+                   std::pair<CM*,std::string>{&cm,"CommandManager"},
+                   std::pair<std::string,std::string>{"","id"},
+                   std::pair<std::ostream*,std::string>{&std::cerr,"log_stream"},
+                   std::pair<std::string,std::string>{"","filename"},
+                   std::pair<bool,std::string>{false,"append"}
+                   ));
+  cm.push_command("dataFrame",
+                  make_Command
+                  (C<CM>(),C<bool>(),Co<Cls>(),dataFrame<CM>(),
+                   std::pair<CM*,std::string>{&cm,"CommandManager"},
+                   std::pair<std::string,std::string>{"","id"},
+                   std::pair<std::ostream*,std::string>{&std::cerr,"log_stream"},
+                   std::pair<std::string,std::string>{"","filename"}
+                   ));
+
+
+  cm.push_command("measure",
+                  make_Command
+                  (C<CM>(),C<void>(),Co<Cls>(),
+                   Measure<CM>(),
+                   std::pair<CM*,std::string>{&cm,"CommandManager"},
+                   std::pair<std::vector<TissueSection*>,std::string>{{},"input"},
+                   std::pair<bool,std::string>{true,"average"},
+                   std::pair<std::size_t,std::string>{0,"maxnumpoints"},
+                   std::pair<std::size_t,std::string>{0,"initseed"},
+                   std::pair<double,std::string>{0,"minDistance_Tissue"},
+                   std::pair<double,std::string>{0,"minDistance_Vaso"},
+                   std::pair<std::vector<double>,std::string>{0,"limits"},
+                   std::pair<std::string,std::string>{"","experimentName"}
+                   ));
 
 
   cm.push_command("tempering",
                   make_Command
                   (C<CM>(),C<void>(),Co<Cls>(),
-                   &Tempering<CM>,
+                   Tempering<CM>(),
                    std::pair<CM*,std::string>{&cm,"CommandManager"},
                    std::pair<std::string,std::string>{"","eviName"},
                    std::pair<std::string,std::string>{"","experimentName"},

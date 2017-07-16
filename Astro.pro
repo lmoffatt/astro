@@ -196,7 +196,12 @@ DISTFILES += \
     run/p_114_24_32_44m/parameter_114_24_32_44 \
     run/New_experiment_log_250_1 \
     run/evidence_script \
-    run/runEvidence_0.sh
+    run/runEvidence_0.sh \
+    run/DATOS_7dpl_resultados.txt \
+    run/DATOS_3dpl_CONTROL_resultados.txt \
+    run/DATOS_3dpl_resultados.txt \
+    run/E_250_50 \
+    run/E_250
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

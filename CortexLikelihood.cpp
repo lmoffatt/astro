@@ -303,10 +303,9 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
         ++is;
 
 
-      double currInjury=parameters.get("inj_width_"+cm->id());
+      double currInjury=parameters.get("inj_width_"+std::to_string(std::size_t(cm->dia())));
       if (std::isnan(currInjury))
         currInjury=0;
-
 
       // voy a interpolar los resultados de la medicion a partir de la simulacion.
       // la simulacion pasa a ser independiente de la medicion
