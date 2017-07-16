@@ -3683,7 +3683,9 @@ std::ostream& operator<<(std::ostream& os, const Master_Tempering_Likelihood::Pa
 
 
 
-class Master_Adaptive_Beta
+
+
+class Master_Adaptive_Beta_New
 {
 public:
 
@@ -3722,7 +3724,7 @@ public:
   }
 
   friend
-  std::ostream& operator<<(std::ostream& os, const Master_Adaptive_Beta& me)
+  std::ostream& operator<<(std::ostream& os, const Master_Adaptive_Beta_New& me)
   {
     os<<"Beta\n"<<me.desc_beta_;
     os<<"History of likelihoods\n";
@@ -3731,10 +3733,6 @@ public:
 
   }
 
-  void actualize(std::ostream& , std::mt19937_64& ) const
-  {
-
-  }
 
 
   void reset()
@@ -3742,26 +3740,14 @@ public:
     data_.clear();
   }
 
-  Master_Adaptive_Beta(const Master_Tempering_Likelihood::Prior& p, std::size_t Ninitial, std::size_t Nmax, double beta_min,double factor=1): Nmax_(Nmax),factor_(factor),desc_beta_{Ninitial,beta_min}, data_{}, prior_(p){
-    prior_.desc_beta_for_dL=desc_beta_.getValue();
-    prior_.log_desc_beta_for_dL=desc_beta_.getValue();
-    for(std::size_t i=0; i<prior_.log_desc_beta_for_dL.size(); ++i)
-      prior_.log_desc_beta_for_dL[i]=std::log(prior_.desc_beta_for_dL[i]);
-
+  Master_Adaptive_Beta_New(std::size_t Ninitial,  double beta_min, std::size_t N_2, double beta_infimo): desc_beta_{Ninitial,beta_min, N_2, beta_infimo}, data_{}
+  {
     Likelihood_Record r;
     r.desc_beta=desc_beta_.getValue();
     data_.push_back(r);
-
   }
 
 
-  void init(const mcmc_Dpost s, double factor=1)
-
-  {
-    desc_beta_=getBeta(s,factor);
-
-
-  }
 
 
   std::size_t size()const {return desc_beta_.size();}
@@ -3770,54 +3756,13 @@ public:
 
 
 private:
-  std::size_t Nmax_;
-  double factor_;
 
   Beta desc_beta_;
   std::map<std::pair<double,double>,std::pair<std::size_t,std::size_t>> accepts_;
 
   std::vector<Likelihood_Record>  data_;
 
-  Master_Tempering_Likelihood::Prior prior_;
-
-  template<class It>
-  static
-  double d_logLik_d_beta(const It& begin,const It& end)
-  {
-    gaussian_lin_regr lr;
-    for (It it=begin; it!=end; ++it)
-      {
-        double x=it->first;
-        double y=std::get<0>(it->second)/std::get<2>(it->second);
-        double sd=std::sqrt((std::get<1>(it->second)/std::get<2>(it->second)-y*y)/std::get<2>(it->second));
-        lr.push_back(x,y,sd);
-      }
-    return lr.regression_coefficient();
-  }
-
-
-
-
-  static
-  Beta getBeta(const mcmc_Dpost s, double factor)
-  {
-    std::vector<double> b;
-
-    double be=1;
-    while (be>0)
-      {
-        b.push_back(be);
-        double db=1.0/std::sqrt(s.d_logLik_dBeta(be));
-        be-=db*factor;
-      }
-    return Beta(std::move(b));
-
-  }
-
-
 };
-
-
 
 
 struct LM_MultivariateGaussian: public MultivariateGaussian
@@ -4834,7 +4779,7 @@ public:
    ,const D& data
    ,std::vector<mcmc_step<pDist>>& sDist
    ,std::vector<Adaptive_discrete<AP>>& pars
-   ,Master_Adaptive_Beta& aBeta
+   ,Master_Adaptive_Beta_New& aBeta
    ,std::vector<double>& dHd
    , double p_Tjump
    ,std::vector<std::mt19937_64>& mt
@@ -5182,7 +5127,7 @@ public:
    ,const M<D>& model
    ,const D& data
    , const Adaptive_discrete<AP>& landa_Dist0
-   ,const Master_Adaptive_Beta& beta0
+   ,const Master_Adaptive_Beta_New& beta0
    , double maxTime
    , std::size_t nsamples
    ,std::size_t nskip
@@ -5235,7 +5180,7 @@ public:
     f_sim<<"\n";
 
 
-    Master_Adaptive_Beta beta(beta0);
+    Master_Adaptive_Beta_New beta(beta0);
     auto n=beta.size();
     std::vector<mystep> sDists(n);
     std::vector<Adaptive_discrete<AP>> pars(n,landa_Dist0);
@@ -5321,7 +5266,6 @@ public:
         os<<pars;
         // std::cout<<beta;
         os<<beta;
-        beta.actualize(os,mt);
         if (n!=beta.size())
           {
             for (std::size_t i=n; i<beta.size(); ++i)

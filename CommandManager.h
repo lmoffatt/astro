@@ -952,26 +952,9 @@ void operator ()(Cm* cm_,
                std::size_t nPoints_per_decade,
                std::size_t niter,
                std::size_t N_betasInit,
-               std::size_t N_betas_max,
                double beta_min,
-               double mL0,
-               double sL0,
-               double mmlogdL,
-               double smlogdL,
-
-               double mlogslogdL,
-               double slogslogdL,
-
-               double mloglandalogdL,
-               double sloglandalogdL,
-
-               double mlogepsilonlogdL,
-               double slogepsilonlogdL,
-
-               double mmlogdelta,
-               double smlogdelta,
-               double mlogslogdelta,
-               double slogslogdelta,
+                 std::size_t N_beta_2,
+                 double beta_infimo,
                M_Matrix<Landa> aps,
                std::vector<std::vector<double>> apsPar,
                double maxTime,
@@ -985,12 +968,8 @@ void operator ()(Cm* cm_,
   typedef Landa AP;
 
 
-  Master_Tempering_Likelihood::Prior MTLP
-      ({},mL0,sL0,mmlogdL,smlogdL,mlogslogdL,slogslogdL,mloglandalogdL,
-       sloglandalogdL,mlogepsilonlogdL,slogepsilonlogdL,
-       mmlogdelta,smlogdelta,mlogslogdelta,slogslogdelta);
-  Master_Adaptive_Beta
-      aBeta(MTLP,N_betasInit,N_betas_max,beta_min,1);
+  Master_Adaptive_Beta_New
+      aBeta(N_betasInit,beta_min,N_beta_2,beta_infimo);
 
 
 
