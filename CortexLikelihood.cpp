@@ -121,7 +121,7 @@ std::vector<std::vector<double> > CortexLikelihood::getstate(const Experiment *e
       std::vector<double> rho_meas(m_->getNumberOfObservedStates(),0);
       if (cm->inj_Width()>0)
         {
-          for (std::size_t i=0; i<m_->getNumberOfSimulatedStates(); ++i)
+          for (std::size_t i=0; i<m_->getNumberOfSimulatedStatesAtInjury(); ++i)
             o.push_back(rho_meas);
         }
 
@@ -143,7 +143,9 @@ std::vector<double>  CortexLikelihood::getNBins(const Experiment *e)
     {
       const CortexMeasure* cm=e->getMeasure(ie);
       if (cm->inj_Width()>0)
-        o.insert(o.end(),getModel()->getNumberOfSimulatedStates(),cm->inj_Area());
+        // esto esta mal tiene que usar el area dada por los parametros y corregida con el
+        // area de siguiente bin
+        o.insert(o.end(),getModel()->getNumberOfSimulatedStatesAtInjury(),cm->inj_Area());
       o.insert(o.end(),cm->areaAstro().begin(),cm->areaAstro().end());
     }
   return o;
@@ -316,17 +318,18 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
       ///horrible hack for the lession:
       /// dedico una fila para la probabilidad de cada estado antes de la lesion
 
-      if ( cm->inj_Width()>0)
+      if ( currInjury>0)
         {
-          double injVolume_liters=cm->inj_Area()*1e-12*h*1000;
+          double measHeigth=cm->areaAstro()[0]/(cm->xpos()[1]-cm->xpos()[0]);
+          double injVolume_liters=currInjury*measHeigth*1e-12*h*1000;
           double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
           double f=injVolume_liters/simVol_liters;
 
+          auto rhoInj=m_->getNumberAtInjuryFromModel(rho[0],f);
 
-
-          for (std::size_t istate=0; istate<rho[0].size(); ++istate)
+          for (std::size_t istate=0; istate<rhoInj.size(); ++istate)
             {
-              o[ic]=std::vector<double>(5,rho[0][istate]/5.0*f);
+              o[ic]=std::vector<double>(5,rhoInj[istate]/5.0);
 
               ++ic;
             }
@@ -385,22 +388,26 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::g(const Parameters& pa
       ///horrible hack for the lession:
       /// dedico una fila para la probabilidad de cada estado antes de la lesion
 
-      if ( cm->inj_Width()>0)
+      if ( currInjury>0)
         {
-          double injVolume_liters=cm->inj_Area()*1e-12*h*1000;
+          double measHeigth=cm->areaAstro()[0]/(cm->xpos()[1]-cm->xpos()[0]);
+          double injVolume_liters=currInjury*measHeigth*1e-12*h*1000;
           double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
           double f=injVolume_liters/simVol_liters;
 
+          auto rhoInj=m_->getNumberAtInjuryFromModel(rho[0],f);
 
-
-          for (std::size_t istate=0; istate<rho[0].size(); ++istate)
+          for (std::size_t istate=0; istate<rhoInj.size(); ++istate)
             {
-              o[ic]=std::vector<double>(5,rho[0][istate]/5.0*f);
+              o[ic]=std::vector<double>(5,rhoInj[istate]/5.0);
 
               ++ic;
             }
 
         }
+
+
+
       for (std::size_t ix=0; ix<rho.size()-1;++ix)
         {
           /// en celulas por litro
@@ -460,7 +467,7 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
       if (CL_->getExperiment()->getMeasure(i)->inj_Width()>0)
         {
           double injW=this->p_.get("inj_width_"+CL_->getExperiment()->getMeasure(i)->id());
-        x.insert(x.end(),this->CL_->getModel()->getNumberOfSimulatedStates(),-injW);
+          x.insert(x.end(),this->CL_->getModel()->getNumberOfSimulatedStatesAtInjury(),-injW);
         }
       x.insert(x.end(),++CL_->getExperiment()->getMeasure(i)->xpos().begin(),
                CL_->getExperiment()->getMeasure(i)->xpos().end());
@@ -551,7 +558,7 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
       i0=ie;
       if (CL_->getExperiment()->getMeasure(ime)->inj_Width()>0)
         ie=i0+CL_->getExperiment()->getMeasure(ime)->meanAstro().size()
-            +CL_->getModel()->getNumberOfSimulatedStates();
+            +CL_->getModel()->getNumberOfSimulatedStatesAtInjury();
       else
         ie=i0+CL_->getExperiment()->getMeasure(ime)->meanAstro().size();
 

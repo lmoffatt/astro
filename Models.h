@@ -175,6 +175,8 @@ public:
 
   virtual std::vector<double> getObservedNumberFromModel(const std::vector<double>& modelRho)const;
 
+  virtual std::vector<double> getNumberAtInjuryFromModel(const std::vector<double>& modelRho,
+                                                       double f)const;
 
   virtual std::vector<double> getObservedNumberFromData(const std::vector<double>& modelRho)const;
 
@@ -211,7 +213,8 @@ public:
 
 
   virtual std::size_t getNumberOfObservedStates() const;
-  virtual std::size_t getNumberOfSimulatedStates() const;
+
+  virtual std::size_t getNumberOfSimulatedStatesAtInjury() const;
 private:
   static std::map<double,BaseModel*> models_;
   static std::map<double,BaseModel*> getModels();
@@ -250,6 +253,19 @@ public:
 
   }
 
+  std::vector<double> getNumberAtInjuryFromModel(const std::vector<double> &modelRho, double f) const override
+  {
+    std::vector<double>  v(7);
+    v[0]=modelRho[0]*f;
+    v[1]=modelRho[3]*f;
+    v[2]=modelRho[4]*f;
+    v[3]=modelRho[5]*f;
+    v[4]=modelRho[6]*f;
+    v[5]=modelRho[7]*f;
+    v[6]=modelRho[8]*f;
+    return v;
+  }
+
 
 
   virtual std::vector<double> getObservedNumberFromData(const std::vector<double>& modelRho)const override
@@ -263,10 +279,12 @@ public:
     return v;
   }
 
-  std::size_t getNumberOfSimulatedStates() const override
+
+  virtual std::size_t getNumberOfSimulatedStatesAtInjury() const override
   {
-    return 9;
+    return 7;
   }
+
 };
 
 
@@ -319,8 +337,8 @@ class Model00:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -465,8 +483,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3",p_.inj_width_3_);
+    out.push_back("inj_width_7",p_.inj_width_7_);
 
 
 
@@ -503,8 +521,8 @@ public:
     p_.a_factor_=p.get("a_factor");
     p_.a_max_Neuron_=p.get("a_max_Neuron");
     p_.a_max_=p.get("a_max");
-    p_.inj_width_3dpl_=p.get("inj_width_3");
-    p_.inj_width_7dpl2_=p.get("inj_width_7");
+    p_.inj_width_3_=p.get("inj_width_3");
+    p_.inj_width_7_=p.get("inj_width_7");
 
 
   }
@@ -563,7 +581,6 @@ class Model00m:public MicrogliaModel
 
 
     double g_23_;
-    double g_32_;
 
 
     double g_max_;
@@ -615,19 +632,18 @@ class Model00m:public MicrogliaModel
     s.ksig_max_psi_=std::vector<double>(9,0);
 
     s.g_left_=std::vector<double> (9,0);
-    s.g_left_[2]=p.g_M2M1_;
+
+    s.g_left_[2]=p.g_M1M2_;
 
     s.g_left_[4]=p.g_10_;
     s.g_left_[5]=p.g_21_;
-    s.g_left_[6]=p.g_32_;
-    s.g_left_[7]=p.g_32_;
-    s.g_left_[8]=p.g_32_;
 
 
 
 
     s.g_rigth_=std::vector<double> (9,0);
-    s.g_rigth_[1]=p.g_M1M2_;
+
+    s.g_rigth_[1]=p.g_M2M1_;
 
     s.g_rigth_[3]=p.g_01_;
     s.g_rigth_[4]=p.g_12_;
@@ -639,6 +655,8 @@ class Model00m:public MicrogliaModel
 
 
     s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[1]=p.g_max_;
 
     s.g_max_psi_[3]=p.g_max_;
     s.g_max_psi_[4]=p.g_max_;
@@ -657,8 +675,6 @@ class Model00m:public MicrogliaModel
     s.a_psi_=std::vector<double> (9,0);
 
     s.a_psi_[0]=p.a_max_Neuron_;
-    s.a_psi_[1]=p.a_max_Neuron_;
-    s.a_psi_[2]=p.a_max_Neuron_;
 
     s.a_psi_[3]=p.a_max_;
     s.a_psi_[4]=p.a_max_*p.a_factor_;
@@ -686,8 +702,6 @@ class Model00m:public MicrogliaModel
 
 
     s.dens_Astr_=p.N_Astr_;
-
-
 
     s.dens_Neur_=p.N_Neuron_;
 
@@ -727,7 +741,6 @@ public:
     out.push_back("g_10",p_.g_10_ );
     out.push_back("g_12",p_.g_12_ );
     out.push_back("g_21",p_.g_21_ );
-    out.push_back("g_32",p_.g_32_ );
     out.push_back("g_23",p_.g_23_ );
 
     out.push_back("g_max",p_.g_max_ );
@@ -777,7 +790,6 @@ public:
 
 
     p_.g_23_=p.get("g_23");
-    p_.g_32_=p.get("g_32");
 
     p_.g_max_=p.get("g_max");
     p_.N_0_=p.get("N_0");
@@ -866,8 +878,8 @@ class Model011:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -1019,8 +1031,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -1059,8 +1071,8 @@ public:
     p_.a_max_Neuron_=p.get("a_max_Neuron");
     p_.a_max_=p.get("a_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -1134,8 +1146,8 @@ class Model012:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -1288,8 +1300,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -1330,8 +1342,8 @@ public:
     p_.a_max_=p.get("a_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -1407,8 +1419,8 @@ class Model012_22:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -1567,8 +1579,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -1614,8 +1626,8 @@ public:
 
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -1693,8 +1705,8 @@ class Model012_51:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -1856,8 +1868,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -1903,8 +1915,8 @@ public:
     p_.a_max_=p.get("a_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -1980,8 +1992,8 @@ class Model013:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -2136,8 +2148,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -2180,8 +2192,8 @@ public:
     p_.a_max_=p.get("a_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -2216,9 +2228,6 @@ class Model013_23:public BaseModel
   SimplestModel m;
 
   Model013_23* clone()const { return new Model013_23;}
-
-
-
 
 
   class myParameters
@@ -2265,8 +2274,8 @@ class Model013_23:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -2436,8 +2445,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -2490,8 +2499,8 @@ public:
     p_.a_max_5_=p.get("a_max_5");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -2581,8 +2590,8 @@ class Model013_23_31:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -2756,8 +2765,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -2814,8 +2823,8 @@ public:
     p_.a_max_5_=p.get("a_max_5");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -2897,8 +2906,8 @@ class Model013_51:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -3063,8 +3072,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -3112,8 +3121,8 @@ public:
     p_.a_max_=p.get("a_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -3185,8 +3194,8 @@ class Model021:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -3347,8 +3356,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -3391,8 +3400,8 @@ public:
     p_.inj_width_=p.get("inj_width");
     p_.N_Astr_=p.get("N_Astr");
     p_.N_Neuron_=p.get("N_Neuron");
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -3467,8 +3476,8 @@ class Model022:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -3625,8 +3634,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -3669,8 +3678,8 @@ public:
     p_.a_max_4_=p.get("a_max_4");
     p_.a_max_5_=p.get("a_max_5");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -3747,8 +3756,8 @@ class Model023:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -3909,8 +3918,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -3957,8 +3966,8 @@ public:
     p_.N_Astr_=p.get("N_Astr");
     p_.N_Neuron_=p.get("N_Neuron");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -4033,8 +4042,8 @@ class Model031:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -4188,8 +4197,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -4231,8 +4240,8 @@ public:
     p_.a_max_=p.get("a_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -4307,8 +4316,8 @@ class Model051:public BaseModel
     double DAMP_ratio_;
     double prot_concentration_;
     double DAMP_MW_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
 
    };
 
@@ -4467,8 +4476,8 @@ public:
     out.push_back("prot_concentration",p_.prot_concentration_);
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -4509,8 +4518,8 @@ public:
     p_.a_factor_=p.get("a_factor");
     p_.a_max_Neuron_=p.get("a_max_Neuron");
     p_.a_max_=p.get("a_max");
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
 
 
   }
@@ -4582,8 +4591,8 @@ class Model10:public BaseModel
     double k_sig_;
     double k_sig_max_;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -4776,8 +4785,8 @@ public:
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -4822,8 +4831,8 @@ public:
     p_.k_sig_max_=p.get("k_sig_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -4847,6 +4856,343 @@ public:
 
 };
 
+
+
+class Model100m:public MicrogliaModel
+{
+  SimplestModel m;
+
+  Model100m* clone()const { return new Model100m;}
+
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_psi_;
+    double Keq_omega_;
+    double kcat_psi;
+    double kcat_omega_;
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+    double g_23_;
+    double g_M1M2_;
+    double g_M2M1_;
+
+    double g_max_;
+    double N_0_;
+    double N_2_;
+    double N_N_;
+    double N_Astr_;
+    double N_Neuron_;
+    double N_Microglia_;
+    double a_2_;
+    double a_factor_;
+    double a_max_Neuron_;
+    double a_max_;
+
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+
+    double k_sig_;
+    double k_sig_max_;
+
+    double inj_width_3_;
+    double inj_width_7_;
+  };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_omega_ratio_=0;
+
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=p.D_;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_psi/p.Keq_psi_;
+    s.kcat_psi_=p.kcat_psi;
+    s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
+    s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(9,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(9,p.Keq_omega_);
+
+
+    s.ksig_omega_=std::vector<double>(9,0);
+    s.ksig_omega_[1]=p.k_sig_;
+    s.ksig_omega_[5]=p.k_sig_;
+    s.ksig_omega_[6]=p.k_sig_*1.5;
+    s.ksig_omega_[7]=p.k_sig_*3;
+    s.ksig_omega_[8]=p.k_sig_*6;
+
+    s.ksig_max_omega_=std::vector<double>(9,0);
+    s.ksig_max_psi_=std::vector<double>(9,0);
+
+    s.ksig_max_psi_[1]=p.k_sig_max_;
+    s.ksig_max_psi_[5]=p.k_sig_max_;
+    s.ksig_max_psi_[6]=p.k_sig_max_*1.5;
+    s.ksig_max_psi_[7]=p.k_sig_max_*3;
+    s.ksig_max_psi_[8]=p.k_sig_max_*6;
+
+    s.ksig_max_omega_[1]=p.k_sig_max_;
+    s.ksig_max_omega_[5]=p.k_sig_max_;
+    s.ksig_max_omega_[6]=p.k_sig_max_*1.5;
+    s.ksig_max_omega_[7]=p.k_sig_max_*3;
+    s.ksig_max_omega_[8]=p.k_sig_max_*6;
+
+
+
+
+    s.g_left_=std::vector<double> (9,0);
+    s.g_left_[2]=p.g_M1M2_;
+
+    s.g_left_[4]=p.g_10_;
+    s.g_left_[5]=p.g_21_;
+
+
+
+    s.g_rigth_=std::vector<double> (9,0);
+    s.g_rigth_[1]=p.g_M2M1_;
+
+    s.g_rigth_[3]=p.g_01_;
+    s.g_rigth_[4]=p.g_12_;
+    s.g_rigth_[5]=p.g_23_;
+    s.g_rigth_[6]=p.g_23_;
+    s.g_rigth_[7]=p.g_23_;
+
+    s.g_max_omega_=std::vector<double> (9,0);
+
+
+    s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[1]=p.g_max_;
+
+    s.g_max_psi_[4]=p.g_max_;
+    s.g_max_psi_[5]=p.g_max_;
+    s.g_max_psi_[6]=p.g_max_;
+    s.g_max_psi_[7]=p.g_max_;
+
+    s.g_max_omega_[1]=p.g_max_;
+
+    s.g_max_omega_[4]=p.g_max_;
+    s.g_max_omega_[5]=p.g_max_;
+    s.g_max_omega_[6]=p.g_max_;
+    s.g_max_omega_[7]=p.g_max_;
+
+
+    s.a_=std::vector<double> (9,0);
+    s.a_[5]=p.a_2_;
+    s.a_[6]=p.a_2_*p.a_factor_;
+    s.a_[7]=s.a_[4]*p.a_factor_;
+    s.a_[8]=s.a_[5]*p.a_factor_;
+
+    s.a_omega_=std::vector<double> (9,0);
+    s.a_psi_=std::vector<double> (9,0);
+
+    s.a_psi_[0]=p.a_max_Neuron_;
+
+    s.a_psi_[5]=p.a_max_;
+    s.a_psi_[6]=p.a_max_*p.a_factor_;
+    s.a_psi_[7]=s.a_psi_[4]*p.a_factor_;
+    s.a_psi_[8]=s.a_psi_[5]*p.a_factor_;
+
+
+    s.a_omega_[0]=p.a_max_Neuron_;
+
+    s.a_omega_[0]=p.a_max_Neuron_;
+    s.a_omega_[5]=p.a_max_;
+    s.a_omega_[6]=p.a_max_*p.a_factor_;
+    s.a_omega_[7]=s.a_omega_[4]*p.a_factor_;
+    s.a_omega_[8]=s.a_omega_[5]*p.a_factor_;
+
+
+
+    s.N_=std::vector<double> (9,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_N_;
+    s.N_[2]=p.N_N_;
+    s.N_[3]=p.N_0_;
+    s.N_[4]=p.N_0_;
+    s.N_[5]=p.N_2_;
+    s.N_[6]=p.N_2_*1.5;
+    s.N_[7]=p.N_2_*3;
+    s.N_[8]=p.N_2_*6;
+
+
+
+    s.M_=std::vector<double> (9,0);
+    s.M_[0]=p.N_N_;
+    s.M_[1]=p.N_N_;
+    s.M_[2]=p.N_N_;
+    s.M_[3]=p.N_0_;
+    s.M_[4]=p.N_0_;
+    s.M_[5]=p.N_2_;
+    s.M_[6]=p.N_2_*1.5;
+    s.M_[7]=p.N_2_*3;
+    s.M_[8]=p.N_2_*6;
+
+
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    s.dens_Microglia_=p.N_Microglia_;
+
+
+
+    return s;
+  }
+
+
+  myParameters p_;
+
+  // BaseModel interface
+public:
+  Model100m(){}
+  ~Model100m(){}
+  virtual std::string id() const
+  {
+    return "Model 11.0";
+  }
+  static double number()
+  {
+    return 11;
+  }
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq_psi",p_.Keq_psi_);
+    out.push_back("Keq_omega",p_.Keq_omega_);
+    out.push_back("kcat_psi", p_.kcat_psi);
+    out.push_back("kcat_omega", p_.kcat_omega_);
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_M2M1",p_.g_M2M1_);
+    out.push_back("g_M1M2",p_.g_M1M2_);
+    out.push_back("g_max",p_.g_max_ );
+    out.push_back("N_0",p_.N_0_ );
+    out.push_back("N_2",p_.N_2_ );
+    out.push_back("N_N",p_.N_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron",p_.N_Neuron_);
+    out.push_back("N_Microglia",p_.N_Microglia_);
+
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_factor",p_.a_factor_ );
+
+    out.push_back("a_max_Neuron",p_.a_max_Neuron_ );
+    out.push_back("a_max",p_.a_max_ );
+
+
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
+    out.push_back("k_sig",p_.k_sig_);
+    out.push_back("k_sig_max",p_.k_sig_max_);
+
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
+
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_psi_=p.get("Keq_psi");
+    p_.Keq_omega_=p.get("Keq_omega");
+    p_.kcat_psi=p.get("kcat_psi");
+    p_.kcat_omega_=p.get("kcat_omega");
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+
+    p_.g_23_=p.get("g_23");
+    p_.g_M2M1_=p.get("g_M2M1");
+    p_.g_M1M2_=p.get("g_M1M2");
+    p_.g_max_=p.get("g_max");
+
+    p_.N_0_=p.get("N_0");
+    p_.N_2_=p.get("N_2");
+    p_.N_N_=p.get("N_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.N_Microglia_=p.get("N_Microglia");
+
+    p_.a_factor_=p.get("a_factor");
+    p_.a_max_Neuron_=p.get("a_max_Neuron");
+    p_.a_max_=p.get("a_max");
+    p_.k_sig_=p.get("k_sig");
+    p_.k_sig_max_=p.get("k_sig_max");
+
+
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
+  }
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+
+  }
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  Model100m(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
 
 
 
@@ -4893,8 +5239,8 @@ class Model111:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -5084,8 +5430,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -5133,8 +5479,8 @@ public:
     p_.k_sig_max_=p.get("k_sig_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -5202,8 +5548,8 @@ class Model112:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -5395,8 +5741,8 @@ public:
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -5444,8 +5790,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -5518,8 +5864,8 @@ class Model112_22:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -5710,8 +6056,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -5762,8 +6108,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -5837,8 +6183,8 @@ class Model112_22_31:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -6029,8 +6375,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -6081,8 +6427,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -6153,8 +6499,8 @@ class Model112_51:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -6361,8 +6707,8 @@ public:
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -6415,8 +6761,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -6494,8 +6840,8 @@ class Model112_52:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -6706,8 +7052,8 @@ public:
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -6765,8 +7111,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -6838,8 +7184,8 @@ class Model113:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -7033,8 +7379,8 @@ public:
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -7084,8 +7430,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -7159,8 +7505,8 @@ class Model113_42:public BaseModel
     double k_sig_max_3;
     double k_sig_max_4;
     double k_sig_max_5;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -7359,8 +7705,8 @@ public:
     out.push_back("k_sig_max_4",p_.k_sig_max_4);
     out.push_back("k_sig_max_5",p_.k_sig_max_5);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -7414,8 +7760,8 @@ public:
     p_.k_sig_max_4=p.get("k_sig_max_4");
     p_.k_sig_max_5=p.get("k_sig_max_5");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -7487,8 +7833,8 @@ class Model114:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -7681,8 +8027,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -7734,8 +8080,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -7828,8 +8174,8 @@ class Model114_24_44:public BaseModel
     double k_sig_max_psi_4;
     double k_sig_max_psi_5;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -8051,8 +8397,8 @@ public:
 
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -8126,8 +8472,8 @@ public:
     p_.k_sig_max_psi_4=p.get("k_sig_max_psi_4");
     p_.k_sig_max_psi_5=p.get("k_sig_max_psi_5");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -8231,8 +8577,8 @@ class Model114_24_32_44:public BaseModel
     double k_sig_max_psi_4;
     double k_sig_max_psi_5;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -8465,8 +8811,8 @@ public:
 
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -8551,8 +8897,8 @@ public:
     p_.k_sig_max_psi_4=p.get("k_sig_max_psi_4");
     p_.k_sig_max_psi_5=p.get("k_sig_max_psi_5");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -8625,8 +8971,8 @@ class Model115:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -8820,8 +9166,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -8875,8 +9221,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -8954,8 +9300,8 @@ class Model115_22:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -9156,8 +9502,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -9215,8 +9561,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -9302,8 +9648,8 @@ class Model115_25:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -9513,8 +9859,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -9582,8 +9928,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -9652,8 +9998,8 @@ class Model121:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -9846,8 +10192,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -9895,8 +10241,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -9965,8 +10311,8 @@ class Model122:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -10157,8 +10503,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -10206,8 +10552,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -10278,8 +10624,8 @@ class Model123:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -10473,8 +10819,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -10525,8 +10871,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -10602,8 +10948,8 @@ class Model124:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -10802,8 +11148,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -10860,8 +11206,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -10940,8 +11286,8 @@ class Model125:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -11144,8 +11490,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -11205,8 +11551,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -11275,8 +11621,8 @@ class Model131:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -11466,8 +11812,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -11516,8 +11862,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -11592,8 +11938,8 @@ class Model132:public BaseModel
 
     double k_sig_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -11790,8 +12136,8 @@ public:
 
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -11849,8 +12195,8 @@ public:
     p_.k_sig_=p.get("k_sig");
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -11919,8 +12265,8 @@ class Model141:public BaseModel
     double k_sig_4_;
     double k_sig_5_;
     double k_sig_max_;
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -12117,8 +12463,8 @@ public:
     out.push_back("k_sig_max",p_.k_sig_max_);
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -12167,8 +12513,8 @@ public:
 
     p_.k_sig_max_=p.get("k_sig_max");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -12246,8 +12592,8 @@ class Model142:public BaseModel
     double k_sig_max_5;
 
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -12444,8 +12790,8 @@ public:
 
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -12496,8 +12842,8 @@ public:
 
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -12577,8 +12923,8 @@ class Model144:public BaseModel
     double k_sig_max_psi_4;
     double k_sig_max_psi_5;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -12781,8 +13127,8 @@ public:
     out.push_back("k_sig_max_psi_5",p_.k_sig_max_psi_5);
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -12837,8 +13183,8 @@ public:
     p_.k_sig_max_psi_4=p.get("k_sig_max_psi_4");
     p_.k_sig_max_psi_5=p.get("k_sig_max_psi_5");
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -12910,8 +13256,8 @@ class Model151:public BaseModel
     double k_sig_;
     double k_sig_max_;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -13119,8 +13465,8 @@ public:
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -13170,8 +13516,8 @@ public:
     p_.k_sig_max_=p.get("k_sig_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -13248,8 +13594,8 @@ class Model152:public BaseModel
     double k_sig_;
     double k_sig_max_;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -13461,8 +13807,8 @@ public:
     out.push_back("k_sig",p_.k_sig_);
     out.push_back("k_sig_max",p_.k_sig_max_);
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
     return out;
 
@@ -13511,8 +13857,8 @@ public:
     p_.k_sig_max_=p.get("k_sig_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -13577,8 +13923,8 @@ class Model20:public BaseModel
     double prot_concentration_;
     double DAMP_MW_;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -13757,8 +14103,8 @@ public:
 
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -13802,8 +14148,8 @@ public:
     p_.a_max_=p.get("a_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -13872,8 +14218,8 @@ class Model211:public BaseModel
     double prot_concentration_;
     double DAMP_MW_;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -14051,8 +14397,8 @@ public:
     out.push_back("DAMP_MW",p_.DAMP_MW_);
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -14099,8 +14445,8 @@ public:
 
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -14169,8 +14515,8 @@ class Model212:public BaseModel
     double prot_concentration_;
     double DAMP_MW_;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -14352,8 +14698,8 @@ public:
 
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -14400,8 +14746,8 @@ public:
     p_.a_max_=p.get("a_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -14471,8 +14817,8 @@ class Model213:public BaseModel
     double prot_concentration_;
     double DAMP_MW_;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -14656,8 +15002,8 @@ public:
 
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -14706,8 +15052,8 @@ public:
     p_.a_max_=p.get("a_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -14779,8 +15125,8 @@ class Model214:public BaseModel
     double prot_concentration_;
     double DAMP_MW_;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -14967,8 +15313,8 @@ public:
 
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -15019,8 +15365,8 @@ public:
     p_.a_max_=p.get("a_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
@@ -15096,8 +15442,8 @@ class Model215:public BaseModel
     double prot_concentration_;
     double DAMP_MW_;
 
-    double inj_width_3dpl_;
-    double inj_width_7dpl2_;
+    double inj_width_3_;
+    double inj_width_7_;
   };
 
 
@@ -15287,8 +15633,8 @@ public:
 
 
 
-    out.push_back("inj_width_3dpl",p_.inj_width_3dpl_);
-    out.push_back("inj_width_7dpl2",p_.inj_width_7dpl2_);
+    out.push_back("inj_width_3dpl",p_.inj_width_3_);
+    out.push_back("inj_width_7dpl2",p_.inj_width_7_);
 
 
 
@@ -15341,8 +15687,8 @@ public:
     p_.a_max_=p.get("a_max");
 
 
-    p_.inj_width_3dpl_=p.get("inj_width_3dpl");
-    p_.inj_width_7dpl2_=p.get("inj_width_7dpl2");
+    p_.inj_width_3_=p.get("inj_width_3dpl");
+    p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const

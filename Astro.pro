@@ -202,7 +202,8 @@ DISTFILES += \
     run/DATOS_3dpl_resultados.txt \
     run/E_250_50 \
     run/E_250 \
-    run/p_000m/o_000m
+    run/p_000m/o_000m \
+    run/p_100m/o_100m
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

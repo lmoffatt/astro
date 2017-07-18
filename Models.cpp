@@ -39,10 +39,10 @@ CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExper
 {
 
   CortexState o(s.x_,s.dx_,s.h_,p.epsilon_,p.N_.size());
-  double rmicro,r0;
+  double rM2,r0;
   if (p.N_.size()==9)
     {
-      rmicro=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
+      rM2=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
       r0=p.g_left_[4]/(p.g_rigth_[3]+p.g_left_[4]);
     }
   else
@@ -56,8 +56,8 @@ CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExper
       for (unsigned x=0; x<numX; ++x)
         {
           o.rho_[x][0]=p.dens_Neur_*std::pow(s.h_,2)*s.dx_[x]*1000;  // dens is in cells per liter
-          o.rho_[x][1]=p.dens_Microglia_*std::pow(s.h_,2)*s.dx_[x]*1000*rmicro;
-          o.rho_[x][2]=p.dens_Microglia_*std::pow(s.h_,2)*s.dx_[x]*1000*(1-rmicro);
+          o.rho_[x][1]=p.dens_Microglia_*std::pow(s.h_,2)*s.dx_[x]*1000*rM2;
+          o.rho_[x][2]=p.dens_Microglia_*std::pow(s.h_,2)*s.dx_[x]*1000*(1-rM2);
 
 
           o.rho_[x][3]=p.dens_Astr_*std::pow(s.h_,2)*s.dx_[x]*1000*r0;
@@ -91,10 +91,10 @@ CortexState SimplestModel::init(const SimplestModel::Param &p,
 
   CortexState o(x_grid_in_m,s.h(),p.epsilon_,p.N_.size());
 
-  double rmicro,r0;
+  double rM2,r0;
   if (p.N_.size()==9)
     {
-      rmicro=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
+      rM2=p.g_left_[2]/(p.g_rigth_[1]+p.g_left_[2]);
       r0=p.g_left_[4]/(p.g_rigth_[3]+p.g_left_[4]);
     }
   else
@@ -109,8 +109,8 @@ CortexState SimplestModel::init(const SimplestModel::Param &p,
       for (unsigned x=0; x<numX; ++x)
         {
           o.rho_[x][0]=p.dens_Neur_*std::pow(s.h(),2)*o.dx_[x]*1000;  // dens is in cells per liter
-          o.rho_[x][1]=p.dens_Microglia_*std::pow(s.h(),2)*o.dx_[x]*1000*rmicro;
-          o.rho_[x][2]=p.dens_Microglia_*std::pow(s.h(),2)*o.dx_[x]*1000*(1-rmicro);
+          o.rho_[x][1]=p.dens_Microglia_*std::pow(s.h(),2)*o.dx_[x]*1000*rM2;
+          o.rho_[x][2]=p.dens_Microglia_*std::pow(s.h(),2)*o.dx_[x]*1000*(1-rM2);
           o.rho_[x][3]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000*r0;
           o.rho_[x][4]=p.dens_Astr_*std::pow(s.h(),2)*o.dx_[x]*1000*(1-r0);
         }
@@ -550,6 +550,9 @@ BaseModel *BaseModel::create(const Parameters &p)
     return nullptr;
 }
 
+
+
+
 std::vector<double> BaseModel::getObservedProbFromModel(const std::vector<double> &modelRho) const
 {
   std::vector<double>  v(5);
@@ -574,6 +577,13 @@ std::vector<double> BaseModel::getObservedNumberFromModel(const std::vector<doub
 
 }
 
+std::vector<double> BaseModel::getNumberAtInjuryFromModel(const std::vector<double> &modelRho, double f) const
+{
+  std::vector<double>  v(modelRho);
+  return v*f;
+
+}
+
 std::vector<double> BaseModel::getObservedNumberFromData(const std::vector<double> &modelRho) const
 {
   std::vector<double>  v(5);
@@ -590,10 +600,13 @@ std::size_t BaseModel::getNumberOfObservedStates()const
   return 5;
 }
 
-std::size_t BaseModel::getNumberOfSimulatedStates()const
+
+std::size_t BaseModel::getNumberOfSimulatedStatesAtInjury()const
 {
   return 7;
 }
+
+
 
 
 
@@ -683,6 +696,7 @@ std::map<double, BaseModel *> BaseModel::getModels()
 
   o[Model00m::number()]=new Model00m;
 
+  o[Model100m::number()]=new Model100m;
 
   return o;
 

@@ -1,6 +1,6 @@
-parameters parameters_10
+parameters parameters_100m
 
-model 1.0
+model 11.0
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
 
@@ -26,6 +26,11 @@ g_23 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
 
 g_max <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
 
+g_M1M2 <LOG>  1E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
+
+g_M2M1  <LOG> 3E-7   [s-1] 10 [dB]// 3E-5 cell type change rate from 1 to 0
+
+
 N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
 
 N_2  <LOG>  10000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
@@ -38,7 +43,7 @@ N_Astr <LOG>  1E10  [cells L^-1] 3 [dB]//1E10
 
 N_Neuron <LOG> 3.3E9    [cells L^-1] 3 [dB]//
 
-N_Microglia <LOG> 2.5E9    [cells L^-1] 3 [dB]//
+N_Microglia <LOG> 1E10 [cells L^-1] 3 [dB] // tentantivo, buscar valor bueno
 
 
 a_2  <LOG>  1E-7  [s-1] 10 [dB]// cell apoptosis rate in the state 2
@@ -46,10 +51,6 @@ a_2  <LOG>  1E-7  [s-1] 10 [dB]// cell apoptosis rate in the state 2
 a_factor <LOG> 2   [s^0]  10  [dB]// increase in apoptosis rate per state change
 
 a_max_Neuron <LOG> 2E-5   [s^-1]  10  [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
-
-a_max_Microglia <LOG> 5E-7   [s^-1]  10  [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
-// microglia puede ser M2 (antiinflamatoria) o M1 (proinflamatoria)
-
 
 a_max <LOG>  5E-7   [s^-1]  10  [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
@@ -65,9 +66,9 @@ k_sig <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
 
 k_sig_max <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
 
-inj_width_3dpl <LOG> 50 [um] 1 [dB] // ancho de la injuria a tres dias
+inj_width_3 <LOG> 535 [um] 3.66 [dB] // ancho de la injuria a tres dias
 
-inj_width_7dpl2 <LOG> 1000 [um]  1  [dB] // ancho de la injuria a siete dias
+inj_width_7 <LOG> 881 [um]  3.30  [dB] // ancho de la injuria a siete dias
 
 
 ------------------------------------------------------------------------------------------

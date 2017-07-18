@@ -80,9 +80,9 @@ prot_concentration <LOG>  200  [g/ml]  2.12 [dB]// protein density
 
 DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
 
-inj_width_3dpl <LOG> 50 [um] 1 [dB] // ancho de la injuria a tres dias
+inj_width_3 <LOG> 535 [um] 3.66 [dB] // ancho de la injuria a tres dias
 
-inj_width_7dpl2 <LOG> 1000 [um]  1  [dB] // ancho de la injuria a siete dias
+inj_width_7 <LOG> 881 [um]  3.30  [dB] // ancho de la injuria a siete dias
 
 
 
