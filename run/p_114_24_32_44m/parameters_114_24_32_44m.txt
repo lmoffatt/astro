@@ -1,6 +1,6 @@
-parameters parameters_114_24_32_44
+parameters parameters_114_24_32_44m
 
-model 1.14024032044
+model 11.14024032044
 
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
@@ -74,6 +74,9 @@ g_max_omega_4 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 t
 
 g_max_omega_5 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
 
+
+
+
 N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
 
 
@@ -92,9 +95,10 @@ N_5  <LOG>  70000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on re
 
 N_N  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of DAMP receptors on neurons
 
-N_M1  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of DAMP receptors on M1 microglia
 
 N_M2  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of DAMP receptors on M2 microglia
+
+N_M1  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of DAMP receptors on M1 microglia
 
 
 M_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on resting cells
@@ -115,9 +119,9 @@ M_5  <LOG>  70000   [receptors cell^-1] 10 [dB]// number of soluble mediators re
 
 M_N  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on neurons
 
-M_M1  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on M1 microglia
-
 M_M2  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on M2 microglia
+
+M_M1  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on M1 microglia
 
 
 N_Astr <LOG>  1E10  [cells L^-1] 3 [dB]//1E10
@@ -137,11 +141,6 @@ a_factor <LOG> 2   [s^0]  10  [dB]// increase in apoptosis rate per state change
 
 a_max_psi_Neuron <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
-a_max_psi_M1 <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
-
-a_max_psi_M2 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
-
-
 a_max_psi_1 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
 a_max_psi_2 <LOG> 2E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
@@ -154,10 +153,6 @@ a_max_psi_5 <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturat
 
 
 a_max_omega_Neuron <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
-
-a_max_omega_M1 <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
-
-a_max_omega_M2 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
 a_max_omega_1 <LOG> 1E-6   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 

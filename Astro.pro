@@ -193,7 +193,6 @@ DISTFILES += \
     run/7dpl_resultados.txt \
     run/p_000m/parameters_000m.txt \
     run/p_100m/parameters_100m.txt \
-    run/p_114_24_32_44m/parameter_114_24_32_44 \
     run/New_experiment_log_250_1 \
     run/evidence_script \
     run/runEvidence_0.sh \
@@ -203,7 +202,9 @@ DISTFILES += \
     run/E_250_50 \
     run/E_250 \
     run/p_000m/o_000m \
-    run/p_100m/o_100m
+    run/p_100m/o_100m \
+    run/p_114_24_32_44m/o_114_24_32_44m \
+    run/p_114_24_32_44m/parameters_114_24_32_44m.txt
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
