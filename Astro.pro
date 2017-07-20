@@ -204,7 +204,9 @@ DISTFILES += \
     run/p_000m/o_000m \
     run/p_100m/o_100m \
     run/p_114_24_32_44m/o_114_24_32_44m \
-    run/p_114_24_32_44m/parameters_114_24_32_44m.txt
+    run/p_114_24_32_44m/parameters_114_24_32_44m.txt \
+    run/p_013_23_31m/o_013_23_31m \
+    run/p_013_23_31m/parameters_013_23_31m.txt
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

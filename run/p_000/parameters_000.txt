@@ -18,7 +18,9 @@ g_12  <LOG> 1E-5   [s-1] 10 [dB]// 1E-5 cell type change rate from 1 to 0
 
 g_21  <LOG> 3E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
-g_23 <LOG> 5E-6   [s-1] 10 [dB]//   cell type change rate from 2 to 3
+g_23 <LOG> 5E-8   [s-1] 10 [dB]//   cell type change rate from 2 to 3
+
+g_32 <LOG> 1E-6   [s-1] 10 [dB]//   cell type change rate from 3 to 4
 
 g_max <LOG> 5E-5  [s-1] 10 [dB]// 5E-5 maximal cell type change rate from 1 to 2
 

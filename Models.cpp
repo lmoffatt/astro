@@ -452,11 +452,11 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
                                          const SimplestModel::Param &p,
                                          const Experiment &sp
                                          , double dx
-
-                                         , double dtmin,
+                                        , double dtmin,
                                          std::size_t nPoints_per_decade,
                                          double dtmax,
-                                         double tequilibrio)const
+                                         double tequilibrio
+                                         )const
 {
   /* std::cout<<"starts a Simulation on \n";
   sp.write(std::cout);
@@ -695,6 +695,7 @@ std::map<double, BaseModel *> BaseModel::getModels()
 
 
   o[Model00m::number()]=new Model00m;
+  o[Model013_23_31m::number()]=new Model013_23_31m;
 
   o[Model100m::number()]=new Model100m;
   o[Model114_24_32_44m::number()]=new Model114_24_32_44m;

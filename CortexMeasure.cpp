@@ -1303,11 +1303,14 @@ const std::vector<double> &Experiment::xpos() const
   return m_[0].xpos();
 }
 
-std::vector<double> Experiment::x_in_m(double dx,double sinkLength) const
+std::vector<double> Experiment::x_in_m(double dx,  double sinkLength) const
 {
-  double xmax=m_[0].xpos().back()*1e-6;
+
   std::vector<double> o;
-  double xpos=0;
+
+ double xpos=0;
+
+  double xmax=m_[0].xpos().back()*1e-6;
   dx=dx*1e-6;
   while (xpos<xmax)
     {

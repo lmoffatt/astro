@@ -777,6 +777,8 @@ public:
   , YM_(sumy)
   , yM_(std::vector<std::vector<double>>(n_knots_,std::vector<double>(n_cols_)))
   , bM_(std::vector<std::vector<double>>(n_knots_,std::vector<double>(n_cols_,0.0)))
+  ,lower_default_(0)
+  ,upper_default_(0)
   {
     for (std::size_t i=0; i<x.size(); ++i)
       x_map_[x[i]]=i;
@@ -854,7 +856,7 @@ private:
 
   bool get_index(double x,std::size_t& i, double& t)const
   {
-    auto it=x_map_.upper_bound(x);
+    auto it=x_map_.lower_bound(x);
     if ((it!=x_map_.end()))
       {
         i=it->second;
