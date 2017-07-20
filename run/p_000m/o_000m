@@ -4,7 +4,7 @@
 #
 
 # Opciones SGE
-#$ -l h_rt=11:59:00 # Setea 12 horas de wall clock time
+#$ -l h_rt=23:59:00 # Setea 23 horas de wall clock time
 ##$ -pe openmp 1
 
 ##Seteo la cantidad de threads que se va a usar
