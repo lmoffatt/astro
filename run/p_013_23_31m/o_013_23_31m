@@ -11,11 +11,11 @@
 ##$ -v OMP_NUM_THREADS=1 ### Setea la cantidad de threads a 8
 
 #$ -V  # Exporta las variables de entorno
-#$ -N M_114_48  # El nombre del job
+#$ -N M_013_24  # El nombre del job
 #$ -cwd # Cambia al directorio actual
 
 
 # Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/local/gcc-6.2.0/lib64/
 
-/home/lmoffatt.inquimae/Astro/release/Astro /home/lmoffatt.inquimae/Astro/Astro/run/evidence_script LABEL parameters_114_24_32_44m
+/home/lmoffatt.inquimae/Astro/release/Astro /home/lmoffatt.inquimae/Astro/Astro/run/evidence_script LABEL parameters_013_23_31m
