@@ -14,9 +14,9 @@ kcat_psi  <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega cle
 
 kcat_omega <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
 
-g_M1M2 <LOG>  1E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
+g_M1M2  <LOG> 5E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
-g_M2M1  <LOG> 3E-7   [s-1] 10 [dB]// 3E-5 cell type change rate from 1 to 0
+g_M2M1  <LOG> 5E-6   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
 g_01 <LOG>  1E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
 
@@ -31,7 +31,6 @@ g_23 <LOG> 5E-8   [s-1] 10 [dB]//   cell type change rate from 2 to 3
 g_32 <LOG> 1E-6   [s-1] 10 [dB]//   cell type change rate from 3 to 4
 
 g_max <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
-
 
 N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
 
