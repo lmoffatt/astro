@@ -787,8 +787,12 @@ public:
 
         double b=log((YM_[2][j]-YM_[1][j])/(YM_[1][j]-YM_[0][j]))/(x_[1]-x_[0]);
         bM_[0][j]=b;
-        double y=-bM_[0][j]*(YM_[1][j]-YM_[0][j])/std::expm1(bM_[0][j]*(x_[0]-x_[1]));
-        yM_[0][j]=y;
+        double y;
+        if (std::abs(b)>std::numeric_limits<double>::epsilon())
+             y=-bM_[0][j]*(YM_[1][j]-YM_[0][j])/std::expm1(bM_[0][j]*(x_[0]-x_[1]));
+        else
+             y=(YM_[1][j]-YM_[0][j])/(x_[0]-x_[1]);
+       yM_[0][j]=y;
         bM_[1][j]=b;
         double y1=yM_[0][j]*exp(bM_[1][j]*(x_[2]-x_[1]));
         yM_[1][j]=y1;
@@ -850,7 +854,11 @@ private:
     //double b=bM_[i-1][j];
     //double e=std::expm1(bM_[i-1][j]*t);
     //double yb=y/b;
+    if (std::abs(bM_[i-1][j])>std::numeric_limits<double>::epsilon())
     return YM_[i][j]+yM_[i-1][j]/bM_[i-1][j]*std::expm1(bM_[i-1][j]*t);
+    else
+      return YM_[i][j]+yM_[i-1][j]*t;
+
 
   }
 

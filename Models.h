@@ -98,7 +98,7 @@ public:
 
   CortexSimulation simulate(const Parameters& par,const Param &p, const CortexExperiment &sp, double dt)const;
 
-  CortexSimulation simulate(const Parameters& par, const Param &p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio)const;
+  CortexSimulation simulate(Parameters par,  Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio)const;
 
 
 

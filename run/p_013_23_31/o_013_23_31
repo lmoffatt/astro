@@ -4,12 +4,18 @@
 #
 
 # Opciones SGE
-#$ -l h_rt=23:59:00 # Setea 2 horas de wall clock time
+#$ -l h_rt=23:59:00 # Setea 24 horas de wall clock time
+##$ -pe openmp 1
+
+##Seteo la cantidad de threads que se va a usar
+##$ -v OMP_NUM_THREADS=1 ### Setea la cantidad de threads a 8
+
 #$ -V  # Exporta las variables de entorno
-#$ -N N2_013_23_31  # El nombre del job
+#$ -N A_013_24  # El nombre del job
 #$ -cwd # Cambia al directorio actual
 
-# Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/opt/gcc-5.2.0/lib64/
 
-/home/lmoffatt.inquimae/Astro/release/Astro /home/lmoffatt.inquimae/Astro/Astro/run/mcmc_script LABEL parameters_013_23_31
+# Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/local/gcc-6.2.0/lib64/
+
+/home/lmoffatt.inquimae/Astro/release/Astro /home/lmoffatt.inquimae/Astro/Astro/run/evidence_script LABEL parameters_013_23_31

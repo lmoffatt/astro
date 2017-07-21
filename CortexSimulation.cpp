@@ -433,7 +433,7 @@ void CortexSimulation::read(std::string& line, std::istream &s, std::ostream& lo
         }
       id_=name;
       name.clear();
-      unsigned numSamples;
+      unsigned numSamples=0;
       unsigned numNodes;
       unsigned numStates;
 

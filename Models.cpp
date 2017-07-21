@@ -392,6 +392,7 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
   while (t+dt<0)
     {
+
       c=nextEuler(p,c,dt);
       if (!c.isValid_)
         {
@@ -448,8 +449,8 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
 
 
-CortexSimulation SimplestModel::simulate(const Parameters& par,
-                                         const SimplestModel::Param &p,
+CortexSimulation SimplestModel::simulate(Parameters par,
+                                         Param p,
                                          const Experiment &sp
                                          , double dx
                                         , double dtmin,
@@ -471,7 +472,7 @@ CortexSimulation SimplestModel::simulate(const Parameters& par,
 
 
   CortexState c=init(p,sp,dx);
-
+  CortexState cn;
   CortexSimulation s(c,sp.numSimPoints());
   s.p_=par;
   s.dt_=dtmax;

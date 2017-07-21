@@ -24,7 +24,7 @@ kcat_omega <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega cl
 g_M1M2  <LOG> 5E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
 
-g_M2M1  <LOG> 0.5E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+g_M2M1  <LOG> 5E-6   [s-1] 10 [dB]// cell type change rate from 1 to 0
 
 
 
