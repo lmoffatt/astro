@@ -3,37 +3,7 @@
 #include <iostream>
 
 
-CortexState SimplestModel::nextEuler(const SimplestModel::Param &p, const CortexState &c, double dt)const
-{
-  auto dPsi=dPsi_dt(p,c);
-  bool hasOmega=p.Domega_>0;
-  std::vector<double> dOmega;
-  if (hasOmega)
-    dOmega=dOmega_dt(p,c);
-  auto dRho=dRho_dt(p,c,hasOmega);
 
-
-  CortexState out(c);
-  for (std::size_t k=0; k<dRho[0].size(); ++k)
-    if (std::isnan(dRho[0][k])||(hasOmega&&std::isnan(dOmega[0])))
-      {
-        out.isValid_=false;
-        return out;
-      }
-  if (hasOmega)
-    {
-      addStep(out.omega_T_,dOmega,dt);
-    }
-  addStep(out.psi_T_,dPsi,dt);
-
-  addMStep(out.rho_,dRho,dt);
-  if (hasOmega)
-    out.omega_B_=Omega_Bound(p,out);
-  out.psi_B_=Psi_Bound(p,out);
-
-  return out;
-
-}
 
 CortexState SimplestModel::init(const SimplestModel::Param &p, const CortexExperiment &s)const
 {
@@ -269,182 +239,13 @@ std::vector<double> SimplestModel::Omega_Bound(const SimplestModel::Param &p, co
 }
 
 
-std::vector<std::vector<double>> SimplestModel::
-dRho_dt(const Param &p,
-        const CortexState &c, bool hasOmega)const
-{
-  unsigned numX=c.rho_.size();
-  unsigned numK=c.rho_.front().size();
-
-
-  std::vector<std::vector<double>> dr(numX,std::vector<double>(numK,0));
-  if (hasOmega)
-    {
-      for (unsigned x=0; x<numX; ++x)
-        {
-          double psi_F=c.psi_T_[x]-c.psi_B_[x];
-          double omega_F=c.omega_T_[x]-c.omega_B_[x];
-          for (unsigned k=0; k<numK; ++k)
-            {
-              double Jr,Jl,Ja;
-              if (k+1<numK)
-                Jr=p.g_left_[k+1]*c.rho_[x][k+1]
-                    -(p.g_rigth_[k]
-                      +p.g_max_psi_[k]*psi_F
-                      /(p.Keq_gmax_psi_[k]+psi_F)
-                      +p.g_max_omega_[k]*omega_F
-                      /(p.Keq_gmax_omega_[k]+omega_F)
-                      )*c.rho_[x][k];
-              else
-                Jr=0;
-              if (k>0)
-                Jl=-p.g_left_[k]*c.rho_[x][k]
-                    +(p.g_rigth_[k-1]
-                    +p.g_max_psi_[k-1]*psi_F
-                    /(p.Keq_gmax_psi_[k-1]+psi_F)
-                    +p.g_max_omega_[k-1]*omega_F
-                    /(p.Keq_gmax_omega_[k-1]+omega_F)
-                    )*c.rho_[x][k-1];
-              else
-                Jl=0;
-              Ja= (+p.a_[k]
-                   +p.a_psi_[k]*p.kon_psi_*psi_F
-                   /(p.kcat_psi_+p.kon_psi_*psi_F)
-                   +p.a_omega_[k]*p.kon_omega_*omega_F
-                   /(p.kcat_omega_+p.kon_omega_*omega_F)
-                   )*c.rho_[x][k];
-
-
-              dr[x][k]=Jl+Jr-Ja;
-
-            }
-        }
-    }
-  else
-    {
-      for (unsigned x=0; x<numX; ++x)
-        {
-          for (unsigned k=0; k<numK; ++k)
-            {
-              double psi_F=c.psi_T_[x]-c.psi_B_[x];
-              double Jr,Jl,Ja;
-              if (k+1<numK)
-                Jr=p.g_left_[k+1]*c.rho_[x][k+1]
-                    -(p.g_rigth_[k]
-                      +p.g_max_psi_[k]*psi_F
-                      /(p.Keq_gmax_psi_[k]+psi_F)
-                      )*c.rho_[x][k];
-              else
-                Jr=0;
-              if (k>0)
-                Jl=-p.g_left_[k]*c.rho_[x][k]
-                    +(p.g_rigth_[k-1]
-                    +p.g_max_psi_[k-1]*psi_F
-                    /(p.Keq_gmax_psi_[k-1]+psi_F)
-                    )*c.rho_[x][k-1];
-              else
-                Jl=0;
-              Ja= (p.a_[k]
-                   +p.a_psi_[k]*p.kon_psi_*psi_F
-                   /(p.kcat_psi_+p.kon_psi_*psi_F)
-                   )*c.rho_[x][k];
-
-              dr[x][k]=Jl+Jr-Ja;
-
-            }
-        }
-    }
-
-  return dr;
-}
 
 
 
 
 
-CortexSimulation SimplestModel::simulate(const Parameters& par,
-                                         const SimplestModel::Param &p,
-                                         const CortexExperiment &sp
-                                         ,double dt)const
-{
-  std::cout<<"starts a Simulation on \n";
-  sp.write(std::cout);
-  par.write(std::cout);
-  std::cout<<"dt ="<<dt<<"\n";
 
 
-
-  CortexState c=init(p,sp);
-
-  unsigned numSamples=std::ceil((sp.tsim_+sp.teq_)/sp.sample_time_)+1;
-
-
-  CortexSimulation s(c,numSamples);
-  s.p_=par;
-  s.dt_=dt;
-  double t=-sp.teq_;
-  unsigned i=0;
-  s.t_[i]=t;
-  s.sdt_[i]=dt;
-  s.omega_T_[i]=c.omega_T_;
-  s.psi_T_[i]=c.psi_T_;
-  s.rho_[i]=c.rho_;
-
-  while (t+dt<0)
-    {
-
-      c=nextEuler(p,c,dt);
-      if (!c.isValid_)
-        {
-          s.isValid_=false;
-          return s;
-        }
-      t+=dt;
-      if (t+sp.teq_>=sp.sample_time_*(i+1))
-        {
-          ++i;
-          s.t_[i]=t;
-          s.sdt_[i]=dt;
-          s.omega_T_[i]=c.omega_T_;
-          s.psi_T_[i]=c.psi_T_;
-          s.omega_B_[i]=c.omega_B_;
-          s.psi_B_[i]=c.psi_B_;
-          s.rho_[i]=c.rho_;
-
-        }
-    }
-
-  addDamp(c,p);
-  while (t+dt<sp.tsim_)
-    {
-      c=nextEuler(p,c,dt);
-      if (!c.isValid_)
-        {
-          s.isValid_=false;
-          return s;
-        }
-      t+=dt;
-      if (t+sp.teq_>=sp.sample_time_*(i+1))
-        {
-          ++i;
-          s.t_[i]=t;
-          s.sdt_[i]=dt;
-          s.omega_T_[i]=c.omega_T_;
-          s.psi_T_[i]=c.psi_T_;
-          s.omega_B_[i]=c.omega_B_;
-          s.psi_B_[i]=c.psi_B_;
-          s.rho_[i]=c.rho_;
-
-          if (i % 50 ==0)
-            std::cerr<<"\t sample \t"<<i;
-        }
-
-    }
-  s.isValid_=true;
-  return s;
-
-
-}
 
 
 
@@ -472,16 +273,18 @@ CortexSimulation SimplestModel::simulate(Parameters par,
 
 
   CortexState c=init(p,sp,dx);
-  CortexState cn;
+  CortexState cn=c;
   CortexSimulation s(c,sp.numSimPoints());
   s.p_=par;
   s.dt_=dtmax;
   double t=-tequilibrio;
   unsigned i=0;
+  std::vector<std::vector<double>> dRho=c.rho_;
 
   while ((t+dtmax<=0)&&(c.isValid_))
     {
-      c=nextEuler(p,c,dtmax);
+      nextEuler(cn,dRho,p,c,dtmax);
+      c=cn;
       t+=dtmax;
     }
   if (!c.isValid_)
@@ -491,13 +294,14 @@ CortexSimulation SimplestModel::simulate(Parameters par,
   else
     {
       addDamp(c,p);
+      cn=c;
       double dt_run=dtmin;
       while ((i<sp.numSimPoints())&&(c.isValid_))
         {
           t+=dt_run;
 
-          c=nextEuler(p,c,dt_run);
-
+          nextEuler(cn,dRho,p,c,dt_run);
+          c=cn;
           if (t>=sp.tSimul(i))
             {
               s.t_[i]=t;

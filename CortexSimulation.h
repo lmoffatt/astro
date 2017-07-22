@@ -33,6 +33,8 @@ public:
 
   std::vector<std::vector<double> > rho_;
 
+
+
   CortexState()=default;
 
 
@@ -55,7 +57,7 @@ public:
     ,omega_T_(std::vector<double> (x.size(),0))
     ,omega_B_(std::vector<double> (x.size(),0))
     ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
-  {}
+    {}
 
   CortexState(const std::vector<double>& x
               ,double h
@@ -72,7 +74,7 @@ public:
     ,omega_T_(std::vector<double> (x.size(),0))
     ,omega_B_(std::vector<double> (x.size(),0))
     ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
-  {
+    {
     auto n=x.size();
     for (unsigned i=0; i<x_.size()-1; ++i)
       dx_[i]=x_[i+1]-x_[i];
