@@ -791,7 +791,7 @@ public:
         if (std::abs(b)>std::numeric_limits<double>::epsilon())
              y=-bM_[0][j]*(YM_[1][j]-YM_[0][j])/std::expm1(bM_[0][j]*(x_[0]-x_[1]));
         else
-             y=(YM_[1][j]-YM_[0][j])/(x_[0]-x_[1]);
+             y=-(YM_[1][j]-YM_[0][j])/(x_[0]-x_[1]);
        yM_[0][j]=y;
         bM_[1][j]=b;
         double y1=yM_[0][j]*exp(bM_[1][j]*(x_[2]-x_[1]));

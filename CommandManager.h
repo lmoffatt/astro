@@ -204,7 +204,7 @@ auto read_from_stream(std::istream& is,std::ostream& /*logstream*/,T& x)
 }
 
 template<typename T>
-auto read_from_stream(std::istream& is,std::ostream& logstream,T*& x)
+auto read_from_stream(std::istream& is,std::ostream& /*logstream*/,T*& x)
 ->decltype (bool(is>>*x))
 {
 
@@ -642,7 +642,7 @@ struct writeDataFrame
 template <typename T>
 struct writeDataFrame<true,T>
 {
-  static void write(const T& x,std::ostream* f, std::ostream* log)
+  static void write(const T& x,std::ostream* f, std::ostream*/* log*/)
   {
     x.writeDataFrame(*f);
     *f<<"\n";
@@ -840,7 +840,6 @@ bool operator()(Cm* cm,const std::string& idname, std::ostream* logs,  std::stri
     }
   else
     {
-      f<<idname<<"\n";
       cm->apply(Co<DataFrameIt>(),idname,&f,logs);
       if (f)
         {
@@ -1049,8 +1048,11 @@ void operator ()(Cm* cm_,
     {
       cm_->push_back(m->id(),m);
 
+
+
       auto CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
+      std::cerr<<"simulation time="<<timeItm<CortexSimulation,CortexPoisonLikelihood, const Parameters&>(CL,&CortexPoisonLikelihood::simulate,prior);
       MyModel<MyData> m(CL);
       MyData d(CL);
       Metropolis_Hastings_mcmc<

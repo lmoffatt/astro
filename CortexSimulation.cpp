@@ -15,6 +15,7 @@ std::ostream &CortexSimulation::write(std::ostream &s)
   p_.write(s);
 
   s<<"dt simulation"<<"\t"<<dt_<<"\n";
+  s<<"width simulation"<<"\t"<<h_<<"\n";
 
   s<<"numSamples"<<"\t"<<t_.size()<<"\t";
   s<<"numNodes"<<"\t"<<x_.size()<<"\t";
@@ -461,6 +462,14 @@ void CortexSimulation::read(std::string& line, std::istream &s, std::ostream& lo
               if(ss>>sim>>dt)
                 dt_=dt;
             }
+          else if (name=="h")
+            {
+              std::string sim;
+              double h;
+              if(ss>>sim>>h)
+                h_=h;
+            }
+
           else if (name=="parameters")
             {
               p_.read(line,s,logs);

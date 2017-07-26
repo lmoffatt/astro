@@ -9,6 +9,7 @@
 #include <sstream>
 #include <fstream>
 
+#include <chrono>
 
 #include "myTuples.h"
 #include "myInputSerializer.h"
@@ -47,6 +48,30 @@ struct is_container<Co<T,Alloc>>
 
 
 
+
+template<typename F,typename... Args>
+double timeIt(F f, Args ...args)
+{
+  std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now();
+  f(args...);
+  auto tnow=std::chrono::steady_clock::now();
+  auto d=tnow-startTime;
+  double t0=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
+  return t0;
+
+}
+
+template<typename R,typename C,typename... Args>
+double timeItm(C const* o,R (C::*f)(Args ...)const, Args...args)
+{
+  std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now();
+  (o->*f)(args...);
+  auto tnow=std::chrono::steady_clock::now();
+  auto d=tnow-startTime;
+  double t0=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
+  return t0;
+
+}
 
 
 

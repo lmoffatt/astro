@@ -153,7 +153,8 @@ public:
     os<<psi_B_[idt][idx]<<"\t";
     os<<omega_T_[idt][idx]<<"\t";
     os<<omega_B_[idt][idx]<<"\t";
-    os<<rho_[idt][idx][type];
+    double simVol_liter=h_*h_*(x_[idx+1]-x_[idx])*1e-6*1e3;
+    os<<rho_[idt][idx][type]/simVol_liter;
   }
 
 
@@ -193,6 +194,7 @@ public:
   Parameters p_;
 
   double dt_;
+  double h_;
 
   std::vector<double> x_;
   std::vector<double> dx_;
@@ -218,7 +220,7 @@ public:
   CortexSimulation(const CortexState& c,unsigned numSamples):
    isValid_(false)
     ,id_()
-  ,p_(),dt_(),
+  ,p_(),dt_(),h_(),
     x_(c.x_),dx_(c.dx_),
     t_(std::vector<double>(numSamples)),
     sdt_(std::vector<double>(numSamples)),
@@ -243,7 +245,7 @@ public:
   CortexSimulation(const std::string& id,unsigned numSamples,unsigned numNodes,unsigned numStates):
     isValid_(false)
     ,id_(id)
-  ,p_(),dt_()
+  ,p_(),dt_(),h_()
   ,x_(std::vector<double>(numNodes)),
     dx_(std::vector<double>(numNodes)),
     t_(std::vector<double>(numSamples)),

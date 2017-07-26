@@ -177,7 +177,7 @@ public:
     std::vector<double> d={hh,hb,bh,bb};
     unsigned imin=0;
     unsigned i;
-    double min=d[imin];
+    //double min=d[imin];
     for (i=1;i<4; ++i)
       if (d[i]<d[imin])
         {
@@ -656,7 +656,7 @@ public:
   void writeDataFrameHeader(std::ostream& os)const
   {
     os<<"id"<<"\t";
-    os<<"rata"<<"\t";
+    os<<"ratas"<<"\t";
     os<<"dia"<<"\t";
     os<<"h"<<"\t";
     os<<"minimalTissueDistance"<<"\t";
@@ -668,25 +668,30 @@ public:
     os<<"astroType"<<"\t";
     os<<"numAstrocites"<<"\t";
     os<<"densityAstrocites"<<"\t";
-    os<<"pAstrocites"<<"\t";
+    os<<"pAstrocites";
 
   }
   void writeDataFrame(std::ostream& os, std::size_t idx, std::size_t type) const
   {
+
     os<<id()<<"\t";
-    os<<rata_<<"\t";
+    for (std::size_t ir=0; ir<rata_.size(); ++ir)
+       os<<rata_[ir]<<"_";
+    os<<"\t";
     os<<dia_<<"\t";
     os<<h_<<"\t";
     os<<minimalTissueDistance_<<"\t";
     os<<minimalVasoDistance_<<"\t";
     os<<injWidth_<<"\t";
-    os<<x_[idx]<<"\t";
-    os<<x_[idx+1]<<"\t";
+    os<<x_[idx]*1e-6<<"\t";
+    os<<x_[idx+1]*1e-6<<"\t";
     os<<measAreaAstro_[idx]<<"\t";
     os<<type<<"\t";
+    //double simulated_liters=(x_[idx+1]-x_[idx])*1e-6*h()*h()*1000;
+    double measured_liters=measAreaAstro_[idx]*1e-12*h()*1000;
     os<<meanAstro_[idx][type]<<"\t";
-    os<<meanAstro_[idx][type]/measAreaAstro_[idx]<<"\t";
-    os<<meanAstro_[idx][type]/numAstro_[idx]<<"\t";
+    os<<meanAstro_[idx][type]/measured_liters<<"\t";
+    os<<meanAstro_[idx][type]/numAstro_[idx];
 
   }
 
@@ -881,7 +886,7 @@ public:
 
 
 protected:
-  void update(){}
+  void update()override{}
 
 
 
