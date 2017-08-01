@@ -240,7 +240,7 @@ protected:
              std::vector<double> meanoftr,
              std::vector<TRANSFORM> trans,
              std::vector<std::string> unit):
-  model_(model)
+    model_(model)
   ,name_to_i_(nametoi)
   ,names_(names)
   ,mean_of_tr_(meanoftr)
@@ -320,27 +320,28 @@ public:
   virtual bool readBody(std::string &line, std::istream &s, std::ostream& logs) override;
 
 
-  void writeHeaderDataFrame(std::ostream& os)const
-  {
-    os<<"paramName\t";
-    os<<"Value\t";
-    os<<"transfParam\t";
-    os<<"TrasnfValue";
-  }
-
-  void writeRowDataFrame(std::ostream& os, std::string pre)const
+  std::ostream& writeHeaderDataFrame(std::ostream& os)const
   {
     for (std::size_t i=0; i<size(); ++i)
       {
-        os<<pre;
-        os<<indexToName(i)<<"\t";
-        os<<mean(i)<<"\t";
-        os<<Tr(trans_[i])->myClass()<<indexToName(i)<<"\t";
-        os<<(*this)[i];
-        os<<"\n";
+        os<<"Value...paramName.."<<indexToName(i)<<"\t";
+        os<<"TrasnfValue...transfParm.."<<Tr(trans_[i])->myClass()<<indexToName(i);
+        if (i+1<size()) os<<"\t";
+
       }
+        return os;
   }
 
+  std::ostream& writeRowDataFrame(std::ostream& os)const
+  {
+    for (std::size_t i=0; i<size(); ++i)
+      {
+        os<<mean(i)<<"\t";
+        os<<(*this)[i];
+        if (i+1<size()) os<<"\t";
+      }
+        return os;
+  }
 
 
   void writeValueInSingleRowHeader(std::ostream& os)const
@@ -459,6 +460,8 @@ bool areTheSame(const Parameters& one, const Parameters& other);
 
 double randNormal(std::mt19937_64 &mt, double mean, double stddev);
 double randNormal(std::mt19937_64 &mt);
+
+
 
 
 

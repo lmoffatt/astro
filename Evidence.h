@@ -219,7 +219,7 @@ template<typename Dist>
 struct mcmc_step: public mcmc_Dpost
 {
   mcmc_step(){}
-  mcmc_step(mcmc_Dpost &&p, double beta_, std::size_t iscout_): mcmc_Dpost(p),beta(beta_), iscout(iscout_),proposed(){}
+  mcmc_step(mcmc_Dpost &&p, double beta_, std::size_t iscout_): mcmc_Dpost(p),beta(beta_),iscout(iscout_),proposed(){}
   double beta;
   std::size_t iscout;
 
@@ -227,7 +227,51 @@ struct mcmc_step: public mcmc_Dpost
   double logbPLb(double mybeta)const {return mcmc_post::logbPL(mybeta);}
   Dist proposed;
 
+  std::ostream& writelogLHeaderDataFrame(std::ostream& os)
+  {
+    os<<"beta\t";
+    os<<"nscout\t";
+    os<<"logPrior\t";
+    os<<"logLik\t";
+    os<<"logP";
+    return os;
+  }
+  std::ostream& writelogLRowDataFrame(std::ostream& os)
+  {
+     os<<beta<<"\t";
+     os<<iscout<<"\t";
+     os<<logPrior<<"\t";
+     os<<logLik<<"\t";
+     os<<logbPL();
+     return os;
+  }
+
+
+  std::ostream& writeParamRowDataFrame(std::ostream& os)
+  {
+     os<<"\t";
+     for (std::size_t i=0; i<param.size(); ++i)
+       os<<param[i]<<"\t";
+     return os;
+  }
+
+  std::ostream& writeYfitRowDataFrame(std::ostream& os)
+  {
+
+    for (std::size_t i=0; i+1<f.size(); ++i)
+      os<<f[i]<<"\t";
+    if (f.size()>0)
+      os<<f[f.size()-1];
+    return os;
+  }
+
+
+
 };
+
+
+
+
 
 
 template<typename Dist>
@@ -5143,16 +5187,19 @@ public:
     mt.seed(seed);
     std::string f_par_name=EviName+"_par.txt";
     std::string f_logL_name=EviName+"_logL.txt";
+    std::string f_fit_name=EviName+"_fit.txt";
     std::string f_sim_name=EviName+"_sim.txt";
 
 
     std::ofstream f_par;
     std::ofstream f_logL;
     std::ofstream f_sim;
+    std::ofstream f_fit;
 
     f_par.open(f_par_name.c_str(), std::ofstream::out | std::ofstream::app);
     f_logL.open(f_logL_name.c_str(), std::ofstream::out | std::ofstream::app);
     f_sim.open(f_sim_name.c_str(), std::ofstream::out | std::ofstream::app);
+    f_fit.open(f_fit_name.c_str(), std::ofstream::out | std::ofstream::app);
     std::stringstream ss;
 
     ss<<"model\t";
@@ -5161,29 +5208,34 @@ public:
     ss<<"nsteps\t";
     ss<<"nsample\t";
     ss<<"Evidence\t";
-    ss<<"beta\t";
-    ss<<"nscout\t";
-    ss<<"logPrior\t";
-    ss<<"logLik\t";
-    ss<<"logP";
 
-    f_logL<<ss.str()<<"\n";
+    auto s=mystep{};
+    s.writelogLHeaderDataFrame(ss);
+
+
+    f_logL<<ss.str()<<std::endl;
     f_par<<ss.str()<<"\t";
     f_sim<<ss.str()<<"\t";
+    f_fit<<ss.str()<<"\t";
+
 
 
     auto param=model.getPrior();
     param.writeHeaderDataFrame(f_par);
-    f_par<<"\n";
+    f_par<<std::endl;
 
     auto sim=model.getSimulation(param);
     sim.writeHeaderDataFrame(f_sim);
-    f_sim<<"\n";
+    f_sim<<std::endl;
 
+    auto& cl=model.getLikelihood();
+    cl.writeYfitHeaderDataFrame(f_fit);
+    f_fit<<std::endl;
 
     Master_Adaptive_Beta_New beta(beta0);
     auto n=beta.size();
     std::vector<mystep> sDists(n);
+
     std::vector<Adaptive_discrete<AP>> pars(n,landa_Dist0);
     std::vector<double> dHd(beta.size());
     std::uniform_int_distribution<typename std::mt19937_64::result_type> useed;
@@ -5235,26 +5287,31 @@ public:
         ss1<<t0<<"\t";
         ss1<<o.size()*sDists.size()<<"\t";
         ss1<<o.size()<<"\t";
-        ss1<<evidence;
+        ss1<<evidence<<"\t";
 
         for (std::size_t i=0; i<sDists.size(); ++i)
           {
-            std::stringstream ss2;
-            ss2<<ss1.str()<<"\t";
-            ss2<<sDists[i].beta<<"\t";
-            ss2<<sDists[i].iscout<<"\t";
-            ss2<<sDists[i].logPrior<<"\t";
-            ss2<<sDists[i].logLik<<"\t";
-            ss2<<sDists[i].logbPL();
+
             auto param=model.getParameter(sDists[i].param);
             auto sim=model.getSimulation(sDists[i].param);
-            f_logL<<ss2.str()<<"\n";
-            param.writeRowDataFrame(f_par,ss2.str()+"\t");
-            sim.writeRowDataFrame(f_sim,ss2.str()+"\t");
+            (sDists[i].writelogLRowDataFrame(f_logL<<ss1.str()))<<"\n";
+
+            (sDists[i].writelogLRowDataFrame(f_par<<ss1.str()))<<"\t";
+            param.writeRowDataFrame(f_par)<<"\n";
+
+            (sDists[i].writelogLRowDataFrame(f_sim<<ss1.str()))<<"\t";
+            sim.writeRowDataFrame(f_sim)<<"\n";
+
+            (sDists[i].writelogLRowDataFrame(f_fit<<ss1.str()))<<"\t";
+            sDists[i].writeYfitRowDataFrame(f_fit)<<"\n";
+            f_logL.flush();
+            f_par.flush();
+
+            f_sim.flush();
+            f_fit.flush();
+
+
           }
-          f_logL.flush();
-          f_par.flush();
-          f_sim.flush();
 
 
 

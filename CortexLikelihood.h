@@ -21,6 +21,8 @@ public:
   virtual void clear() override;
   virtual bool readBody(std::string &line, std::istream &s, std::ostream& logs) override;
 
+  virtual std::ostream& writeYfitHeaderDataFrame(std::ostream& os)const{return os;}
+
   std::vector<double> getNBins(const Experiment *e);
   // ABC_Multinomial_Model interface
 public:
@@ -175,6 +177,8 @@ public:
   std::vector<std::vector<double> > f(const Parameters &parameters) const override;
 
 
+  std::ostream& writeYfitHeaderDataFrame(std::ostream& os)const override;
+
 
 
   CortexPoisonLikelihood(std::string id,
@@ -243,7 +247,7 @@ public:
     return CortexLikelihood::getPrior();
   }
   CortexSimulation simulate(const Parameters &parameters) const override;
-  std::vector<std::vector<double> > g(const Parameters &parameters, const CortexSimulation &s) const;
+  std::vector<std::vector<double> > g(const Parameters &parameters, const CortexSimulation &s) const override;
 };
 
 
@@ -457,6 +461,10 @@ public:
        return CL_->simulate(getParameter(par));
   }
 
+  const CortexLikelihood& getLikelihood()const
+  {
+     return *CL_;
+  }
 
 
   MyModel(CortexLikelihood* CL):CL_(CL){}

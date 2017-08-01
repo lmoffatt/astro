@@ -14,39 +14,6 @@
 #include "myTuples.h"
 #include "myInputSerializer.h"
 
-template<typename T>
-class C
-{
-
-};
-
-template<typename... T>
-class Cs
-{
-
-};
-
-template<template<typename...> class C>
-class Co
-{
-
-};
-
-
-
-template<typename...>
-struct is_container
-{
-  static constexpr bool value=false;
-};
-
-template<template<typename T,typename> class Co,typename T, typename Alloc>
-struct is_container<Co<T,Alloc>>
-{
-  static constexpr bool value=true;
-};
-
-
 
 
 template<typename F,typename... Args>

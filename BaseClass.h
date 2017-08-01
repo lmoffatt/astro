@@ -150,10 +150,11 @@ bool readValue(std::string& line,
 {
   safeGetline(s,line);
   val.clear();
-  K ke;T xx;
+  K ke;
+  T xx{};
   readValue(line,s,ke, logs);
   readValue(line,s,xx,logs);
-    val[ke]=xx;
+  val[ke]=xx;
   return !val.empty();
 }
 

@@ -15,6 +15,7 @@ bool TissuePhoto::read(std::string& line, std::istream &s, std::ostream &logs)
   std::string name;
   std::stringstream ss(line);
   ss>>name;
+  bool out=false;
   num=0;
   if (name=="foto")
     {
@@ -245,6 +246,7 @@ bool TissuePhoto::read(std::string& line, std::istream &s, std::ostream &logs)
           else break;
 
         }
+      out=true;
     }
   else
     if (name=="rata" )
@@ -481,6 +483,7 @@ bool TissuePhoto::read(std::string& line, std::istream &s, std::ostream &logs)
               break;
 
           }
+        out=true;
       }
   if (this->limiteFoto_.empty())
     {   if (!(ll_.limits().empty()||ls_.limits().empty()||
@@ -493,6 +496,7 @@ bool TissuePhoto::read(std::string& line, std::istream &s, std::ostream &logs)
 
 
   calculate_distances();
+  return out;
 }
 
 void TissuePhoto::write(std::ostream &s, bool headers)

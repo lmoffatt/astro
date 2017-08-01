@@ -153,9 +153,9 @@ std::vector<double>  CortexLikelihood::getNBins(const Experiment *e)
 
 void CortexLikelihood::update(){
   m_=BaseModel::create(prior_);
-    bin_dens_=getNBins(e_);
-    nstate_=getstate(e_);
-    ntot_=getNtot(nstate_);
+  bin_dens_=getNBins(e_);
+  nstate_=getstate(e_);
+  ntot_=getNtot(nstate_);
 
 }
 
@@ -350,6 +350,72 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
 
     }
   return o;
+}
+
+std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(std::ostream &os) const
+
+{
+
+  CortexSimulation s=m_->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+  unsigned is=0;
+
+  for (unsigned ie=0; ie<e_->numMeasures(); ie++)
+    {
+      const CortexMeasure* cm=e_->getMeasure(ie);
+      double t=cm->dia()*24*60*60;
+      while (s.t_[is]<t
+             &&is<s.t_.size())
+        ++is;
+
+
+      double currInjury=getPrior().get("inj_width_"+std::to_string(std::size_t(cm->dia())));
+      if (std::isnan(currInjury))
+        currInjury=0;
+
+      // voy a interpolar los resultados de la medicion a partir de la simulacion.
+      // la simulacion pasa a ser independiente de la medicion
+
+      // rho debe estar en celulas por litro
+      auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury*1e-6);
+      auto typesRho=m_->getObservedStateLabels();
+
+      ///horrible hack for the lession:
+      /// dedico una fila para la probabilidad de cada estado antes de la lesion
+
+      if ( currInjury>0)
+        {
+
+          auto typesInjury=m_->getApoptoticStatesAtInjuryLabels();
+          for (std::size_t istate=0; istate<typesInjury.size(); ++istate)
+            {
+              for (std::size_t is=0; is<typesRho.size(); ++is)
+                {
+                  os<<"rhoFitInjury..day.."<<cm->dia();
+                  os<<"..type.."<<typesInjury[istate]<<"..typei.."<<is<<"\t";
+                }
+            }
+
+        }
+      for (std::size_t ix=0; ix<rho.size()-1;++ix)
+        {
+          /// en celulas por litro
+          auto rho_sim=m_->getObservedNumberFromModel(rho[ix+1]);
+
+
+          for (std::size_t is=0; is<typesRho.size(); ++is)
+            {
+              os<<"rhoFit..day.."<<cm->dia()<<"..x_start.."<<cm->xpos()[ix];
+              os<<"..x_end.."<<cm->xpos()[ix+1];
+              os<<"..rhoType.."<<typesRho[is];
+              if (ie+1<e_->numMeasures()||(ix+1<rho.size()-1)||is+1<typesRho.size())
+                os<<"\t";
+              else
+                os<<"";
+            }
+        }
+
+    }
+  return os;
 }
 
 
@@ -570,8 +636,8 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
 
   x=simul.x_;
 
-   ytitles.clear();
-   ytitles.resize(3);
+  ytitles.clear();
+  ytitles.resize(3);
 
 
 
@@ -587,7 +653,7 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
 
   for (std::size_t is=1; is<simul.rho_[0][0].size(); ++is)
     {
-     ytitles[2].push_back("d_pred_A"+std::to_string(is-1));
+      ytitles[2].push_back("d_pred_A"+std::to_string(is-1));
     }
 
 
@@ -620,7 +686,7 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
 
       writeTable(s,title,xtitle,x,ytitles,ytable);
 
-}
+    }
   simul.write(s);
 
 
@@ -634,7 +700,7 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
       std::string name=p_.names()[i];
       s<<name<<"\t"<<p_.mean(name)<<"\t"<<p_.pStd(name)<<"\t"<<CL_->getPrior().mean(name)<<"\t"<<CL_->getPrior().pStd(name)<<"\n";
     }
-return s;
+  return s;
 }
 
 

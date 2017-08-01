@@ -157,6 +157,14 @@ public:
 
   virtual std::vector<double> getObservedNumberFromData(const std::vector<double>& modelRho)const;
 
+
+  virtual std::vector<std::string> getModelStateLabels()const;
+
+  virtual std::vector<std::string> getObservedStateLabels()const;
+
+  virtual std::vector<std::string> getApoptoticStatesAtInjuryLabels()const;
+
+
 //  double likelihood(const Experiment& m, const CortexSimulation& s)const
 //  {
 //    unsigned is=0;
@@ -206,6 +214,18 @@ class MicrogliaModel: public BaseModel
 public:
 
   virtual ~MicrogliaModel(){}
+
+  std::vector<std::string> getModelStateLabels() const override
+  {
+    return {"Neuron","M2","M1","type0","typeI","typeII","typeIII","typeIV","typeV"};
+  }
+
+  virtual std::vector<std::string> getApoptoticStatesAtInjuryLabels()const override
+  {
+    return {"Neuron","type0","typeI","typeII","typeIII","typeIV","typeV"};
+
+  }
+
 
   virtual std::vector<double> getObservedProbFromModel(const std::vector<double>& modelRho)const override
 {

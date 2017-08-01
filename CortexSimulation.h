@@ -48,7 +48,7 @@ public:
               ,unsigned numK)
     :
       isValid_(true)
-     , x_(x)
+    , x_(x)
     ,dx_(dx)
     ,h_(h)
     ,epsilon_(epsilon)
@@ -57,7 +57,7 @@ public:
     ,omega_T_(std::vector<double> (x.size(),0))
     ,omega_B_(std::vector<double> (x.size(),0))
     ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
-    {}
+  {}
 
   CortexState(const std::vector<double>& x
               ,double h
@@ -65,7 +65,7 @@ public:
               ,unsigned numK)
     :
       isValid_(true)
-     ,      x_(x)
+    ,      x_(x)
     ,dx_(x.size())
     ,h_(h)
     ,epsilon_(epsilon)
@@ -74,7 +74,7 @@ public:
     ,omega_T_(std::vector<double> (x.size(),0))
     ,omega_B_(std::vector<double> (x.size(),0))
     ,rho_(std::vector<std::vector<double> > (x.size(),std::vector<double>(numK,0)))
-    {
+  {
     auto n=x.size();
     for (unsigned i=0; i<x_.size()-1; ++i)
       dx_[i]=x_[i+1]-x_[i];
@@ -116,17 +116,96 @@ public:
   std::ostream& write(std::ostream& s);
 
   std::ostream& write(std::ostream& s, const std::string& var, const std::string& par );
-  void writeHeaderDataFrame(std::ostream& os)const
+  std::ostream& writeHeaderDataFrame(std::ostream& os)const
   {
-    os<<"x"<<"\t";
-    os<<"t"<<"\t";
-    os<<"type"<<"\t";
-    os<<"psi_T"<<"\t";
-    os<<"psi_B"<<"\t";
-    os<<"omega_T"<<"\t";
-    os<<"omega_B"<<"\t";
-    os<<"rho";
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+      {
+        for (std::size_t idx=0; idx<x_.size(); ++idx)
+          {
+            os<<"psi_T...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
+          }
+      }
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+      {
+        for (std::size_t idx=0; idx<x_.size(); ++idx)
+          {
+            os<<"psi_B...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
+          }
+      }
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+      {
+        for (std::size_t idx=0; idx<x_.size(); ++idx)
+          {
+            os<<"omega_T...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
+          }
+      }
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+      {
+        for (std::size_t idx=0; idx<x_.size(); ++idx)
+          {
+            os<<"omega_B...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
+          }
+      }
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+      {
+        for (std::size_t idx=0; idx<x_.size(); ++idx)
+          {
+            for (std::size_t type=0; type<rho_[idt][idx].size(); ++type)
+              {
+                os<<"rho...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"..type.."<<type;
+                if (!((type+1==rho_.size())&&(idx+1==x_.size())&&(idt+1==t_.size())))
+                  os<<"\t";
+              }
+          }
+      }
+    return os;
+  }
 
+  std::ostream& writeRowDataFrame(std::ostream& os)const
+  {
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+      {
+        for (std::size_t idx=0; idx<x_.size(); ++idx)
+          {
+            os<<psi_T_[idt][idx]<<"\t";
+          }
+      }
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+      {
+        for (std::size_t idx=0; idx<x_.size(); ++idx)
+          {
+            os<<psi_B_[idt][idx]<<"\t";
+          }
+      }
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+      {
+        for (std::size_t idx=0; idx<x_.size(); ++idx)
+          {
+            os<<omega_T_[idt][idx]<<"\t";
+          }
+      }
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+      {
+        for (std::size_t idx=0; idx<x_.size(); ++idx)
+          {
+            os<<omega_B_[idt][idx]<<"\t";
+          }
+      }
+    for (std::size_t idt=0; idt<t_.size(); ++idt)
+      {
+        for (std::size_t idx=0; idx<x_.size(); ++idx)
+          {
+            double simVol_liter=h_*h_*(x_[idx+1]-x_[idx])*1e-6*1e3;
+            for (std::size_t type=0; type<rho_[idt][idx].size(); ++type)
+              {
+                os<<rho_[idt][idx][type]/simVol_liter;
+                if (!((type+1==rho_[idt][idx].size())&&(idx+1==x_.size())&&(idt+1==t_.size())))
+                  os<<"\t";
+              }
+          }
+      }
+
+    return os;
   }
 
   void writeDataFrameHeader(std::ostream& os)const
@@ -164,12 +243,12 @@ public:
     os<<"\n";
 
     for (std::size_t idt=0; idt<t_.size(); ++idt)
-    for (std::size_t idx=0; idx<x_.size(); ++idx)
-      for (std::size_t type=0; type<rho_[0][0].size(); ++type)
-        {
-          writeDataFrame(os,idt,idx,type);
-          os<<"\n";
-        }
+      for (std::size_t idx=0; idx<x_.size(); ++idx)
+        for (std::size_t type=0; type<rho_[0][0].size(); ++type)
+          {
+            writeDataFrame(os,idt,idx,type);
+            os<<"\n";
+          }
     os<<"\n";
 
   }
@@ -178,13 +257,13 @@ public:
   {
 
     for (std::size_t idt=0; idt<t_.size(); ++idt)
-    for (std::size_t idx=0; idx<x_.size(); ++idx)
-      for (std::size_t type=0; type<rho_[0][0].size(); ++type)
-        {
-          os<<s;
-          writeDataFrame(os,idt,idx,type);
-          os<<"\n";
-        }
+      for (std::size_t idx=0; idx<x_.size(); ++idx)
+        for (std::size_t type=0; type<rho_[0][0].size(); ++type)
+          {
+            os<<s;
+            writeDataFrame(os,idt,idx,type);
+            os<<"\n";
+          }
   }
 
   bool isValid_=false;
@@ -218,8 +297,8 @@ public:
 
 
   CortexSimulation(const CortexState& c,unsigned numSamples):
-   isValid_(false)
-    ,id_()
+    isValid_(false)
+  ,id_()
   ,p_(),dt_(),h_(),
     x_(c.x_),dx_(c.dx_),
     t_(std::vector<double>(numSamples)),
@@ -244,7 +323,7 @@ public:
 
   CortexSimulation(const std::string& id,unsigned numSamples,unsigned numNodes,unsigned numStates):
     isValid_(false)
-    ,id_(id)
+  ,id_(id)
   ,p_(),dt_(),h_()
   ,x_(std::vector<double>(numNodes)),
     dx_(std::vector<double>(numNodes)),

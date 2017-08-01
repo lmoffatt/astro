@@ -629,6 +629,22 @@ std::vector<double> BaseModel::getObservedNumberFromData(const std::vector<doubl
   return v;
 }
 
+std::vector<std::string> BaseModel::getModelStateLabels() const
+{
+  return {"NotAstrocyte","type0","typeI","typeII","typeIII","typeIV","typeV"};
+}
+
+std::vector<std::string> BaseModel::getObservedStateLabels() const
+{
+  return {"typeI","typeII","typeIII","typeIV","typeV"};
+
+}
+
+std::vector<std::string> BaseModel::getApoptoticStatesAtInjuryLabels() const
+{
+  return  getModelStateLabels();
+}
+
 std::size_t BaseModel::getNumberOfObservedStates()const
 {
   return 5;
