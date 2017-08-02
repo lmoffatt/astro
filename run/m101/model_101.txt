@@ -1,6 +1,6 @@
-parameters model_13
+parameters model_101
 
-model 1300
+model 1010
 
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi

@@ -1,6 +1,6 @@
-parameters model_11
+parameters model_01
 
-model 1100
+model 100
 
 
 D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
