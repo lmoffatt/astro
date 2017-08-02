@@ -1001,6 +1001,8 @@ void operator ()(Cm* cm_,
   std::cout<<"\n pTjump "<<pTjump;
 
 
+  Experiment esim;
+
   Adaptive_discrete<AP> landa(aps,apsPar);
 
   std::cout<<landa;

@@ -3213,6 +3213,7 @@ public:
 };
 
 
+
 class Model013_51:public BaseModel
 {
   SimplestModel m;
@@ -9802,6 +9803,3945 @@ public:
 
 
 };
+
+
+class Model_01:public MicrogliaModel
+{
+  SimplestModel m;
+
+  Model_01* clone()const { return new Model_01;}
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_psi_;
+    double Keq_omega_;
+    double kcat_psi;
+    double kcat_omega_;
+    double g_M1M2_;
+    double g_M2M1_;
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+    double g_23_;
+    double g_32_;
+
+    double g_34_;
+    double g_43_;
+
+    double g_45_;
+    double g_54_;
+
+
+    double g_max_psi_M1_;
+
+    double g_max_omega_1_;
+    double g_max_omega_2_;
+    double g_max_omega_3_;
+    double g_max_omega_4_;
+    double g_max_omega_5_;
+
+    double N_M2_;
+    double N_M1_;
+    double N_N_;
+
+    double M_M2_;
+    double M_M1_;
+    double M_0_;
+    double M_1_;
+    double M_2_;
+    double M_3_;
+    double M_4_;
+    double M_5_;
+    double M_N_;
+
+    double N_Astr_;
+    double N_Neuron_;
+    double N_Microglia_;
+
+    double a_1_;
+    double a_2_;
+    double a_3_;
+    double a_4_;
+    double a_5_;
+
+    double a_max_psi_Neuron_;
+    double a_max_omega_Neuron_;
+    double a_max_omega_0_;
+    double a_max_omega_1_;
+    double a_max_omega_2_;
+    double a_max_omega_3_;
+    double a_max_omega_4_;
+    double a_max_omega_5_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+
+
+    double k_sig_M2;
+    double k_sig_M1;
+
+
+
+    double k_sig_max_psi_M2;
+    double k_sig_max_psi_M1;
+
+    double inj_width_3_;
+    double inj_width_7_;
+  };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_omega_ratio_=0;
+
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=p.D_;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_psi/p.Keq_psi_;
+    s.kcat_psi_=p.kcat_psi;
+    s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
+    s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(9,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(9,p.Keq_omega_);
+
+
+    s.ksig_omega_=std::vector<double>(9,0);
+
+    s.ksig_omega_[1]=p.k_sig_M2;
+    s.ksig_omega_[2]=p.k_sig_M1;
+
+
+
+    s.ksig_max_omega_=std::vector<double>(9,0);
+
+    s.ksig_max_psi_=std::vector<double>(9,0);
+    s.ksig_max_psi_[1]=p.k_sig_max_psi_M2;
+    s.ksig_max_psi_[2]=p.k_sig_max_psi_M1;
+
+    s.g_left_=std::vector<double> (9,0);
+    s.g_left_[2]=p.g_M1M2_;
+
+    s.g_left_[4]=p.g_10_;
+    s.g_left_[5]=p.g_21_;
+    s.g_left_[6]=p.g_32_;
+    s.g_left_[7]=p.g_43_;
+    s.g_left_[8]=p.g_54_;
+
+
+
+    s.g_rigth_=std::vector<double> (9,0);
+    s.g_rigth_[1]=p.g_M2M1_;
+
+    s.g_rigth_[3]=p.g_01_;
+    s.g_rigth_[4]=p.g_12_;
+    s.g_rigth_[5]=p.g_23_;
+    s.g_rigth_[6]=p.g_34_;
+    s.g_rigth_[7]=p.g_45_;
+
+
+
+    s.g_max_omega_=std::vector<double> (9,0);
+
+
+    s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[1]=p.g_max_psi_M1_;
+
+
+
+    s.g_max_omega_[3]=p.g_max_omega_1_;
+    s.g_max_omega_[4]=p.g_max_omega_2_;
+    s.g_max_omega_[5]=p.g_max_omega_3_;
+    s.g_max_omega_[6]=p.g_max_omega_4_;
+    s.g_max_omega_[7]=p.g_max_omega_5_;
+
+
+    s.a_=std::vector<double> (9,0);
+    s.a_[4]=p.a_1_;
+    s.a_[5]=p.a_2_;
+    s.a_[6]=p.a_3_;
+    s.a_[7]=p.a_4_;
+    s.a_[8]=p.a_5_;
+
+    s.a_psi_=std::vector<double> (9,0);
+
+    s.a_psi_[0]=p.a_max_psi_Neuron_;
+
+    s.a_omega_=std::vector<double> (9,0);
+
+    s.a_omega_[0]=p.a_max_omega_Neuron_;
+    s.a_omega_[4]=p.a_max_omega_1_;
+    s.a_omega_[5]=p.a_max_omega_2_;
+    s.a_omega_[6]=p.a_max_omega_3_;
+    s.a_omega_[7]=p.a_max_omega_4_;
+    s.a_omega_[8]=p.a_max_omega_5_;
+
+
+
+    s.N_=std::vector<double> (9,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_M2_;
+    s.N_[2]=p.N_M1_;
+
+
+    s.M_=std::vector<double> (9,0);
+    s.M_[0]=p.M_N_;
+    s.M_[1]=p.M_M2_;
+    s.M_[2]=p.M_M1_;
+    s.M_[3]=p.M_0_;
+    s.M_[4]=p.M_1_;
+    s.M_[5]=p.M_2_;
+    s.M_[6]=p.M_3_;
+    s.M_[7]=p.M_4_;
+    s.M_[8]=p.M_5_;
+
+
+
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    s.dens_Microglia_=p.N_Microglia_;
+
+    return s;
+  }
+
+
+
+
+  myParameters p_;
+
+  // BaseModel interface
+public:
+  Model_01(){}
+  ~Model_01(){}
+  virtual std::string id() const
+  {
+    return "Model_01";
+  }
+  static double number()
+  {
+    return 100;
+  }
+
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq_psi",p_.Keq_psi_);
+    out.push_back("Keq_omega",p_.Keq_omega_);
+    out.push_back("kcat_psi", p_.kcat_psi);
+    out.push_back("kcat_omega", p_.kcat_omega_);
+    out.push_back("g_M2M1",p_.g_M2M1_);
+    out.push_back("g_M1M2",p_.g_M1M2_);
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_32",p_.g_32_ );
+    out.push_back("g_34",p_.g_34_ );
+    out.push_back("g_43",p_.g_43_ );
+    out.push_back("g_45",p_.g_45_ );
+    out.push_back("g_54",p_.g_54_ );
+
+    out.push_back("g_max_psi_M1",p_.g_max_psi_M1_ );
+
+    out.push_back("g_max_omega_1",p_.g_max_omega_1_ );
+    out.push_back("g_max_omega_2",p_.g_max_omega_2_ );
+    out.push_back("g_max_omega_3",p_.g_max_omega_3_ );
+    out.push_back("g_max_omega_4",p_.g_max_omega_4_ );
+    out.push_back("g_max_omega_5",p_.g_max_omega_5_ );
+
+    out.push_back("M_0",p_.M_0_ );
+    out.push_back("N_M2_",p_.N_M2_ );
+    out.push_back("N_M1_",p_.N_M1_ );
+    out.push_back("N_N",p_.N_N_ );
+
+    out.push_back("M_M2",p_.M_M2_ );
+    out.push_back("M_M1",p_.M_M1_ );
+    out.push_back("M_1",p_.M_1_ );
+    out.push_back("M_2",p_.M_2_ );
+    out.push_back("M_3",p_.M_3_ );
+    out.push_back("M_4",p_.M_4_ );
+    out.push_back("M_5",p_.M_5_ );
+    out.push_back("M_N",p_.M_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron",p_.N_Neuron_);
+    out.push_back("N_Microglia",p_.N_Microglia_);
+    out.push_back("a_1",p_.a_1_ );
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_3",p_.a_3_ );
+    out.push_back("a_4",p_.a_4_ );
+    out.push_back("a_5",p_.a_5_ );
+
+    out.push_back("a_max_psi_Neuron",p_.a_max_psi_Neuron_ );
+
+    out.push_back("a_max_omega_Neuron",p_.a_max_omega_Neuron_ );
+    out.push_back("a_max_omega_0",p_.a_max_omega_0_ );
+    out.push_back("a_max_omega_1",p_.a_max_omega_1_ );
+    out.push_back("a_max_omega_2",p_.a_max_omega_2_ );
+    out.push_back("a_max_omega_3",p_.a_max_omega_3_ );
+    out.push_back("a_max_omega_4",p_.a_max_omega_4_ );
+    out.push_back("a_max_omega_5",p_.a_max_omega_5_ );
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
+
+    out.push_back("k_sig_M2",p_.k_sig_M2);
+    out.push_back("k_sig_M1",p_.k_sig_M1);
+
+
+    out.push_back("k_sig_max_psi_M2",p_.k_sig_max_psi_M2);
+    out.push_back("k_sig_max_psi_M1",p_.k_sig_max_psi_M1);
+
+
+
+    out.push_back("inj_width_3",p_.inj_width_3_);
+    out.push_back("inj_width_7",p_.inj_width_7_);
+
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_psi_=p.get("Keq_psi");
+    p_.Keq_omega_=p.get("Keq_omega");
+    p_.kcat_psi=p.get("kcat_psi");
+    p_.kcat_omega_=p.get("kcat_omega");
+    p_.g_M2M1_=p.get("g_M2M1");
+    p_.g_M1M2_=p.get("g_M1M2");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+    p_.g_23_=p.get("g_23");
+    p_.g_32_=p.get("g_32");
+    p_.g_34_=p.get("g_34");
+    p_.g_43_=p.get("g_43");
+    p_.g_45_=p.get("g_45");
+    p_.g_54_=p.get("g_54");
+
+    p_.g_max_psi_M1_=p.get("g_max_psi_M1");
+    p_.g_max_omega_1_=p.get("g_max_omega_1");
+
+    p_.g_max_omega_2_=p.get("g_max_omega_2");
+    p_.g_max_omega_3_=p.get("g_max_omega_3");
+    p_.g_max_omega_4_=p.get("g_max_omega_4");
+    p_.g_max_omega_5_=p.get("g_max_omega_5");
+    p_.N_M2_=p.get("N_M2");
+    p_.N_M1_=p.get("N_M1");
+    p_.N_N_=p.get("N_N");
+
+    p_.M_M2_=p.get("M_M2");
+    p_.M_M1_=p.get("M_M1");
+    p_.M_0_=p.get("M_0");
+    p_.M_1_=p.get("M_1");
+    p_.M_2_=p.get("M_2");
+    p_.M_3_=p.get("M_3");
+    p_.M_4_=p.get("M_4");
+    p_.M_5_=p.get("M_5");
+    p_.M_N_=p.get("M_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.N_Microglia_=p.get("N_Microglia");
+
+    p_.a_1_=p.get("a_1");
+    p_.a_2_=p.get("a_2");
+    p_.a_3_=p.get("a_3");
+    p_.a_4_=p.get("a_4");
+    p_.a_5_=p.get("a_5");
+
+    p_.a_max_psi_Neuron_=p.get("a_max_psi_Neuron");
+
+    p_.a_max_omega_Neuron_=p.get("a_max_omega_Neuron");
+    p_.a_max_omega_0_=p.get("a_max_omega_0");
+    p_.a_max_omega_1_=p.get("a_max_omega_1");
+    p_.a_max_omega_2_=p.get("a_max_omega_2");
+    p_.a_max_omega_3_=p.get("a_max_omega_3");
+    p_.a_max_omega_4_=p.get("a_max_omega_4");
+    p_.a_max_omega_5_=p.get("a_max_omega_5");
+
+    p_.k_sig_M2=p.get("k_sig_M2");
+    p_.k_sig_M1=p.get("k_sig_M1");
+
+
+
+    p_.k_sig_max_psi_M2=p.get("k_sig_max_psi_M2");
+    p_.k_sig_max_psi_M1=p.get("k_sig_max_psi_M1");
+
+    p_.inj_width_3_=p.get("inj_width_3");
+    p_.inj_width_7_=p.get("inj_width_7");
+  }
+
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+
+  }
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  {
+    return m.simulate(getParameters(),
+                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  Model_01(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
+
+
+
+class Model_11:public MicrogliaModel
+{
+  SimplestModel m;
+
+  Model_11* clone()const { return new Model_11;}
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_psi_;
+    double Keq_omega_;
+    double kcat_psi;
+    double kcat_omega_;
+    double g_M1M2_;
+    double g_M2M1_;
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+    double g_23_;
+    double g_32_;
+
+    double g_34_;
+    double g_43_;
+
+    double g_45_;
+    double g_54_;
+
+
+    double g_max_psi_M1_;
+    double g_max_psi_1_;
+    double g_max_psi_2_;
+    double g_max_psi_3_;
+    double g_max_psi_4_;
+    double g_max_psi_5_;
+
+    double g_max_omega_1_;
+    double g_max_omega_2_;
+    double g_max_omega_3_;
+    double g_max_omega_4_;
+    double g_max_omega_5_;
+
+    double N_M2_;
+    double N_M1_;
+    double N_0_;
+    double N_1_;
+    double N_2_;
+    double N_3_;
+    double N_4_;
+    double N_5_;
+    double N_N_;
+
+    double M_M2_;
+    double M_M1_;
+    double M_0_;
+    double M_1_;
+    double M_2_;
+    double M_3_;
+    double M_4_;
+    double M_5_;
+    double M_N_;
+
+    double N_Astr_;
+    double N_Neuron_;
+    double N_Microglia_;
+
+    double a_1_;
+    double a_2_;
+    double a_3_;
+    double a_4_;
+    double a_5_;
+
+    double a_max_psi_Neuron_;
+    double a_max_psi_0_;
+
+    double a_max_psi_1_;
+    double a_max_psi_2_;
+    double a_max_psi_3_;
+    double a_max_psi_4_;
+    double a_max_psi_5_;
+    double a_max_omega_Neuron_;
+    double a_max_omega_0_;
+    double a_max_omega_1_;
+    double a_max_omega_2_;
+    double a_max_omega_3_;
+    double a_max_omega_4_;
+    double a_max_omega_5_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+
+
+    double k_sig_M2;
+    double k_sig_M1;
+
+
+
+    double k_sig_max_psi_M2;
+    double k_sig_max_psi_M1;
+
+    double inj_width_3_;
+    double inj_width_7_;
+  };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_omega_ratio_=0;
+
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=p.D_;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_psi/p.Keq_psi_;
+    s.kcat_psi_=p.kcat_psi;
+    s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
+    s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(9,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(9,p.Keq_omega_);
+
+
+    s.ksig_omega_=std::vector<double>(9,0);
+
+    s.ksig_omega_[1]=p.k_sig_M2;
+    s.ksig_omega_[2]=p.k_sig_M1;
+
+
+
+    s.ksig_max_omega_=std::vector<double>(9,0);
+
+    s.ksig_max_psi_=std::vector<double>(9,0);
+    s.ksig_max_psi_[1]=p.k_sig_max_psi_M2;
+    s.ksig_max_psi_[2]=p.k_sig_max_psi_M1;
+
+    s.g_left_=std::vector<double> (9,0);
+    s.g_left_[2]=p.g_M1M2_;
+
+    s.g_left_[4]=p.g_10_;
+    s.g_left_[5]=p.g_21_;
+    s.g_left_[6]=p.g_32_;
+    s.g_left_[7]=p.g_43_;
+    s.g_left_[8]=p.g_54_;
+
+
+
+    s.g_rigth_=std::vector<double> (9,0);
+    s.g_rigth_[1]=p.g_M2M1_;
+
+    s.g_rigth_[3]=p.g_01_;
+    s.g_rigth_[4]=p.g_12_;
+    s.g_rigth_[5]=p.g_23_;
+    s.g_rigth_[6]=p.g_34_;
+    s.g_rigth_[7]=p.g_45_;
+
+
+
+    s.g_max_omega_=std::vector<double> (9,0);
+
+
+    s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[1]=p.g_max_psi_M1_;
+
+    s.g_max_psi_[1]=p.g_max_psi_1_;
+    s.g_max_psi_[4]=p.g_max_psi_2_;
+    s.g_max_psi_[5]=p.g_max_psi_3_;
+    s.g_max_psi_[6]=p.g_max_psi_4_;
+    s.g_max_psi_[7]=p.g_max_psi_5_;
+
+
+    s.g_max_omega_[3]=p.g_max_omega_1_;
+    s.g_max_omega_[4]=p.g_max_omega_2_;
+    s.g_max_omega_[5]=p.g_max_omega_3_;
+    s.g_max_omega_[6]=p.g_max_omega_4_;
+    s.g_max_omega_[7]=p.g_max_omega_5_;
+
+
+    s.a_=std::vector<double> (9,0);
+    s.a_[4]=p.a_1_;
+    s.a_[5]=p.a_2_;
+    s.a_[6]=p.a_3_;
+    s.a_[7]=p.a_4_;
+    s.a_[8]=p.a_5_;
+
+    s.a_psi_=std::vector<double> (9,0);
+
+    s.a_psi_[0]=p.a_max_psi_Neuron_;
+    s.a_psi_[4]=p.a_max_psi_1_;
+    s.a_psi_[5]=p.a_max_psi_2_;
+    s.a_psi_[6]=p.a_max_psi_3_;
+    s.a_psi_[7]=p.a_max_psi_4_;
+    s.a_psi_[8]=p.a_max_psi_5_;
+
+    s.a_omega_=std::vector<double> (9,0);
+
+    s.a_omega_[0]=p.a_max_omega_Neuron_;
+    s.a_omega_[4]=p.a_max_omega_1_;
+    s.a_omega_[5]=p.a_max_omega_2_;
+    s.a_omega_[6]=p.a_max_omega_3_;
+    s.a_omega_[7]=p.a_max_omega_4_;
+    s.a_omega_[8]=p.a_max_omega_5_;
+
+
+
+    s.N_=std::vector<double> (9,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_M2_;
+    s.N_[2]=p.N_M1_;
+    s.N_[3]=p.N_0_;
+    s.N_[4]=p.N_1_;
+    s.N_[5]=p.N_2_;
+    s.N_[6]=p.N_3_;
+    s.N_[7]=p.N_4_;
+    s.N_[8]=p.N_5_;
+
+
+    s.M_=std::vector<double> (9,0);
+    s.M_[0]=p.M_N_;
+    s.M_[1]=p.M_M2_;
+    s.M_[2]=p.M_M1_;
+    s.M_[3]=p.M_0_;
+    s.M_[4]=p.M_1_;
+    s.M_[5]=p.M_2_;
+    s.M_[6]=p.M_3_;
+    s.M_[7]=p.M_4_;
+    s.M_[8]=p.M_5_;
+
+
+
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    s.dens_Microglia_=p.N_Microglia_;
+
+    return s;
+  }
+
+
+
+
+  myParameters p_;
+
+  // BaseModel interface
+public:
+  Model_11(){}
+  ~Model_11(){}
+  virtual std::string id() const
+  {
+    return "Model 11.14024032044m";
+  }
+  static double number()
+  {
+    return 1100;
+  }
+
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq_psi",p_.Keq_psi_);
+    out.push_back("Keq_omega",p_.Keq_omega_);
+    out.push_back("kcat_psi", p_.kcat_psi);
+    out.push_back("kcat_omega", p_.kcat_omega_);
+    out.push_back("g_M2M1",p_.g_M2M1_);
+    out.push_back("g_M1M2",p_.g_M1M2_);
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_32",p_.g_32_ );
+    out.push_back("g_34",p_.g_34_ );
+    out.push_back("g_43",p_.g_43_ );
+    out.push_back("g_45",p_.g_45_ );
+    out.push_back("g_54",p_.g_54_ );
+
+    out.push_back("g_max_psi_M1",p_.g_max_psi_M1_ );
+    out.push_back("g_max_psi_1",p_.g_max_psi_1_ );
+    out.push_back("g_max_psi_2",p_.g_max_psi_2_ );
+    out.push_back("g_max_psi_3",p_.g_max_psi_3_ );
+    out.push_back("g_max_psi_4",p_.g_max_psi_4_ );
+    out.push_back("g_max_psi_5",p_.g_max_psi_5_ );
+
+    out.push_back("g_max_omega_1",p_.g_max_omega_1_ );
+    out.push_back("g_max_omega_2",p_.g_max_omega_2_ );
+    out.push_back("g_max_omega_3",p_.g_max_omega_3_ );
+    out.push_back("g_max_omega_4",p_.g_max_omega_4_ );
+    out.push_back("g_max_omega_5",p_.g_max_omega_5_ );
+
+    out.push_back("M_0",p_.M_0_ );
+    out.push_back("N_M2_",p_.N_M2_ );
+    out.push_back("N_M1_",p_.N_M1_ );
+    out.push_back("N_0",p_.N_0_ );
+    out.push_back("N_1",p_.N_1_ );
+    out.push_back("N_2",p_.N_2_ );
+    out.push_back("N_3",p_.N_3_ );
+    out.push_back("N_4",p_.N_4_ );
+    out.push_back("N_5",p_.N_5_ );
+    out.push_back("N_N",p_.N_N_ );
+
+    out.push_back("M_M2",p_.M_M2_ );
+    out.push_back("M_M1",p_.M_M1_ );
+    out.push_back("M_1",p_.M_1_ );
+    out.push_back("M_2",p_.M_2_ );
+    out.push_back("M_3",p_.M_3_ );
+    out.push_back("M_4",p_.M_4_ );
+    out.push_back("M_5",p_.M_5_ );
+    out.push_back("M_N",p_.M_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron",p_.N_Neuron_);
+    out.push_back("N_Microglia",p_.N_Microglia_);
+    out.push_back("a_1",p_.a_1_ );
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_3",p_.a_3_ );
+    out.push_back("a_4",p_.a_4_ );
+    out.push_back("a_5",p_.a_5_ );
+
+    out.push_back("a_max_psi_Neuron",p_.a_max_psi_Neuron_ );
+    out.push_back("a_max_psi_0",p_.a_max_psi_0_ );
+    out.push_back("a_max_psi_1",p_.a_max_psi_1_ );
+    out.push_back("a_max_psi_2",p_.a_max_psi_2_ );
+    out.push_back("a_max_psi_3",p_.a_max_psi_3_ );
+    out.push_back("a_max_psi_4",p_.a_max_psi_4_ );
+    out.push_back("a_max_psi_5",p_.a_max_psi_5_ );
+
+    out.push_back("a_max_omega_Neuron",p_.a_max_omega_Neuron_ );
+    out.push_back("a_max_omega_0",p_.a_max_omega_0_ );
+    out.push_back("a_max_omega_1",p_.a_max_omega_1_ );
+    out.push_back("a_max_omega_2",p_.a_max_omega_2_ );
+    out.push_back("a_max_omega_3",p_.a_max_omega_3_ );
+    out.push_back("a_max_omega_4",p_.a_max_omega_4_ );
+    out.push_back("a_max_omega_5",p_.a_max_omega_5_ );
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
+
+    out.push_back("k_sig_M2",p_.k_sig_M2);
+    out.push_back("k_sig_M1",p_.k_sig_M1);
+
+
+    out.push_back("k_sig_max_psi_M2",p_.k_sig_max_psi_M2);
+    out.push_back("k_sig_max_psi_M1",p_.k_sig_max_psi_M1);
+
+
+
+    out.push_back("inj_width_3",p_.inj_width_3_);
+    out.push_back("inj_width_7",p_.inj_width_7_);
+
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_psi_=p.get("Keq_psi");
+    p_.Keq_omega_=p.get("Keq_omega");
+    p_.kcat_psi=p.get("kcat_psi");
+    p_.kcat_omega_=p.get("kcat_omega");
+    p_.g_M2M1_=p.get("g_M2M1");
+    p_.g_M1M2_=p.get("g_M1M2");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+    p_.g_23_=p.get("g_23");
+    p_.g_32_=p.get("g_32");
+    p_.g_34_=p.get("g_34");
+    p_.g_43_=p.get("g_43");
+    p_.g_45_=p.get("g_45");
+    p_.g_54_=p.get("g_54");
+
+    p_.g_max_psi_M1_=p.get("g_max_psi_M1");
+    p_.g_max_psi_1_=p.get("g_max_psi_1");
+    p_.g_max_psi_2_=p.get("g_max_psi_2");
+    p_.g_max_psi_3_=p.get("g_max_psi_3");
+    p_.g_max_psi_4_=p.get("g_max_psi_4");
+    p_.g_max_psi_5_=p.get("g_max_psi_5");
+    p_.g_max_omega_1_=p.get("g_max_omega_1");
+
+    p_.g_max_omega_2_=p.get("g_max_omega_2");
+    p_.g_max_omega_3_=p.get("g_max_omega_3");
+    p_.g_max_omega_4_=p.get("g_max_omega_4");
+    p_.g_max_omega_5_=p.get("g_max_omega_5");
+    p_.N_M2_=p.get("N_M2");
+    p_.N_M1_=p.get("N_M1");
+    p_.N_0_=p.get("N_0");
+    p_.N_1_=p.get("N_1");
+    p_.N_2_=p.get("N_2");
+    p_.N_3_=p.get("N_3");
+    p_.N_4_=p.get("N_4");
+    p_.N_5_=p.get("N_5");
+    p_.N_N_=p.get("N_N");
+
+    p_.M_M2_=p.get("M_M2");
+    p_.M_M1_=p.get("M_M1");
+    p_.M_0_=p.get("M_0");
+    p_.M_1_=p.get("M_1");
+    p_.M_2_=p.get("M_2");
+    p_.M_3_=p.get("M_3");
+    p_.M_4_=p.get("M_4");
+    p_.M_5_=p.get("M_5");
+    p_.M_N_=p.get("M_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.N_Microglia_=p.get("N_Microglia");
+
+    p_.a_1_=p.get("a_1");
+    p_.a_2_=p.get("a_2");
+    p_.a_3_=p.get("a_3");
+    p_.a_4_=p.get("a_4");
+    p_.a_5_=p.get("a_5");
+
+    p_.a_max_psi_Neuron_=p.get("a_max_psi_Neuron");
+    p_.a_max_psi_0_=p.get("a_max_psi_0");
+    p_.a_max_psi_1_=p.get("a_max_psi_1");
+    p_.a_max_psi_2_=p.get("a_max_psi_2");
+    p_.a_max_psi_3_=p.get("a_max_psi_3");
+    p_.a_max_psi_4_=p.get("a_max_psi_4");
+    p_.a_max_psi_5_=p.get("a_max_psi_5");
+
+    p_.a_max_omega_Neuron_=p.get("a_max_omega_Neuron");
+    p_.a_max_omega_0_=p.get("a_max_omega_0");
+    p_.a_max_omega_1_=p.get("a_max_omega_1");
+    p_.a_max_omega_2_=p.get("a_max_omega_2");
+    p_.a_max_omega_3_=p.get("a_max_omega_3");
+    p_.a_max_omega_4_=p.get("a_max_omega_4");
+    p_.a_max_omega_5_=p.get("a_max_omega_5");
+
+    p_.k_sig_M2=p.get("k_sig_M2");
+    p_.k_sig_M1=p.get("k_sig_M1");
+
+
+
+    p_.k_sig_max_psi_M2=p.get("k_sig_max_psi_M2");
+    p_.k_sig_max_psi_M1=p.get("k_sig_max_psi_M1");
+
+    p_.inj_width_3_=p.get("inj_width_3");
+    p_.inj_width_7_=p.get("inj_width_7");
+  }
+
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+
+  }
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  {
+    return m.simulate(getParameters(),
+                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  Model_11(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
+
+
+class Model_02:public MicrogliaModel
+{
+  SimplestModel m;
+
+  Model_02* clone()const { return new Model_02;}
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_psi_;
+    double Keq_omega_;
+    double kcat_psi;
+    double kcat_omega_;
+    double g_M1M2_;
+    double g_M2M1_;
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+    double g_23_;
+    double g_32_;
+
+    double g_34_;
+    double g_43_;
+
+    double g_45_;
+    double g_54_;
+
+
+    double g_max_psi_M1_;
+
+    double g_max_omega_M1_;
+
+    double g_max_omega_1_;
+    double g_max_omega_2_;
+    double g_max_omega_3_;
+    double g_max_omega_4_;
+    double g_max_omega_5_;
+
+    double N_M2_;
+    double N_M1_;
+    double N_N_;
+
+    double M_M2_;
+    double M_M1_;
+    double M_0_;
+    double M_1_;
+    double M_2_;
+    double M_3_;
+    double M_4_;
+    double M_5_;
+    double M_N_;
+
+    double N_Astr_;
+    double N_Neuron_;
+    double N_Microglia_;
+
+    double a_1_;
+    double a_2_;
+    double a_3_;
+    double a_4_;
+    double a_5_;
+
+    double a_max_psi_Neuron_;
+    double a_max_omega_Neuron_;
+    double a_max_omega_0_;
+    double a_max_omega_1_;
+    double a_max_omega_2_;
+    double a_max_omega_3_;
+    double a_max_omega_4_;
+    double a_max_omega_5_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+
+
+    double k_sig_M2;
+    double k_sig_M1;
+
+
+
+    double k_sig_max_omega_M2;
+    double k_sig_max_omega_M1;
+
+    double k_sig_max_psi_M2;
+    double k_sig_max_psi_M1;
+
+    double inj_width_3_;
+    double inj_width_7_;
+  };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_omega_ratio_=0;
+
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=p.D_;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_psi/p.Keq_psi_;
+    s.kcat_psi_=p.kcat_psi;
+    s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
+    s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(9,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(9,p.Keq_omega_);
+
+
+    s.ksig_omega_=std::vector<double>(9,0);
+
+    s.ksig_omega_[1]=p.k_sig_M2;
+    s.ksig_omega_[2]=p.k_sig_M1;
+
+
+
+    s.ksig_max_omega_=std::vector<double>(9,0);
+    s.ksig_max_omega_[1]=p.k_sig_max_omega_M2;
+    s.ksig_max_omega_[2]=p.k_sig_max_omega_M1;
+
+    s.ksig_max_psi_=std::vector<double>(9,0);
+    s.ksig_max_psi_[1]=p.k_sig_max_psi_M2;
+    s.ksig_max_psi_[2]=p.k_sig_max_psi_M1;
+
+    s.g_left_=std::vector<double> (9,0);
+    s.g_left_[2]=p.g_M1M2_;
+
+    s.g_left_[4]=p.g_10_;
+    s.g_left_[5]=p.g_21_;
+    s.g_left_[6]=p.g_32_;
+    s.g_left_[7]=p.g_43_;
+    s.g_left_[8]=p.g_54_;
+
+
+
+    s.g_rigth_=std::vector<double> (9,0);
+    s.g_rigth_[1]=p.g_M2M1_;
+
+    s.g_rigth_[3]=p.g_01_;
+    s.g_rigth_[4]=p.g_12_;
+    s.g_rigth_[5]=p.g_23_;
+    s.g_rigth_[6]=p.g_34_;
+    s.g_rigth_[7]=p.g_45_;
+
+
+
+    s.g_max_omega_=std::vector<double> (9,0);
+
+
+    s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[1]=p.g_max_psi_M1_;
+
+
+    s.g_max_omega_[1]=p.g_max_omega_M1_;
+
+    s.g_max_omega_[3]=p.g_max_omega_1_;
+    s.g_max_omega_[4]=p.g_max_omega_2_;
+    s.g_max_omega_[5]=p.g_max_omega_3_;
+    s.g_max_omega_[6]=p.g_max_omega_4_;
+    s.g_max_omega_[7]=p.g_max_omega_5_;
+
+
+    s.a_=std::vector<double> (9,0);
+    s.a_[4]=p.a_1_;
+    s.a_[5]=p.a_2_;
+    s.a_[6]=p.a_3_;
+    s.a_[7]=p.a_4_;
+    s.a_[8]=p.a_5_;
+
+    s.a_psi_=std::vector<double> (9,0);
+
+    s.a_psi_[0]=p.a_max_psi_Neuron_;
+
+    s.a_omega_=std::vector<double> (9,0);
+
+    s.a_omega_[0]=p.a_max_omega_Neuron_;
+    s.a_omega_[4]=p.a_max_omega_1_;
+    s.a_omega_[5]=p.a_max_omega_2_;
+    s.a_omega_[6]=p.a_max_omega_3_;
+    s.a_omega_[7]=p.a_max_omega_4_;
+    s.a_omega_[8]=p.a_max_omega_5_;
+
+
+
+    s.N_=std::vector<double> (9,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_M2_;
+    s.N_[2]=p.N_M1_;
+
+
+    s.M_=std::vector<double> (9,0);
+    s.M_[0]=p.M_N_;
+    s.M_[1]=p.M_M2_;
+    s.M_[2]=p.M_M1_;
+    s.M_[3]=p.M_0_;
+    s.M_[4]=p.M_1_;
+    s.M_[5]=p.M_2_;
+    s.M_[6]=p.M_3_;
+    s.M_[7]=p.M_4_;
+    s.M_[8]=p.M_5_;
+
+
+
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    s.dens_Microglia_=p.N_Microglia_;
+
+    return s;
+  }
+
+
+
+
+  myParameters p_;
+
+  // BaseModel interface
+public:
+  Model_02(){}
+  ~Model_02(){}
+  virtual std::string id() const
+  {
+    return "Model_02";
+  }
+  static double number()
+  {
+    return 200;
+  }
+
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq_psi",p_.Keq_psi_);
+    out.push_back("Keq_omega",p_.Keq_omega_);
+    out.push_back("kcat_psi", p_.kcat_psi);
+    out.push_back("kcat_omega", p_.kcat_omega_);
+    out.push_back("g_M2M1",p_.g_M2M1_);
+    out.push_back("g_M1M2",p_.g_M1M2_);
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_32",p_.g_32_ );
+    out.push_back("g_34",p_.g_34_ );
+    out.push_back("g_43",p_.g_43_ );
+    out.push_back("g_45",p_.g_45_ );
+    out.push_back("g_54",p_.g_54_ );
+
+    out.push_back("g_max_psi_M1",p_.g_max_psi_M1_ );
+
+    out.push_back("g_max_omega_M1",p_.g_max_omega_M1_ );
+    out.push_back("g_max_omega_1",p_.g_max_omega_1_ );
+    out.push_back("g_max_omega_2",p_.g_max_omega_2_ );
+    out.push_back("g_max_omega_3",p_.g_max_omega_3_ );
+    out.push_back("g_max_omega_4",p_.g_max_omega_4_ );
+    out.push_back("g_max_omega_5",p_.g_max_omega_5_ );
+
+    out.push_back("M_0",p_.M_0_ );
+    out.push_back("N_M2_",p_.N_M2_ );
+    out.push_back("N_M1_",p_.N_M1_ );
+    out.push_back("N_N",p_.N_N_ );
+
+    out.push_back("M_M2",p_.M_M2_ );
+    out.push_back("M_M1",p_.M_M1_ );
+    out.push_back("M_1",p_.M_1_ );
+    out.push_back("M_2",p_.M_2_ );
+    out.push_back("M_3",p_.M_3_ );
+    out.push_back("M_4",p_.M_4_ );
+    out.push_back("M_5",p_.M_5_ );
+    out.push_back("M_N",p_.M_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron",p_.N_Neuron_);
+    out.push_back("N_Microglia",p_.N_Microglia_);
+    out.push_back("a_1",p_.a_1_ );
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_3",p_.a_3_ );
+    out.push_back("a_4",p_.a_4_ );
+    out.push_back("a_5",p_.a_5_ );
+
+    out.push_back("a_max_psi_Neuron",p_.a_max_psi_Neuron_ );
+
+    out.push_back("a_max_omega_Neuron",p_.a_max_omega_Neuron_ );
+    out.push_back("a_max_omega_0",p_.a_max_omega_0_ );
+    out.push_back("a_max_omega_1",p_.a_max_omega_1_ );
+    out.push_back("a_max_omega_2",p_.a_max_omega_2_ );
+    out.push_back("a_max_omega_3",p_.a_max_omega_3_ );
+    out.push_back("a_max_omega_4",p_.a_max_omega_4_ );
+    out.push_back("a_max_omega_5",p_.a_max_omega_5_ );
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
+
+    out.push_back("k_sig_M2",p_.k_sig_M2);
+    out.push_back("k_sig_M1",p_.k_sig_M1);
+
+    out.push_back("k_sig_max_omega_M2",p_.k_sig_max_omega_M2);
+    out.push_back("k_sig_max_omega_M1",p_.k_sig_max_omega_M1);
+
+    out.push_back("k_sig_max_psi_M2",p_.k_sig_max_psi_M2);
+    out.push_back("k_sig_max_psi_M1",p_.k_sig_max_psi_M1);
+
+
+
+    out.push_back("inj_width_3",p_.inj_width_3_);
+    out.push_back("inj_width_7",p_.inj_width_7_);
+
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_psi_=p.get("Keq_psi");
+    p_.Keq_omega_=p.get("Keq_omega");
+    p_.kcat_psi=p.get("kcat_psi");
+    p_.kcat_omega_=p.get("kcat_omega");
+    p_.g_M2M1_=p.get("g_M2M1");
+    p_.g_M1M2_=p.get("g_M1M2");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+    p_.g_23_=p.get("g_23");
+    p_.g_32_=p.get("g_32");
+    p_.g_34_=p.get("g_34");
+    p_.g_43_=p.get("g_43");
+    p_.g_45_=p.get("g_45");
+    p_.g_54_=p.get("g_54");
+
+    p_.g_max_psi_M1_=p.get("g_max_psi_M1");
+    p_.g_max_omega_M1_=p.get("g_max_omega_M1");
+    p_.g_max_omega_1_=p.get("g_max_omega_1");
+
+    p_.g_max_omega_2_=p.get("g_max_omega_2");
+    p_.g_max_omega_3_=p.get("g_max_omega_3");
+    p_.g_max_omega_4_=p.get("g_max_omega_4");
+    p_.g_max_omega_5_=p.get("g_max_omega_5");
+    p_.N_M2_=p.get("N_M2");
+    p_.N_M1_=p.get("N_M1");
+    p_.N_N_=p.get("N_N");
+
+    p_.M_M2_=p.get("M_M2");
+    p_.M_M1_=p.get("M_M1");
+    p_.M_0_=p.get("M_0");
+    p_.M_1_=p.get("M_1");
+    p_.M_2_=p.get("M_2");
+    p_.M_3_=p.get("M_3");
+    p_.M_4_=p.get("M_4");
+    p_.M_5_=p.get("M_5");
+    p_.M_N_=p.get("M_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.N_Microglia_=p.get("N_Microglia");
+
+    p_.a_1_=p.get("a_1");
+    p_.a_2_=p.get("a_2");
+    p_.a_3_=p.get("a_3");
+    p_.a_4_=p.get("a_4");
+    p_.a_5_=p.get("a_5");
+
+    p_.a_max_psi_Neuron_=p.get("a_max_psi_Neuron");
+
+    p_.a_max_omega_Neuron_=p.get("a_max_omega_Neuron");
+    p_.a_max_omega_0_=p.get("a_max_omega_0");
+    p_.a_max_omega_1_=p.get("a_max_omega_1");
+    p_.a_max_omega_2_=p.get("a_max_omega_2");
+    p_.a_max_omega_3_=p.get("a_max_omega_3");
+    p_.a_max_omega_4_=p.get("a_max_omega_4");
+    p_.a_max_omega_5_=p.get("a_max_omega_5");
+
+    p_.k_sig_M2=p.get("k_sig_M2");
+    p_.k_sig_M1=p.get("k_sig_M1");
+
+
+    p_.k_sig_max_omega_M2=p.get("k_sig_max_omega_M2");
+    p_.k_sig_max_omega_M1=p.get("k_sig_max_omega_M1");
+
+    p_.k_sig_max_psi_M2=p.get("k_sig_max_psi_M2");
+    p_.k_sig_max_psi_M1=p.get("k_sig_max_psi_M1");
+
+    p_.inj_width_3_=p.get("inj_width_3");
+    p_.inj_width_7_=p.get("inj_width_7");
+  }
+
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+
+  }
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  {
+    return m.simulate(getParameters(),
+                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  Model_02(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
+
+
+
+class Model_12:public MicrogliaModel
+{
+  SimplestModel m;
+
+  Model_12* clone()const { return new Model_12;}
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_psi_;
+    double Keq_omega_;
+    double kcat_psi;
+    double kcat_omega_;
+    double g_M1M2_;
+    double g_M2M1_;
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+    double g_23_;
+    double g_32_;
+
+    double g_34_;
+    double g_43_;
+
+    double g_45_;
+    double g_54_;
+
+
+    double g_max_psi_M1_;
+    double g_max_psi_1_;
+    double g_max_psi_2_;
+    double g_max_psi_3_;
+    double g_max_psi_4_;
+    double g_max_psi_5_;
+
+    double g_max_omega_M1_;
+
+    double g_max_omega_1_;
+    double g_max_omega_2_;
+    double g_max_omega_3_;
+    double g_max_omega_4_;
+    double g_max_omega_5_;
+
+    double N_M2_;
+    double N_M1_;
+    double N_0_;
+    double N_1_;
+    double N_2_;
+    double N_3_;
+    double N_4_;
+    double N_5_;
+    double N_N_;
+
+    double M_M2_;
+    double M_M1_;
+    double M_0_;
+    double M_1_;
+    double M_2_;
+    double M_3_;
+    double M_4_;
+    double M_5_;
+    double M_N_;
+
+    double N_Astr_;
+    double N_Neuron_;
+    double N_Microglia_;
+
+    double a_1_;
+    double a_2_;
+    double a_3_;
+    double a_4_;
+    double a_5_;
+
+    double a_max_psi_Neuron_;
+    double a_max_psi_0_;
+
+    double a_max_psi_1_;
+    double a_max_psi_2_;
+    double a_max_psi_3_;
+    double a_max_psi_4_;
+    double a_max_psi_5_;
+    double a_max_omega_Neuron_;
+    double a_max_omega_0_;
+    double a_max_omega_1_;
+    double a_max_omega_2_;
+    double a_max_omega_3_;
+    double a_max_omega_4_;
+    double a_max_omega_5_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+
+
+    double k_sig_M2;
+    double k_sig_M1;
+
+
+
+    double k_sig_max_omega_M2;
+    double k_sig_max_omega_M1;
+
+    double k_sig_max_psi_M2;
+    double k_sig_max_psi_M1;
+
+    double inj_width_3_;
+    double inj_width_7_;
+  };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_omega_ratio_=0;
+
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=p.D_;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_psi/p.Keq_psi_;
+    s.kcat_psi_=p.kcat_psi;
+    s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
+    s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(9,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(9,p.Keq_omega_);
+
+
+    s.ksig_omega_=std::vector<double>(9,0);
+
+    s.ksig_omega_[1]=p.k_sig_M2;
+    s.ksig_omega_[2]=p.k_sig_M1;
+
+
+
+    s.ksig_max_omega_=std::vector<double>(9,0);
+    s.ksig_max_omega_[1]=p.k_sig_max_omega_M2;
+    s.ksig_max_omega_[2]=p.k_sig_max_omega_M1;
+
+    s.ksig_max_psi_=std::vector<double>(9,0);
+    s.ksig_max_psi_[1]=p.k_sig_max_psi_M2;
+    s.ksig_max_psi_[2]=p.k_sig_max_psi_M1;
+
+    s.g_left_=std::vector<double> (9,0);
+    s.g_left_[2]=p.g_M1M2_;
+
+    s.g_left_[4]=p.g_10_;
+    s.g_left_[5]=p.g_21_;
+    s.g_left_[6]=p.g_32_;
+    s.g_left_[7]=p.g_43_;
+    s.g_left_[8]=p.g_54_;
+
+
+
+    s.g_rigth_=std::vector<double> (9,0);
+    s.g_rigth_[1]=p.g_M2M1_;
+
+    s.g_rigth_[3]=p.g_01_;
+    s.g_rigth_[4]=p.g_12_;
+    s.g_rigth_[5]=p.g_23_;
+    s.g_rigth_[6]=p.g_34_;
+    s.g_rigth_[7]=p.g_45_;
+
+
+
+    s.g_max_omega_=std::vector<double> (9,0);
+
+
+    s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[1]=p.g_max_psi_M1_;
+
+    s.g_max_psi_[1]=p.g_max_psi_1_;
+    s.g_max_psi_[4]=p.g_max_psi_2_;
+    s.g_max_psi_[5]=p.g_max_psi_3_;
+    s.g_max_psi_[6]=p.g_max_psi_4_;
+    s.g_max_psi_[7]=p.g_max_psi_5_;
+
+    s.g_max_omega_[1]=p.g_max_omega_M1_;
+
+    s.g_max_omega_[3]=p.g_max_omega_1_;
+    s.g_max_omega_[4]=p.g_max_omega_2_;
+    s.g_max_omega_[5]=p.g_max_omega_3_;
+    s.g_max_omega_[6]=p.g_max_omega_4_;
+    s.g_max_omega_[7]=p.g_max_omega_5_;
+
+
+    s.a_=std::vector<double> (9,0);
+    s.a_[4]=p.a_1_;
+    s.a_[5]=p.a_2_;
+    s.a_[6]=p.a_3_;
+    s.a_[7]=p.a_4_;
+    s.a_[8]=p.a_5_;
+
+    s.a_psi_=std::vector<double> (9,0);
+
+    s.a_psi_[0]=p.a_max_psi_Neuron_;
+    s.a_psi_[4]=p.a_max_psi_1_;
+    s.a_psi_[5]=p.a_max_psi_2_;
+    s.a_psi_[6]=p.a_max_psi_3_;
+    s.a_psi_[7]=p.a_max_psi_4_;
+    s.a_psi_[8]=p.a_max_psi_5_;
+
+    s.a_omega_=std::vector<double> (9,0);
+
+    s.a_omega_[0]=p.a_max_omega_Neuron_;
+    s.a_omega_[4]=p.a_max_omega_1_;
+    s.a_omega_[5]=p.a_max_omega_2_;
+    s.a_omega_[6]=p.a_max_omega_3_;
+    s.a_omega_[7]=p.a_max_omega_4_;
+    s.a_omega_[8]=p.a_max_omega_5_;
+
+
+
+    s.N_=std::vector<double> (9,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_M2_;
+    s.N_[2]=p.N_M1_;
+    s.N_[3]=p.N_0_;
+    s.N_[4]=p.N_1_;
+    s.N_[5]=p.N_2_;
+    s.N_[6]=p.N_3_;
+    s.N_[7]=p.N_4_;
+    s.N_[8]=p.N_5_;
+
+
+    s.M_=std::vector<double> (9,0);
+    s.M_[0]=p.M_N_;
+    s.M_[1]=p.M_M2_;
+    s.M_[2]=p.M_M1_;
+    s.M_[3]=p.M_0_;
+    s.M_[4]=p.M_1_;
+    s.M_[5]=p.M_2_;
+    s.M_[6]=p.M_3_;
+    s.M_[7]=p.M_4_;
+    s.M_[8]=p.M_5_;
+
+
+
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    s.dens_Microglia_=p.N_Microglia_;
+
+    return s;
+  }
+
+
+
+
+  myParameters p_;
+
+  // BaseModel interface
+public:
+  Model_12(){}
+  ~Model_12(){}
+  virtual std::string id() const
+  {
+    return "Model_12";
+  }
+  static double number()
+  {
+    return 1200;
+  }
+
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq_psi",p_.Keq_psi_);
+    out.push_back("Keq_omega",p_.Keq_omega_);
+    out.push_back("kcat_psi", p_.kcat_psi);
+    out.push_back("kcat_omega", p_.kcat_omega_);
+    out.push_back("g_M2M1",p_.g_M2M1_);
+    out.push_back("g_M1M2",p_.g_M1M2_);
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_32",p_.g_32_ );
+    out.push_back("g_34",p_.g_34_ );
+    out.push_back("g_43",p_.g_43_ );
+    out.push_back("g_45",p_.g_45_ );
+    out.push_back("g_54",p_.g_54_ );
+
+    out.push_back("g_max_psi_M1",p_.g_max_psi_M1_ );
+    out.push_back("g_max_psi_1",p_.g_max_psi_1_ );
+    out.push_back("g_max_psi_2",p_.g_max_psi_2_ );
+    out.push_back("g_max_psi_3",p_.g_max_psi_3_ );
+    out.push_back("g_max_psi_4",p_.g_max_psi_4_ );
+    out.push_back("g_max_psi_5",p_.g_max_psi_5_ );
+
+    out.push_back("g_max_omega_M1",p_.g_max_omega_M1_ );
+    out.push_back("g_max_omega_1",p_.g_max_omega_1_ );
+    out.push_back("g_max_omega_2",p_.g_max_omega_2_ );
+    out.push_back("g_max_omega_3",p_.g_max_omega_3_ );
+    out.push_back("g_max_omega_4",p_.g_max_omega_4_ );
+    out.push_back("g_max_omega_5",p_.g_max_omega_5_ );
+
+    out.push_back("M_0",p_.M_0_ );
+    out.push_back("N_M2_",p_.N_M2_ );
+    out.push_back("N_M1_",p_.N_M1_ );
+    out.push_back("N_0",p_.N_0_ );
+    out.push_back("N_1",p_.N_1_ );
+    out.push_back("N_2",p_.N_2_ );
+    out.push_back("N_3",p_.N_3_ );
+    out.push_back("N_4",p_.N_4_ );
+    out.push_back("N_5",p_.N_5_ );
+    out.push_back("N_N",p_.N_N_ );
+
+    out.push_back("M_M2",p_.M_M2_ );
+    out.push_back("M_M1",p_.M_M1_ );
+    out.push_back("M_1",p_.M_1_ );
+    out.push_back("M_2",p_.M_2_ );
+    out.push_back("M_3",p_.M_3_ );
+    out.push_back("M_4",p_.M_4_ );
+    out.push_back("M_5",p_.M_5_ );
+    out.push_back("M_N",p_.M_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron",p_.N_Neuron_);
+    out.push_back("N_Microglia",p_.N_Microglia_);
+    out.push_back("a_1",p_.a_1_ );
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_3",p_.a_3_ );
+    out.push_back("a_4",p_.a_4_ );
+    out.push_back("a_5",p_.a_5_ );
+
+    out.push_back("a_max_psi_Neuron",p_.a_max_psi_Neuron_ );
+    out.push_back("a_max_psi_0",p_.a_max_psi_0_ );
+    out.push_back("a_max_psi_1",p_.a_max_psi_1_ );
+    out.push_back("a_max_psi_2",p_.a_max_psi_2_ );
+    out.push_back("a_max_psi_3",p_.a_max_psi_3_ );
+    out.push_back("a_max_psi_4",p_.a_max_psi_4_ );
+    out.push_back("a_max_psi_5",p_.a_max_psi_5_ );
+
+    out.push_back("a_max_omega_Neuron",p_.a_max_omega_Neuron_ );
+    out.push_back("a_max_omega_0",p_.a_max_omega_0_ );
+    out.push_back("a_max_omega_1",p_.a_max_omega_1_ );
+    out.push_back("a_max_omega_2",p_.a_max_omega_2_ );
+    out.push_back("a_max_omega_3",p_.a_max_omega_3_ );
+    out.push_back("a_max_omega_4",p_.a_max_omega_4_ );
+    out.push_back("a_max_omega_5",p_.a_max_omega_5_ );
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
+
+    out.push_back("k_sig_M2",p_.k_sig_M2);
+    out.push_back("k_sig_M1",p_.k_sig_M1);
+
+    out.push_back("k_sig_max_omega_M2",p_.k_sig_max_omega_M2);
+    out.push_back("k_sig_max_omega_M1",p_.k_sig_max_omega_M1);
+
+    out.push_back("k_sig_max_psi_M2",p_.k_sig_max_psi_M2);
+    out.push_back("k_sig_max_psi_M1",p_.k_sig_max_psi_M1);
+
+
+
+    out.push_back("inj_width_3",p_.inj_width_3_);
+    out.push_back("inj_width_7",p_.inj_width_7_);
+
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_psi_=p.get("Keq_psi");
+    p_.Keq_omega_=p.get("Keq_omega");
+    p_.kcat_psi=p.get("kcat_psi");
+    p_.kcat_omega_=p.get("kcat_omega");
+    p_.g_M2M1_=p.get("g_M2M1");
+    p_.g_M1M2_=p.get("g_M1M2");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+    p_.g_23_=p.get("g_23");
+    p_.g_32_=p.get("g_32");
+    p_.g_34_=p.get("g_34");
+    p_.g_43_=p.get("g_43");
+    p_.g_45_=p.get("g_45");
+    p_.g_54_=p.get("g_54");
+
+    p_.g_max_psi_M1_=p.get("g_max_psi_M1");
+    p_.g_max_psi_1_=p.get("g_max_psi_1");
+    p_.g_max_psi_2_=p.get("g_max_psi_2");
+    p_.g_max_psi_3_=p.get("g_max_psi_3");
+    p_.g_max_psi_4_=p.get("g_max_psi_4");
+    p_.g_max_psi_5_=p.get("g_max_psi_5");
+    p_.g_max_omega_M1_=p.get("g_max_omega_M1");
+    p_.g_max_omega_1_=p.get("g_max_omega_1");
+
+    p_.g_max_omega_2_=p.get("g_max_omega_2");
+    p_.g_max_omega_3_=p.get("g_max_omega_3");
+    p_.g_max_omega_4_=p.get("g_max_omega_4");
+    p_.g_max_omega_5_=p.get("g_max_omega_5");
+    p_.N_M2_=p.get("N_M2");
+    p_.N_M1_=p.get("N_M1");
+    p_.N_0_=p.get("N_0");
+    p_.N_1_=p.get("N_1");
+    p_.N_2_=p.get("N_2");
+    p_.N_3_=p.get("N_3");
+    p_.N_4_=p.get("N_4");
+    p_.N_5_=p.get("N_5");
+    p_.N_N_=p.get("N_N");
+
+    p_.M_M2_=p.get("M_M2");
+    p_.M_M1_=p.get("M_M1");
+    p_.M_0_=p.get("M_0");
+    p_.M_1_=p.get("M_1");
+    p_.M_2_=p.get("M_2");
+    p_.M_3_=p.get("M_3");
+    p_.M_4_=p.get("M_4");
+    p_.M_5_=p.get("M_5");
+    p_.M_N_=p.get("M_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.N_Microglia_=p.get("N_Microglia");
+
+    p_.a_1_=p.get("a_1");
+    p_.a_2_=p.get("a_2");
+    p_.a_3_=p.get("a_3");
+    p_.a_4_=p.get("a_4");
+    p_.a_5_=p.get("a_5");
+
+    p_.a_max_psi_Neuron_=p.get("a_max_psi_Neuron");
+    p_.a_max_psi_0_=p.get("a_max_psi_0");
+    p_.a_max_psi_1_=p.get("a_max_psi_1");
+    p_.a_max_psi_2_=p.get("a_max_psi_2");
+    p_.a_max_psi_3_=p.get("a_max_psi_3");
+    p_.a_max_psi_4_=p.get("a_max_psi_4");
+    p_.a_max_psi_5_=p.get("a_max_psi_5");
+
+    p_.a_max_omega_Neuron_=p.get("a_max_omega_Neuron");
+    p_.a_max_omega_0_=p.get("a_max_omega_0");
+    p_.a_max_omega_1_=p.get("a_max_omega_1");
+    p_.a_max_omega_2_=p.get("a_max_omega_2");
+    p_.a_max_omega_3_=p.get("a_max_omega_3");
+    p_.a_max_omega_4_=p.get("a_max_omega_4");
+    p_.a_max_omega_5_=p.get("a_max_omega_5");
+
+    p_.k_sig_M2=p.get("k_sig_M2");
+    p_.k_sig_M1=p.get("k_sig_M1");
+
+
+    p_.k_sig_max_omega_M2=p.get("k_sig_max_omega_M2");
+    p_.k_sig_max_omega_M1=p.get("k_sig_max_omega_M1");
+
+    p_.k_sig_max_psi_M2=p.get("k_sig_max_psi_M2");
+    p_.k_sig_max_psi_M1=p.get("k_sig_max_psi_M1");
+
+    p_.inj_width_3_=p.get("inj_width_3");
+    p_.inj_width_7_=p.get("inj_width_7");
+  }
+
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+
+  }
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  {
+    return m.simulate(getParameters(),
+                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  Model_12(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
+
+class Model_101:public MicrogliaModel
+{
+  SimplestModel m;
+
+  Model_101* clone()const { return new Model_101;}
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_psi_;
+    double Keq_omega_;
+    double kcat_psi;
+    double kcat_omega_;
+    double g_M1M2_;
+    double g_M2M1_;
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+    double g_23_;
+    double g_32_;
+
+    double g_34_;
+    double g_43_;
+
+    double g_45_;
+    double g_54_;
+
+
+    double g_max_psi_M1_;
+    double g_max_psi_1_;
+    double g_max_psi_2_;
+    double g_max_psi_3_;
+    double g_max_psi_4_;
+    double g_max_psi_5_;
+
+    double g_max_omega_1_;
+    double g_max_omega_2_;
+    double g_max_omega_3_;
+    double g_max_omega_4_;
+    double g_max_omega_5_;
+
+    double N_M2_;
+    double N_M1_;
+    double N_0_;
+    double N_1_;
+    double N_2_;
+    double N_3_;
+    double N_4_;
+    double N_5_;
+    double N_N_;
+
+    double M_M2_;
+    double M_M1_;
+    double M_0_;
+    double M_1_;
+    double M_2_;
+    double M_3_;
+    double M_4_;
+    double M_5_;
+    double M_N_;
+
+    double N_Astr_;
+    double N_Neuron_;
+    double N_Microglia_;
+
+    double a_1_;
+    double a_2_;
+    double a_3_;
+    double a_4_;
+    double a_5_;
+
+    double a_max_psi_Neuron_;
+    double a_max_psi_0_;
+
+    double a_max_psi_1_;
+    double a_max_psi_2_;
+    double a_max_psi_3_;
+    double a_max_psi_4_;
+    double a_max_psi_5_;
+    double a_max_omega_Neuron_;
+    double a_max_omega_0_;
+    double a_max_omega_1_;
+    double a_max_omega_2_;
+    double a_max_omega_3_;
+    double a_max_omega_4_;
+    double a_max_omega_5_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+
+
+    double k_sig_0;
+    double k_sig_1;
+    double k_sig_2;
+    double k_sig_3;
+    double k_sig_4;
+    double k_sig_5;
+
+
+
+    double k_sig_max_omega_0;
+    double k_sig_max_omega_1;
+    double k_sig_max_omega_2;
+    double k_sig_max_omega_3;
+    double k_sig_max_omega_4;
+    double k_sig_max_omega_5;
+
+    double k_sig_max_psi_0;
+    double k_sig_max_psi_1;
+    double k_sig_max_psi_2;
+    double k_sig_max_psi_3;
+    double k_sig_max_psi_4;
+    double k_sig_max_psi_5;
+
+    double inj_width_3_;
+    double inj_width_7_;
+  };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_omega_ratio_=0;
+
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=p.D_;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_psi/p.Keq_psi_;
+    s.kcat_psi_=p.kcat_psi;
+    s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
+    s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(9,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(9,p.Keq_omega_);
+
+
+    s.ksig_omega_=std::vector<double>(9,0);
+
+
+
+    s.ksig_omega_[3]=p.k_sig_0;
+    s.ksig_omega_[4]=p.k_sig_1;
+    s.ksig_omega_[5]=p.k_sig_2;
+    s.ksig_omega_[6]=p.k_sig_3;
+    s.ksig_omega_[7]=p.k_sig_4;
+    s.ksig_omega_[8]=p.k_sig_5;
+
+    s.ksig_max_omega_=std::vector<double>(9,0);
+    s.ksig_max_omega_[3]=p.k_sig_max_omega_0;
+    s.ksig_max_omega_[4]=p.k_sig_max_omega_1;
+    s.ksig_max_omega_[5]=p.k_sig_max_omega_2;
+    s.ksig_max_omega_[6]=p.k_sig_max_omega_3;
+    s.ksig_max_omega_[7]=p.k_sig_max_omega_4;
+    s.ksig_max_omega_[8]=p.k_sig_max_omega_5;
+
+    s.ksig_max_psi_=std::vector<double>(9,0);
+    s.ksig_max_psi_[3]=p.k_sig_max_psi_0;
+    s.ksig_max_psi_[4]=p.k_sig_max_psi_1;
+    s.ksig_max_psi_[5]=p.k_sig_max_psi_2;
+    s.ksig_max_psi_[6]=p.k_sig_max_psi_3;
+    s.ksig_max_psi_[7]=p.k_sig_max_psi_4;
+    s.ksig_max_psi_[8]=p.k_sig_max_psi_5;
+
+    s.g_left_=std::vector<double> (9,0);
+    s.g_left_[2]=p.g_M1M2_;
+
+    s.g_left_[4]=p.g_10_;
+    s.g_left_[5]=p.g_21_;
+    s.g_left_[6]=p.g_32_;
+    s.g_left_[7]=p.g_43_;
+    s.g_left_[8]=p.g_54_;
+
+
+
+    s.g_rigth_=std::vector<double> (9,0);
+    s.g_rigth_[1]=p.g_M2M1_;
+
+    s.g_rigth_[3]=p.g_01_;
+    s.g_rigth_[4]=p.g_12_;
+    s.g_rigth_[5]=p.g_23_;
+    s.g_rigth_[6]=p.g_34_;
+    s.g_rigth_[7]=p.g_45_;
+
+
+
+    s.g_max_omega_=std::vector<double> (9,0);
+
+
+    s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[1]=p.g_max_psi_M1_;
+
+    s.g_max_psi_[1]=p.g_max_psi_1_;
+    s.g_max_psi_[4]=p.g_max_psi_2_;
+    s.g_max_psi_[5]=p.g_max_psi_3_;
+    s.g_max_psi_[6]=p.g_max_psi_4_;
+    s.g_max_psi_[7]=p.g_max_psi_5_;
+
+
+    s.g_max_omega_[3]=p.g_max_omega_1_;
+    s.g_max_omega_[4]=p.g_max_omega_2_;
+    s.g_max_omega_[5]=p.g_max_omega_3_;
+    s.g_max_omega_[6]=p.g_max_omega_4_;
+    s.g_max_omega_[7]=p.g_max_omega_5_;
+
+
+    s.a_=std::vector<double> (9,0);
+    s.a_[4]=p.a_1_;
+    s.a_[5]=p.a_2_;
+    s.a_[6]=p.a_3_;
+    s.a_[7]=p.a_4_;
+    s.a_[8]=p.a_5_;
+
+    s.a_psi_=std::vector<double> (9,0);
+
+    s.a_psi_[0]=p.a_max_psi_Neuron_;
+    s.a_psi_[4]=p.a_max_psi_1_;
+    s.a_psi_[5]=p.a_max_psi_2_;
+    s.a_psi_[6]=p.a_max_psi_3_;
+    s.a_psi_[7]=p.a_max_psi_4_;
+    s.a_psi_[8]=p.a_max_psi_5_;
+
+    s.a_omega_=std::vector<double> (9,0);
+
+    s.a_omega_[0]=p.a_max_omega_Neuron_;
+    s.a_omega_[4]=p.a_max_omega_1_;
+    s.a_omega_[5]=p.a_max_omega_2_;
+    s.a_omega_[6]=p.a_max_omega_3_;
+    s.a_omega_[7]=p.a_max_omega_4_;
+    s.a_omega_[8]=p.a_max_omega_5_;
+
+
+
+    s.N_=std::vector<double> (9,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_M2_;
+    s.N_[2]=p.N_M1_;
+    s.N_[3]=p.N_0_;
+    s.N_[4]=p.N_1_;
+    s.N_[5]=p.N_2_;
+    s.N_[6]=p.N_3_;
+    s.N_[7]=p.N_4_;
+    s.N_[8]=p.N_5_;
+
+
+    s.M_=std::vector<double> (9,0);
+    s.M_[0]=p.M_N_;
+    s.M_[1]=p.M_M2_;
+    s.M_[2]=p.M_M1_;
+    s.M_[3]=p.M_0_;
+    s.M_[4]=p.M_1_;
+    s.M_[5]=p.M_2_;
+    s.M_[6]=p.M_3_;
+    s.M_[7]=p.M_4_;
+    s.M_[8]=p.M_5_;
+
+
+
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    s.dens_Microglia_=p.N_Microglia_;
+
+    return s;
+  }
+
+
+
+
+  myParameters p_;
+
+  // BaseModel interface
+public:
+  Model_101(){}
+  ~Model_101(){}
+  virtual std::string id() const
+  {
+    return "Model_101";
+  }
+  static double number()
+  {
+    return 1010;
+  }
+
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq_psi",p_.Keq_psi_);
+    out.push_back("Keq_omega",p_.Keq_omega_);
+    out.push_back("kcat_psi", p_.kcat_psi);
+    out.push_back("kcat_omega", p_.kcat_omega_);
+    out.push_back("g_M2M1",p_.g_M2M1_);
+    out.push_back("g_M1M2",p_.g_M1M2_);
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_32",p_.g_32_ );
+    out.push_back("g_34",p_.g_34_ );
+    out.push_back("g_43",p_.g_43_ );
+    out.push_back("g_45",p_.g_45_ );
+    out.push_back("g_54",p_.g_54_ );
+
+    out.push_back("g_max_psi_M1",p_.g_max_psi_M1_ );
+    out.push_back("g_max_psi_1",p_.g_max_psi_1_ );
+    out.push_back("g_max_psi_2",p_.g_max_psi_2_ );
+    out.push_back("g_max_psi_3",p_.g_max_psi_3_ );
+    out.push_back("g_max_psi_4",p_.g_max_psi_4_ );
+    out.push_back("g_max_psi_5",p_.g_max_psi_5_ );
+
+    out.push_back("g_max_omega_1",p_.g_max_omega_1_ );
+    out.push_back("g_max_omega_2",p_.g_max_omega_2_ );
+    out.push_back("g_max_omega_3",p_.g_max_omega_3_ );
+    out.push_back("g_max_omega_4",p_.g_max_omega_4_ );
+    out.push_back("g_max_omega_5",p_.g_max_omega_5_ );
+
+    out.push_back("M_0",p_.M_0_ );
+    out.push_back("N_M2_",p_.N_M2_ );
+    out.push_back("N_M1_",p_.N_M1_ );
+    out.push_back("N_0",p_.N_0_ );
+    out.push_back("N_1",p_.N_1_ );
+    out.push_back("N_2",p_.N_2_ );
+    out.push_back("N_3",p_.N_3_ );
+    out.push_back("N_4",p_.N_4_ );
+    out.push_back("N_5",p_.N_5_ );
+    out.push_back("N_N",p_.N_N_ );
+
+    out.push_back("M_M2",p_.M_M2_ );
+    out.push_back("M_M1",p_.M_M1_ );
+    out.push_back("M_1",p_.M_1_ );
+    out.push_back("M_2",p_.M_2_ );
+    out.push_back("M_3",p_.M_3_ );
+    out.push_back("M_4",p_.M_4_ );
+    out.push_back("M_5",p_.M_5_ );
+    out.push_back("M_N",p_.M_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron",p_.N_Neuron_);
+    out.push_back("N_Microglia",p_.N_Microglia_);
+    out.push_back("a_1",p_.a_1_ );
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_3",p_.a_3_ );
+    out.push_back("a_4",p_.a_4_ );
+    out.push_back("a_5",p_.a_5_ );
+
+    out.push_back("a_max_psi_Neuron",p_.a_max_psi_Neuron_ );
+    out.push_back("a_max_psi_0",p_.a_max_psi_0_ );
+    out.push_back("a_max_psi_1",p_.a_max_psi_1_ );
+    out.push_back("a_max_psi_2",p_.a_max_psi_2_ );
+    out.push_back("a_max_psi_3",p_.a_max_psi_3_ );
+    out.push_back("a_max_psi_4",p_.a_max_psi_4_ );
+    out.push_back("a_max_psi_5",p_.a_max_psi_5_ );
+
+    out.push_back("a_max_omega_Neuron",p_.a_max_omega_Neuron_ );
+    out.push_back("a_max_omega_0",p_.a_max_omega_0_ );
+    out.push_back("a_max_omega_1",p_.a_max_omega_1_ );
+    out.push_back("a_max_omega_2",p_.a_max_omega_2_ );
+    out.push_back("a_max_omega_3",p_.a_max_omega_3_ );
+    out.push_back("a_max_omega_4",p_.a_max_omega_4_ );
+    out.push_back("a_max_omega_5",p_.a_max_omega_5_ );
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
+
+    out.push_back("k_sig_0",p_.k_sig_0);
+    out.push_back("k_sig_1",p_.k_sig_1);
+    out.push_back("k_sig_2",p_.k_sig_2);
+    out.push_back("k_sig_3",p_.k_sig_3);
+    out.push_back("k_sig_4",p_.k_sig_4);
+    out.push_back("k_sig_5",p_.k_sig_5);
+
+    out.push_back("k_sig_max_omega_0",p_.k_sig_max_omega_0);
+    out.push_back("k_sig_max_omega_1",p_.k_sig_max_omega_1);
+    out.push_back("k_sig_max_omega_2",p_.k_sig_max_omega_2);
+    out.push_back("k_sig_max_omega_3",p_.k_sig_max_omega_3);
+    out.push_back("k_sig_max_omega_4",p_.k_sig_max_omega_4);
+    out.push_back("k_sig_max_omega_5",p_.k_sig_max_omega_5);
+
+    out.push_back("k_sig_max_psi_0",p_.k_sig_max_psi_0);
+    out.push_back("k_sig_max_psi_1",p_.k_sig_max_psi_1);
+    out.push_back("k_sig_max_psi_2",p_.k_sig_max_psi_2);
+    out.push_back("k_sig_max_psi_3",p_.k_sig_max_psi_3);
+    out.push_back("k_sig_max_psi_4",p_.k_sig_max_psi_4);
+    out.push_back("k_sig_max_psi_5",p_.k_sig_max_psi_5);
+
+
+
+    out.push_back("inj_width_3",p_.inj_width_3_);
+    out.push_back("inj_width_7",p_.inj_width_7_);
+
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_psi_=p.get("Keq_psi");
+    p_.Keq_omega_=p.get("Keq_omega");
+    p_.kcat_psi=p.get("kcat_psi");
+    p_.kcat_omega_=p.get("kcat_omega");
+    p_.g_M2M1_=p.get("g_M2M1");
+    p_.g_M1M2_=p.get("g_M1M2");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+    p_.g_23_=p.get("g_23");
+    p_.g_32_=p.get("g_32");
+    p_.g_34_=p.get("g_34");
+    p_.g_43_=p.get("g_43");
+    p_.g_45_=p.get("g_45");
+    p_.g_54_=p.get("g_54");
+
+    p_.g_max_psi_M1_=p.get("g_max_psi_M1");
+    p_.g_max_psi_1_=p.get("g_max_psi_1");
+    p_.g_max_psi_2_=p.get("g_max_psi_2");
+    p_.g_max_psi_3_=p.get("g_max_psi_3");
+    p_.g_max_psi_4_=p.get("g_max_psi_4");
+    p_.g_max_psi_5_=p.get("g_max_psi_5");
+    p_.g_max_omega_1_=p.get("g_max_omega_1");
+
+    p_.g_max_omega_2_=p.get("g_max_omega_2");
+    p_.g_max_omega_3_=p.get("g_max_omega_3");
+    p_.g_max_omega_4_=p.get("g_max_omega_4");
+    p_.g_max_omega_5_=p.get("g_max_omega_5");
+    p_.N_M2_=p.get("N_M2");
+    p_.N_M1_=p.get("N_M1");
+    p_.N_0_=p.get("N_0");
+    p_.N_1_=p.get("N_1");
+    p_.N_2_=p.get("N_2");
+    p_.N_3_=p.get("N_3");
+    p_.N_4_=p.get("N_4");
+    p_.N_5_=p.get("N_5");
+    p_.N_N_=p.get("N_N");
+
+    p_.M_M2_=p.get("M_M2");
+    p_.M_M1_=p.get("M_M1");
+    p_.M_0_=p.get("M_0");
+    p_.M_1_=p.get("M_1");
+    p_.M_2_=p.get("M_2");
+    p_.M_3_=p.get("M_3");
+    p_.M_4_=p.get("M_4");
+    p_.M_5_=p.get("M_5");
+    p_.M_N_=p.get("M_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.N_Microglia_=p.get("N_Microglia");
+
+    p_.a_1_=p.get("a_1");
+    p_.a_2_=p.get("a_2");
+    p_.a_3_=p.get("a_3");
+    p_.a_4_=p.get("a_4");
+    p_.a_5_=p.get("a_5");
+
+    p_.a_max_psi_Neuron_=p.get("a_max_psi_Neuron");
+    p_.a_max_psi_0_=p.get("a_max_psi_0");
+    p_.a_max_psi_1_=p.get("a_max_psi_1");
+    p_.a_max_psi_2_=p.get("a_max_psi_2");
+    p_.a_max_psi_3_=p.get("a_max_psi_3");
+    p_.a_max_psi_4_=p.get("a_max_psi_4");
+    p_.a_max_psi_5_=p.get("a_max_psi_5");
+
+    p_.a_max_omega_Neuron_=p.get("a_max_omega_Neuron");
+    p_.a_max_omega_0_=p.get("a_max_omega_0");
+    p_.a_max_omega_1_=p.get("a_max_omega_1");
+    p_.a_max_omega_2_=p.get("a_max_omega_2");
+    p_.a_max_omega_3_=p.get("a_max_omega_3");
+    p_.a_max_omega_4_=p.get("a_max_omega_4");
+    p_.a_max_omega_5_=p.get("a_max_omega_5");
+
+    p_.k_sig_0=p.get("k_sig_0");
+    p_.k_sig_1=p.get("k_sig_1");
+    p_.k_sig_2=p.get("k_sig_2");
+    p_.k_sig_3=p.get("k_sig_3");
+    p_.k_sig_4=p.get("k_sig_4");
+    p_.k_sig_5=p.get("k_sig_5");
+
+
+    p_.k_sig_max_omega_0=p.get("k_sig_max_omega_0");
+    p_.k_sig_max_omega_1=p.get("k_sig_max_omega_1");
+    p_.k_sig_max_omega_2=p.get("k_sig_max_omega_2");
+    p_.k_sig_max_omega_3=p.get("k_sig_max_omega_3");
+    p_.k_sig_max_omega_4=p.get("k_sig_max_omega_4");
+    p_.k_sig_max_omega_5=p.get("k_sig_max_omega_5");
+
+
+    p_.k_sig_max_psi_0=p.get("k_sig_max_psi_0");
+    p_.k_sig_max_psi_1=p.get("k_sig_max_psi_1");
+    p_.k_sig_max_psi_2=p.get("k_sig_max_psi_2");
+    p_.k_sig_max_psi_3=p.get("k_sig_max_psi_3");
+    p_.k_sig_max_psi_4=p.get("k_sig_max_psi_4");
+    p_.k_sig_max_psi_5=p.get("k_sig_max_psi_5");
+
+    p_.inj_width_3_=p.get("inj_width_3");
+    p_.inj_width_7_=p.get("inj_width_7");
+  }
+
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+
+  }
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  {
+    return m.simulate(getParameters(),
+                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  Model_101(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
+
+
+class Model_10:public MicrogliaModel
+{
+  SimplestModel m;
+
+  Model_10* clone()const { return new Model_10;}
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_psi_;
+    double kcat_psi;
+    double g_M1M2_;
+    double g_M2M1_;
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+    double g_23_;
+    double g_32_;
+
+    double g_34_;
+    double g_43_;
+
+    double g_45_;
+    double g_54_;
+
+
+    double g_max_psi_M1_;
+    double g_max_psi_1_;
+    double g_max_psi_2_;
+    double g_max_psi_3_;
+    double g_max_psi_4_;
+    double g_max_psi_5_;
+
+
+    double N_M2_;
+    double N_M1_;
+    double N_0_;
+    double N_1_;
+    double N_2_;
+    double N_3_;
+    double N_4_;
+    double N_5_;
+    double N_N_;
+
+
+    double N_Astr_;
+    double N_Neuron_;
+    double N_Microglia_;
+
+    double a_1_;
+    double a_2_;
+    double a_3_;
+    double a_4_;
+    double a_5_;
+
+    double a_max_psi_Neuron_;
+    double a_max_psi_0_;
+
+    double a_max_psi_1_;
+    double a_max_psi_2_;
+    double a_max_psi_3_;
+    double a_max_psi_4_;
+    double a_max_psi_5_;
+    double inj_width_;
+
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+
+
+
+    double inj_width_3_;
+    double inj_width_7_;
+  };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_omega_ratio_=0;
+
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=p.D_;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_psi/p.Keq_psi_;
+    s.kcat_psi_=p.kcat_psi;
+
+    s.Keq_gmax_psi_=std::vector<double>(9,p.Keq_psi_);
+
+
+    s.ksig_omega_=std::vector<double>(9,0);
+
+
+
+
+    s.ksig_max_omega_=std::vector<double>(9,0);
+
+    s.ksig_max_psi_=std::vector<double>(9,0);
+
+    s.g_left_=std::vector<double> (9,0);
+    s.g_left_[2]=p.g_M1M2_;
+
+    s.g_left_[4]=p.g_10_;
+    s.g_left_[5]=p.g_21_;
+    s.g_left_[6]=p.g_32_;
+    s.g_left_[7]=p.g_43_;
+    s.g_left_[8]=p.g_54_;
+
+
+
+    s.g_rigth_=std::vector<double> (9,0);
+    s.g_rigth_[1]=p.g_M2M1_;
+
+    s.g_rigth_[3]=p.g_01_;
+    s.g_rigth_[4]=p.g_12_;
+    s.g_rigth_[5]=p.g_23_;
+    s.g_rigth_[6]=p.g_34_;
+    s.g_rigth_[7]=p.g_45_;
+
+
+
+    s.g_max_omega_=std::vector<double> (9,0);
+
+
+    s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[1]=p.g_max_psi_M1_;
+
+    s.g_max_psi_[1]=p.g_max_psi_1_;
+    s.g_max_psi_[4]=p.g_max_psi_2_;
+    s.g_max_psi_[5]=p.g_max_psi_3_;
+    s.g_max_psi_[6]=p.g_max_psi_4_;
+    s.g_max_psi_[7]=p.g_max_psi_5_;
+
+
+
+
+    s.a_=std::vector<double> (9,0);
+    s.a_[4]=p.a_1_;
+    s.a_[5]=p.a_2_;
+    s.a_[6]=p.a_3_;
+    s.a_[7]=p.a_4_;
+    s.a_[8]=p.a_5_;
+
+    s.a_psi_=std::vector<double> (9,0);
+
+    s.a_psi_[0]=p.a_max_psi_Neuron_;
+    s.a_psi_[4]=p.a_max_psi_1_;
+    s.a_psi_[5]=p.a_max_psi_2_;
+    s.a_psi_[6]=p.a_max_psi_3_;
+    s.a_psi_[7]=p.a_max_psi_4_;
+    s.a_psi_[8]=p.a_max_psi_5_;
+
+    s.a_omega_=std::vector<double> (9,0);
+
+
+
+
+    s.N_=std::vector<double> (9,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_M2_;
+    s.N_[2]=p.N_M1_;
+    s.N_[3]=p.N_0_;
+    s.N_[4]=p.N_1_;
+    s.N_[5]=p.N_2_;
+    s.N_[6]=p.N_3_;
+    s.N_[7]=p.N_4_;
+    s.N_[8]=p.N_5_;
+
+
+    s.M_=std::vector<double> (9,0);
+
+
+
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    s.dens_Microglia_=p.N_Microglia_;
+
+    return s;
+  }
+
+
+
+
+  myParameters p_;
+
+  // BaseModel interface
+public:
+  Model_10(){}
+  ~Model_10(){}
+  virtual std::string id() const
+  {
+    return "Model_10";
+  }
+  static double number()
+  {
+    return 1000;
+  }
+
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq_psi",p_.Keq_psi_);
+    out.push_back("kcat_psi", p_.kcat_psi);
+    out.push_back("g_M2M1",p_.g_M2M1_);
+    out.push_back("g_M1M2",p_.g_M1M2_);
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_32",p_.g_32_ );
+    out.push_back("g_34",p_.g_34_ );
+    out.push_back("g_43",p_.g_43_ );
+    out.push_back("g_45",p_.g_45_ );
+    out.push_back("g_54",p_.g_54_ );
+
+    out.push_back("g_max_psi_M1",p_.g_max_psi_M1_ );
+    out.push_back("g_max_psi_1",p_.g_max_psi_1_ );
+    out.push_back("g_max_psi_2",p_.g_max_psi_2_ );
+    out.push_back("g_max_psi_3",p_.g_max_psi_3_ );
+    out.push_back("g_max_psi_4",p_.g_max_psi_4_ );
+    out.push_back("g_max_psi_5",p_.g_max_psi_5_ );
+
+    out.push_back("N_M2_",p_.N_M2_ );
+    out.push_back("N_M1_",p_.N_M1_ );
+    out.push_back("N_0",p_.N_0_ );
+    out.push_back("N_1",p_.N_1_ );
+    out.push_back("N_2",p_.N_2_ );
+    out.push_back("N_3",p_.N_3_ );
+    out.push_back("N_4",p_.N_4_ );
+    out.push_back("N_5",p_.N_5_ );
+    out.push_back("N_N",p_.N_N_ );
+
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron",p_.N_Neuron_);
+    out.push_back("N_Microglia",p_.N_Microglia_);
+    out.push_back("a_1",p_.a_1_ );
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_3",p_.a_3_ );
+    out.push_back("a_4",p_.a_4_ );
+    out.push_back("a_5",p_.a_5_ );
+
+    out.push_back("a_max_psi_Neuron",p_.a_max_psi_Neuron_ );
+    out.push_back("a_max_psi_0",p_.a_max_psi_0_ );
+    out.push_back("a_max_psi_1",p_.a_max_psi_1_ );
+    out.push_back("a_max_psi_2",p_.a_max_psi_2_ );
+    out.push_back("a_max_psi_3",p_.a_max_psi_3_ );
+    out.push_back("a_max_psi_4",p_.a_max_psi_4_ );
+    out.push_back("a_max_psi_5",p_.a_max_psi_5_ );
+
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
+
+
+    out.push_back("inj_width_3",p_.inj_width_3_);
+    out.push_back("inj_width_7",p_.inj_width_7_);
+
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_psi_=p.get("Keq_psi");
+    p_.kcat_psi=p.get("kcat_psi");
+    p_.g_M2M1_=p.get("g_M2M1");
+    p_.g_M1M2_=p.get("g_M1M2");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+    p_.g_23_=p.get("g_23");
+    p_.g_32_=p.get("g_32");
+    p_.g_34_=p.get("g_34");
+    p_.g_43_=p.get("g_43");
+    p_.g_45_=p.get("g_45");
+    p_.g_54_=p.get("g_54");
+
+    p_.g_max_psi_M1_=p.get("g_max_psi_M1");
+    p_.g_max_psi_1_=p.get("g_max_psi_1");
+    p_.g_max_psi_2_=p.get("g_max_psi_2");
+    p_.g_max_psi_3_=p.get("g_max_psi_3");
+    p_.g_max_psi_4_=p.get("g_max_psi_4");
+    p_.g_max_psi_5_=p.get("g_max_psi_5");
+    p_.N_M2_=p.get("N_M2");
+    p_.N_M1_=p.get("N_M1");
+    p_.N_0_=p.get("N_0");
+    p_.N_1_=p.get("N_1");
+    p_.N_2_=p.get("N_2");
+    p_.N_3_=p.get("N_3");
+    p_.N_4_=p.get("N_4");
+    p_.N_5_=p.get("N_5");
+    p_.N_N_=p.get("N_N");
+
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.N_Microglia_=p.get("N_Microglia");
+
+    p_.a_1_=p.get("a_1");
+    p_.a_2_=p.get("a_2");
+    p_.a_3_=p.get("a_3");
+    p_.a_4_=p.get("a_4");
+    p_.a_5_=p.get("a_5");
+
+    p_.a_max_psi_Neuron_=p.get("a_max_psi_Neuron");
+    p_.a_max_psi_0_=p.get("a_max_psi_0");
+    p_.a_max_psi_1_=p.get("a_max_psi_1");
+    p_.a_max_psi_2_=p.get("a_max_psi_2");
+    p_.a_max_psi_3_=p.get("a_max_psi_3");
+    p_.a_max_psi_4_=p.get("a_max_psi_4");
+    p_.a_max_psi_5_=p.get("a_max_psi_5");
+
+
+
+    p_.inj_width_3_=p.get("inj_width_3");
+    p_.inj_width_7_=p.get("inj_width_7");
+  }
+
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+
+  }
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  {
+    return m.simulate(getParameters(),
+                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  Model_10(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
+
+
+class Model_03:public MicrogliaModel
+{
+  SimplestModel m;
+
+  Model_03* clone()const { return new Model_03;}
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_psi_;
+    double Keq_omega_;
+    double kcat_psi;
+    double kcat_omega_;
+    double g_M1M2_;
+    double g_M2M1_;
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+    double g_23_;
+    double g_32_;
+
+    double g_34_;
+    double g_43_;
+
+    double g_45_;
+    double g_54_;
+
+
+    double g_max_psi_M1_;
+
+    double g_max_omega_M1_;
+
+    double g_max_omega_1_;
+    double g_max_omega_2_;
+    double g_max_omega_3_;
+    double g_max_omega_4_;
+    double g_max_omega_5_;
+
+    double N_M2_;
+    double N_M1_;
+    double N_N_;
+
+    double M_M2_;
+    double M_M1_;
+    double M_0_;
+    double M_1_;
+    double M_2_;
+    double M_3_;
+    double M_4_;
+    double M_5_;
+    double M_N_;
+
+    double N_Astr_;
+    double N_Neuron_;
+    double N_Microglia_;
+
+    double a_1_;
+    double a_2_;
+    double a_3_;
+    double a_4_;
+    double a_5_;
+
+    double a_max_psi_Neuron_;
+    double a_max_omega_Neuron_;
+    double a_max_omega_0_;
+    double a_max_omega_1_;
+    double a_max_omega_2_;
+    double a_max_omega_3_;
+    double a_max_omega_4_;
+    double a_max_omega_5_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+
+
+    double k_sig_M2;
+    double k_sig_M1;
+    double k_sig_0;
+    double k_sig_1;
+    double k_sig_2;
+    double k_sig_3;
+    double k_sig_4;
+    double k_sig_5;
+
+
+
+    double k_sig_max_omega_M2;
+    double k_sig_max_omega_M1;
+    double k_sig_max_omega_0;
+    double k_sig_max_omega_1;
+    double k_sig_max_omega_2;
+    double k_sig_max_omega_3;
+    double k_sig_max_omega_4;
+    double k_sig_max_omega_5;
+
+    double k_sig_max_psi_M2;
+    double k_sig_max_psi_M1;
+
+    double inj_width_3_;
+    double inj_width_7_;
+  };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_omega_ratio_=0;
+
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=p.D_;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_psi/p.Keq_psi_;
+    s.kcat_psi_=p.kcat_psi;
+    s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
+    s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(9,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(9,p.Keq_omega_);
+
+
+    s.ksig_omega_=std::vector<double>(9,0);
+
+    s.ksig_omega_[1]=p.k_sig_M2;
+    s.ksig_omega_[2]=p.k_sig_M1;
+
+
+    s.ksig_omega_[3]=p.k_sig_0;
+    s.ksig_omega_[4]=p.k_sig_1;
+    s.ksig_omega_[5]=p.k_sig_2;
+    s.ksig_omega_[6]=p.k_sig_3;
+    s.ksig_omega_[7]=p.k_sig_4;
+    s.ksig_omega_[8]=p.k_sig_5;
+
+    s.ksig_max_omega_=std::vector<double>(9,0);
+    s.ksig_max_omega_[1]=p.k_sig_max_omega_M2;
+    s.ksig_max_omega_[2]=p.k_sig_max_omega_M1;
+    s.ksig_max_omega_[3]=p.k_sig_max_omega_0;
+    s.ksig_max_omega_[4]=p.k_sig_max_omega_1;
+    s.ksig_max_omega_[5]=p.k_sig_max_omega_2;
+    s.ksig_max_omega_[6]=p.k_sig_max_omega_3;
+    s.ksig_max_omega_[7]=p.k_sig_max_omega_4;
+    s.ksig_max_omega_[8]=p.k_sig_max_omega_5;
+
+    s.ksig_max_psi_=std::vector<double>(9,0);
+    s.ksig_max_psi_[1]=p.k_sig_max_psi_M2;
+    s.ksig_max_psi_[2]=p.k_sig_max_psi_M1;
+
+    s.g_left_=std::vector<double> (9,0);
+    s.g_left_[2]=p.g_M1M2_;
+
+    s.g_left_[4]=p.g_10_;
+    s.g_left_[5]=p.g_21_;
+    s.g_left_[6]=p.g_32_;
+    s.g_left_[7]=p.g_43_;
+    s.g_left_[8]=p.g_54_;
+
+
+
+    s.g_rigth_=std::vector<double> (9,0);
+    s.g_rigth_[1]=p.g_M2M1_;
+
+    s.g_rigth_[3]=p.g_01_;
+    s.g_rigth_[4]=p.g_12_;
+    s.g_rigth_[5]=p.g_23_;
+    s.g_rigth_[6]=p.g_34_;
+    s.g_rigth_[7]=p.g_45_;
+
+
+
+    s.g_max_omega_=std::vector<double> (9,0);
+
+
+    s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[1]=p.g_max_psi_M1_;
+
+
+    s.g_max_omega_[1]=p.g_max_omega_M1_;
+
+    s.g_max_omega_[3]=p.g_max_omega_1_;
+    s.g_max_omega_[4]=p.g_max_omega_2_;
+    s.g_max_omega_[5]=p.g_max_omega_3_;
+    s.g_max_omega_[6]=p.g_max_omega_4_;
+    s.g_max_omega_[7]=p.g_max_omega_5_;
+
+
+    s.a_=std::vector<double> (9,0);
+    s.a_[4]=p.a_1_;
+    s.a_[5]=p.a_2_;
+    s.a_[6]=p.a_3_;
+    s.a_[7]=p.a_4_;
+    s.a_[8]=p.a_5_;
+
+    s.a_psi_=std::vector<double> (9,0);
+
+    s.a_psi_[0]=p.a_max_psi_Neuron_;
+
+    s.a_omega_=std::vector<double> (9,0);
+
+    s.a_omega_[0]=p.a_max_omega_Neuron_;
+    s.a_omega_[4]=p.a_max_omega_1_;
+    s.a_omega_[5]=p.a_max_omega_2_;
+    s.a_omega_[6]=p.a_max_omega_3_;
+    s.a_omega_[7]=p.a_max_omega_4_;
+    s.a_omega_[8]=p.a_max_omega_5_;
+
+
+
+    s.N_=std::vector<double> (9,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_M2_;
+    s.N_[2]=p.N_M1_;
+
+
+    s.M_=std::vector<double> (9,0);
+    s.M_[0]=p.M_N_;
+    s.M_[1]=p.M_M2_;
+    s.M_[2]=p.M_M1_;
+    s.M_[3]=p.M_0_;
+    s.M_[4]=p.M_1_;
+    s.M_[5]=p.M_2_;
+    s.M_[6]=p.M_3_;
+    s.M_[7]=p.M_4_;
+    s.M_[8]=p.M_5_;
+
+
+
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    s.dens_Microglia_=p.N_Microglia_;
+
+    return s;
+  }
+
+
+
+
+  myParameters p_;
+
+  // BaseModel interface
+public:
+  Model_03(){}
+  ~Model_03(){}
+  virtual std::string id() const
+  {
+    return "Model_03";
+  }
+  static double number()
+  {
+    return 300;
+  }
+
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq_psi",p_.Keq_psi_);
+    out.push_back("Keq_omega",p_.Keq_omega_);
+    out.push_back("kcat_psi", p_.kcat_psi);
+    out.push_back("kcat_omega", p_.kcat_omega_);
+    out.push_back("g_M2M1",p_.g_M2M1_);
+    out.push_back("g_M1M2",p_.g_M1M2_);
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_32",p_.g_32_ );
+    out.push_back("g_34",p_.g_34_ );
+    out.push_back("g_43",p_.g_43_ );
+    out.push_back("g_45",p_.g_45_ );
+    out.push_back("g_54",p_.g_54_ );
+
+    out.push_back("g_max_psi_M1",p_.g_max_psi_M1_ );
+
+    out.push_back("g_max_omega_M1",p_.g_max_omega_M1_ );
+    out.push_back("g_max_omega_1",p_.g_max_omega_1_ );
+    out.push_back("g_max_omega_2",p_.g_max_omega_2_ );
+    out.push_back("g_max_omega_3",p_.g_max_omega_3_ );
+    out.push_back("g_max_omega_4",p_.g_max_omega_4_ );
+    out.push_back("g_max_omega_5",p_.g_max_omega_5_ );
+
+    out.push_back("M_0",p_.M_0_ );
+    out.push_back("N_M2_",p_.N_M2_ );
+    out.push_back("N_M1_",p_.N_M1_ );
+    out.push_back("N_N",p_.N_N_ );
+
+    out.push_back("M_M2",p_.M_M2_ );
+    out.push_back("M_M1",p_.M_M1_ );
+    out.push_back("M_1",p_.M_1_ );
+    out.push_back("M_2",p_.M_2_ );
+    out.push_back("M_3",p_.M_3_ );
+    out.push_back("M_4",p_.M_4_ );
+    out.push_back("M_5",p_.M_5_ );
+    out.push_back("M_N",p_.M_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron",p_.N_Neuron_);
+    out.push_back("N_Microglia",p_.N_Microglia_);
+    out.push_back("a_1",p_.a_1_ );
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_3",p_.a_3_ );
+    out.push_back("a_4",p_.a_4_ );
+    out.push_back("a_5",p_.a_5_ );
+
+    out.push_back("a_max_psi_Neuron",p_.a_max_psi_Neuron_ );
+
+    out.push_back("a_max_omega_Neuron",p_.a_max_omega_Neuron_ );
+    out.push_back("a_max_omega_0",p_.a_max_omega_0_ );
+    out.push_back("a_max_omega_1",p_.a_max_omega_1_ );
+    out.push_back("a_max_omega_2",p_.a_max_omega_2_ );
+    out.push_back("a_max_omega_3",p_.a_max_omega_3_ );
+    out.push_back("a_max_omega_4",p_.a_max_omega_4_ );
+    out.push_back("a_max_omega_5",p_.a_max_omega_5_ );
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
+
+    out.push_back("k_sig_M2",p_.k_sig_M2);
+    out.push_back("k_sig_M1",p_.k_sig_M1);
+    out.push_back("k_sig_0",p_.k_sig_0);
+    out.push_back("k_sig_1",p_.k_sig_1);
+    out.push_back("k_sig_2",p_.k_sig_2);
+    out.push_back("k_sig_3",p_.k_sig_3);
+    out.push_back("k_sig_4",p_.k_sig_4);
+    out.push_back("k_sig_5",p_.k_sig_5);
+
+    out.push_back("k_sig_max_omega_M2",p_.k_sig_max_omega_M2);
+    out.push_back("k_sig_max_omega_M1",p_.k_sig_max_omega_M1);
+    out.push_back("k_sig_max_omega_0",p_.k_sig_max_omega_0);
+    out.push_back("k_sig_max_omega_1",p_.k_sig_max_omega_1);
+    out.push_back("k_sig_max_omega_2",p_.k_sig_max_omega_2);
+    out.push_back("k_sig_max_omega_3",p_.k_sig_max_omega_3);
+    out.push_back("k_sig_max_omega_4",p_.k_sig_max_omega_4);
+    out.push_back("k_sig_max_omega_5",p_.k_sig_max_omega_5);
+
+    out.push_back("k_sig_max_psi_M2",p_.k_sig_max_psi_M2);
+    out.push_back("k_sig_max_psi_M1",p_.k_sig_max_psi_M1);
+
+
+
+    out.push_back("inj_width_3",p_.inj_width_3_);
+    out.push_back("inj_width_7",p_.inj_width_7_);
+
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_psi_=p.get("Keq_psi");
+    p_.Keq_omega_=p.get("Keq_omega");
+    p_.kcat_psi=p.get("kcat_psi");
+    p_.kcat_omega_=p.get("kcat_omega");
+    p_.g_M2M1_=p.get("g_M2M1");
+    p_.g_M1M2_=p.get("g_M1M2");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+    p_.g_23_=p.get("g_23");
+    p_.g_32_=p.get("g_32");
+    p_.g_34_=p.get("g_34");
+    p_.g_43_=p.get("g_43");
+    p_.g_45_=p.get("g_45");
+    p_.g_54_=p.get("g_54");
+
+    p_.g_max_psi_M1_=p.get("g_max_psi_M1");
+    p_.g_max_omega_M1_=p.get("g_max_omega_M1");
+    p_.g_max_omega_1_=p.get("g_max_omega_1");
+
+    p_.g_max_omega_2_=p.get("g_max_omega_2");
+    p_.g_max_omega_3_=p.get("g_max_omega_3");
+    p_.g_max_omega_4_=p.get("g_max_omega_4");
+    p_.g_max_omega_5_=p.get("g_max_omega_5");
+    p_.N_M2_=p.get("N_M2");
+    p_.N_M1_=p.get("N_M1");
+    p_.N_N_=p.get("N_N");
+
+    p_.M_M2_=p.get("M_M2");
+    p_.M_M1_=p.get("M_M1");
+    p_.M_0_=p.get("M_0");
+    p_.M_1_=p.get("M_1");
+    p_.M_2_=p.get("M_2");
+    p_.M_3_=p.get("M_3");
+    p_.M_4_=p.get("M_4");
+    p_.M_5_=p.get("M_5");
+    p_.M_N_=p.get("M_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.N_Microglia_=p.get("N_Microglia");
+
+    p_.a_1_=p.get("a_1");
+    p_.a_2_=p.get("a_2");
+    p_.a_3_=p.get("a_3");
+    p_.a_4_=p.get("a_4");
+    p_.a_5_=p.get("a_5");
+
+    p_.a_max_psi_Neuron_=p.get("a_max_psi_Neuron");
+
+    p_.a_max_omega_Neuron_=p.get("a_max_omega_Neuron");
+    p_.a_max_omega_0_=p.get("a_max_omega_0");
+    p_.a_max_omega_1_=p.get("a_max_omega_1");
+    p_.a_max_omega_2_=p.get("a_max_omega_2");
+    p_.a_max_omega_3_=p.get("a_max_omega_3");
+    p_.a_max_omega_4_=p.get("a_max_omega_4");
+    p_.a_max_omega_5_=p.get("a_max_omega_5");
+
+    p_.k_sig_M2=p.get("k_sig_M2");
+    p_.k_sig_M1=p.get("k_sig_M1");
+    p_.k_sig_0=p.get("k_sig_0");
+    p_.k_sig_1=p.get("k_sig_1");
+    p_.k_sig_2=p.get("k_sig_2");
+    p_.k_sig_3=p.get("k_sig_3");
+    p_.k_sig_4=p.get("k_sig_4");
+    p_.k_sig_5=p.get("k_sig_5");
+
+
+    p_.k_sig_max_omega_M2=p.get("k_sig_max_omega_M2");
+    p_.k_sig_max_omega_M1=p.get("k_sig_max_omega_M1");
+    p_.k_sig_max_omega_0=p.get("k_sig_max_omega_0");
+    p_.k_sig_max_omega_1=p.get("k_sig_max_omega_1");
+    p_.k_sig_max_omega_2=p.get("k_sig_max_omega_2");
+    p_.k_sig_max_omega_3=p.get("k_sig_max_omega_3");
+    p_.k_sig_max_omega_4=p.get("k_sig_max_omega_4");
+    p_.k_sig_max_omega_5=p.get("k_sig_max_omega_5");
+
+
+    p_.k_sig_max_psi_M2=p.get("k_sig_max_psi_M2");
+    p_.k_sig_max_psi_M1=p.get("k_sig_max_psi_M1");
+
+    p_.inj_width_3_=p.get("inj_width_3");
+    p_.inj_width_7_=p.get("inj_width_7");
+  }
+
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+
+  }
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  {
+    return m.simulate(getParameters(),
+                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  Model_03(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
+
+
+class Model_13:public MicrogliaModel
+{
+  SimplestModel m;
+
+  Model_13* clone()const { return new Model_13;}
+
+  class myParameters
+  {
+  public:
+    double D_;
+    double epsilon_;
+    double Keq_psi_;
+    double Keq_omega_;
+    double kcat_psi;
+    double kcat_omega_;
+    double g_M1M2_;
+    double g_M2M1_;
+    double g_01_;
+    double g_10_;
+    double g_12_;
+    double g_21_;
+
+    double g_23_;
+    double g_32_;
+
+    double g_34_;
+    double g_43_;
+
+    double g_45_;
+    double g_54_;
+
+
+    double g_max_psi_M1_;
+    double g_max_psi_1_;
+    double g_max_psi_2_;
+    double g_max_psi_3_;
+    double g_max_psi_4_;
+    double g_max_psi_5_;
+
+    double g_max_omega_M1_;
+
+    double g_max_omega_1_;
+    double g_max_omega_2_;
+    double g_max_omega_3_;
+    double g_max_omega_4_;
+    double g_max_omega_5_;
+
+    double N_M2_;
+    double N_M1_;
+    double N_0_;
+    double N_1_;
+    double N_2_;
+    double N_3_;
+    double N_4_;
+    double N_5_;
+    double N_N_;
+
+    double M_M2_;
+    double M_M1_;
+    double M_0_;
+    double M_1_;
+    double M_2_;
+    double M_3_;
+    double M_4_;
+    double M_5_;
+    double M_N_;
+
+    double N_Astr_;
+    double N_Neuron_;
+    double N_Microglia_;
+
+    double a_1_;
+    double a_2_;
+    double a_3_;
+    double a_4_;
+    double a_5_;
+
+    double a_max_psi_Neuron_;
+    double a_max_psi_0_;
+
+    double a_max_psi_1_;
+    double a_max_psi_2_;
+    double a_max_psi_3_;
+    double a_max_psi_4_;
+    double a_max_psi_5_;
+    double a_max_omega_Neuron_;
+    double a_max_omega_0_;
+    double a_max_omega_1_;
+    double a_max_omega_2_;
+    double a_max_omega_3_;
+    double a_max_omega_4_;
+    double a_max_omega_5_;
+    double inj_width_;
+    double DAMP_ratio_;
+    double prot_concentration_;
+    double DAMP_MW_;
+
+
+    double k_sig_M2;
+    double k_sig_M1;
+    double k_sig_0;
+    double k_sig_1;
+    double k_sig_2;
+    double k_sig_3;
+    double k_sig_4;
+    double k_sig_5;
+
+
+
+    double k_sig_max_omega_M2;
+    double k_sig_max_omega_M1;
+    double k_sig_max_omega_0;
+    double k_sig_max_omega_1;
+    double k_sig_max_omega_2;
+    double k_sig_max_omega_3;
+    double k_sig_max_omega_4;
+    double k_sig_max_omega_5;
+
+    double k_sig_max_psi_M2;
+    double k_sig_max_psi_M1;
+    double k_sig_max_psi_0;
+    double k_sig_max_psi_1;
+    double k_sig_max_psi_2;
+    double k_sig_max_psi_3;
+    double k_sig_max_psi_4;
+    double k_sig_max_psi_5;
+
+    double inj_width_3_;
+    double inj_width_7_;
+  };
+
+
+  SimplestModel::Param toModelParameters(const myParameters& p)const
+  {
+    SimplestModel::Param s;
+    s.inj_width_=p.inj_width_;
+   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_omega_ratio_=0;
+
+    s.prot_concentration_=p.prot_concentration_;
+    s.DAMP_MW_=p.DAMP_MW_;
+    s.Dpsi_=p.D_;
+    s.Domega_=p.D_;
+    s.epsilon_=p.epsilon_;
+
+    s.kon_psi_=p.kcat_psi/p.Keq_psi_;
+    s.kcat_psi_=p.kcat_psi;
+    s.kon_omega_=p.kcat_omega_/p.Keq_omega_;
+    s.kcat_omega_=p.kcat_omega_;
+
+    s.Keq_gmax_psi_=std::vector<double>(9,p.Keq_psi_);
+    s.Keq_gmax_omega_=std::vector<double>(9,p.Keq_omega_);
+
+
+    s.ksig_omega_=std::vector<double>(9,0);
+
+    s.ksig_omega_[1]=p.k_sig_M2;
+    s.ksig_omega_[2]=p.k_sig_M1;
+
+
+    s.ksig_omega_[3]=p.k_sig_0;
+    s.ksig_omega_[4]=p.k_sig_1;
+    s.ksig_omega_[5]=p.k_sig_2;
+    s.ksig_omega_[6]=p.k_sig_3;
+    s.ksig_omega_[7]=p.k_sig_4;
+    s.ksig_omega_[8]=p.k_sig_5;
+
+    s.ksig_max_omega_=std::vector<double>(9,0);
+    s.ksig_max_omega_[1]=p.k_sig_max_omega_M2;
+    s.ksig_max_omega_[2]=p.k_sig_max_omega_M1;
+    s.ksig_max_omega_[3]=p.k_sig_max_omega_0;
+    s.ksig_max_omega_[4]=p.k_sig_max_omega_1;
+    s.ksig_max_omega_[5]=p.k_sig_max_omega_2;
+    s.ksig_max_omega_[6]=p.k_sig_max_omega_3;
+    s.ksig_max_omega_[7]=p.k_sig_max_omega_4;
+    s.ksig_max_omega_[8]=p.k_sig_max_omega_5;
+
+    s.ksig_max_psi_=std::vector<double>(9,0);
+    s.ksig_max_psi_[1]=p.k_sig_max_psi_M2;
+    s.ksig_max_psi_[2]=p.k_sig_max_psi_M1;
+    s.ksig_max_psi_[3]=p.k_sig_max_psi_0;
+    s.ksig_max_psi_[4]=p.k_sig_max_psi_1;
+    s.ksig_max_psi_[5]=p.k_sig_max_psi_2;
+    s.ksig_max_psi_[6]=p.k_sig_max_psi_3;
+    s.ksig_max_psi_[7]=p.k_sig_max_psi_4;
+    s.ksig_max_psi_[8]=p.k_sig_max_psi_5;
+
+    s.g_left_=std::vector<double> (9,0);
+    s.g_left_[2]=p.g_M1M2_;
+
+    s.g_left_[4]=p.g_10_;
+    s.g_left_[5]=p.g_21_;
+    s.g_left_[6]=p.g_32_;
+    s.g_left_[7]=p.g_43_;
+    s.g_left_[8]=p.g_54_;
+
+
+
+    s.g_rigth_=std::vector<double> (9,0);
+    s.g_rigth_[1]=p.g_M2M1_;
+
+    s.g_rigth_[3]=p.g_01_;
+    s.g_rigth_[4]=p.g_12_;
+    s.g_rigth_[5]=p.g_23_;
+    s.g_rigth_[6]=p.g_34_;
+    s.g_rigth_[7]=p.g_45_;
+
+
+
+    s.g_max_omega_=std::vector<double> (9,0);
+
+
+    s.g_max_psi_=std::vector<double> (9,0);
+
+    s.g_max_psi_[1]=p.g_max_psi_M1_;
+
+    s.g_max_psi_[1]=p.g_max_psi_1_;
+    s.g_max_psi_[4]=p.g_max_psi_2_;
+    s.g_max_psi_[5]=p.g_max_psi_3_;
+    s.g_max_psi_[6]=p.g_max_psi_4_;
+    s.g_max_psi_[7]=p.g_max_psi_5_;
+
+    s.g_max_omega_[1]=p.g_max_omega_M1_;
+
+    s.g_max_omega_[3]=p.g_max_omega_1_;
+    s.g_max_omega_[4]=p.g_max_omega_2_;
+    s.g_max_omega_[5]=p.g_max_omega_3_;
+    s.g_max_omega_[6]=p.g_max_omega_4_;
+    s.g_max_omega_[7]=p.g_max_omega_5_;
+
+
+    s.a_=std::vector<double> (9,0);
+    s.a_[4]=p.a_1_;
+    s.a_[5]=p.a_2_;
+    s.a_[6]=p.a_3_;
+    s.a_[7]=p.a_4_;
+    s.a_[8]=p.a_5_;
+
+    s.a_psi_=std::vector<double> (9,0);
+
+    s.a_psi_[0]=p.a_max_psi_Neuron_;
+    s.a_psi_[4]=p.a_max_psi_1_;
+    s.a_psi_[5]=p.a_max_psi_2_;
+    s.a_psi_[6]=p.a_max_psi_3_;
+    s.a_psi_[7]=p.a_max_psi_4_;
+    s.a_psi_[8]=p.a_max_psi_5_;
+
+    s.a_omega_=std::vector<double> (9,0);
+
+    s.a_omega_[0]=p.a_max_omega_Neuron_;
+    s.a_omega_[4]=p.a_max_omega_1_;
+    s.a_omega_[5]=p.a_max_omega_2_;
+    s.a_omega_[6]=p.a_max_omega_3_;
+    s.a_omega_[7]=p.a_max_omega_4_;
+    s.a_omega_[8]=p.a_max_omega_5_;
+
+
+
+    s.N_=std::vector<double> (9,0);
+
+    s.N_[0]=p.N_N_;
+    s.N_[1]=p.N_M2_;
+    s.N_[2]=p.N_M1_;
+    s.N_[3]=p.N_0_;
+    s.N_[4]=p.N_1_;
+    s.N_[5]=p.N_2_;
+    s.N_[6]=p.N_3_;
+    s.N_[7]=p.N_4_;
+    s.N_[8]=p.N_5_;
+
+
+    s.M_=std::vector<double> (9,0);
+    s.M_[0]=p.M_N_;
+    s.M_[1]=p.M_M2_;
+    s.M_[2]=p.M_M1_;
+    s.M_[3]=p.M_0_;
+    s.M_[4]=p.M_1_;
+    s.M_[5]=p.M_2_;
+    s.M_[6]=p.M_3_;
+    s.M_[7]=p.M_4_;
+    s.M_[8]=p.M_5_;
+
+
+
+
+
+
+    s.dens_Astr_=p.N_Astr_;
+
+
+
+    s.dens_Neur_=p.N_Neuron_;
+
+    s.dens_Microglia_=p.N_Microglia_;
+
+    return s;
+  }
+
+
+
+
+  myParameters p_;
+
+  // BaseModel interface
+public:
+  Model_13(){}
+  ~Model_13(){}
+  virtual std::string id() const
+  {
+    return "Model 11.14024032044m";
+  }
+  static double number()
+  {
+    return 1300;
+  }
+
+  virtual Parameters getParameters() const
+  {
+    Parameters out;
+    out.push_back("model",number());
+    out.push_back("D",p_.D_);
+    out.push_back("epsilon",p_.epsilon_);
+    out.push_back("Keq_psi",p_.Keq_psi_);
+    out.push_back("Keq_omega",p_.Keq_omega_);
+    out.push_back("kcat_psi", p_.kcat_psi);
+    out.push_back("kcat_omega", p_.kcat_omega_);
+    out.push_back("g_M2M1",p_.g_M2M1_);
+    out.push_back("g_M1M2",p_.g_M1M2_);
+    out.push_back("g_01",p_.g_01_);
+    out.push_back("g_10",p_.g_10_ );
+    out.push_back("g_12",p_.g_12_ );
+    out.push_back("g_21",p_.g_21_ );
+
+    out.push_back("g_23",p_.g_23_ );
+    out.push_back("g_32",p_.g_32_ );
+    out.push_back("g_34",p_.g_34_ );
+    out.push_back("g_43",p_.g_43_ );
+    out.push_back("g_45",p_.g_45_ );
+    out.push_back("g_54",p_.g_54_ );
+
+    out.push_back("g_max_psi_M1",p_.g_max_psi_M1_ );
+    out.push_back("g_max_psi_1",p_.g_max_psi_1_ );
+    out.push_back("g_max_psi_2",p_.g_max_psi_2_ );
+    out.push_back("g_max_psi_3",p_.g_max_psi_3_ );
+    out.push_back("g_max_psi_4",p_.g_max_psi_4_ );
+    out.push_back("g_max_psi_5",p_.g_max_psi_5_ );
+
+    out.push_back("g_max_omega_M1",p_.g_max_omega_M1_ );
+    out.push_back("g_max_omega_1",p_.g_max_omega_1_ );
+    out.push_back("g_max_omega_2",p_.g_max_omega_2_ );
+    out.push_back("g_max_omega_3",p_.g_max_omega_3_ );
+    out.push_back("g_max_omega_4",p_.g_max_omega_4_ );
+    out.push_back("g_max_omega_5",p_.g_max_omega_5_ );
+
+    out.push_back("M_0",p_.M_0_ );
+    out.push_back("N_M2_",p_.N_M2_ );
+    out.push_back("N_M1_",p_.N_M1_ );
+    out.push_back("N_0",p_.N_0_ );
+    out.push_back("N_1",p_.N_1_ );
+    out.push_back("N_2",p_.N_2_ );
+    out.push_back("N_3",p_.N_3_ );
+    out.push_back("N_4",p_.N_4_ );
+    out.push_back("N_5",p_.N_5_ );
+    out.push_back("N_N",p_.N_N_ );
+
+    out.push_back("M_M2",p_.M_M2_ );
+    out.push_back("M_M1",p_.M_M1_ );
+    out.push_back("M_1",p_.M_1_ );
+    out.push_back("M_2",p_.M_2_ );
+    out.push_back("M_3",p_.M_3_ );
+    out.push_back("M_4",p_.M_4_ );
+    out.push_back("M_5",p_.M_5_ );
+    out.push_back("M_N",p_.M_N_ );
+    out.push_back("N_Astr",p_.N_Astr_);
+    out.push_back("N_Neuron",p_.N_Neuron_);
+    out.push_back("N_Microglia",p_.N_Microglia_);
+    out.push_back("a_1",p_.a_1_ );
+    out.push_back("a_2",p_.a_2_ );
+    out.push_back("a_3",p_.a_3_ );
+    out.push_back("a_4",p_.a_4_ );
+    out.push_back("a_5",p_.a_5_ );
+
+    out.push_back("a_max_psi_Neuron",p_.a_max_psi_Neuron_ );
+    out.push_back("a_max_psi_0",p_.a_max_psi_0_ );
+    out.push_back("a_max_psi_1",p_.a_max_psi_1_ );
+    out.push_back("a_max_psi_2",p_.a_max_psi_2_ );
+    out.push_back("a_max_psi_3",p_.a_max_psi_3_ );
+    out.push_back("a_max_psi_4",p_.a_max_psi_4_ );
+    out.push_back("a_max_psi_5",p_.a_max_psi_5_ );
+
+    out.push_back("a_max_omega_Neuron",p_.a_max_omega_Neuron_ );
+    out.push_back("a_max_omega_0",p_.a_max_omega_0_ );
+    out.push_back("a_max_omega_1",p_.a_max_omega_1_ );
+    out.push_back("a_max_omega_2",p_.a_max_omega_2_ );
+    out.push_back("a_max_omega_3",p_.a_max_omega_3_ );
+    out.push_back("a_max_omega_4",p_.a_max_omega_4_ );
+    out.push_back("a_max_omega_5",p_.a_max_omega_5_ );
+
+    out.push_back("inj_width",p_.inj_width_);
+    out.push_back("DAMP_ratio",p_.DAMP_ratio_);
+    out.push_back("prot_concentration",p_.prot_concentration_);
+    out.push_back("DAMP_MW",p_.DAMP_MW_);
+
+
+
+    out.push_back("k_sig_M2",p_.k_sig_M2);
+    out.push_back("k_sig_M1",p_.k_sig_M1);
+    out.push_back("k_sig_0",p_.k_sig_0);
+    out.push_back("k_sig_1",p_.k_sig_1);
+    out.push_back("k_sig_2",p_.k_sig_2);
+    out.push_back("k_sig_3",p_.k_sig_3);
+    out.push_back("k_sig_4",p_.k_sig_4);
+    out.push_back("k_sig_5",p_.k_sig_5);
+
+    out.push_back("k_sig_max_omega_M2",p_.k_sig_max_omega_M2);
+    out.push_back("k_sig_max_omega_M1",p_.k_sig_max_omega_M1);
+    out.push_back("k_sig_max_omega_0",p_.k_sig_max_omega_0);
+    out.push_back("k_sig_max_omega_1",p_.k_sig_max_omega_1);
+    out.push_back("k_sig_max_omega_2",p_.k_sig_max_omega_2);
+    out.push_back("k_sig_max_omega_3",p_.k_sig_max_omega_3);
+    out.push_back("k_sig_max_omega_4",p_.k_sig_max_omega_4);
+    out.push_back("k_sig_max_omega_5",p_.k_sig_max_omega_5);
+
+    out.push_back("k_sig_max_psi_M2",p_.k_sig_max_psi_M2);
+    out.push_back("k_sig_max_psi_M1",p_.k_sig_max_psi_M1);
+    out.push_back("k_sig_max_psi_0",p_.k_sig_max_psi_0);
+    out.push_back("k_sig_max_psi_1",p_.k_sig_max_psi_1);
+    out.push_back("k_sig_max_psi_2",p_.k_sig_max_psi_2);
+    out.push_back("k_sig_max_psi_3",p_.k_sig_max_psi_3);
+    out.push_back("k_sig_max_psi_4",p_.k_sig_max_psi_4);
+    out.push_back("k_sig_max_psi_5",p_.k_sig_max_psi_5);
+
+
+
+    out.push_back("inj_width_3",p_.inj_width_3_);
+    out.push_back("inj_width_7",p_.inj_width_7_);
+
+
+
+
+
+
+
+    return out;
+
+  }
+  virtual void loadParameters(const Parameters& p)
+  {
+
+    p_.D_=p.get("D");
+    p_.epsilon_=p.get("epsilon");
+    p_.Keq_psi_=p.get("Keq_psi");
+    p_.Keq_omega_=p.get("Keq_omega");
+    p_.kcat_psi=p.get("kcat_psi");
+    p_.kcat_omega_=p.get("kcat_omega");
+    p_.g_M2M1_=p.get("g_M2M1");
+    p_.g_M1M2_=p.get("g_M1M2");
+
+    p_.g_01_=p.get("g_01");
+    p_.g_01_=p.get("g_01");
+    p_.g_10_=p.get("g_10");
+    p_.g_12_=p.get("g_12");
+    p_.g_21_=p.get("g_21");
+    p_.g_23_=p.get("g_23");
+    p_.g_32_=p.get("g_32");
+    p_.g_34_=p.get("g_34");
+    p_.g_43_=p.get("g_43");
+    p_.g_45_=p.get("g_45");
+    p_.g_54_=p.get("g_54");
+
+    p_.g_max_psi_M1_=p.get("g_max_psi_M1");
+    p_.g_max_psi_1_=p.get("g_max_psi_1");
+    p_.g_max_psi_2_=p.get("g_max_psi_2");
+    p_.g_max_psi_3_=p.get("g_max_psi_3");
+    p_.g_max_psi_4_=p.get("g_max_psi_4");
+    p_.g_max_psi_5_=p.get("g_max_psi_5");
+    p_.g_max_omega_M1_=p.get("g_max_omega_M1");
+    p_.g_max_omega_1_=p.get("g_max_omega_1");
+
+    p_.g_max_omega_2_=p.get("g_max_omega_2");
+    p_.g_max_omega_3_=p.get("g_max_omega_3");
+    p_.g_max_omega_4_=p.get("g_max_omega_4");
+    p_.g_max_omega_5_=p.get("g_max_omega_5");
+    p_.N_M2_=p.get("N_M2");
+    p_.N_M1_=p.get("N_M1");
+    p_.N_0_=p.get("N_0");
+    p_.N_1_=p.get("N_1");
+    p_.N_2_=p.get("N_2");
+    p_.N_3_=p.get("N_3");
+    p_.N_4_=p.get("N_4");
+    p_.N_5_=p.get("N_5");
+    p_.N_N_=p.get("N_N");
+
+    p_.M_M2_=p.get("M_M2");
+    p_.M_M1_=p.get("M_M1");
+    p_.M_0_=p.get("M_0");
+    p_.M_1_=p.get("M_1");
+    p_.M_2_=p.get("M_2");
+    p_.M_3_=p.get("M_3");
+    p_.M_4_=p.get("M_4");
+    p_.M_5_=p.get("M_5");
+    p_.M_N_=p.get("M_N");
+    p_.a_2_=p.get("a_2");
+    p_.DAMP_ratio_=p.get("DAMP_ratio");
+    p_.DAMP_MW_=p.get("DAMP_MW");
+    p_.prot_concentration_=p.get("prot_concentration");
+    p_.inj_width_=p.get("inj_width");
+    p_.N_Astr_=p.get("N_Astr");
+    p_.N_Neuron_=p.get("N_Neuron");
+    p_.N_Microglia_=p.get("N_Microglia");
+
+    p_.a_1_=p.get("a_1");
+    p_.a_2_=p.get("a_2");
+    p_.a_3_=p.get("a_3");
+    p_.a_4_=p.get("a_4");
+    p_.a_5_=p.get("a_5");
+
+    p_.a_max_psi_Neuron_=p.get("a_max_psi_Neuron");
+    p_.a_max_psi_0_=p.get("a_max_psi_0");
+    p_.a_max_psi_1_=p.get("a_max_psi_1");
+    p_.a_max_psi_2_=p.get("a_max_psi_2");
+    p_.a_max_psi_3_=p.get("a_max_psi_3");
+    p_.a_max_psi_4_=p.get("a_max_psi_4");
+    p_.a_max_psi_5_=p.get("a_max_psi_5");
+
+    p_.a_max_omega_Neuron_=p.get("a_max_omega_Neuron");
+    p_.a_max_omega_0_=p.get("a_max_omega_0");
+    p_.a_max_omega_1_=p.get("a_max_omega_1");
+    p_.a_max_omega_2_=p.get("a_max_omega_2");
+    p_.a_max_omega_3_=p.get("a_max_omega_3");
+    p_.a_max_omega_4_=p.get("a_max_omega_4");
+    p_.a_max_omega_5_=p.get("a_max_omega_5");
+
+    p_.k_sig_M2=p.get("k_sig_M2");
+    p_.k_sig_M1=p.get("k_sig_M1");
+    p_.k_sig_0=p.get("k_sig_0");
+    p_.k_sig_1=p.get("k_sig_1");
+    p_.k_sig_2=p.get("k_sig_2");
+    p_.k_sig_3=p.get("k_sig_3");
+    p_.k_sig_4=p.get("k_sig_4");
+    p_.k_sig_5=p.get("k_sig_5");
+
+
+    p_.k_sig_max_omega_M2=p.get("k_sig_max_omega_M2");
+    p_.k_sig_max_omega_M1=p.get("k_sig_max_omega_M1");
+    p_.k_sig_max_omega_0=p.get("k_sig_max_omega_0");
+    p_.k_sig_max_omega_1=p.get("k_sig_max_omega_1");
+    p_.k_sig_max_omega_2=p.get("k_sig_max_omega_2");
+    p_.k_sig_max_omega_3=p.get("k_sig_max_omega_3");
+    p_.k_sig_max_omega_4=p.get("k_sig_max_omega_4");
+    p_.k_sig_max_omega_5=p.get("k_sig_max_omega_5");
+
+
+    p_.k_sig_max_psi_M2=p.get("k_sig_max_psi_M2");
+    p_.k_sig_max_psi_M1=p.get("k_sig_max_psi_M1");
+    p_.k_sig_max_psi_0=p.get("k_sig_max_psi_0");
+    p_.k_sig_max_psi_1=p.get("k_sig_max_psi_1");
+    p_.k_sig_max_psi_2=p.get("k_sig_max_psi_2");
+    p_.k_sig_max_psi_3=p.get("k_sig_max_psi_3");
+    p_.k_sig_max_psi_4=p.get("k_sig_max_psi_4");
+    p_.k_sig_max_psi_5=p.get("k_sig_max_psi_5");
+
+    p_.inj_width_3_=p.get("inj_width_3");
+    p_.inj_width_7_=p.get("inj_width_7");
+  }
+
+
+  virtual CortexSimulation run(const CortexExperiment& e,double dt) const
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
+
+
+  }
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  {
+    return m.simulate(getParameters(),
+                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  Model_13(const Parameters& p)
+  {
+    loadParameters(p);
+  }
+
+
+};
+
+
 
 
 class Model115:public BaseModel

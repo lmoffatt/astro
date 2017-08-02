@@ -3,7 +3,8 @@ simulation_time	604800
 time_of_Measures
 0	259200	604800	
 time_of_Simulated_Points
-0	259200	604800	
+0	5400	10800	21600	43200	86400	172800	259200	432000	604800
+
 Measures
 CortexMeasure	DATOS_3dpl_CONTROL_resultados
 dia	0

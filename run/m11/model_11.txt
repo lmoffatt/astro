@@ -1,0 +1,183 @@
+parameters model_11
+
+model 1100
+
+
+D <LOG> 8.45E-11  [m⁻2 s-1] 1.54  [dB]// diffusion coefficient for psi
+
+epsilon <LOGRATIO> 5e-2  [m/m] 1.08  [dB]// fraction of extracelular space
+
+Keq_psi  <LOG> 2.38E-6  [M] 5.91  [dB]// affinity constant for psi
+
+Keq_omega  <LOG> 2.17E-8  [M] 4.8 <LOG> [dB]// affinity constant for omega
+
+kcat_psi  <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
+
+kcat_omega <LOG> 5E-4  [s-1] 15 [dB]// 2E-4 ligand removal rate for psi/omega clearance
+
+g_M2M1  <LOG> 1E-8   [s-1] 10 [dB]// 3E-5 cell type change rate from 1 to 0
+
+g_M1M2 <LOG>  1E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
+
+g_01 <LOG>  1E-5  [s-1] 10 [dB]// cell type change rate from 0to 1
+
+g_10  <LOG> 3E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+
+g_12  <LOG> 1E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+
+g_21  <LOG> 3E-5   [s-1] 10 [dB]// cell type change rate from 1 to 0
+
+g_23 <LOG> 1E-8   [s-1] 10 [dB]//   cell type change rate from 2 to 3
+
+g_32 <LOG> 1E-6   [s-1] 10 [dB]//   cell type change rate from 3 to 4
+
+g_34 <LOG> 1E-8   [s-1] 10 [dB]//   cell type change rate from 2 to 3
+
+g_43 <LOG> 1E-6   [s-1] 10 [dB]//   cell type change rate from 3 to 4
+
+
+g_45 <LOG> 1E-8   [s-1] 10 [dB]//   cell type change rate from 2 to 3
+
+g_54 <LOG> 1E-6   [s-1] 10 [dB]//   cell type change rate from 3 to 4
+
+
+g_max_psi_M1 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from M2 to M1
+
+g_max_psi_1 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+g_max_psi_2 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+g_max_psi_3 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+g_max_psi_4 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+g_max_psi_5 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+g_max_omega_1 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+g_max_omega_2 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+g_max_omega_3 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+g_max_omega_4 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+g_max_omega_5 <LOG> 5E-5  [s-1] 10 [dB]// maximal cell type change rate from 1 to 2
+
+
+N_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of DAMP receptors on resting cells
+
+N_1  <LOG>  10000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+N_2  <LOG>  20000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+N_3  <LOG>  30000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+N_4  <LOG>  50000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+N_5  <LOG>  70000   [receptors cell^-1] 10 [dB]// number of DAMP receptors on reactive cells
+
+N_N  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of DAMP receptors on neurons
+
+N_M2  <LOG>   5E4    [receptors cell^-1] 10 [dB]// number of DAMP receptors on M2 microglia
+
+N_M1  <LOG>   5E4    [receptors cell^-1] 10 [dB]// number of DAMP receptors on M1 microglia
+
+M_0  <LOG>  1000 [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on resting cells
+
+M_1  <LOG>  10000   [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on reactive cells
+
+M_2  <LOG>  20000   [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on reactive cells
+
+M_3  <LOG>  30000   [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on reactive cells
+
+M_4  <LOG>  50000   [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on reactive cells
+
+M_5  <LOG>  70000   [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on reactive cells
+
+
+M_N  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on neurons
+
+M_M2  <LOG>   1E3    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on M2 microglia
+
+M_M1  <LOG>   1E4    [receptors cell^-1] 10 [dB]// number of soluble mediators receptors on M1 microglia
+
+
+N_Astr <LOG>  1E10  [cells L^-1] 3 [dB]//1E10
+
+
+N_Neuron <LOG> 3.3E9    [cells L^-1] 3 [dB]//
+
+
+N_Microglia <LOG> 2.5E9    [cells L^-1] 3 [dB]//
+
+
+a_1  <LOG>  2E-8  [s-1] 10 [dB]// cell apoptosis rate in the state 1
+
+a_2  <LOG>  1E-7  [s-1] 10 [dB]// cell apoptosis rate in the state 2
+
+a_3  <LOG>  2E-7  [s-1] 10 [dB]// cell apoptosis rate in the state 3
+
+a_4  <LOG>  5E-7  [s-1] 10 [dB]// cell apoptosis rate in the state 4
+
+a_5  <LOG>  1E-6  [s-1] 10 [dB]// cell apoptosis rate in the state 5
+
+a_max_psi_Neuron <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_0 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+
+a_max_psi_1 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_2 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_3 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_4 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_psi_5 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+
+a_max_omega_Neuron <LOG> 2E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_0 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_1 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_2 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_3 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_4 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+a_max_omega_5 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
+
+
+
+
+inj_width <LOG>  1E-6   [m] 3 [dB]//  width of the injury
+
+
+DAMP_ratio <LOGRATIO> 0.001 [ratio] 10 [dB]// mass ratio of the cell proteins that are DAMPs
+
+
+prot_concentration <LOG>  200  [g/ml]  2.12 [dB]// protein density
+
+
+DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
+
+k_sig_M1 <LOG> 100  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
+
+k_sig_M2 <LOG> 1  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
+
+
+k_sig_max_psi_M1 <LOG> 10000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate of microglia at saturation of DAMP
+
+k_sig_max_psi_M2 <LOG> 100  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate of microglia at saturation of DAMP
+
+
+inj_width_3 <LOG> 535 [um] 3.66 [dB] // ancho de la injuria a tres dias
+
+inj_width_7 <LOG> 881 [um]  3.30  [dB] // ancho de la injuria a siete dias
+
+
+

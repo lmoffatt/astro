@@ -153,7 +153,7 @@ public:
             for (std::size_t type=0; type<rho_[idt][idx].size(); ++type)
               {
                 os<<"rho...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"..type.."<<type;
-                if (!((type+1==rho_.size())&&(idx+1==x_.size())&&(idt+1==t_.size())))
+                if (!((type+1==rho_[idt][idx].size())&&(idx+1==x_.size())&&(idt+1==t_.size())))
                   os<<"\t";
               }
           }

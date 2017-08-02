@@ -213,7 +213,15 @@ DISTFILES += \
     run/p_114_24_32_44m/o_114_24_32_44m \
     run/p_114_24_32_44m/parameters_114_24_32_44m.txt \
     run/p_013_23_31m/o_013_23_31m \
-    run/p_013_23_31m/parameters_013_23_31m.txt
+    run/p_013_23_31m/parameters_013_23_31m.txt \
+    run/m10/model_10.txt \
+    run/m13/model_13.txt \
+    run/m01/model_01.txt \
+    run/m12/model_12.txt \
+    run/m11/model_11.txt \
+    run/m101/model_101.txt \
+    run/m03/model_03.txt \
+    run/m02/model_02.txt
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
