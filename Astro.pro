@@ -221,7 +221,15 @@ DISTFILES += \
     run/m11/model_11.txt \
     run/m101/model_101.txt \
     run/m03/model_03.txt \
-    run/m02/model_02.txt
+    run/m02/model_02.txt \
+    run/m01/o_m01 \
+    run/m02/o_m02 \
+    run/m03/o_m03 \
+    run/m10/o_m10 \
+    run/m101/o_m101 \
+    run/m11/o_m11 \
+    run/m13/o_m13 \
+    run/m12/o_m12
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
