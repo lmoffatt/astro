@@ -12361,7 +12361,7 @@ class Model_10:public MicrogliaModel
     s.prot_concentration_=p.prot_concentration_;
     s.DAMP_MW_=p.DAMP_MW_;
     s.Dpsi_=p.D_;
-    s.Domega_=p.D_;
+    s.Domega_=0;
     s.epsilon_=p.epsilon_;
 
     s.kon_psi_=p.kcat_psi/p.Keq_psi_;
