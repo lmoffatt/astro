@@ -14,7 +14,7 @@ CC            = ~/local/gcc-6.2.0/bin/gcc
 CXX           = ~/local/gcc-6.2.0/bin/g++
 DEFINES       =
 CFLAGS        = -pipe -O2 -Wall -W -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -fopenmp -O2  -std=gnu++1y -Wall -W -fPIC $(DEFINES)
+CXXFLAGS      = -pipe -O2  -std=gnu++1y -Wall -W -fPIC $(DEFINES)
 INCPATH       = -I../Astro -I. -I../../../../Qt5.7.0/5.7/gcc_64/mkspecs/linux-g++
 QMAKE         = /home/luciano/Qt5.7.0/5.7/gcc_64/bin/qmake
 DEL_FILE      = rm -f
@@ -35,8 +35,8 @@ COMPRESS      = gzip -9f
 DISTNAME      = Astro1.0.0
 DISTDIR = /home/luciano/Data/celulas/Astro/build-Astro-gcc_6-Release/.tmp/Astro1.0.0
 LINK          = ~/local/gcc-6.2.0/bin/g++
-LFLAGS        = -fopenmp -Wl,-O1,-rpath=/home/lmoffatt.inquimae/local/gcc-6.2.0/lib/
-LIBS          = $(SUBLIBS) -lblas -llapack -lgomp -lpthread
+LFLAGS        = -Wl,-O1,-rpath=/home/lmoffatt.inquimae/local/gcc-6.2.0/lib/
+LIBS          = $(SUBLIBS) -lblas -llapack
 AR            = ar cqs
 RANLIB        =
 SED           = sed
