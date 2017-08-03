@@ -6,7 +6,7 @@
 
 // ss>>temperateS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>N_betasInit>>beta_min>>N_betas_max>>maxTime>>samples>>nskip>>pTjump;
 
-tempering(eviName=D_15_E_250_50_LABEL, experimentName=../E_250_50, priorName=LABEL, dx=250, dtmin=0.1, nPoints_per_decade=10, dtmax=100, tequilibrio=100000, niter=500, maxduration=1200, landa0=0.5, v=1.4142135623731,  nmaxloop=60, initseed=0, aps=[0 1 3 10  20  50 100 200 300 500 1000 2000 3000 5000 1e4 1e5], apsPar=[[0 1 3 10 20 50 100 200 500 1000 3000 1e4 ][0.5  0.75 1 1.5 2] ], N_betas=10, beta_min=1e-2, N_betas_2=5, beta_infimo=1e-7,  maxTime=47, samples=100, nskip=20, pTjump=0.5)->myEvidence
+tempering(eviName=E_30_E_250_50_LABEL, experimentName=../E_250_50, priorName=LABEL, dx=250, dtmin=0.1, nPoints_per_decade=10, dtmax=100, tequilibrio=100000, niter=500, maxduration=1200, landa0=0.5, v=1.4142135623731,  nmaxloop=60, initseed=0, aps=[0 1 3 10  20  50 100 200 300 500 1000 2000 3000 5000 1e4 1e5], apsPar=[[0 1 3 10 20 50 100 200 500 1000 3000 1e4 ][0.5  0.75 1 1.5 2] ], N_betas=20, beta_min=1e-2, N_betas_2=10, beta_infimo=1e-7,  maxTime=47, samples=100, nskip=20, pTjump=0.5)->myEvidence
 
 
 //tempering ENew_log_100u_100s_LABEL ../experiment_log_250_1 LABEL 250  0.1 10 100  500  1200 0.5 1.4142135623731 60 0  [0 1 3 10  20  50 100 200 300 500 1000 2000 3000 5000 1e4 1e5] [[0 1 3 10 20 50 100 200 500 1000 3000 1e4 ][0.5  0.75 1 1.5 2] ] 20 1e-3 20 10 10 20 1

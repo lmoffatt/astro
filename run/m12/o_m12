@@ -5,14 +5,11 @@
 
 # Opciones SGE
 #$ -l h_rt=47:59:00 # Setea 48 horas de wall clock time
-##$ -pe openmp 1
-
-##Seteo la cantidad de threads que se va a usar
-##$ -v OMP_NUM_THREADS=1 ### Setea la cantidad de threads a 8
 
 #$ -V  # Exporta las variables de entorno
-#$ -N N_0_26  # El nombre del job
+#$ -N W12_30  # El nombre del job
 #$ -cwd # Cambia al directorio actual
+
 
 
 # Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
