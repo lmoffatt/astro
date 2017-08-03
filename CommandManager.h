@@ -1116,34 +1116,8 @@ void operator ()(Cm* cm_,
       double timeOpt=0;
 
 
-      typename TT::myEvidence * ev= tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,seed,eviName,flog,startTime,timeOpt);
-      std::cout<<*ev;
-      flog<<*ev;
+      tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,seed,eviName,flog,startTime,timeOpt);
       flog.close();
-      std::ofstream fout;
-      fout.open(eviName.c_str(), std::ofstream::out | std::ofstream::app);
-      fout<<" eviName: "<<eviName<<"\n";
-      fout<<" experimentName:"<<experimentName<<"\n";
-      fout<<" priorName: "<<priorName<<"\n";
-      fout<<" dx: "<<dx<<"\n";
-      fout<<" dtmin: "<<dtmin<<"\n";
-      fout<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
-      fout<<" dtmax: "<<dtmax<<"\n";
-      fout<<" niter: "<<niter<<"\n";
-      fout<<" maxduration "<<maxduration<<"\n";
-      fout<<" landa0 "<<landa0<<"\n";
-      fout<<" v "<<v<<"\n";
-      fout<<" nmaxloop "<<nmaxloop<<"\n";
-
-      fout<<" initseed "<<initseed<<"\n";
-      fout<<" adaptive beta "<<aBeta<<"\n";
-      fout<<" maxTime (h) "<<maxTime<<"\n";
-
-      fout<<" samples "<<samples<<"\n";
-      fout<<" nskip "<<nskip<<"\n";
-
-      fout<<*ev<<"\n";
-      fout.close();
     }
 
 

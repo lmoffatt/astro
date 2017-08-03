@@ -357,6 +357,8 @@ std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(std::ostream &os)
 {
 
   CortexSimulation s=m_->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+  if (s.isValid_)
+    {
   unsigned is=0;
 
   for (unsigned ie=0; ie<e_->numMeasures(); ie++)
@@ -413,6 +415,8 @@ std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(std::ostream &os)
                 os<<"";
             }
         }
+
+    }
 
     }
   return os;

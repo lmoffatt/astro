@@ -5162,9 +5162,8 @@ class Template_Tempering_mcmc
 {
 public:
   typedef mcmc_step<my_PropD> mystep;
-  typedef Tempered_Evidence_Evaluation<mystep> myEvidence;
 
-  static myEvidence *
+  static void
   run
   (const MH<D,M,D_Lik,my_PropD,AP,propDist>& mcmc
    ,const propDist<D,M,D_Lik,my_PropD,AP>& LMLik
@@ -5242,7 +5241,7 @@ public:
     std::vector<std::mt19937_64> mts(n);
     for (std::size_t i=0; i<n; ++i)
       mts[i].seed(useed(mt));
-    SamplesSeries<typename std::pair<Beta,std::vector<mystep>>> o(nsamples);
+    std::size_t o=0;
     for (std::size_t i=0; i<beta.size(); ++i)
       {
         M_Matrix<double> pinit;
@@ -5261,7 +5260,7 @@ public:
       }
 
 
-    while (!o.full()&&timeOpt<maxTime*60)
+    while (o<nsamples&&timeOpt<maxTime*60)
       {
         //        for (std::size_t i=0; i<n;++i)
         //          pars[i].actualize();
@@ -5271,10 +5270,10 @@ public:
         for( std::size_t i=0;i<nskip; ++i)
           {
             mcmc.tempered_step
-                (LMLik,lik,model,data,sDists,pars,beta,dHd,pTjump,mts,o.size(),i,os,startTime,timeOpt);
+                (LMLik,lik,model,data,sDists,pars,beta,dHd,pTjump,mts,o,i,os,startTime,timeOpt);
           }
 
-        o.push_back({beta.getBeta(),sDists});
+        o++;
 
         auto tnow=std::chrono::steady_clock::now();
         auto d=tnow-startTime;
@@ -5285,8 +5284,8 @@ public:
         ss1<<model.id()<<"\t";
         ss1<<seed<<"\t";
         ss1<<t0<<"\t";
-        ss1<<o.size()*sDists.size()<<"\t";
-        ss1<<o.size()<<"\t";
+        ss1<<o*sDists.size()<<"\t";
+        ss1<<o<<"\t";
         ss1<<evidence<<"\t";
 
         for (std::size_t i=0; i<sDists.size(); ++i)
@@ -5352,12 +5351,9 @@ public:
 
         n=beta.size();
       }
-    auto out=new myEvidence(o);
-    std::cout<<"LogEvidence= "<<out->logEvidence()<<"\n";
 
 
-    return out;
-  }
+    }
 
 
 
