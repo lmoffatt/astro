@@ -4722,7 +4722,7 @@ public:
   (std::ostream& os
    ,mcmc_step<pDist>& sLik
    ,mcmc_step<pDist>& cLik,
-   double dHd)
+   const double& dHd)
   {
     os<<" dHd "<<dHd<<" ";
     os<<sLik.logbPL()<<" "<<cLik.logbPL()<<" ";
