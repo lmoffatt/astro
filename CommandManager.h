@@ -687,175 +687,175 @@ public:
 template<class Cm>
 struct read
 {
-void operator()(Cm* cm,const std::string& filename, std::ostream* logs  )const
-{
-  std::cerr<<"here\n";
-  std::ifstream f(filename.c_str());
-  if (!f)
-    {
-      std::string filenaExt=filename+".txt";
-      f.open(filenaExt.c_str());
-      if (!f)
-        {
-          *logs<<"could not open file"<<filenaExt<<"\n";
-          f.close();
-          std::string below="../"+filenaExt;
-          f.open(below.c_str(),std::ios_base::in);
-          if (!f)
-            {
-              *logs<<"could not open file"<<below<<"\n";
-            }
-          else
-            {
-              *logs<<"file opened successfully "<<below<<"\n";
-
-            }
-        }
-      *logs<<"file opened successfully "<<filenaExt<<"\n";
-
-    }
-  std::string line;
-  safeGetline(f,line);
-  double dia=0;
-  std::size_t rata=0;
-  if (line.find("experiment")!=line.npos)
-    {
-      safeGetline(f,line);
-      while (f && line.empty())
-        safeGetline(f,line);
-
-      if (line.find("dia")!=line.npos)
-        {
-          std::stringstream ss(line);
-          std::string diastr;
-
-          ss>>diastr>>dia;
-          safeGetline(f,line);
-
-        }
-
-
-      auto  s=new TissueSection(filename,dia);
-
-      while (f)
-        {
-
-          if (line.find("rata")!=line.npos)
-            {
-              std::stringstream ss(line);
-              std::string ratastr;
-
-              ss>>ratastr>>rata;
-              TissuePhoto* foto=new TissuePhoto;
-              foto->dia_=dia;
-              foto->read(line,f,*logs);
-              s->fotos[foto->rata]=foto;
-
-            }
-          else if (line.find("foto")!=line.npos)
-            {
-              TissuePhoto* foto=new TissuePhoto;;
-              foto->dia_=dia;
-              foto->read(line,f,*logs);
-              s->fotos[foto->num]=foto;
-            }
-          else
-            safeGetline(f,line);
-
-        }
-      cm->push_back(s->id(),s);
-
-    }
-  else  if (line.find("simulation")!=line.npos)
-    while (f)
+  void operator()(Cm* cm,const std::string& filename, std::ostream* logs  )const
+  {
+    std::cerr<<"here\n";
+    std::ifstream f(filename.c_str());
+    if (!f)
       {
-        auto sim=new CortexSimulation;
-        sim->read(line,f,*logs);
-        if (sim->t_.size()>0)
+        std::string filenaExt=filename+".txt";
+        f.open(filenaExt.c_str());
+        if (!f)
           {
-            cm->push_back(sim->id_,sim);
+            *logs<<"could not open file"<<filenaExt<<"\n";
+            f.close();
+            std::string below="../"+filenaExt;
+            f.open(below.c_str(),std::ios_base::in);
+            if (!f)
+              {
+                *logs<<"could not open file"<<below<<"\n";
+              }
+            else
+              {
+                *logs<<"file opened successfully "<<below<<"\n";
+
+              }
           }
+        *logs<<"file opened successfully "<<filenaExt<<"\n";
 
       }
+    std::string line;
+    safeGetline(f,line);
+    double dia=0;
+    std::size_t rata=0;
+    if (line.find("experiment")!=line.npos)
+      {
+        safeGetline(f,line);
+        while (f && line.empty())
+          safeGetline(f,line);
 
-}
+        if (line.find("dia")!=line.npos)
+          {
+            std::stringstream ss(line);
+            std::string diastr;
+
+            ss>>diastr>>dia;
+            safeGetline(f,line);
+
+          }
+
+
+        auto  s=new TissueSection(filename,dia);
+
+        while (f)
+          {
+
+            if (line.find("rata")!=line.npos)
+              {
+                std::stringstream ss(line);
+                std::string ratastr;
+
+                ss>>ratastr>>rata;
+                TissuePhoto* foto=new TissuePhoto;
+                foto->dia_=dia;
+                foto->read(line,f,*logs);
+                s->fotos[foto->rata]=foto;
+
+              }
+            else if (line.find("foto")!=line.npos)
+              {
+                TissuePhoto* foto=new TissuePhoto;;
+                foto->dia_=dia;
+                foto->read(line,f,*logs);
+                s->fotos[foto->num]=foto;
+              }
+            else
+              safeGetline(f,line);
+
+          }
+        cm->push_back(s->id(),s);
+
+      }
+    else  if (line.find("simulation")!=line.npos)
+      while (f)
+        {
+          auto sim=new CortexSimulation;
+          sim->read(line,f,*logs);
+          if (sim->t_.size()>0)
+            {
+              cm->push_back(sim->id_,sim);
+            }
+
+        }
+
+  }
 
 };
 
 template<class Cm>
 struct write{
-bool operator()(Cm* cm,const std::string& idname, std::ostream* logs,  std::string fname, bool append) const
+  bool operator()(Cm* cm,const std::string& idname, std::ostream* logs,  std::string fname, bool append) const
 
 
-{
-  if (fname.empty())
-    fname=idname+"_out.txt";
-  std::ofstream f;
-  if (append)
-    f.open(fname, std::ofstream::app | std::ofstream::out);
-  else
-    f.open(fname,  std::ofstream::out);
+  {
+    if (fname.empty())
+      fname=idname+"_out.txt";
+    std::ofstream f;
+    if (append)
+      f.open(fname, std::ofstream::app | std::ofstream::out);
+    else
+      f.open(fname,  std::ofstream::out);
 
-  if (!f)
-    {
-      *logs<<"could not open file "+fname+" for writing";
-      return false;
-    }
-  else
-    {
-      f<<idname<<"\n";
-      cm->apply(Co<WriteIt>(),idname,idname,&f,logs);
-      if (f)
-        {
-          *logs<<idname<<" written in file "<<fname;
-          f.close();
-          return true;
-        }
-      else
-        {
-          *logs<<idname<<" something wrong when written in file "<<fname;
-          f.close();
-          return false;
-        }
+    if (!f)
+      {
+        *logs<<"could not open file "+fname+" for writing";
+        return false;
+      }
+    else
+      {
+        f<<idname<<"\n";
+        cm->apply(Co<WriteIt>(),idname,idname,&f,logs);
+        if (f)
+          {
+            *logs<<idname<<" written in file "<<fname;
+            f.close();
+            return true;
+          }
+        else
+          {
+            *logs<<idname<<" something wrong when written in file "<<fname;
+            f.close();
+            return false;
+          }
 
-    }
-}
+      }
+  }
 
 };
 
 template<class Cm>
 struct dataFrame
 {
-bool operator()(Cm* cm,const std::string& idname, std::ostream* logs,  std::string fname) const
-{
-  if (fname.empty())
-    fname=idname+"_data_frame.txt";
-  std::ofstream f;
-  f.open(fname,  std::ofstream::out);
+  bool operator()(Cm* cm,const std::string& idname, std::ostream* logs,  std::string fname) const
+  {
+    if (fname.empty())
+      fname=idname+"_data_frame.txt";
+    std::ofstream f;
+    f.open(fname,  std::ofstream::out);
 
-  if (!f)
-    {
-      *logs<<"could not open file "+fname+" for writing";
-      return false;
-    }
-  else
-    {
-      cm->apply(Co<DataFrameIt>(),idname,&f,logs);
-      if (f)
-        {
-          *logs<<idname<<" written in file "<<fname;
-          f.close();
-          return true;
-        }
-      else
-        {
-          *logs<<idname<<" something wrong when written in file "<<fname;
-          f.close();
-          return false;
-        }
+    if (!f)
+      {
+        *logs<<"could not open file "+fname+" for writing";
+        return false;
+      }
+    else
+      {
+        cm->apply(Co<DataFrameIt>(),idname,&f,logs);
+        if (f)
+          {
+            *logs<<idname<<" written in file "<<fname;
+            f.close();
+            return true;
+          }
+        else
+          {
+            *logs<<idname<<" something wrong when written in file "<<fname;
+            f.close();
+            return false;
+          }
 
-    }
-}
+      }
+  }
 };
 
 
@@ -863,69 +863,69 @@ bool operator()(Cm* cm,const std::string& idname, std::ostream* logs,  std::stri
 template<class Cm>
 struct Measure
 {
-void operator()(Cm* cm_,
-             std::vector<TissueSection *> sections,
-             bool average,
-             std::size_t maxnumpoints,
-             std::size_t initseed,
-             double minDistance_Tissue,
-             double minDistance_Vaso,
-             std::vector<double> limits, std::string expName) const
-{
-  std::mt19937_64 mt;
-  if (initseed==0)
-    {
-      std::random_device rd;
-      auto seed=rd();
-      mt.seed(seed);
-      std::cout<<"experiment uses seed="<<seed<<std::endl;
-    }
-  else if (initseed==1)
-    {
-      mt.seed();
-      std::cout<<"experiment uses default seed"<<std::endl;
-    }
-  else
-    {
-      mt.seed(initseed);
-      std::cout<<"experiment uses provided seed="<<initseed<<std::endl;
+  void operator()(Cm* cm_,
+                  std::vector<TissueSection *> sections,
+                  bool average,
+                  std::size_t maxnumpoints,
+                  std::size_t initseed,
+                  double minDistance_Tissue,
+                  double minDistance_Vaso,
+                  std::vector<double> limits, std::string expName) const
+  {
+    std::mt19937_64 mt;
+    if (initseed==0)
+      {
+        std::random_device rd;
+        auto seed=rd();
+        mt.seed(seed);
+        std::cout<<"experiment uses seed="<<seed<<std::endl;
+      }
+    else if (initseed==1)
+      {
+        mt.seed();
+        std::cout<<"experiment uses default seed"<<std::endl;
+      }
+    else
+      {
+        mt.seed(initseed);
+        std::cout<<"experiment uses provided seed="<<initseed<<std::endl;
 
-    }
-
-
-  std::vector<CortexMeasure> vCM;
-  for (auto s:sections)
-    {
-      auto p=s->measure(mt,limits,minDistance_Tissue, minDistance_Vaso,maxnumpoints);
-      if (average)
-        {
-          for (auto it= p.begin(); it!= p.end(); ++it)
-            {
-              auto it2= vCM.begin();
-              while(it2!=vCM.end())
-                {
-                  if (it2->add(*it))
-                    break;
-                  else
-                    ++it2;
-                }
-              if (it2==vCM.end())
-                vCM.push_back(*it);
-            }
-        }
-      else
-        {
-          vCM.insert(vCM.begin(),p.begin(),p.end());
-        }
-    }
+      }
 
 
-  auto e=new Experiment(expName,vCM,{});
-  std::ofstream fo;
-  fo.open(expName.c_str());
-  e->write(fo);
-  cm_->push_back(e->id(),e);
-}
+    std::vector<CortexMeasure> vCM;
+    for (auto s:sections)
+      {
+        auto p=s->measure(mt,limits,minDistance_Tissue, minDistance_Vaso,maxnumpoints);
+        if (average)
+          {
+            for (auto it= p.begin(); it!= p.end(); ++it)
+              {
+                auto it2= vCM.begin();
+                while(it2!=vCM.end())
+                  {
+                    if (it2->add(*it))
+                      break;
+                    else
+                      ++it2;
+                  }
+                if (it2==vCM.end())
+                  vCM.push_back(*it);
+              }
+          }
+        else
+          {
+            vCM.insert(vCM.begin(),p.begin(),p.end());
+          }
+      }
+
+
+    auto e=new Experiment(expName,vCM,{});
+    std::ofstream fo;
+    fo.open(expName.c_str());
+    e->write(fo);
+    cm_->push_back(e->id(),e);
+  }
 
 };
 
@@ -934,196 +934,201 @@ void operator()(Cm* cm_,
 template<class Cm>
 struct Tempering
 {
-void operator ()(Cm* cm_,
-               std::string eviName,
-               std::string experimentName,
-               std::string priorName,
-               double dtmin,
-               double dtmax,
-               double dx,
-               double tequilibrio,
-               double  maxduration,
-               double landa0,
-               double v,
-               double pTjump,
-               std::size_t nmaxloop,
-               std::mt19937_64::result_type initseed,
-               std::size_t nPoints_per_decade,
-               std::size_t niter,
-               std::size_t N_betasInit,
-               double beta_min,
-                 std::size_t N_beta_2,
-                 double beta_infimo,
-               M_Matrix<Landa> aps,
-               std::vector<std::vector<double>> apsPar,
-               double maxTime,
-               std::size_t samples,
-               std::size_t nskip
-               , std::ostream *logs)const
-{
+  void operator ()(Cm* cm_,
+                   std::string eviName,
+                   std::string experimentName,
+                   std::string priorName,
+                   double dtmin,
+                   double dtmax,
+                   double dx,
+                   double tequilibrio,
+                   double  maxduration,
+                   double landa0,
+                   double v,
+                   double pTjump,
+                   std::size_t nmaxloop,
+                   std::mt19937_64::result_type initseed,
+                   std::size_t nPoints_per_decade,
+                   std::size_t niter,
+                   std::size_t N_betasInit,
+                   double beta_min,
+                   std::size_t N_beta_2,
+                   double beta_infimo,
+                   M_Matrix<Landa> aps,
+                   std::vector<std::vector<double>> apsPar,
+                   double maxTime,
+                   std::size_t samples,
+                   std::size_t nskip,
+                   std::size_t maxSimFileSize,
+                   bool does_stdout
+                   , std::ostream *logs)const
+  {
 
-  // evidence evi experiment1 paramters_10
-  //optimize opt experiment1 parameters_10 parameters_10 10 100
-  typedef Landa AP;
-
-
-  Master_Adaptive_Beta_New
-      aBeta(N_betasInit,beta_min,N_beta_2,beta_infimo);
+    // evidence evi experiment1 paramters_10
+    //optimize opt experiment1 parameters_10 parameters_10 10 100
+    typedef Landa AP;
 
 
-
-  std::cout<<"\n eviName: "<<eviName;
-  std::cout<<"\n experimentName:"<<experimentName;
-  std::cout<<"\n priorName: "<<priorName;
-  std::cout<<"\n dx: "<<dx;
-  std::cout<<"\n dtmin: "<<dtmin;
-  std::cout<<"\n nPoints_per_decade: "<<nPoints_per_decade;
-  std::cout<<"\n dtmax: "<<dtmax;
-  std::cout<<"\n niter: "<<niter;
-  std::cout<<"\n maxduration "<<maxduration;
-  std::cout<<"\n landa0 "<<landa0;
-  std::cout<<"\n v "<<v;
-  std::cout<<"\n nmaxloop "<<nmaxloop;
-
-  std::cout<<"\n initseed "<<initseed;
-  std::cout<<"\n adaptive beta "<<aBeta;
-  std::cout<<AP::ClassName()<<" "<<aps;
-  for (std::size_t i=0; i<apsPar.size(); ++i)
-    {
-      std::cout<<AP::ParName(i)<<" "<<apsPar;
-      for (std::size_t j=0; j<apsPar[i].size(); ++j)
-        std::cout<<apsPar[i][j]<<" ";
-    }
-  std::cout<<"\n maxTime (h) "<<maxTime;
-
-  std::cout<<"\n samples "<<samples;
-  std::cout<<"\n nskip "<<nskip;
-  std::cout<<"\n pTjump "<<pTjump;
+    Master_Adaptive_Beta_New
+        aBeta(N_betasInit,beta_min,N_beta_2,beta_infimo);
 
 
-  Experiment esim;
+    if (does_stdout)
+      {
+        std::cout<<"\n eviName: "<<eviName;
+        std::cout<<"\n experimentName:"<<experimentName;
+        std::cout<<"\n priorName: "<<priorName;
+        std::cout<<"\n dx: "<<dx;
+        std::cout<<"\n dtmin: "<<dtmin;
+        std::cout<<"\n nPoints_per_decade: "<<nPoints_per_decade;
+        std::cout<<"\n dtmax: "<<dtmax;
+        std::cout<<"\n niter: "<<niter;
+        std::cout<<"\n maxduration "<<maxduration;
+        std::cout<<"\n landa0 "<<landa0;
+        std::cout<<"\n v "<<v;
+        std::cout<<"\n nmaxloop "<<nmaxloop;
 
-  Adaptive_discrete<AP> landa(aps,apsPar);
+        std::cout<<"\n initseed "<<initseed;
+        std::cout<<"\n adaptive beta "<<aBeta;
+        std::cout<<AP::ClassName()<<" "<<aps;
+        for (std::size_t i=0; i<apsPar.size(); ++i)
+          {
+            std::cout<<AP::ParName(i)<<" "<<apsPar;
+            for (std::size_t j=0; j<apsPar[i].size(); ++j)
+              std::cout<<apsPar[i][j]<<" ";
+          }
+        std::cout<<"\n maxTime (h) "<<maxTime;
 
-  std::cout<<landa;
+        std::cout<<"\n samples "<<samples;
+        std::cout<<"\n nskip "<<nskip;
+        std::cout<<"\n pTjump "<<pTjump;
+      }
 
+    Experiment esim;
 
-  Experiment *e=new Experiment;
-  e->load(experimentName,*logs);
-  if (e->numMeasures()==0)
-    {
-      *logs<<"Experiment "<<experimentName<<" not found\n";
-      return;
-    }
+    Adaptive_discrete<AP> landa(aps,apsPar);
 
-  std::string filename=priorName;
-  std::fstream f;
-
-  f.open(filename.c_str());
-  if (!f)
-    {
-      std::string filenaExt=filename+".txt";
-      f.open(filenaExt.c_str());
-      if (!f)
-        {
-          *logs<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
-          f.close();
-          return;
-        }
-    }
-  std::string line2;
-  safeGetline(f,line2);
-  Parameters prior;
-
-  if (!prior.read(line2,f,*logs))
-    {
-      *logs<<"File "<<filename<<" is not a Parameters file"<<std::endl;
-      f.close();
-      return;
-    }
-
-  f.close();
+    if (does_stdout)
+    std::cout<<landa;
 
 
-  BaseModel*m=BaseModel::create(prior);
-  if (m!=nullptr)
-    {
-      cm_->push_back(m->id(),m);
+    Experiment *e=new Experiment;
+    e->load(experimentName,*logs);
+    if (e->numMeasures()==0)
+      {
+        *logs<<"Experiment "<<experimentName<<" not found\n";
+        return;
+      }
+
+    std::string filename=priorName;
+    std::fstream f;
+
+    f.open(filename.c_str());
+    if (!f)
+      {
+        std::string filenaExt=filename+".txt";
+        f.open(filenaExt.c_str());
+        if (!f)
+          {
+            *logs<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
+            f.close();
+            return;
+          }
+      }
+    std::string line2;
+    safeGetline(f,line2);
+    Parameters prior;
+
+    if (!prior.read(line2,f,*logs))
+      {
+        *logs<<"File "<<filename<<" is not a Parameters file"<<std::endl;
+        f.close();
+        return;
+      }
+
+    f.close();
 
 
-
-      auto CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
-
-      std::cerr<<"simulation time="<<timeItm<CortexSimulation,CortexPoisonLikelihood, const Parameters&>(CL,&CortexPoisonLikelihood::simulate,prior);
-      MyModel<MyData> m(CL);
-      MyData d(CL);
-      Metropolis_Hastings_mcmc<
-          MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
-      LevenbergMarquardt_step<MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> LMLik;
-      Poisson_DLikelihood<MyData,MyModel> DLik;
-      TT tt;
-
-      std::random_device rd;
-
-      std::mt19937_64::result_type seed;
-      if (initseed==0)
-        {
-           seed=rd();
-
-          eviName+=time_now()+"_"+std::to_string(seed);
-          *logs<<"\n random seed =\n"<<seed<<"\n";
-        }
-      else
-        {
-          seed=initseed;
-
-          eviName+=time_now()+"_"+std::to_string(seed);
-
-          *logs<<"\n provided seed =\n"<<seed<<"\n";
-
-        }
-
-      std::string eviNameLog=eviName+"_log.txt";
-      std::ofstream flog;
-
-      flog.open(eviNameLog.c_str(), std::ofstream::out | std::ofstream::app);
-      flog<<" eviName: "<<eviName<<"\n";
-      flog<<" experimentName:"<<experimentName<<"\n";
-      flog<<" priorName: "<<priorName<<"\n";
-      flog<<" dx: "<<dx<<"\n";
-      flog<<" dtmin: "<<dtmin<<"\n";
-      flog<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
-      flog<<" dtmax: "<<dtmax<<"\n";
-      flog<<" niter: "<<niter<<"\n";
-      flog<<" maxduration "<<maxduration<<"\n";
-      flog<<" landa0 "<<landa0<<"\n";
-      flog<<" v "<<v<<"\n";
-      flog<<" nmaxloop "<<nmaxloop<<"\n";
-
-      flog<<" initseed "<<initseed<<"\n";
-      flog<<" adaptive beta "<<aBeta<<"\n";
-      flog<<AP::ClassName()<<" "<<aps<<"\n";
-      flog<<" maxTime (h) "<<maxTime<<"\n";
-
-      flog<<" samples "<<samples<<"\n";
-      flog<<" nskip "<<nskip<<"\n";
-      flog<<" pTjump "<<pTjump<<"\n";
-
-      flog.flush();
-
-
-      std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now();
-      double timeOpt=0;
-
-
-      tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,seed,eviName,flog,startTime,timeOpt);
-      flog.close();
-    }
+    BaseModel*m=BaseModel::create(prior);
+    if (m!=nullptr)
+      {
+        cm_->push_back(m->id(),m);
 
 
 
+        auto CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
-}
+        std::cerr<<"simulation time="<<timeItm<CortexSimulation,CortexPoisonLikelihood, const Parameters&>(CL,&CortexPoisonLikelihood::simulate,prior);
+        MyModel<MyData> m(CL);
+        MyData d(CL);
+        Metropolis_Hastings_mcmc<
+            MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
+        LevenbergMarquardt_step<MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> LMLik;
+        Poisson_DLikelihood<MyData,MyModel> DLik;
+        TT tt;
+
+        std::random_device rd;
+
+        std::mt19937_64::result_type seed;
+        if (initseed==0)
+          {
+            seed=rd();
+
+            eviName+=time_now()+"_"+std::to_string(seed);
+            *logs<<"\n random seed =\n"<<seed<<"\n";
+          }
+        else
+          {
+            seed=initseed;
+
+            eviName+=time_now()+"_"+std::to_string(seed);
+
+            *logs<<"\n provided seed =\n"<<seed<<"\n";
+
+          }
+
+        std::string eviNameLog0=eviName+"_log.txt";
+        std::string eviNameLog=eviNameLog0+".0";
+        std::ofstream flog;
+
+        flog.open(eviNameLog.c_str(), std::ofstream::out | std::ofstream::app);
+        flog<<" eviName: "<<eviName<<"\n";
+        flog<<" experimentName:"<<experimentName<<"\n";
+        flog<<" priorName: "<<priorName<<"\n";
+        flog<<" dx: "<<dx<<"\n";
+        flog<<" dtmin: "<<dtmin<<"\n";
+        flog<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
+        flog<<" dtmax: "<<dtmax<<"\n";
+        flog<<" niter: "<<niter<<"\n";
+        flog<<" maxduration "<<maxduration<<"\n";
+        flog<<" landa0 "<<landa0<<"\n";
+        flog<<" v "<<v<<"\n";
+        flog<<" nmaxloop "<<nmaxloop<<"\n";
+
+        flog<<" initseed "<<initseed<<"\n";
+        flog<<" adaptive beta "<<aBeta<<"\n";
+        flog<<AP::ClassName()<<" "<<aps<<"\n";
+        flog<<" maxTime (h) "<<maxTime<<"\n";
+
+        flog<<" samples "<<samples<<"\n";
+        flog<<" nskip "<<nskip<<"\n";
+        flog<<" pTjump "<<pTjump<<"\n";
+
+        flog.close();
+
+
+        std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now();
+        double timeOpt=0;
+
+
+        tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout);
+        flog.close();
+      }
+
+
+
+
+  }
 
 };
 

@@ -99,6 +99,9 @@ int main(int argc, char **argv)
                    std::pair<double,std::string>{0,"maxTime"},
                    std::pair<std::size_t,std::string>{0,"samples"},
                    std::pair<std::size_t,std::string>{0,"nskip"},
+                   std::pair<std::size_t,std::string>{10000000,"maxSimFileSize"},
+                   std::pair<bool,std::string>{false,"does_stdout"},
+
                    std::pair<std::ostream*,std::string>{&std::cerr,"log_stream"}));
 
 

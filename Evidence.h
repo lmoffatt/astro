@@ -238,21 +238,21 @@ struct mcmc_step: public mcmc_Dpost
   }
   std::ostream& writelogLRowDataFrame(std::ostream& os)
   {
-     os<<beta<<"\t";
-     os<<iscout<<"\t";
-     os<<logPrior<<"\t";
-     os<<logLik<<"\t";
-     os<<logbPL();
-     return os;
+    os<<beta<<"\t";
+    os<<iscout<<"\t";
+    os<<logPrior<<"\t";
+    os<<logLik<<"\t";
+    os<<logbPL();
+    return os;
   }
 
 
   std::ostream& writeParamRowDataFrame(std::ostream& os)
   {
-     os<<"\t";
-     for (std::size_t i=0; i<param.size(); ++i)
-       os<<param[i]<<"\t";
-     return os;
+    os<<"\t";
+    for (std::size_t i=0; i<param.size(); ++i)
+      os<<param[i]<<"\t";
+    return os;
   }
 
   std::ostream& writeYfitRowDataFrame(std::ostream& os)
@@ -4085,6 +4085,11 @@ public:
                                             (next,LM_logL.Hinv,LM_logL.H),
                                             landa,
                                             LM_logL.exp_delta_next_logL);
+            if ((out.proposed.logDetCov()>0)|| std::isnan( out.proposed.logDetCov()))
+              {
+                out.isValid=false;
+                std::cerr<<"\ninvalid logDetCov\n";
+              }
           }
         else
           out.isValid=false;
@@ -4829,6 +4834,7 @@ public:
    ,std::vector<std::mt19937_64>& mt
    ,std::size_t isamples
    ,std::size_t isubSamples
+   , bool does_stdout
    , std::ostream& os
    , const std::chrono::steady_clock::time_point& startTime
    , double& timeOpt)
@@ -4836,14 +4842,14 @@ public:
     std::vector<bool> out(sDist.size());
     aBeta.push_step();
 
-//#pragma omp parallel for
+    //#pragma omp parallel for
     for(std::size_t i=0; i<sDist.size(); ++i)
       {
         AP landa;
 
 
         mcmc_step<pDist> cDist;
-  //      std::size_t icount=0;
+        //      std::size_t icount=0;
         while(!cDist.isValid)
           {
             landa=pars[i].sample(mt[i]);
@@ -4886,6 +4892,7 @@ public:
     os<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSamples<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<"Evidence\t"<<evidence<<"\n";
 
     put(os,sDist,out,dHd);
+    if (does_stdout)
     put(std::cout,sDist,out,dHd);
 
 
@@ -4903,6 +4910,7 @@ public:
                 std::swap(sDist[i-1],sDist[i]);
                 std::swap(sDist[i-1].beta,sDist[i].beta);
                 os<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
+                if (does_stdout)
                 std::cout<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
                 aBeta.push_acceptance(sDist[i-1].beta,sDist[i].beta);
               }
@@ -5178,27 +5186,41 @@ public:
    ,double pTjump
    ,std::mt19937_64::result_type seed
    ,std::string EviName
-   ,std::ofstream& os
+   ,std::string EviNameLog0
    ,const std::chrono::steady_clock::time_point& startTime
-   ,double& timeOpt)
+   ,double& timeOpt
+   ,std::size_t maxSimFileSize
+   ,bool does_stdout)
   {
     std::mt19937_64 mt;
     mt.seed(seed);
-    std::string f_par_name=EviName+"_par.txt";
-    std::string f_logL_name=EviName+"_logL.txt";
-    std::string f_fit_name=EviName+"_fit.txt";
-    std::string f_sim_name=EviName+"_sim.txt";
+    std::size_t i_sim=0;
 
+    std::string f_par_name0=EviName+"_par.txt";
+    std::string f_logL_name0=EviName+"_logL.txt";
+    std::string f_fit_name0=EviName+"_fit.txt";
+    std::string f_sim_name0=EviName+"_sim.txt";
 
-    std::ofstream f_par;
+    std::string f_par_name=f_par_name0    +"."+std::to_string(i_sim);
+    std::string f_logL_name=f_logL_name0    +"."+std::to_string(i_sim);
+    std::string f_fit_name=f_fit_name0    +"."+std::to_string(i_sim);
+    std::string f_sim_name=f_sim_name0    +"."+std::to_string(i_sim);
+    std::string f_log_name=EviNameLog0    +"."+std::to_string(i_sim);
+
+    std::ofstream os;
+       std::ofstream f_par;
     std::ofstream f_logL;
     std::ofstream f_sim;
     std::ofstream f_fit;
 
+    os.open(f_log_name.c_str(), std::ofstream::out | std::ofstream::app);
     f_par.open(f_par_name.c_str(), std::ofstream::out | std::ofstream::app);
     f_logL.open(f_logL_name.c_str(), std::ofstream::out | std::ofstream::app);
     f_sim.open(f_sim_name.c_str(), std::ofstream::out | std::ofstream::app);
     f_fit.open(f_fit_name.c_str(), std::ofstream::out | std::ofstream::app);
+
+
+
     std::stringstream ss;
 
     ss<<"model\t";
@@ -5270,7 +5292,7 @@ public:
         for( std::size_t i=0;i<nskip; ++i)
           {
             mcmc.tempered_step
-                (LMLik,lik,model,data,sDists,pars,beta,dHd,pTjump,mts,o,i,os,startTime,timeOpt);
+                (LMLik,lik,model,data,sDists,pars,beta,dHd,pTjump,mts,o,i,does_stdout,os,startTime,timeOpt);
           }
 
         o++;
@@ -5300,14 +5322,53 @@ public:
 
             (sDists[i].writelogLRowDataFrame(f_sim<<ss1.str()))<<"\t";
             sim.writeRowDataFrame(f_sim)<<"\n";
-
             (sDists[i].writelogLRowDataFrame(f_fit<<ss1.str()))<<"\t";
             sDists[i].writeYfitRowDataFrame(f_fit)<<"\n";
             f_logL.flush();
             f_par.flush();
+            f_fit.flush();
 
             f_sim.flush();
-            f_fit.flush();
+            os.flush();
+            std::size_t f_sim_pos=f_sim.tellp()+f_logL.tellp()+f_fit.tellp()+f_par.tellp()+os.tellp();
+            if (f_sim_pos>maxSimFileSize)
+              {
+                 f_sim.close();
+                 f_fit.close();
+                 f_logL.close();
+                 f_par.close();
+                 os.close();
+
+                 std::cerr<<f_sim_name<<"is completed !!\n";
+                 std::cerr<<f_fit_name<<"is completed !!\n";
+                 std::cerr<<f_logL_name<<"is completed !!\n";
+                 std::cerr<<f_log_name<<"is completed !!\n";
+                 std::cerr<<f_par_name<<"is completed !!\n";
+
+                 ++i_sim;
+
+                 f_sim_name=f_sim_name0    +"."+std::to_string(i_sim);
+                 f_sim.open(f_sim_name.c_str(), std::ofstream::out | std::ofstream::app);
+
+                 f_log_name=EviNameLog0+"."+std::to_string(i_sim);
+                 os.open(f_log_name.c_str(), std::ofstream::out | std::ofstream::app);
+
+
+                 f_par_name=f_par_name0    +"."+std::to_string(i_sim);
+                 f_par.open(f_par_name.c_str(), std::ofstream::out | std::ofstream::app);
+
+                 f_fit_name=f_fit_name0    +"."+std::to_string(i_sim);
+                 f_fit.open(f_fit_name.c_str(), std::ofstream::out | std::ofstream::app);
+
+                 f_logL_name=f_logL_name0    +"."+std::to_string(i_sim);
+                 f_logL.open(f_logL_name.c_str(), std::ofstream::out | std::ofstream::app);
+
+                 std::cerr<<f_sim_name<<"is opened !!\n";
+                 std::cerr<<f_par_name<<"is opened !!\n";
+                 std::cerr<<f_logL_name<<"is opened !!\n";
+                 std::cerr<<f_fit_name<<"is opened !!\n";
+                 std::cerr<<f_log_name<<"is opened !!\n";
+              }
 
 
           }
@@ -5353,7 +5414,7 @@ public:
       }
 
 
-    }
+  }
 
 
 
