@@ -4220,7 +4220,10 @@ public:
 
     static bool accept(const mcmc_step<pDist>& sLik
                        ,const mcmc_step<pDist>& cLik
-                       ,std::mt19937_64 &mt, double& dHd)
+                       ,std::mt19937_64 &mt,
+                       double& dHd,
+                       double& logQforward,
+                       double& logQbackward )
     {
       if (!cLik.isValid)
         {
@@ -4231,8 +4234,8 @@ public:
           double logPcurrent=sLik.logbPL();
           double logPcandidate=cLik.logbPL();
 
-          double logQforward=sLik.proposed.logP(cLik.param);
-          double logQbackward=cLik.proposed.logP(sLik.param);
+          logQforward=sLik.proposed.logP(cLik.param);
+          logQbackward=cLik.proposed.logP(sLik.param);
 
           double logA=logPcandidate-logQforward-(logPcurrent-logQbackward);
           double A=std::min(1.0,exp(logA));
@@ -4545,7 +4548,10 @@ public:
 
         AP landa=pars.sample(mt);
         double dHd;
-        if (step(LM_Lik,lik,model,data,sDist,cDist,landa,dHd,mt,i,os,startTime,timeOpt))
+        double logQforward;
+        double logQbackward;
+        if (step(LM_Lik,lik,model,data,sDist,cDist,landa,
+                 dHd,logQforward, logQbackward,mt,i,os,startTime,timeOpt))
           {
             pars.push_acceptance(landa,dHd);
           }
@@ -4727,9 +4733,10 @@ public:
   (std::ostream& os
    ,mcmc_step<pDist>& sLik
    ,mcmc_step<pDist>& cLik,
-   const double& dHd)
+   const double& dHd,
+   const double& logQforward,const double& logQbackward)
   {
-    os<<" dHd "<<dHd<<" ";
+    os<<" dHd "<<dHd<<" "<<" logQf "<<logQforward<<" logQb "<<logQbackward;
     os<<sLik.logbPL()<<" "<<cLik.logbPL()<<" ";
     os<<sLik.logPrior<<" "<<cLik.logPrior<<" ";
     os<<sLik.logLik<<" "<<cLik.logLik<<" ";
@@ -4743,7 +4750,10 @@ public:
   (std::ostream& os
    ,const std::vector<mcmc_step<pDist>>& sLik
    ,const std::vector<bool>& accepts,
-   const std::vector<double>& dHd)
+   const std::vector<double>& dHd,
+   const std::vector<double>& logQforward,
+   const std::vector<double>& logQbackward
+   )
   {
     for (std::size_t  i=0; i<sLik.size(); ++i)
       {
@@ -4754,6 +4764,8 @@ public:
           os<<"rej\t";
         os<<sLik[i].proposed.landa<<"\t";
         os<<" dHd "<<dHd[i]<<"\t ";
+        os<<" logQf "<<logQforward[i]<<"\t ";
+        os<<" logQb "<<logQbackward[i]<<"\t ";
         os<<sLik[i].logbPL()<<"\t";
         os<<sLik[i].logPrior<<"\t";
         os<<sLik[i].logLik<<"\n";
@@ -4772,6 +4784,8 @@ public:
    ,mcmc_step<pDist>& cDist
    ,const AP& landa
    ,double& dHd
+   ,double& logQforward
+   ,double& logQbackward
    ,std::mt19937_64& mt
    ,std::size_t i
    , std::ostream& os
@@ -4782,7 +4796,7 @@ public:
     LM_Lik.update_mcmc_step(lik,model,data,sDist,landa,sDist.beta);
     M_Matrix<double> c=sDist.proposed.sample(mt);
     cDist=LM_Lik.get_mcmc_step(lik,model,data,c,landa,sDist.beta,sDist.iscout);
-    if (test::accept(sDist,cDist,mt,dHd))
+    if (test::accept(sDist,cDist,mt,dHd,logQforward,logQbackward))
       {
         out =true;
       }
@@ -4797,11 +4811,11 @@ public:
     auto timeIter_=60*(timeOpt-t0);
     std::cout<<i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<sDist.beta;
     //test::put(std::cout,sDist,cDist);
-    put(std::cout,sDist,cDist,dHd);
+    put(std::cout,sDist,cDist,dHd,logQforward,logQbackward);
 
     os<<"n_steps::"<<i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<sDist.beta;
     test::put(os,sDist,cDist);
-    put(os,sDist,cDist,dHd);
+    put(os,sDist,cDist,dHd,logQforward,logQbackward);
     if (out)
       {
         sDist=std::move(cDist);
@@ -4830,6 +4844,8 @@ public:
    ,std::vector<Adaptive_discrete<AP>>& pars
    ,Master_Adaptive_Beta_New& aBeta
    ,std::vector<double>& dHd
+   ,std::vector<double>& logQforward
+   ,std::vector<double>& logQbackward
    , double p_Tjump
    ,std::vector<std::mt19937_64>& mt
    ,std::size_t isamples
@@ -4863,7 +4879,7 @@ public:
 
           }
 
-        if (test::accept(sDist[i],cDist,mt[i],dHd[i]))
+        if (test::accept(sDist[i],cDist,mt[i],dHd[i],logQforward[i],logQbackward[i]))
           {
             aBeta.new_acceptance(i,sDist[i],cDist);
             pars[i].push_acceptance(landa,dHd[i]);
@@ -4891,9 +4907,9 @@ public:
 
     os<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSamples<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<"Evidence\t"<<evidence<<"\n";
 
-    put(os,sDist,out,dHd);
+    put(os,sDist,out,dHd,logQforward,logQbackward);
     if (does_stdout)
-    put(std::cout,sDist,out,dHd);
+    put(std::cout,sDist,out,dHd,logQforward,logQbackward);
 
 
     for(std::size_t i=1; i<sDist.size(); ++i)
@@ -5259,6 +5275,8 @@ public:
 
     std::vector<Adaptive_discrete<AP>> pars(n,landa_Dist0);
     std::vector<double> dHd(beta.size());
+    std::vector<double> logQforward(beta.size());
+    std::vector<double> logQbackward(beta.size());
     std::uniform_int_distribution<typename std::mt19937_64::result_type> useed;
     std::vector<std::mt19937_64> mts(n);
     for (std::size_t i=0; i<n; ++i)
@@ -5292,7 +5310,7 @@ public:
         for( std::size_t i=0;i<nskip; ++i)
           {
             mcmc.tempered_step
-                (LMLik,lik,model,data,sDists,pars,beta,dHd,pTjump,mts,o,i,does_stdout,os,startTime,timeOpt);
+                (LMLik,lik,model,data,sDists,pars,beta,dHd,logQforward,logQbackward,pTjump,mts,o,i,does_stdout,os,startTime,timeOpt);
           }
 
         o++;
