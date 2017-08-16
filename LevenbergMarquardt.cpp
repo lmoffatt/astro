@@ -433,7 +433,8 @@ void update_Likelihoods(const ABC_Distribution_Model* f
                         , double& logPostLogLikNew
                         ,std::size_t& NFeval)
 {
-  P_exp_New=f->f(ParamNew);
+  std::pair<std::vector<double>, std::vector<std::size_t>> dts;
+  P_exp_New=f->f(ParamNew,dts);
   if (P_exp_New.empty())
     logLikNew=std::numeric_limits<double>::quiet_NaN();
   else
@@ -783,7 +784,12 @@ std::vector<double> ABC_Distribution_Model::PriorGradient(const Parameters &p)co
 
 std::vector<std::vector<double> > ABC_Distribution_Model::f(const std::vector<double> &p) const
 {
-  return f(getPrior().toParameters(p));
+  std::pair<std::vector<double>, std::vector<std::size_t>> dts;
+  return f(getPrior().toParameters(p),dts);
+}
+std::vector<std::vector<double> > ABC_Distribution_Model::f(const std::vector<double> &p, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const
+{
+  return f(getPrior().toParameters(p),dts);
 }
 
 std::vector<std::vector<double> >
@@ -801,7 +807,9 @@ ABC_Distribution_Model::J(const Parameters &p,
       double dp=delta;//*(1/getPrior().pStds()[i]+p[i]);
       Parameters pr(p);
       pr[i]=p[i]+dp;
-      std::vector<std::vector<double>> f_delta=f(pr);
+      std::pair<std::vector<double>, std::vector<std::size_t>> dts;
+
+      auto f_delta=f(pr,dts);
       if (f_delta.empty())
         return {};
       for (unsigned ii=0; ii<getData().ntot_obs().size(); ++ii)
@@ -829,12 +837,15 @@ ABC_Distribution_Model::J(const Parameters &p,
 
 double ABC_Distribution_Model::logLik(const Parameters &p) const
 {
-  return logLik(f(p));
+  std::pair<std::vector<double>, std::vector<std::size_t>> dts;
+  return logLik(f(p,dts));
 }
 
 double ABC_Distribution_Model::logLik(const std::vector<double> &o) const
 {
-  return logLik(f(getPrior().toParameters(o)));
+  std::pair<std::vector<double>, std::vector<std::size_t>> dts;
+
+  return logLik(f(getPrior().toParameters(o),dts));
 }
 
 
@@ -992,7 +1003,8 @@ double ABC_MultiPoison_Model::logLik(const std::vector<std::vector<double> > &la
 
 double ABC_MultiPoison_Model::logLik(const Parameters &p) const
 {
-  return logLik(f(p));
+  std::pair<std::vector<double>, std::vector<std::size_t>> dts;
+  return logLik(f(p,dts));
 }
 
 std::vector<double> ABC_MultiPoison_Model::epsilon(const std::vector<std::vector<double> > &landa) const

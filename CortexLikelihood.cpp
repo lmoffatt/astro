@@ -55,6 +55,8 @@ CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Pa
   prior_(prior)
 ,m_()
 ,e_(e)
+, adapt_dt_(false)
+,CrankNicholson_(false)
 ,dx_(dx)
 ,dtmin_(dtmin)
 ,nPoints_per_decade_(nPoints_per_decade)
@@ -67,6 +69,71 @@ CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Pa
   update();
 
 }
+
+CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx, double dtmin, std::size_t nPoints_per_decade,double dtmax, double tequilibrio, double t_maxlogError, std::size_t maxloop):
+  prior_(prior)
+,m_()
+,e_(e)
+, adapt_dt_(false)
+,CrankNicholson_(false)
+,dx_(dx)
+,dtmin_(dtmin)
+,nPoints_per_decade_(nPoints_per_decade)
+,dtmax_(dtmax)
+,tequilibrio_(tequilibrio)
+,f_maxlogErrorCN_(t_maxlogError)
+,maxloop_(maxloop)
+,nstate_()
+,ntot_()
+{
+  setId(id);
+  update();
+
+}
+
+CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError, double dtinf):
+  prior_(prior)
+,m_()
+,e_(e)
+, adapt_dt_(true)
+,CrankNicholson_(false)
+,dx_(dx)
+,dtmin_(dtmin)
+,nPoints_per_decade_(nPoints_per_decade)
+,dtmax_(dtmax)
+,tequilibrio_(tequilibrio)
+,dtinf_(dtinf)
+,maxlogError_(maxlogError)
+,nstate_()
+,ntot_()
+{
+  setId(id);
+  update();
+
+}
+CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError,double f_maxlogError, double dtinf, std::size_t maxloop):
+  prior_(prior)
+,m_()
+,e_(e)
+, adapt_dt_(true)
+,CrankNicholson_(true)
+,dx_(dx)
+,dtmin_(dtmin)
+,nPoints_per_decade_(nPoints_per_decade)
+,dtmax_(dtmax)
+,tequilibrio_(tequilibrio)
+,dtinf_(dtinf)
+,maxlogError_(maxlogError)
+,f_maxlogErrorCN_(f_maxlogError)
+,maxloop_(maxloop)
+,nstate_()
+,ntot_()
+{
+  setId(id);
+  update();
+
+}
+
 
 const std::vector<std::vector<double> > &CortexLikelihood::n_obs() const
 {
@@ -236,15 +303,29 @@ const ABC_Freq_obs& CortexLikelihood::getData() const
 
 
 
-std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameters &parameters) const
+std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameters &parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const
 {
   std::vector<std::vector<double>> o(nstate_.size());
 
   BaseModel* m=BaseModel::create(parameters);
 
-  CortexSimulation s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
-  if (s.dx_.empty())
-    return {};
+  CortexSimulation s;
+  if (!this->adapt_dt_)
+    s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+  else
+    {
+      if (dts.first.empty())
+        {
+          auto o=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,dtinf_);
+          s=o.first;
+          dts.first=o.second;
+        }
+      else
+        s=m->run_dt(*e_,dx_,dts,tequilibrio_);
+    }
+
+  if (!s.isValid_)
+    return{};
   std::size_t ic=0;
   unsigned is=0;
   for (unsigned ie=0; ie<e_->numMeasures(); ie++)
@@ -273,24 +354,85 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
 
 
 
+
 CortexSimulation CortexPoisonLikelihood::simulate(const Parameters &parameters)const
 {
-  BaseModel * m=BaseModel::create(parameters);
-  CortexSimulation s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
-  delete m;
-  return s;
+  std::unique_ptr<BaseModel>  m(BaseModel::create(parameters));
+  if (!CrankNicholson_)
+    {
+      if (!adapt_dt_)
+        {
+          CortexSimulation s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+          return s;
+        }
+      else
+        {
+          auto s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,
+                        tequilibrio_,maxlogError_, dtinf_);
+          return s.first;
+
+        }
+    }
+  else
+    {
+      if (!adapt_dt_)
+        {
+          CortexSimulation s=m->run_CN(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,f_maxlogErrorCN_,maxloop_);
+          return s;
+        }
+      else
+        {
+          auto s=m->run_CN_adapt(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,
+                        tequilibrio_,maxlogError_,f_maxlogErrorCN_, dtinf_,maxloop_);
+          return s.first;
+
+        }
+    }
 }
 
 
 
-std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &parameters) const
+std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const
 {
   std::vector<std::vector<double>> o(nstate_.size());
 
   double h=1e-5;
 
   BaseModel * m=BaseModel::create(parameters);
-  CortexSimulation s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+  CortexSimulation s;
+  if (!this->CrankNicholson_)
+    {
+      if (!this->adapt_dt_)
+        s=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+      else
+        {
+          if (dts.first.empty())
+            {
+              auto o=m->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,dtinf_);
+              s=o.first;
+              dts.first=o.second;
+            }
+          else
+            s=m->run_dt(*e_,dx_,dts,tequilibrio_);
+        }
+    }
+  else
+    {
+      if (!this->adapt_dt_)
+        s=m->run_CN(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,maxloop_);
+      else
+        {
+          if (dts.first.empty())
+            {
+              auto o=m->run_CN_adapt(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,f_maxlogErrorCN_*maxlogError_,dtinf_, maxloop_);
+              s=o.first;
+              dts=o.second;
+            }
+          else
+            s=m->run_dt(*e_,dx_,dts,tequilibrio_);
+        }
+
+    }
   if (!s.isValid_)
     return{};
   std::size_t ic=0;
@@ -352,6 +494,8 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
   return o;
 }
 
+
+
 std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(std::ostream &os) const
 
 {
@@ -359,64 +503,64 @@ std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(std::ostream &os)
   CortexSimulation s=m_->run(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
   if (s.isValid_)
     {
-  unsigned is=0;
+      unsigned is=0;
 
-  for (unsigned ie=0; ie<e_->numMeasures(); ie++)
-    {
-      const CortexMeasure* cm=e_->getMeasure(ie);
-      double t=cm->dia()*24*60*60;
-      while (s.t_[is]<t
-             &&is<s.t_.size())
-        ++is;
-
-
-      double currInjury=getPrior().get("inj_width_"+std::to_string(std::size_t(cm->dia())));
-      if (std::isnan(currInjury))
-        currInjury=0;
-
-      // voy a interpolar los resultados de la medicion a partir de la simulacion.
-      // la simulacion pasa a ser independiente de la medicion
-
-      // rho debe estar en celulas por litro
-      auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury*1e-6);
-      auto typesRho=m_->getObservedStateLabels();
-
-      ///horrible hack for the lession:
-      /// dedico una fila para la probabilidad de cada estado antes de la lesion
-
-      if ( currInjury>0)
+      for (unsigned ie=0; ie<e_->numMeasures(); ie++)
         {
+          const CortexMeasure* cm=e_->getMeasure(ie);
+          double t=cm->dia()*24*60*60;
+          while (s.t_[is]<t
+                 &&is<s.t_.size())
+            ++is;
 
-          auto typesInjury=m_->getApoptoticStatesAtInjuryLabels();
-          for (std::size_t istate=0; istate<typesInjury.size(); ++istate)
+
+          double currInjury=getPrior().get("inj_width_"+std::to_string(std::size_t(cm->dia())));
+          if (std::isnan(currInjury))
+            currInjury=0;
+
+          // voy a interpolar los resultados de la medicion a partir de la simulacion.
+          // la simulacion pasa a ser independiente de la medicion
+
+          // rho debe estar en celulas por litro
+          auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury*1e-6);
+          auto typesRho=m_->getObservedStateLabels();
+
+          ///horrible hack for the lession:
+          /// dedico una fila para la probabilidad de cada estado antes de la lesion
+
+          if ( currInjury>0)
             {
+
+              auto typesInjury=m_->getApoptoticStatesAtInjuryLabels();
+              for (std::size_t istate=0; istate<typesInjury.size(); ++istate)
+                {
+                  for (std::size_t is=0; is<typesRho.size(); ++is)
+                    {
+                      os<<"rhoFitInjury..day.."<<cm->dia();
+                      os<<"..type.."<<typesInjury[istate]<<"..typei.."<<is<<"\t";
+                    }
+                }
+
+            }
+          for (std::size_t ix=0; ix<rho.size()-1;++ix)
+            {
+              /// en celulas por litro
+              auto rho_sim=m_->getObservedNumberFromModel(rho[ix+1]);
+
+
               for (std::size_t is=0; is<typesRho.size(); ++is)
                 {
-                  os<<"rhoFitInjury..day.."<<cm->dia();
-                  os<<"..type.."<<typesInjury[istate]<<"..typei.."<<is<<"\t";
+                  os<<"rhoFit..day.."<<cm->dia()<<"..x_start.."<<cm->xpos()[ix];
+                  os<<"..x_end.."<<cm->xpos()[ix+1];
+                  os<<"..rhoType.."<<typesRho[is];
+                  if (ie+1<e_->numMeasures()||(ix+1<rho.size()-1)||is+1<typesRho.size())
+                    os<<"\t";
+                  else
+                    os<<"";
                 }
             }
 
         }
-      for (std::size_t ix=0; ix<rho.size()-1;++ix)
-        {
-          /// en celulas por litro
-          auto rho_sim=m_->getObservedNumberFromModel(rho[ix+1]);
-
-
-          for (std::size_t is=0; is<typesRho.size(); ++is)
-            {
-              os<<"rhoFit..day.."<<cm->dia()<<"..x_start.."<<cm->xpos()[ix];
-              os<<"..x_end.."<<cm->xpos()[ix+1];
-              os<<"..rhoType.."<<typesRho[is];
-              if (ie+1<e_->numMeasures()||(ix+1<rho.size()-1)||is+1<typesRho.size())
-                os<<"\t";
-              else
-                os<<"";
-            }
-        }
-
-    }
 
     }
   return os;
@@ -720,7 +864,8 @@ std::ostream &CortexPoisonLikelihoodEvaluation::extract(std::ostream &s, const s
     x.insert(x.begin(),++CL_->getExperiment()->getMeasure(i)->xpos().begin(),
              CL_->getExperiment()->getMeasure(i)->xpos().end());
 
-  std::vector<std::vector<double>> f=CL_->f(p_);
+  std::pair<std::vector<double>, std::vector<std::size_t>> dts;
+  std::vector<std::vector<double>> f=CL_->f(p_,dts);
 
 
 

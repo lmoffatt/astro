@@ -146,6 +146,7 @@ std::ostream& operator<<(std::ostream& os,const D_logL& d)
 
 struct mcmc_prior
 {
+  mcmc_prior():param(),logPrior(std::numeric_limits<double>::quiet_NaN()),D_prior(){}
   M_Matrix<double> param;
   double logPrior=std::numeric_limits<double>::quiet_NaN();
   D_logL D_prior;
@@ -160,10 +161,11 @@ std::ostream& operator<<(std::ostream& os,const mcmc_prior& x)
 
 struct mcmc_post: public mcmc_prior
 {
-  mcmc_post(mcmc_prior &&p): mcmc_prior(p), isValid(false), f(),logLik(0){}
-  mcmc_post(){}
+  mcmc_post(const mcmc_prior& p): mcmc_prior(p), isValid(false), f(),logLik(0){}
+  mcmc_post():mcmc_prior(),isValid(false), f(),logLik(0){}
   bool isValid=false;
   M_Matrix<double> f;
+  std::pair<std::vector<double>, std::vector<std::size_t>> dts;
   double logLik=std::numeric_limits<double>::quiet_NaN();
 
   double logbPL(double beta)const {return logPrior+logLik*beta;}
@@ -183,8 +185,8 @@ std::ostream& operator<<(std::ostream& os,const mcmc_post& x)
 
 struct mcmc_Dpost: public mcmc_post
 {
-  mcmc_Dpost(){}
-  mcmc_Dpost(mcmc_post &&p): mcmc_post(p), D_lik(){}
+  mcmc_Dpost():mcmc_post(),D_lik(){}
+  mcmc_Dpost(mcmc_post p): mcmc_post(p), D_lik(){}
   D_logL D_lik;
 
   double d_logLik_dBeta(double beta)const
@@ -219,7 +221,7 @@ template<typename Dist>
 struct mcmc_step: public mcmc_Dpost
 {
   mcmc_step(){}
-  mcmc_step(mcmc_Dpost &&p, double beta_, std::size_t iscout_): mcmc_Dpost(p),beta(beta_),iscout(iscout_),proposed(){}
+  mcmc_step(mcmc_Dpost p, double beta_, std::size_t iscout_): mcmc_Dpost(p),beta(beta_),iscout(iscout_),proposed(){}
   double beta;
   std::size_t iscout;
 
@@ -496,8 +498,8 @@ public:
   static mcmc_post get_mcmc_Post(const M<D>& model, const D& data, M_Matrix<double> param)
   {
     mcmc_prior p=model.prior(data,param);
-    mcmc_post out(std::move(p));
-    out.f=model.f(data,param);
+    mcmc_post out(p);
+    out.f=model.f(data,param,out.dts);
     if (out.f.size()==0)
       out.isValid=false;
     else
@@ -529,7 +531,7 @@ public:
 
   static mcmc_Dpost get_mcmc_Dpost(const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post p)
   {
-    mcmc_Dpost out(std::move(p));
+    mcmc_Dpost out(p);
     if (out.isValid)
       {
         M_Matrix<std::size_t> k=data();
@@ -537,7 +539,7 @@ public:
         {return log10_guard(x);});
         if (isnan(logLanda_0))
           out.isValid=false;
-        M_Matrix<double> J=get_J(model,  data, param,logLanda_0  );
+        M_Matrix<double> J=get_J(model,  data, param,logLanda_0, out.dts  );
         if (J.size()==0)
           out.isValid=false;
         else
@@ -581,37 +583,40 @@ private:
   static
   M_Matrix<double>
   get_J(const M<D>& model, const D& data, const M_Matrix<double>& param,
-        const M_Matrix<double>& logLanda_0  ,
+        const M_Matrix<double>& logLanda_0 , std::pair<std::vector<double>,std::vector<std::size_t>>& dts,
         double delta=1e-5, double delta_div=10, double deltamin=1e-7)
   {
     M_Matrix<double> k=data();
     std::size_t n=k.size();
     std::size_t npar=param.size();
     M_Matrix<double> out(n,npar,0.0);
+
     for (std::size_t j=0; j<npar; ++j)
       {
         double deltarun=delta;
+        M_Matrix<double> logLanda_0_run=logLanda_0;
+        auto dts_run=dts;
 
         M_Matrix<double> p(param);
         p[j]+=deltarun;
-        M_Matrix<double> logLanda_i=model.logLanda(data,p);
+        M_Matrix<double> logLanda_i=model.logLanda(data,p,dts);
         while ((isnan(logLanda_i)||(logLanda_i.empty()))&&deltarun>deltamin)
           {
             deltarun=deltarun/delta_div;
             p=param;
             p[j]+=deltarun;
-            logLanda_i=model.logLanda(data,p);
+            logLanda_i=model.logLanda(data,p,dts);
           }
         if (isnan(logLanda_i)||logLanda_i.empty())
-          return {};
+          {
+            return {};
+          }
 
         for (std::size_t i=0; i<n; ++i)
           out(i,j)=(logLanda_i[i]-logLanda_0[i])/deltarun;
 
       }
     return out;
-
-
   }
 
 };
@@ -704,7 +709,7 @@ struct BayesIterator
   posterior(const LikelihoodFunction_with_count& f,const Data& newData, std::map<T,double> prior,  double & Evidence, std::size_t& n)
   {
     Evidence=0;
-    std::map<T,double> out(std::move(prior));
+    std::map<T,double> out(prior);
     for (auto it=out.begin(); it!=out.end(); ++it)
       {
         double lik=f(newData,it->first,n);
@@ -1034,7 +1039,7 @@ public:
 
   void push_acceptance(AP landa,double dHd)
   {
-    std::pair<std::multiset<AP>,AP> p{std::move(currentRejected_),landa};
+    std::pair<std::multiset<AP>,AP> p{currentRejected_,landa};
     currentRejected_.clear();
 
     std::get<0>(rejAccCount_[p])++;
@@ -1043,7 +1048,7 @@ public:
 
     double Evidence=0;
     parDist_=BayesIterator::multinomial_posterior
-        (&likelihood,p,std::move(parDist_),Evidence);
+        (&likelihood,p,parDist_,Evidence);
   }
 
 
@@ -1117,8 +1122,8 @@ public:
     rejAccCount_{}{}
 
   Adaptive_discrete(std::map<AP,double>&& prior_landa,
-                    std::map<typename AP::myParameter, double>&& prior_par):
-    p_{std::move(prior_landa)},parDist_{std::move(prior_par),1},
+                    std::map<typename AP::myParameter, double> prior_par):
+    p_{prior_landa},parDist_{prior_par,1},
     rev_{},
     rejAccCount_{}{
     rev_=cumulative_reverse_map(p_);
@@ -1316,7 +1321,7 @@ public:
 
   Beta():asc_beta_(){}
 
-  Beta(std::vector<double>&& beta):asc_beta_(beta){}
+  Beta(std::vector<double> beta):asc_beta_(beta){}
 
 
   std::vector<double>const & getValue()const {return asc_beta_;}
@@ -1431,7 +1436,7 @@ public:
   Adaptive_Beta(std::size_t N,double beta_min,double nu, std::size_t nsamples50)
 
     :nsamples(0),
-      beta_min_(beta_min),  // minimal value of beta
+      //beta_min_(beta_min),  // minimal value of beta
       N_(N), // number of beta intervals
       nu_{nu},  // reciprocal of the initial amplitude of adjustments
       t0_{nsamples50},  //lag parameter
@@ -1446,7 +1451,7 @@ public:
 
 private:
   std::size_t nsamples;
-  double beta_min_;  // minimal value of beta
+  //double beta_min_;  // minimal value of beta
   std::size_t N_; // number of beta intervals
   double nu_;  // reciprocal of the initial amplitude of adjustments
   std::size_t t0_;  //lag parameter
@@ -1568,7 +1573,7 @@ public:
     else if (betanew.size()>Nmax_)
       betanew=Beta::resize(Nmax_,betanew);
 
-    beta_=Beta(std::move(betanew));
+    beta_=Beta(betanew);
   }
 
 
@@ -1632,7 +1637,7 @@ private:
         double db=1.0/std::sqrt(s.d_logLik_dBeta(be));
         be-=db*factor;
       }
-    return Beta(std::move(b));
+    return Beta(b);
 
   }
 
@@ -2281,7 +2286,7 @@ struct Master_Tempering_Likelihood
       o+=(1.0/6.0*sqr(b[n]-b[n-1])
           )*dLs[n];
       auto Li=Lis(L0,dLs);
-      double out;
+      double out=0;
       double rL=L0;
       double br=0;
       double dLr=dLs[0];
@@ -3910,25 +3915,25 @@ public:
   }
 
 
-  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost&& p,double beta)const
+  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost p,double beta)const
   {
-    mcmc_step<myPropDistribution> out(std::move(p),beta);
+    mcmc_step<myPropDistribution> out(p,beta);
     return update_mcmc_step(L,model,data,out,beta);
   }
 
-  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost&& p,double beta,double landa)const
+  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost p,double beta,double landa)const
   {
-    mcmc_step<myPropDistribution> out(std::move(p),beta);
+    mcmc_step<myPropDistribution> out(p,beta);
     return update_mcmc_step(L,model,data,out,beta,landa);
   }
 
 
-  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post&& p,double beta)const
+  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post p,double beta)const
   {
     return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param,p),beta);
   }
 
-  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post&& p,double beta,double landa)const
+  mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post p,double beta,double landa)const
   {
     return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param,p),beta,landa);
   }
@@ -3977,7 +3982,7 @@ public:
   }
 
 
-  mcmc_step<myPropDistribution>& update_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_step<myPropDistribution>& out,double beta, double landa)const
+  mcmc_step<myPropDistribution>& update_mcmc_step(const D_Lik<D,M> /*L*/, const M<D>& /*model*/, const D& /* data*/, mcmc_step<myPropDistribution>& out,double beta, double landa)const
   {
     out.beta=beta;
     if (out.isValid)
@@ -4056,14 +4061,14 @@ public:
   }
 
 
-  static mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost&& p,const Landa& landa,double beta, std::size_t iscout)
+  static mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, mcmc_Dpost p,const Landa& landa,double beta, std::size_t iscout)
   {
-    mcmc_step<myPropDistribution> out(std::move(p),beta,iscout);
+    mcmc_step<myPropDistribution> out(p,beta,iscout);
     return update_mcmc_step(L,model,data,out,landa,beta);
   }
 
 
-  static mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post&& p,const  Landa& landa,double beta, std::size_t iscout)
+  static mcmc_step<myPropDistribution> get_mcmc_step(const D_Lik<D,M> L, const M<D>& model, const D& data, const M_Matrix<double>& param, mcmc_post p,const  Landa& landa,double beta, std::size_t iscout)
   {
     return get_mcmc_step(L,model,data,L.get_mcmc_Dpost(model,data,param,p),landa ,beta, iscout);
   }
@@ -4072,7 +4077,7 @@ public:
 
 
 
-  static  mcmc_step<myPropDistribution>& update_mcmc_step(const D_Lik<D,M> , const M<D>& , const D& , mcmc_step<myPropDistribution>& out,const Landa& landa,double beta)
+  static  mcmc_step<myPropDistribution> update_mcmc_step(const D_Lik<D,M> , const M<D>& , const D& , mcmc_step<myPropDistribution> out,const Landa& landa,double beta)
   {
     out.beta=beta;
     if (out.isValid)
@@ -4132,7 +4137,7 @@ public:
   }
 
   Tempered_Evidence_Evaluation(SamplesSeries<std::pair<Beta,std::vector<mcmc>>> o)
-    :run_(std::move(o))
+    :run_(o)
   {
     logEvidence_=run_.mean_var(&Evidence_pair,run_.size()/2);
 
@@ -4818,7 +4823,7 @@ public:
     put(os,sDist,cDist,dHd,logQforward,logQbackward);
     if (out)
       {
-        sDist=std::move(cDist);
+        sDist=cDist;
         std::cout<<"Acc\n";
         os<<"Acc\n";
       }
@@ -4865,7 +4870,7 @@ public:
 
 
         mcmc_step<pDist> cDist;
-        //      std::size_t icount=0;
+        std::size_t icount=0;
         while(!cDist.isValid)
           {
             landa=pars[i].sample(mt[i]);
@@ -4876,6 +4881,7 @@ public:
                 (lik,model,data,c,landa,aBeta.getBeta().getValue()[i],sDist[i].iscout);
             if (!cDist.isValid)
               pars[i].push_rejection(landa);
+            ++icount;
 
           }
 
@@ -4883,7 +4889,7 @@ public:
           {
             aBeta.new_acceptance(i,sDist[i],cDist);
             pars[i].push_acceptance(landa,dHd[i]);
-            sDist[i]=std::move(cDist);
+            sDist[i]=cDist;
             out[i] =true;
           }
         else
@@ -4909,7 +4915,7 @@ public:
 
     put(os,sDist,out,dHd,logQforward,logQbackward);
     if (does_stdout)
-    put(std::cout,sDist,out,dHd,logQforward,logQbackward);
+      put(std::cout,sDist,out,dHd,logQforward,logQbackward);
 
 
     for(std::size_t i=1; i<sDist.size(); ++i)
@@ -4927,7 +4933,7 @@ public:
                 std::swap(sDist[i-1].beta,sDist[i].beta);
                 os<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
                 if (does_stdout)
-                std::cout<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
+                  std::cout<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
                 aBeta.push_acceptance(sDist[i-1].beta,sDist[i].beta);
               }
             else
@@ -4964,7 +4970,7 @@ template
     class propDistStep=LevenbergMarquardt_step
     >
 std::ostream& operator<<(std::ostream& os
-                         ,const Metropolis_Hastings_mcmc<D,M,D_Lik,my_PropD,AP,propDistStep>& mcmc)
+                         ,const Metropolis_Hastings_mcmc<D,M,D_Lik,my_PropD,AP,propDistStep>& /*mcmc*/)
 {
   return os;
 }
@@ -4986,7 +4992,7 @@ public:
     return run_;
   }
 
-  Evidence_Evaluation(std::vector<std::pair<double,SamplesSeries<mcmc>>>&& o)
+  Evidence_Evaluation(std::vector<std::pair<double,SamplesSeries<mcmc>>> o)
   {
 
     double sum=0;
@@ -5112,7 +5118,7 @@ public:
       }
 
     AP landa=landa_Dist.sample(mt);
-    mystep cDist=LMLik.get_mcmc_step(lik,model,data,pinit,std::move(postL),landa,beta0,0);
+    mystep cDist=LMLik.get_mcmc_step(lik,model,data,pinit,postL,landa,beta0,0);
 
     for (std::size_t i=0; i<beta.size(); ++i)
       {
@@ -5124,7 +5130,7 @@ public:
             (LMLik,lik,model,data,cDist,landa_Dist_run,beta[i],mt,os,startTime,timeOpt);
         o.push_back({betaval,s});
       }
-    auto out=new Evidence_Evaluation<mystep>(std::move(o));
+    auto out=new Evidence_Evaluation<mystep>(o);
     std::cout<<"LogEvidence= "<<out->logEvidence()<<"\n";
 
 
@@ -5224,7 +5230,7 @@ public:
     std::string f_log_name=EviNameLog0    +"."+std::to_string(i_sim);
 
     std::ofstream os;
-       std::ofstream f_par;
+    std::ofstream f_par;
     std::ofstream f_logL;
     std::ofstream f_sim;
     std::ofstream f_fit;
@@ -5286,16 +5292,25 @@ public:
       {
         M_Matrix<double> pinit;
         double beta0=beta.getBeta().getValue()[i];
-        std::size_t ntrials=0;
-        mcmc_post postL;
-        while(!postL.isValid)
+        std::size_t ntrialsi=0;
+        std::size_t ntrialsj=0;
+
+        bool isvalid=false;
+        AP landa;
+        while(!isvalid)
           {
-            pinit=model.sample(mt);
-            postL=lik.get_mcmc_Post(model,data,pinit);
-            ++ntrials;
+            mcmc_post postL;
+            while(!postL.isValid)
+              {
+                pinit=model.sample(mt);
+                postL=lik.get_mcmc_Post(model,data,pinit);
+                ++ntrialsi;
+              }
+            landa=pars[i].sample(mts[i]);
+            sDists[i]=LMLik.get_mcmc_step(lik,model,data,pinit,postL,landa,beta0,i);
+            isvalid=sDists[i].isValid;
+            ++ntrialsj;
           }
-        AP landa=pars[i].sample(mts[i]);
-        sDists[i]=LMLik.get_mcmc_step(lik,model,data,pinit,std::move(postL),landa,beta0,i);
         LMLik.update_mcmc_step(lik,model,data,sDists[i],landa,beta0);
       }
 
@@ -5351,41 +5366,41 @@ public:
             std::size_t f_sim_pos=f_sim.tellp()+f_logL.tellp()+f_fit.tellp()+f_par.tellp()+os.tellp();
             if (f_sim_pos>maxSimFileSize)
               {
-                 f_sim.close();
-                 f_fit.close();
-                 f_logL.close();
-                 f_par.close();
-                 os.close();
+                f_sim.close();
+                f_fit.close();
+                f_logL.close();
+                f_par.close();
+                os.close();
 
-                 std::cerr<<f_sim_name<<"is completed !!\n";
-                 std::cerr<<f_fit_name<<"is completed !!\n";
-                 std::cerr<<f_logL_name<<"is completed !!\n";
-                 std::cerr<<f_log_name<<"is completed !!\n";
-                 std::cerr<<f_par_name<<"is completed !!\n";
+                std::cerr<<f_sim_name<<"is completed !!\n";
+                std::cerr<<f_fit_name<<"is completed !!\n";
+                std::cerr<<f_logL_name<<"is completed !!\n";
+                std::cerr<<f_log_name<<"is completed !!\n";
+                std::cerr<<f_par_name<<"is completed !!\n";
 
-                 ++i_sim;
+                ++i_sim;
 
-                 f_sim_name=f_sim_name0    +"."+std::to_string(i_sim);
-                 f_sim.open(f_sim_name.c_str(), std::ofstream::out | std::ofstream::app);
+                f_sim_name=f_sim_name0    +"."+std::to_string(i_sim);
+                f_sim.open(f_sim_name.c_str(), std::ofstream::out | std::ofstream::app);
 
-                 f_log_name=EviNameLog0+"."+std::to_string(i_sim);
-                 os.open(f_log_name.c_str(), std::ofstream::out | std::ofstream::app);
+                f_log_name=EviNameLog0+"."+std::to_string(i_sim);
+                os.open(f_log_name.c_str(), std::ofstream::out | std::ofstream::app);
 
 
-                 f_par_name=f_par_name0    +"."+std::to_string(i_sim);
-                 f_par.open(f_par_name.c_str(), std::ofstream::out | std::ofstream::app);
+                f_par_name=f_par_name0    +"."+std::to_string(i_sim);
+                f_par.open(f_par_name.c_str(), std::ofstream::out | std::ofstream::app);
 
-                 f_fit_name=f_fit_name0    +"."+std::to_string(i_sim);
-                 f_fit.open(f_fit_name.c_str(), std::ofstream::out | std::ofstream::app);
+                f_fit_name=f_fit_name0    +"."+std::to_string(i_sim);
+                f_fit.open(f_fit_name.c_str(), std::ofstream::out | std::ofstream::app);
 
-                 f_logL_name=f_logL_name0    +"."+std::to_string(i_sim);
-                 f_logL.open(f_logL_name.c_str(), std::ofstream::out | std::ofstream::app);
+                f_logL_name=f_logL_name0    +"."+std::to_string(i_sim);
+                f_logL.open(f_logL_name.c_str(), std::ofstream::out | std::ofstream::app);
 
-                 std::cerr<<f_sim_name<<"is opened !!\n";
-                 std::cerr<<f_par_name<<"is opened !!\n";
-                 std::cerr<<f_logL_name<<"is opened !!\n";
-                 std::cerr<<f_fit_name<<"is opened !!\n";
-                 std::cerr<<f_log_name<<"is opened !!\n";
+                std::cerr<<f_sim_name<<"is opened !!\n";
+                std::cerr<<f_par_name<<"is opened !!\n";
+                std::cerr<<f_logL_name<<"is opened !!\n";
+                std::cerr<<f_fit_name<<"is opened !!\n";
+                std::cerr<<f_log_name<<"is opened !!\n";
               }
 
 
@@ -5422,7 +5437,7 @@ public:
 
                 AP landa=pars[i].sample(mts[i]);
                 sDists.push_back
-                    (LMLik.get_mcmc_step(lik,model,data,pinit,std::move(postL),landa,beta0,i));
+                    (LMLik.get_mcmc_step(lik,model,data,pinit,postL,landa,beta0,i));
                 LMLik.update_mcmc_step(lik,model,data,sDists[i],landa,beta0);
               }
 

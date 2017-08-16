@@ -225,7 +225,7 @@ std::pair<R,bool> run_R_impl_1(Cm* cm,
     }
   else
     {
-      if (cm->template get<T>(it->second,a.first))
+      if (cm->template get(C<T>(),it->second,a.first))
         {
           log<<it->first<<"="<<it->second<<" [variable], ";
         }
@@ -408,11 +408,11 @@ bool run_void_impl_1(Cm* cm,
     }
   else
     {
-      if (cm->template get<T>(it->second,a.first))
+      if (cm->template get(C<T>(),it->second,a.first))
         {
           log<<it->first<<"="<<it->second<<" [variable], ";
         }
-      else  if (load_from_file<Cls,T>(it->second,a.first,log))
+      else  if (load_from_file<Cls>(C<T>(),it->second,a.first,log))
         {
           log<<it->first<<"="<<it->second<<" [in file], ";
         }

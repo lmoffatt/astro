@@ -43,10 +43,11 @@ public:
   virtual const Parameters& getPrior()const=0;
 
 
-  virtual  std::vector<std::vector<double>> f(const Parameters& parameters)const=0;
+  virtual  std::vector<std::vector<double>> f(const Parameters& parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts)const=0;
 
   virtual  std::vector<std::vector<double>> f(const std::vector<double>& p)const;
 
+  virtual  std::vector<std::vector<double>> f(const std::vector<double>& p, std::pair<std::vector<double>,std::vector<std::size_t>>& dts)const;
 
   std::vector<std::vector<double>>
   J(const Parameters& p,
@@ -92,8 +93,9 @@ public:
   virtual const Parameters& getPrior()const=0;
 
 
-  virtual  std::vector<std::vector<double>> f(const Parameters& parameters)const=0;
+  virtual  std::vector<std::vector<double>> f(const Parameters& parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts)const=0;
 
+  virtual
 
   std::vector<std::vector<double>>
   logLikCells(const std::vector<std::vector<double> > &p) const;
@@ -121,28 +123,28 @@ class ABC_MultiPoison_Model:virtual public ABC_Distribution_Model
 {
 public:
 
-  virtual void setPrior(const Parameters& parameters)=0;
-  virtual const ABC_Freq_obs& getData()const=0;
+//  virtual void setPrior(const Parameters& parameters)=0;
+//  virtual const ABC_Freq_obs& getData()const=0;
 
-  virtual const Parameters& getPrior()const=0;
+//  virtual const Parameters& getPrior()const=0;
 
 
-  virtual  std::vector<std::vector<double>> f(const Parameters& parameters)const=0;
+  //virtual  std::vector<std::vector<double>> f(const Parameters& parameters)const=0;
 
 
   std::vector<std::vector<double>>
-  logLikCells(const std::vector<std::vector<double> > &landa) const;
+  logLikCells(const std::vector<std::vector<double> > &landa) const override;
 
   std::vector<double>
-  logLikSamples(const std::vector<std::vector<double> > &landa) const;
+  logLikSamples(const std::vector<std::vector<double> > &landa) const override;
 
   double logLik(const std::vector<std::vector<double>>& landa)const override;
 
-  double logLik(const Parameters& p)const;
+  double logLik(const Parameters& p)const override;
 
-  std::vector<double> epsilon(const std::vector<std::vector<double>>& landa)const;
+  std::vector<double> epsilon(const std::vector<std::vector<double>>& landa)const override;
 
-  const std::vector<double> weight(const std::vector<std::vector<double>>& landa)const;
+  const std::vector<double> weight(const std::vector<std::vector<double>>& landa)const override;
 
 
 

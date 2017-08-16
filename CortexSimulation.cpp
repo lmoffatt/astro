@@ -440,7 +440,7 @@ void CortexSimulation::read(std::string& line, std::istream &s, std::ostream& lo
 
       while (true)
         {
-          while (name.empty()&&safeGetline(s,line))
+          while (name.empty() &&safeGetline(s,line))
             {
               ss.str(line);
               ss.clear();

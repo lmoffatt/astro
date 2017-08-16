@@ -941,6 +941,12 @@ struct Tempering
                    double dtmin,
                    double dtmax,
                    double dx,
+                   bool adapt_dt,
+                   double maxlogError,
+                   double dtinf,
+                   bool CrankNicholson,
+                   double f_maxlogError,
+                   std::size_t maxloop,
                    double tequilibrio,
                    double  maxduration,
                    double landa0,
@@ -1009,7 +1015,7 @@ struct Tempering
     Adaptive_discrete<AP> landa(aps,apsPar);
 
     if (does_stdout)
-    std::cout<<landa;
+      std::cout<<landa;
 
 
     Experiment *e=new Experiment;
@@ -1054,10 +1060,26 @@ struct Tempering
       {
         cm_->push_back(m->id(),m);
 
-
-
-        auto CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
-
+        CortexPoisonLikelihood* CL;
+        if (!CrankNicholson)
+          {
+            if (!adapt_dt)
+              CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,
+                                            nPoints_per_decade,dtmax,tequilibrio);
+            else
+              CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,dtinf);
+          }
+        else
+          {
+            if (!adapt_dt)
+              CL=new CortexPoisonLikelihood
+                  (eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,
+                   dtmax,tequilibrio,f_maxlogError,maxloop);
+            else
+              CL=new CortexPoisonLikelihood
+                  (eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,
+                   dtmax,tequilibrio,maxlogError,f_maxlogError,dtinf,maxloop);
+          }
         std::cerr<<"simulation time="<<timeItm<CortexSimulation,CortexPoisonLikelihood, const Parameters&>(CL,&CortexPoisonLikelihood::simulate,prior);
         MyModel<MyData> m(CL);
         MyData d(CL);
@@ -1158,12 +1180,12 @@ private:
 
 
 
-inline
-std::string operator+(const std::string& one,const  std::string& two)
-{
-  return one+two;
+//inline
+//std::string operator+(const std::string& one,const  std::string& two)
+//{
+//  return one+two;
 
-}
+//}
 
 
 

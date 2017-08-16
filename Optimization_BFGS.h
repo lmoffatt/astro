@@ -123,13 +123,13 @@ struct BFGS_optimal
     if (!iter.sample.isValid) return iter;
     iter.sample=init_H(f,x,iter.sample);
     iter.candidate=next_candidate(f,x,iter.sample,alfaInit);
-    iter.sample=compute_H(f,x,iter.sample,std::move(iter.candidate));
+    iter.sample=compute_H(f,x,iter.sample,iter.candidate);
     iter.candidate=next_candidate(f,x,iter.sample,alfaInit);
     iterAct(r,iter);
 
     while (!meetCovergenceCriteria(r,iter))
       {
-        iter.sample=compute_H(f,x,iter.sample,std::move(iter.candidate));
+        iter.sample=compute_H(f,x,iter.sample,iter.candidate);
         iter.candidate=next_candidate(f,x,iter.sample,alfaInit);
         iterAct(r,iter);
       }
@@ -191,7 +191,7 @@ private:
                              const Data& x,
                              opt_max_point p)
   {
-    opt_max_step out(std::move(p));
+    opt_max_step out(p);
     out.G=compute_G(f,x,out.b,out.fout);
     out.Hinv=eye<double>(p.b.size());
     return out;
@@ -206,7 +206,7 @@ private:
                                 const opt_max_step& p0,
                                 opt_max_point p)
   {
-    opt_max_step out(std::move(p));
+    opt_max_step out(p);
     out.G=compute_G(f,x,out.b,out.fout);
     if (out.G.empty()) return {};
     else
@@ -257,7 +257,7 @@ private:
     double beta=INFINITY;
     double alphamin=1e-9;
     std::size_t ifevalLoop=0;
-    std::size_t neval_;
+    std::size_t neval_=0;
     // this loop look after a value of a that satisfy Wolfe conditions
     double df1;
     opt_max_point candidate1;

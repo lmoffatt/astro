@@ -390,6 +390,7 @@ public:
         --i;
         for (std::size_t j=0; j<n_cols_; ++j)
           o[j]= i_deval(i,j,t,s);
+        return o;
       }
     else if (i==0)
       return std::vector<double>(n_cols_,lower_default_);
@@ -405,6 +406,7 @@ public:
         --i;
         for (std::size_t j=0; j<n_cols_; ++j)
           o[j]= i_d2eval(i,j,t);
+        return o;
       }
     else if (i==0)
       return std::vector<double>(n_cols_,lower_default_);
@@ -814,7 +816,7 @@ public:
   std::vector<double> eval( double x)const
   {
     std::vector<double> o(n_cols_);
-    std::size_t i=0; double t;
+    std::size_t i=0; double t=0;
     if (get_index(x,i,t))
       {
         for (std::size_t j=0; j<n_cols_; ++j)

@@ -356,7 +356,7 @@ struct wolf_conditions
   }
 
   template<class F, class G>
-  bool second(const F& f, const G& g, M_Matrix<double> x, M_Matrix<double> p, double alfa)const
+  bool second(const F& /*f*/, const G& g, M_Matrix<double> x, M_Matrix<double> p, double alfa)const
   {
     if (minimize)
       return TranspMult(p,g(x+p*alfa))[0]>=c2*TranspMult(p, g(x))[0];
@@ -376,7 +376,7 @@ struct wolf_conditions
   }
 
   template<class F, class G>
-  bool third(const F& f, const G& g, M_Matrix<double> x, M_Matrix<double> p, double alfa)const
+  bool third(const F& /*f*/, const G& g, M_Matrix<double> x, M_Matrix<double> p, double alfa)const
   {
     return std::abs(TranspMult(p,g(x+p*alfa))[0])<=c2*std::abs(TranspMult(p, g(x))[0]);
   }
@@ -612,7 +612,7 @@ private:
   static fit_step compute_H(const F& f,
                             fit_point p)
   {
-    fit_step out(std::move(p));
+    fit_step out(p);
     auto J=compute_J(f,out.b,out.x,out.yfit);
     auto epsilon=(out.y-out.yfit);
     out.G=J*epsilon.toVector_of_Rows();
@@ -651,7 +651,7 @@ private:
             if (landa1*v>=landaMax) break;
             landa0=landa1;
             landa1=landa0*v;
-            candidate0=std::move(candidate);
+            candidate0=candidate;
             candidate=new_point(f,bmean,bsd,sample,landa1);
             ifevalLoop++;
             //   std::cerr<<landa_<<" ";
@@ -875,9 +875,9 @@ private:
 
 
   template<class L, class G, class H, class Hinv>
-  static fit_step compute_H(const L& l, const G& g, const H& h, const Hinv& hinv, fit_point p, double landa, double v)
+  static fit_step compute_H(const L& /*l*/, const G& g, const H& h, const Hinv& hinv, fit_point p, double landa, double v)
   {
-    fit_step out(std::move(p));
+    fit_step out(p);
     if (out.isValid)
       {
         out.G=g(out.x);
@@ -1217,7 +1217,7 @@ struct Newton_fit
         iter.d=newd;
         iter.alfa=run.alfa;
         fit_point candidate(run.x,run.f);
-        iter.candidate=std::move(candidate);
+        iter.candidate=candidate;
         if (verbose)
           os<<iter;
         return step(logL,g,h,hinv,r,iter,os);
@@ -1341,7 +1341,7 @@ struct univariate_normal_distribution
   {
     return G(y,m[0],m[1]);
   }template<class V>
-  static double H(double y,const V& m)
+  static double H(double /*y*/,const V& m)
   {
     return H(m[1]);
   }
@@ -1520,7 +1520,7 @@ struct multivariate_normal_distribution
   {
     return G(y,m[0],m[1]);
   }template<class V>
-  static double H(double y,const V& m)
+  static double H(double/* y*/,const V& m)
   {
     return H(m[1]);
   }
@@ -1983,7 +1983,7 @@ struct Newton_opt
         iter.d=newd;
         iter.alfa=run.alfa;
         fit_point candidate(run.x,run.f);
-        iter.candidate=std::move(candidate);
+        iter.candidate=candidate;
         if (verbose) std::cerr<<iter;
         return step(logL,g,h,hinv,r,iter);
       }

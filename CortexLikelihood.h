@@ -40,6 +40,17 @@ public:
                    double dtmax
                    , double tequilibrio);
 
+  CortexLikelihood(std::string id,
+                   const Experiment* e,
+                   const Parameters& prior
+                   , double dx
+                   , double dtmin,
+                   std::size_t nPoints_per_decade,
+                   double dtmax
+                   , double tequilibrio
+                   , double maxlogError
+                   ,double dtinf);
+
   // ABC_Freq_obs interface
   virtual const std::vector<std::vector<double>> & n_obs()const override;
   virtual const std::vector<double> &n_obs(unsigned i) const override;
@@ -59,6 +70,29 @@ public:
 
   const BaseModel* getModel()const;
 
+  CortexLikelihood(std::string id,
+                   const Experiment *e,
+                   const Parameters &prior,
+                   double dx,
+                   double dtmin,
+                   std::size_t nPoints_per_decade,
+                   double dtmax,
+                   double tequilibrio,
+                   double maxlogError,
+                   double f_maxlogError,
+                   double dtinf,
+                   std::size_t maxloop);
+
+  CortexLikelihood(std::string id,
+                   const Experiment *e,
+                   const Parameters &prior,
+                   double dx,
+                   double dtmin,
+                   std::size_t nPoints_per_decade,
+                   double dtmax,
+                   double tequilibrio,
+                   double t_maxlogError,
+                   std::size_t maxloop);
 protected:
   void update() override;
 
@@ -69,11 +103,17 @@ protected:
   Parameters prior_;
   const BaseModel* m_;
   const Experiment* e_;
+  bool adapt_dt_;
+  bool CrankNicholson_;
   double dx_;
   double dtmin_;
   std::size_t nPoints_per_decade_;
   double dtmax_;
   double tequilibrio_;
+  double dtinf_;
+  double maxlogError_;
+  double f_maxlogErrorCN_;
+  std::size_t maxloop_;
   std::vector<std::vector<double> > nstate_;
   std::vector<double> ntot_;
   std::vector<double> bin_dens_;
@@ -104,7 +144,8 @@ public:
 
   // ABC_Distribution_Model interface
 public:
-  virtual std::vector<std::vector<double> > f(const Parameters &parameters) const override;
+  virtual std::vector<std::vector<double> > f(const Parameters &parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const override;
+
 
   // BaseObject interface
 public:
@@ -174,7 +215,7 @@ public:
 
 
   // ABC_Multinomial_Model interface
-  std::vector<std::vector<double> > f(const Parameters &parameters) const override;
+  virtual  std::vector<std::vector<double>> f(const Parameters& parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const override;
 
 
   std::ostream& writeYfitHeaderDataFrame(std::ostream& os)const override;
@@ -190,6 +231,50 @@ public:
                          ,double dtmax
                          ,double tequilibrio):
     CortexLikelihood(id,e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio){}
+
+  CortexPoisonLikelihood(std::string id,
+                         const Experiment* e,
+                         const Parameters& prior
+                         ,double dx
+                         ,double dtmin
+                         ,std::size_t nPoints_per_decade
+                         ,double dtmax
+                         ,double tequilibrio
+                         ,double maxlogError,
+                         double dtinf):
+    CortexLikelihood(id,e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,dtinf){}
+
+
+
+  CortexPoisonLikelihood(std::string id,
+                   const Experiment *e,
+                   const Parameters &prior,
+                   double dx,
+                   double dtmin,
+                   std::size_t nPoints_per_decade,
+                   double dtmax,
+                   double tequilibrio,
+                   double maxlogError,
+                   double f_maxlogError,
+                   double dtinf,
+                   std::size_t maxloop):
+    CortexLikelihood(id,e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,f_maxlogError,dtinf,maxloop){}
+
+
+  CortexPoisonLikelihood(std::string id,
+                   const Experiment *e,
+                   const Parameters &prior,
+                   double dx,
+                   double dtmin,
+                   std::size_t nPoints_per_decade,
+                   double dtmax,
+                   double tequilibrio,
+                   double t_maxlogError,
+                   std::size_t maxloop):
+  CortexLikelihood(id,e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,t_maxlogError,maxloop){}
+
+
+
 
   // ABC_Freq_obs interface
 
@@ -248,6 +333,7 @@ public:
   }
   CortexSimulation simulate(const Parameters &parameters) const override;
   std::vector<std::vector<double> > g(const Parameters &parameters, const CortexSimulation &s) const override;
+
 };
 
 
@@ -400,7 +486,7 @@ public:
     out.param=param;
 
     auto& p=CL_->getPrior();
-//    std::size_t npar=param.size();
+    //    std::size_t npar=param.size();
 
     Parameters Pa=p.toParameters(param.toVector());
 
@@ -415,8 +501,9 @@ public:
     return out;
 
   }
-  M_Matrix<double> f(const Data& , M_Matrix<double> param)const{
-    auto ff=CL_->f(param.toVector());
+  M_Matrix<double> f(const Data& , M_Matrix<double> param, std::pair<std::vector<double>,std::vector<std::size_t>>& dts)
+  const{
+    auto ff=CL_->f(param.toVector(),dts);
     std::size_t nrows= ff.size();
     if (nrows>0)
       {
@@ -430,8 +517,10 @@ public:
     else return {};
 
   }
-  M_Matrix<double> logLanda(const Data& data, M_Matrix<double> param)const{
-    M_Matrix<double> out=f(data,param);
+
+
+  M_Matrix<double> logLanda(const Data& data, M_Matrix<double> param, std::pair<std::vector<double>,std::vector<std::size_t>>& dts)const{
+    M_Matrix<double> out=f(data,param,dts);
     out=out.apply([](double x){return log10_guard(x);});
     return out;
 
@@ -448,28 +537,28 @@ public:
 
   Parameters getParameter(const M_Matrix<double>& par)const
   {
-       return CL_->getPrior().toParameters(par.toVector());
+    return CL_->getPrior().toParameters(par.toVector());
   }
 
   CortexSimulation getSimulation(const Parameters& par)const
   {
-       return CL_->simulate(par);
+    return CL_->simulate(par);
   }
 
   CortexSimulation getSimulation(const M_Matrix<double>& par)const
   {
-       return CL_->simulate(getParameter(par));
+    return CL_->simulate(getParameter(par));
   }
 
   const CortexLikelihood& getLikelihood()const
   {
-     return *CL_;
+    return *CL_;
   }
 
 
   MyModel(CortexLikelihood* CL):CL_(CL){}
- private:
-   const CortexLikelihood* CL_;
+private:
+  const CortexLikelihood* CL_;
 };
 
 inline
@@ -479,20 +568,20 @@ getBeta(const M_Matrix<double>& b
         , const M_Matrix<std::size_t>& skip)
 {
   std::vector<std::tuple<double,std::size_t,std::size_t>>
- out(b.size());
+      out(b.size());
 
   for (std::size_t i=0; i<b.size(); ++i)
-     {
-       std::get<0>(out[i])=b[i];
-       if (samples.size()>1)
-       std::get<1>(out[i])=samples[i];
-       else
-         std::get<1>(out[i])=samples[0];
+    {
+      std::get<0>(out[i])=b[i];
+      if (samples.size()>1)
+        std::get<1>(out[i])=samples[i];
+      else
+        std::get<1>(out[i])=samples[0];
       if (skip.size()>1)
-       std::get<2>(out[i])=skip[i];
+        std::get<2>(out[i])=skip[i];
       else
         std::get<2>(out[i])=skip[0];
-     }
+    }
   return out;
 
 }

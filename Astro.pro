@@ -20,9 +20,10 @@ QMAKE_CXXFLAGS_RELEASE += -O2 -Werror
 #QMAKE_LFLAGS +=  -fopenmp
 #LIBS += -lgomp -lpthread
 
+QMAKE_CXXFLAGS_RELEASE+="-D__STRICT_ANSI__"
+QMAKE_CXXFLAGS_DEBUG+="-D__STRICT_ANSI__"
 
-
-QMAKE_CXX = g++
+#QMAKE_CXX = g++
 
 
 SOURCES += main.cpp \
@@ -64,7 +65,9 @@ HEADERS += \
     myInputSerializer.h \
     myOrderOperators.h \
     myTuples.h \
-    myCommandManagement.h
+    myCommandManagement.h \
+    RungeKutta.h \
+    MatrixBanded.h
 
 DISTFILES += \
     run/script \

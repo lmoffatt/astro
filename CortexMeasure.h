@@ -1159,7 +1159,7 @@ std::vector<double>& operator+=(
 
 
 inline
-std::vector<double>& addStep(
+bool addStep(
     std::vector<double> & x
     ,const std::vector<double> & y, double h
     )
@@ -1170,11 +1170,11 @@ std::vector<double>& addStep(
       x[i]+=y[i]*h;
       if (x[i]<0)
         {
-          x[i]=std::numeric_limits<double>::quiet_NaN();
+          return false;
         }
     }
-  return x;
-}
+  return true;
+  }
 
 
 
@@ -1276,20 +1276,22 @@ std::vector<std::vector<double>>& operator+=(
 
 
 inline
-std::vector<std::vector<double>>& addMStep(
+bool addMStep(
     std::vector<std::vector<double>> & x
     ,const std::vector<std::vector<double>> & y
     ,double h)
 {
 
   for (unsigned i=0; i<x.size(); ++i)
+    {
     for (unsigned j=0; j<x.front().size(); ++j)
       {
         x[i][j]+=y[i][j]*h;
         if ((x[i][j])<0)
-          x[i][j]=std::numeric_limits<double>::quiet_NaN();
+          return false;
       }
-  return x;
+    }
+  return true;
 }
 
 
@@ -1323,7 +1325,7 @@ std::vector<std::vector<double>> operator*(
 
 inline
 std::vector<std::vector<double>> operator*(
-    std::vector<std::vector<double>> && x
+    std::vector<std::vector<double>> x
     ,double t)
 {
 

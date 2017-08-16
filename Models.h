@@ -3,9 +3,9 @@
 
 #include "CortexMeasure.h"
 #include "CortexSimulation.h"
-
+#include "myTuples.h"
 //#include "BayesIteration.h"
-
+#include "MatrixBanded.h"
 #include <map>
 #include <vector>
 #include <numeric>
@@ -24,8 +24,8 @@ double MultinomialLikelihood(const std::vector<double>& n, const std::vector<dou
       double pLik=0;
       if (n[i]>0)
         pLik=n[i]*log(ntot*p[i]/n[i]);
-    //  std::cout<<"i="<<i<<" obs="<<n[i]<<" exp="<<ntot*p[i]<<" pLik="<<pLik<<"\n";
-    lik+=pLik;
+      //  std::cout<<"i="<<i<<" obs="<<n[i]<<" exp="<<ntot*p[i]<<" pLik="<<pLik<<"\n";
+      lik+=pLik;
     }
   return lik;
 }
@@ -91,24 +91,52 @@ public:
   };
 
   SimplestModel();
-  bool nextEuler(CortexState& out,std::vector<std::vector<double>>& dRho,const Param &p,const CortexState& c, double dt) const;
+
+
 
   CortexState init(const Param &p, const CortexExperiment &s) const;
-
 
   CortexSimulation simulate(const Parameters& par,const Param &p, const CortexExperiment &sp, double dt)const;
 
   CortexSimulation simulate(Parameters par,  Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio)const;
 
+  std::pair<CortexSimulation, std::vector<double> >
+  simulate_Adapted(Parameters par,  Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxLogError, double dtinf)const;
 
 
 
+  CortexState init(const SimplestModel::Param &p, const Experiment &s, double dx) const;
 
+  std::pair<CortexState, double> nextEuler_Adapt(const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, std::vector<double> &dts) const;
+
+  CortexState& nextEuler(const SimplestModel::Param &p, CortexState &c, double dt) const;
+
+  std::pair<Di<CortexState>, double> nextEuler_Adapt_i(const Di<SimplestModel::Param> &p, const std::pair<Di<CortexState>, double> &c, double dt, double dtmin, double maxlogError) const;
+
+
+  Di<CortexSimulation> simulate_Adapted_i(const Di<Parameters> &par, const Di<Param> &p, const Experiment &sp, double dx, double desiredError, double dt0, std::size_t nPoints_per_decade, double dtmax, double dtmin, double tequilibrio) const;
+  CortexSimulation simulate(Parameters par, Param p, const Experiment &sp, double dx, const std::pair<std::vector<double>,std::vector<std::size_t>> &dts, double tequilibrio) const;
+
+  void CrankNicholsonStep(const CortexState::Der &d, const CortexState::dDer &dd, const SimplestModel::Param &p, CortexState &c, double dt) const;
+
+  std::pair<CortexState, std::pair<std::size_t,double> > CrankNicholsonStep(const CortexState::Der &d, const CortexState::dDer &dd, const SimplestModel::Param &p, const CortexState &c, double dt, double maxlogError, std::size_t maxloop) const;
+
+  std::pair<CortexState, double> nextCrankNicholson_Adapt(const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::pair<std::vector<double>, std::vector<std::size_t> > &dts, std::size_t maxloop) const;
+  std::vector<double> dPsi_Bound_dPsi(const SimplestModel::Param &p, const CortexState &c) const;
+  CortexState::dDer ddStep(const SimplestModel::Param &p, const CortexState &c) const;
+  std::vector<std::vector<double> > dPsi_Bound_dRho(const SimplestModel::Param &p, const CortexState &c) const;
+  std::vector<double> dOmega_Bound_dOmega(const SimplestModel::Param &p, const CortexState &c) const;
+  std::vector<std::vector<double> > domega_Bound_dRho(const SimplestModel::Param &p, const CortexState &c) const;
+
+
+
+ std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> simulate_CrankNicholson_Adapted(Parameters par, SimplestModel::Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxLogError, double maxlogErrorCN, double dtinfratio, std::size_t maxloop) const;
+  std::pair<CortexState, double> CrankNicholson_Adapt_2(const CortexState &one, const CortexState::Der &d, const CortexState::dDer &dd, const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::size_t maxloop, std::pair<std::vector<double>, std::vector<std::size_t> > &dts) const;
+  std::pair<CortexState, std::pair<double, std::size_t> > nextCrankNicholson(const SimplestModel::Param &p, const CortexState &c, double dt, double maxlogErrorCN, std::size_t maxloop) const;
+  CortexSimulation simulate_CrankNicholson(Parameters par, SimplestModel::Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogErrorCN, std::size_t maxloop) const;
+  CortexSimulation simulate_CrankNicholson_dt(Parameters par, Param p, const Experiment &sp, double dx, const std::vector<std::pair<double, std::size_t> > &dts, double tequilibrio) const;
+private:
   void addDamp(CortexState& c,const Param& p)const;
-
-
-
-
 
   std::vector<double> dPsi_dt(const Param &p, const CortexState& c) const;
 
@@ -118,13 +146,22 @@ public:
 
   std::vector<double> dOmega_dt(const Param &p, const CortexState &c)const;
 
-  std::vector<double> Omega_Bound(const Param &p, const CortexState& c) const;
+  void Omega_Bound(const Param &p,  CortexState& c) const;
 
 
+  std::vector<std::vector<double> > dRho_dt(const Param &p, const CortexState &c, bool hasOmega)const;
+  std::vector<CortexState> nextEuler_i(const std::vector<SimplestModel::Param> &p, const std::vector<CortexState> &c, double dt) const;
+
+  std::pair<CortexState, double> nextEuler_Adapt_2(const CortexState &one, const CortexState::Der &d, const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, std::vector<double> &dts) const;
 
 
-  void dRho_dt(std::vector<std::vector<double>>& drho_,const Param &p, const CortexState &c, bool hasOmega)const;
-  CortexState init(const SimplestModel::Param &p, const Experiment &s, double dx) const;
+  std::pair<Di<CortexState>, double> nextEuler_Adapt_2_i(CortexState one, const CortexState::Der &d, const Di<SimplestModel::Param> &p, const std::pair<Di<CortexState>, double> &c, double dt, double dtmin, double maxlogError) const;
+
+  void EulerStep(const CortexState::Der &d, const SimplestModel::Param &p, CortexState &c, double dt) const;
+
+  CortexState::Der dStep(const SimplestModel::Param &p, const CortexState &c) const;
+
+
 };
 
 
@@ -142,7 +179,36 @@ public:
 
   virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio) const=0;
 
-  virtual BaseModel* clone()const=0;
+
+  virtual const SimplestModel& myModel()const=0;
+  virtual SimplestModel& myModel()=0;
+
+  virtual SimplestModel::Param toModelParameters()const=0;
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const=0;
+
+
+  std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> run_CN_adapt(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double maxlogErrorCN,double dtinf, std::size_t maxloop) const
+  {
+    return myModel().simulate_CrankNicholson_Adapted(getParameters(),toModelParameters(),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,maxlogErrorCN,dtinf,maxloop);
+
+  }
+
+  virtual CortexSimulation run_CN_dt(const Experiment& e,double dx,const std::vector<std::pair<double, std::size_t>>& dts,double tequilibrio) const
+  {
+    return myModel().simulate_CrankNicholson_dt(getParameters(),toModelParameters(),e,dx,dts,tequilibrio);
+
+  }
+  virtual CortexSimulation run_CN(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio,double maxlogError,std::size_t maxloop) const
+  {
+    return myModel().simulate_CrankNicholson(getParameters(),toModelParameters(),e,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,maxloop);
+
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio,double maxlogError,double dtinf) const=0;
+
+  virtual BaseModel* clone()const =0;
 
   static BaseModel* create(const Parameters& p);
 
@@ -153,7 +219,7 @@ public:
   virtual std::vector<double> getObservedNumberFromModel(const std::vector<double>& modelRho)const;
 
   virtual std::vector<double> getNumberAtInjuryFromModel(const std::vector<double>& modelRho,
-                                                       double f)const;
+                                                         double f)const;
 
   virtual std::vector<double> getObservedNumberFromData(const std::vector<double>& modelRho)const;
 
@@ -165,32 +231,32 @@ public:
   virtual std::vector<std::string> getApoptoticStatesAtInjuryLabels()const;
 
 
-//  double likelihood(const Experiment& m, const CortexSimulation& s)const
-//  {
-//    unsigned is=0;
-//    double sumLogLik=0;
+  //  double likelihood(const Experiment& m, const CortexSimulation& s)const
+  //  {
+  //    unsigned is=0;
+  //    double sumLogLik=0;
 
-//    for (unsigned ie=0; ie<m.numMeasures(); ie++)
-//      {
-//        const CortexMeasure* cm=m.getMeasure(ie);
-//        double t=cm->dia()*24*60*60;
-//        while (s.t_[is]<t
-//               &&is<s.t_.size())
-//          ++is;
-//        std::vector<double> rho_sim;
-//        std::vector<double> rho_meas;
-//        for (unsigned ix=0; ix<cm->dx().size(); ++ix)
-//          {
-//            rho_sim=getObservedProbFromModel(s.rho_[is][ix]);
-//            auto ob=cm->meanAstro(ix);
-//            rho_meas=getObservedNumberFromData(ob);
-//            sumLogLik+=MultinomialLikelihood(rho_meas,rho_sim);
-//          }
+  //    for (unsigned ie=0; ie<m.numMeasures(); ie++)
+  //      {
+  //        const CortexMeasure* cm=m.getMeasure(ie);
+  //        double t=cm->dia()*24*60*60;
+  //        while (s.t_[is]<t
+  //               &&is<s.t_.size())
+  //          ++is;
+  //        std::vector<double> rho_sim;
+  //        std::vector<double> rho_meas;
+  //        for (unsigned ix=0; ix<cm->dx().size(); ++ix)
+  //          {
+  //            rho_sim=getObservedProbFromModel(s.rho_[is][ix]);
+  //            auto ob=cm->meanAstro(ix);
+  //            rho_meas=getObservedNumberFromData(ob);
+  //            sumLogLik+=MultinomialLikelihood(rho_meas,rho_sim);
+  //          }
 
-//      }
-//    return sumLogLik;
+  //      }
+  //    return sumLogLik;
 
-//  }
+  //  }
 
 
 
@@ -228,16 +294,16 @@ public:
 
 
   virtual std::vector<double> getObservedProbFromModel(const std::vector<double>& modelRho)const override
-{
-  std::vector<double>  v(5);
-  double n=modelRho[4]+modelRho[5]+modelRho[6]+modelRho[7]+modelRho[8];
-  v[0]=modelRho[4]/n;
-  v[1]=modelRho[5]/n;
-  v[2]=modelRho[6]/n;
-  v[3]=modelRho[7]/n;
-  v[4]=modelRho[8]/n;
-  return v;
-}
+  {
+    std::vector<double>  v(5);
+    double n=modelRho[4]+modelRho[5]+modelRho[6]+modelRho[7]+modelRho[8];
+    v[0]=modelRho[4]/n;
+    v[1]=modelRho[5]/n;
+    v[2]=modelRho[6]/n;
+    v[3]=modelRho[7]/n;
+    v[4]=modelRho[8]/n;
+    return v;
+  }
   virtual std::vector<double> getObservedNumberFromModel(const std::vector<double>& modelRho)const override
   {
     std::vector<double>  v(5);
@@ -302,7 +368,7 @@ class Model00:public BaseModel
 {
   SimplestModel m;
 
-   Model00* clone()const { return new Model00;}
+  Model00* clone()const override { return new Model00;}
 
 
 
@@ -339,7 +405,7 @@ class Model00:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
@@ -349,7 +415,7 @@ class Model00:public BaseModel
     s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
-     s.prot_concentration_=p.prot_concentration_;
+    s.prot_concentration_=p.prot_concentration_;
     s.DAMP_MW_=p.DAMP_MW_;
     s.Dpsi_=p.D_;
     s.Domega_=0;
@@ -445,7 +511,7 @@ class Model00:public BaseModel
 public:
   Model00(){}
   ~Model00(){}
-  virtual std::string id() const
+  virtual std::string id()  const override
   {
     return "Model 0.0";
   }
@@ -453,7 +519,7 @@ public:
   {
     return 0;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -497,7 +563,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters  (const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -531,6 +597,13 @@ public:
 
   }
 
+
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
@@ -540,12 +613,22 @@ public:
 
 
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
 
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
 
 
@@ -556,6 +639,7 @@ public:
   }
 
 
+
 };
 
 
@@ -564,7 +648,7 @@ class Model00m:public MicrogliaModel
 {
   SimplestModel m;
 
-   Model00m* clone()const { return new Model00m;}
+  Model00m* clone()const  override { return new Model00m;}
 
 
 
@@ -608,7 +692,7 @@ class Model00m:public MicrogliaModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
@@ -618,7 +702,7 @@ class Model00m:public MicrogliaModel
     s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
-     s.prot_concentration_=p.prot_concentration_;
+    s.prot_concentration_=p.prot_concentration_;
     s.DAMP_MW_=p.DAMP_MW_;
     s.Dpsi_=p.D_;
     s.Domega_=0;
@@ -726,7 +810,7 @@ class Model00m:public MicrogliaModel
 public:
   Model00m(){}
   ~Model00m(){}
-  virtual std::string id() const
+  virtual std::string id() const override
   {
     return "Model_10.0";
   }
@@ -734,7 +818,7 @@ public:
   {
     return 10.0;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -783,7 +867,12 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -832,12 +921,24 @@ public:
 
 
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
 
 
@@ -855,7 +956,7 @@ class Model011:public BaseModel
 {
   SimplestModel m;
 
-   Model011* clone()const { return new Model011;}
+  Model011* clone()const override { return new Model011;}
 
 
   class myParameters
@@ -891,14 +992,14 @@ class Model011:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -996,7 +1097,7 @@ class Model011:public BaseModel
 public:
   Model011(){}
   ~Model011(){}
-  virtual std::string id() const
+  virtual std::string id() const override
   {
     return "Model 0.11";
   }
@@ -1004,7 +1105,7 @@ public:
   {
     return 0.11;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -1052,7 +1153,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -1093,12 +1194,24 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
 
 
@@ -1107,6 +1220,10 @@ public:
   {
     loadParameters(p);
   }
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
 };
@@ -1119,7 +1236,7 @@ class Model012:public BaseModel
 {
   SimplestModel m;
 
-  Model012* clone()const { return new Model012;}
+  Model012* clone()const override { return new Model012;}
 
 
 
@@ -1149,7 +1266,7 @@ class Model012:public BaseModel
     double N_Neuron_;
     double a_2_;
     double a_factor_;
-   double a_max_Neuron_;
+    double a_max_Neuron_;
     double a_max_;
 
     double inj_width_;
@@ -1159,14 +1276,14 @@ class Model012:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -1266,7 +1383,7 @@ class Model012:public BaseModel
 public:
   Model012(){}
   ~Model012(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.12";
   }
@@ -1274,7 +1391,7 @@ public:
   {
     return 0.12;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -1321,7 +1438,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -1364,12 +1481,23 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
 
 
@@ -1378,6 +1506,10 @@ public:
   {
     loadParameters(p);
   }
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
 };
@@ -1388,7 +1520,7 @@ class Model012_22:public BaseModel
 {
   SimplestModel m;
 
-  Model012_22* clone()const { return new Model012_22;}
+  Model012_22* clone()const override { return new Model012_22;}
 
 
 
@@ -1432,14 +1564,14 @@ class Model012_22:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -1540,7 +1672,7 @@ class Model012_22:public BaseModel
 public:
   Model012_22(){}
   ~Model012_22(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.12022";
   }
@@ -1548,7 +1680,7 @@ public:
   {
     return 0.12022;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -1600,7 +1732,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -1648,12 +1780,23 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
 
 
@@ -1662,6 +1805,10 @@ public:
   {
     loadParameters(p);
   }
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
 };
@@ -1672,7 +1819,7 @@ class Model012_51:public BaseModel
 {
   SimplestModel m;
 
-  Model012_51* clone()const { return new Model012_51;}
+  Model012_51* clone()const override { return new Model012_51;}
 
 
 
@@ -1708,7 +1855,7 @@ class Model012_51:public BaseModel
     double N_Neuron_;
     double a_2_;
     double a_factor_;
-   double a_max_Neuron_;
+    double a_max_Neuron_;
     double a_max_;
 
     double inj_width_;
@@ -1718,14 +1865,14 @@ class Model012_51:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -1829,7 +1976,7 @@ class Model012_51:public BaseModel
 public:
   Model012_51(){}
   ~Model012_51(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.12051";
   }
@@ -1837,7 +1984,7 @@ public:
   {
     return 0.12051;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -1889,7 +2036,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -1931,19 +2078,34 @@ public:
 
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
 
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
 
 
@@ -1961,7 +2123,7 @@ class Model013:public BaseModel
 {
   SimplestModel m;
 
-  Model013* clone()const { return new Model013;}
+  Model013* clone()const override { return new Model013;}
 
 
 
@@ -1995,7 +2157,7 @@ class Model013:public BaseModel
     double N_Neuron_;
     double a_2_;
     double a_factor_;
-   double a_max_Neuron_;
+    double a_max_Neuron_;
     double a_max_;
 
     double inj_width_;
@@ -2005,14 +2167,14 @@ class Model013:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -2112,7 +2274,7 @@ class Model013:public BaseModel
 public:
   Model013(){}
   ~Model013(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.13";
   }
@@ -2120,7 +2282,7 @@ public:
   {
     return 0.13;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -2169,7 +2331,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -2208,19 +2370,34 @@ public:
 
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
 
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
 
 
@@ -2237,7 +2414,7 @@ class Model013_23:public BaseModel
 {
   SimplestModel m;
 
-  Model013_23* clone()const { return new Model013_23;}
+  Model013_23* clone()const override { return new Model013_23;}
 
 
   class myParameters
@@ -2287,14 +2464,14 @@ class Model013_23:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -2399,7 +2576,7 @@ class Model013_23:public BaseModel
 public:
   Model013_23(){}
   ~Model013_23(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.13023";
   }
@@ -2407,7 +2584,7 @@ public:
   {
     return 0.13023;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -2466,7 +2643,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -2521,12 +2698,23 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
 
 
@@ -2535,6 +2723,10 @@ public:
   {
     loadParameters(p);
   }
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
 };
@@ -2546,7 +2738,11 @@ class Model013_23_31:public BaseModel
 {
   SimplestModel m;
 
-  Model013_23_31* clone()const { return new Model013_23_31;}
+  Model013_23_31* clone()const override { return new Model013_23_31;}
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
 
@@ -2601,14 +2797,14 @@ class Model013_23_31:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -2716,7 +2912,7 @@ class Model013_23_31:public BaseModel
 public:
   Model013_23_31(){}
   ~Model013_23_31(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.13023031";
   }
@@ -2724,7 +2920,7 @@ public:
   {
     return 0.13023031;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -2786,7 +2982,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -2844,12 +3040,23 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
 
 
@@ -2868,7 +3075,7 @@ class Model013_23_31m:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model013_23_31m* clone()const { return new Model013_23_31m;}
+  Model013_23_31m* clone()const override { return new Model013_23_31m;}
 
   class myParameters
   {
@@ -2928,14 +3135,14 @@ class Model013_23_31m:public MicrogliaModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -3052,7 +3259,7 @@ class Model013_23_31m:public MicrogliaModel
 public:
   Model013_23_31m(){}
   ~Model013_23_31m(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.13023031m";
   }
@@ -3060,7 +3267,7 @@ public:
   {
     return 10.13023031;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -3129,7 +3336,12 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -3194,13 +3406,24 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
 
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
 
 
@@ -3218,7 +3441,7 @@ class Model013_51:public BaseModel
 {
   SimplestModel m;
 
-  Model013_51* clone()const { return new Model013_51;}
+  Model013_51* clone()const override { return new Model013_51;}
 
 
 
@@ -3258,7 +3481,7 @@ class Model013_51:public BaseModel
     double N_Neuron_;
     double a_2_;
     double a_factor_;
-   double a_max_Neuron_;
+    double a_max_Neuron_;
     double a_max_;
 
     double inj_width_;
@@ -3268,14 +3491,14 @@ class Model013_51:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -3379,7 +3602,7 @@ class Model013_51:public BaseModel
 public:
   Model013_51(){}
   ~Model013_51(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.13051";
   }
@@ -3387,7 +3610,7 @@ public:
   {
     return 0.13051;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -3442,7 +3665,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -3486,15 +3709,31 @@ public:
 
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -3515,7 +3754,7 @@ class Model021:public BaseModel
 {
   SimplestModel m;
 
-  Model021* clone()const { return new Model021;}
+  Model021* clone()const override { return new Model021;}
 
 
 
@@ -3556,14 +3795,14 @@ class Model021:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -3668,7 +3907,7 @@ class Model021:public BaseModel
 public:
   Model021(){}
   ~Model021(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.21";
   }
@@ -3676,7 +3915,7 @@ public:
   {
     return 0.21;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -3726,7 +3965,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -3765,15 +4004,31 @@ public:
 
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -3797,7 +4052,7 @@ class Model022:public BaseModel
 {
   SimplestModel m;
 
-  Model022* clone()const { return new Model022;}
+  Model022* clone()const override { return new Model022;}
 
 
 
@@ -3824,7 +4079,7 @@ class Model022:public BaseModel
     double N_Neuron_;
     double a_2_;
     double a_factor_;
-   double a_max_Neuron_;
+    double a_max_Neuron_;
 
     double a_max_1_;
     double a_max_2_;
@@ -3838,14 +4093,14 @@ class Model022:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -3947,7 +4202,7 @@ class Model022:public BaseModel
 public:
   Model022(){}
   ~Model022(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.22";
   }
@@ -3955,7 +4210,7 @@ public:
   {
     return 0.22;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -4004,7 +4259,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -4043,15 +4298,30 @@ public:
 
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -4074,7 +4344,7 @@ class Model023:public BaseModel
 {
   SimplestModel m;
 
-  Model023* clone()const { return new Model023;}
+  Model023* clone()const override { return new Model023;}
 
 
 
@@ -4118,14 +4388,14 @@ class Model023:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -4228,7 +4498,7 @@ class Model023:public BaseModel
 public:
   Model023(){}
   ~Model023(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.23";
   }
@@ -4236,7 +4506,7 @@ public:
   {
     return 0.23;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -4288,7 +4558,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -4331,15 +4601,31 @@ public:
 
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -4363,7 +4649,7 @@ class Model031:public BaseModel
 {
   SimplestModel m;
 
-  Model031* clone()const { return new Model031;}
+  Model031* clone()const override { return new Model031;}
 
 
 
@@ -4394,7 +4680,7 @@ class Model031:public BaseModel
     double N_Neuron_;
     double a_2_;
     double a_factor_;
-   double a_max_Neuron_;
+    double a_max_Neuron_;
     double a_max_;
 
     double inj_width_;
@@ -4404,14 +4690,14 @@ class Model031:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -4511,7 +4797,7 @@ class Model031:public BaseModel
 public:
   Model031(){}
   ~Model031(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.31";
   }
@@ -4519,7 +4805,7 @@ public:
   {
     return 0.31;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -4567,7 +4853,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -4611,9 +4897,20 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -4626,6 +4923,10 @@ public:
     loadParameters(p);
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
 
 };
 
@@ -4634,7 +4935,7 @@ class Model051:public BaseModel
 {
   SimplestModel m;
 
-  Model051* clone()const { return new Model051;}
+  Model051* clone()const override { return new Model051;}
 
 
 
@@ -4678,14 +4979,14 @@ class Model051:public BaseModel
     double inj_width_3_;
     double inj_width_7_;
 
-   };
+  };
 
 
   SimplestModel::Param toModelParameters(const myParameters& p)const
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -4788,7 +5089,7 @@ class Model051:public BaseModel
 public:
   Model051(){}
   ~Model051(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 0.51";
   }
@@ -4796,7 +5097,7 @@ public:
   {
     return 0.51;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -4846,7 +5147,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
     p_.D_=p.get("D");
     p_.epsilon_=p.get("epsilon");
@@ -4889,9 +5190,20 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -4904,6 +5216,10 @@ public:
     loadParameters(p);
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
 
 };
 
@@ -4913,7 +5229,7 @@ class Model10:public BaseModel
 {
   SimplestModel m;
 
-  Model10* clone()const { return new Model10;}
+  Model10* clone()const override { return new Model10;}
 
 
   class myParameters
@@ -4961,7 +5277,7 @@ class Model10:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -5102,7 +5418,7 @@ class Model10:public BaseModel
 public:
   Model10(){}
   ~Model10(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.0";
   }
@@ -5110,7 +5426,7 @@ public:
   {
     return 1;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -5162,7 +5478,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -5207,9 +5523,20 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -5218,6 +5545,10 @@ public:
   {
     loadParameters(p);
   }
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
 };
@@ -5228,7 +5559,7 @@ class Model100m:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model100m* clone()const { return new Model100m;}
+  Model100m* clone()const override { return new Model100m;}
 
 
   class myParameters
@@ -5279,7 +5610,7 @@ class Model100m:public MicrogliaModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -5438,7 +5769,7 @@ class Model100m:public MicrogliaModel
 public:
   Model100m(){}
   ~Model100m(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 11.0";
   }
@@ -5446,7 +5777,7 @@ public:
   {
     return 11;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -5502,7 +5833,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -5551,9 +5882,20 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -5562,6 +5904,10 @@ public:
   {
     loadParameters(p);
   }
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
 };
@@ -5572,7 +5918,11 @@ class Model111:public BaseModel
 {
   SimplestModel m;
 
-  Model111* clone()const { return new Model111;}
+  Model111* clone()const override { return new Model111;}
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
   class myParameters
@@ -5620,7 +5970,7 @@ class Model111:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -5755,7 +6105,7 @@ class Model111:public BaseModel
 public:
   Model111(){}
   ~Model111(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.11";
   }
@@ -5763,7 +6113,7 @@ public:
   {
     return 1.11;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -5814,7 +6164,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -5861,12 +6211,23 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model111(const Parameters& p)
   {
@@ -5882,7 +6243,7 @@ class Model112:public BaseModel
 {
   SimplestModel m;
 
-  Model112* clone()const { return new Model112;}
+  Model112* clone()const override { return new Model112;}
 
 
   class myParameters
@@ -5929,7 +6290,7 @@ class Model112:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -6064,7 +6425,7 @@ class Model112:public BaseModel
 public:
   Model112(){}
   ~Model112(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.12";
   }
@@ -6072,7 +6433,7 @@ public:
   {
     return 1.12;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -6125,7 +6486,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -6166,18 +6527,33 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model112(const Parameters& p)
   {
@@ -6194,7 +6570,7 @@ class Model112_22:public BaseModel
 {
   SimplestModel m;
 
-  Model112_22* clone()const { return new Model112_22;}
+  Model112_22* clone()const override { return new Model112_22;}
 
 
   class myParameters
@@ -6245,7 +6621,7 @@ class Model112_22:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -6377,7 +6753,7 @@ class Model112_22:public BaseModel
 public:
   Model112_22(){}
   ~Model112_22(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.12022";
   }
@@ -6385,7 +6761,7 @@ public:
   {
     return 1.12022;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -6440,7 +6816,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -6484,18 +6860,33 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model112_22(const Parameters& p)
   {
@@ -6513,8 +6904,12 @@ class Model112_22_31:public BaseModel
 {
   SimplestModel m;
 
-  Model112_22_31* clone()const { return new Model112_22_31;}
+  Model112_22_31* clone()const override { return new Model112_22_31;}
 
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
   class myParameters
   {
@@ -6564,7 +6959,7 @@ class Model112_22_31:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -6696,7 +7091,7 @@ class Model112_22_31:public BaseModel
 public:
   Model112_22_31(){}
   ~Model112_22_31(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.12022031";
   }
@@ -6704,7 +7099,7 @@ public:
   {
     return 1.12022031;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -6759,7 +7154,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -6809,9 +7204,20 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -6828,7 +7234,7 @@ class Model112_51:public BaseModel
 {
   SimplestModel m;
 
-  Model112_51* clone()const { return new Model112_51;}
+  Model112_51* clone()const override { return new Model112_51;}
 
 
   class myParameters
@@ -6880,7 +7286,7 @@ class Model112_51:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -7025,7 +7431,7 @@ class Model112_51:public BaseModel
 public:
   Model112_51(){}
   ~Model112_51(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.12051";
   }
@@ -7033,7 +7439,7 @@ public:
   {
     return 1.12051;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -7091,7 +7497,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -7137,15 +7543,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -7164,7 +7585,7 @@ class Model112_52:public BaseModel
 {
   SimplestModel m;
 
-  Model112_52* clone()const { return new Model112_52;}
+  Model112_52* clone()const override { return new Model112_52;}
 
 
   class myParameters
@@ -7221,7 +7642,7 @@ class Model112_52:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -7364,7 +7785,7 @@ class Model112_52:public BaseModel
 public:
   Model112_52(){}
   ~Model112_52(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.12052";
   }
@@ -7372,7 +7793,7 @@ public:
   {
     return 1.12052;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -7436,7 +7857,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -7487,18 +7908,33 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model112_52(const Parameters& p)
   {
@@ -7515,7 +7951,11 @@ class Model113:public BaseModel
 {
   SimplestModel m;
 
-  Model113* clone()const { return new Model113;}
+  Model113* clone()const override { return new Model113;}
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
   class myParameters
@@ -7565,7 +8005,7 @@ class Model113:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -7700,7 +8140,7 @@ class Model113:public BaseModel
 public:
   Model113(){}
   ~Model113(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.13";
   }
@@ -7708,7 +8148,7 @@ public:
   {
     return 1.13;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -7726,7 +8166,7 @@ public:
     out.push_back("g_23",p_.g_23_ );
     out.push_back("g_34",p_.g_34_ );
     out.push_back("g_45",p_.g_45_ );
-     out.push_back("g_max_2",p_.g_max_2_ );
+    out.push_back("g_max_2",p_.g_max_2_ );
     out.push_back("g_max_3",p_.g_max_3_ );
     out.push_back("g_max_4",p_.g_max_4_ );
     out.push_back("g_max_5",p_.g_max_5_ );
@@ -7763,7 +8203,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -7812,9 +8252,20 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -7832,7 +8283,7 @@ class Model113_42:public BaseModel
 {
   SimplestModel m;
 
-  Model113_42* clone()const { return new Model113_42;}
+  Model113_42* clone()const override { return new Model113_42;}
 
 
   class myParameters
@@ -7886,7 +8337,7 @@ class Model113_42:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -8022,7 +8473,7 @@ class Model113_42:public BaseModel
 public:
   Model113_42(){}
   ~Model113_42(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.13042";
   }
@@ -8030,7 +8481,7 @@ public:
   {
     return 1.13042;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -8048,7 +8499,7 @@ public:
     out.push_back("g_23",p_.g_23_ );
     out.push_back("g_34",p_.g_34_ );
     out.push_back("g_45",p_.g_45_ );
-     out.push_back("g_max_2",p_.g_max_2_ );
+    out.push_back("g_max_2",p_.g_max_2_ );
     out.push_back("g_max_3",p_.g_max_3_ );
     out.push_back("g_max_4",p_.g_max_4_ );
     out.push_back("g_max_5",p_.g_max_5_ );
@@ -8089,7 +8540,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -8136,15 +8587,31 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -8163,7 +8630,7 @@ class Model114:public BaseModel
 {
   SimplestModel m;
 
-  Model114* clone()const { return new Model114;}
+  Model114* clone()const override { return new Model114;}
 
 
   class myParameters
@@ -8214,7 +8681,7 @@ class Model114:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -8347,7 +8814,7 @@ class Model114:public BaseModel
 public:
   Model114(){}
   ~Model114(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.14";
   }
@@ -8355,7 +8822,7 @@ public:
   {
     return 1.14;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -8411,7 +8878,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -8456,18 +8923,33 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model114(const Parameters& p)
   {
@@ -8483,7 +8965,7 @@ class Model114_24_44:public BaseModel
 {
   SimplestModel m;
 
-  Model114_24_44* clone()const { return new Model114_24_44;}
+  Model114_24_44* clone()const override { return new Model114_24_44;}
 
 
   class myParameters
@@ -8555,7 +9037,7 @@ class Model114_24_44:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -8694,7 +9176,7 @@ class Model114_24_44:public BaseModel
 public:
   Model114_24_44(){}
   ~Model114_24_44(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.14024044";
   }
@@ -8702,7 +9184,7 @@ public:
   {
     return 1.14024044;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -8781,7 +9263,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -8848,18 +9330,33 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model114_24_44(const Parameters& p)
   {
@@ -8875,7 +9372,7 @@ class Model114_24_32_44:public BaseModel
 {
   SimplestModel m;
 
-  Model114_24_32_44* clone()const { return new Model114_24_32_44;}
+  Model114_24_32_44* clone()const override { return new Model114_24_32_44;}
 
 
   class myParameters
@@ -8960,7 +9457,7 @@ class Model114_24_32_44:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -9102,7 +9599,7 @@ class Model114_24_32_44:public BaseModel
 public:
   Model114_24_32_44(){}
   ~Model114_24_32_44(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.14024032044";
   }
@@ -9110,7 +9607,7 @@ public:
   {
     return 1.14024032044;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -9201,7 +9698,12 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -9286,12 +9788,23 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model114_24_32_44(const Parameters& p)
   {
@@ -9306,7 +9819,7 @@ class Model114_24_32_44m:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model114_24_32_44m* clone()const { return new Model114_24_32_44m;}
+  Model114_24_32_44m* clone()const override { return new Model114_24_32_44m;}
 
   class myParameters
   {
@@ -9408,7 +9921,7 @@ class Model114_24_32_44m:public MicrogliaModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -9569,7 +10082,7 @@ class Model114_24_32_44m:public MicrogliaModel
 public:
   Model114_24_32_44m(){}
   ~Model114_24_32_44m(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 11.14024032044m";
   }
@@ -9578,7 +10091,7 @@ public:
     return 11.14024032044;
   }
 
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -9686,7 +10199,11 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -9788,10 +10305,21 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
                       toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -9809,7 +10337,7 @@ class Model_01:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model_01* clone()const { return new Model_01;}
+  Model_01* clone()const override { return new Model_01;}
 
   class myParameters
   {
@@ -9900,7 +10428,7 @@ class Model_01:public MicrogliaModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -10034,7 +10562,7 @@ class Model_01:public MicrogliaModel
 public:
   Model_01(){}
   ~Model_01(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model_01";
   }
@@ -10043,7 +10571,7 @@ public:
     return 100;
   }
 
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -10135,7 +10663,11 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -10223,10 +10755,21 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
                       toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -10245,7 +10788,7 @@ class Model_11:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model_11* clone()const { return new Model_11;}
+  Model_11* clone()const override { return new Model_11;}
 
   class myParameters
   {
@@ -10354,7 +10897,7 @@ class Model_11:public MicrogliaModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -10504,7 +11047,7 @@ class Model_11:public MicrogliaModel
 public:
   Model_11(){}
   ~Model_11(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 11.14024032044m";
   }
@@ -10513,7 +11056,7 @@ public:
     return 1100;
   }
 
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -10622,7 +11165,11 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -10727,10 +11274,21 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
                       toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -10748,7 +11306,7 @@ class Model_02:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model_02* clone()const { return new Model_02;}
+  Model_02* clone()const override { return new Model_02;}
 
   class myParameters
   {
@@ -10844,7 +11402,7 @@ class Model_02:public MicrogliaModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -10981,7 +11539,7 @@ class Model_02:public MicrogliaModel
 public:
   Model_02(){}
   ~Model_02(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model_02";
   }
@@ -10990,7 +11548,7 @@ public:
     return 200;
   }
 
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -11085,7 +11643,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -11169,6 +11727,10 @@ public:
     p_.inj_width_7_=p.get("inj_width_7");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
@@ -11176,10 +11738,21 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
                       toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -11198,7 +11771,7 @@ class Model_12:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model_12* clone()const { return new Model_12;}
+  Model_12* clone()const override { return new Model_12;}
 
   class myParameters
   {
@@ -11312,7 +11885,7 @@ class Model_12:public MicrogliaModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -11465,7 +12038,7 @@ class Model_12:public MicrogliaModel
 public:
   Model_12(){}
   ~Model_12(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model_12";
   }
@@ -11474,7 +12047,7 @@ public:
     return 1200;
   }
 
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -11586,7 +12159,11 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -11694,10 +12271,22 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
                       toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -11714,7 +12303,7 @@ class Model_101:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model_101* clone()const { return new Model_101;}
+  Model_101* clone()const override { return new Model_101;}
 
   class myParameters
   {
@@ -11838,7 +12427,7 @@ class Model_101:public MicrogliaModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -12002,7 +12591,7 @@ class Model_101:public MicrogliaModel
 public:
   Model_101(){}
   ~Model_101(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model_101";
   }
@@ -12011,7 +12600,7 @@ public:
     return 1010;
   }
 
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -12134,7 +12723,12 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -12254,13 +12848,25 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
                       toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model_101(const Parameters& p)
   {
@@ -12275,7 +12881,7 @@ class Model_10:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model_10* clone()const { return new Model_10;}
+  Model_10* clone()const override { return new Model_10;}
 
   class myParameters
   {
@@ -12355,7 +12961,7 @@ class Model_10:public MicrogliaModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -12478,7 +13084,7 @@ class Model_10:public MicrogliaModel
 public:
   Model_10(){}
   ~Model_10(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model_10";
   }
@@ -12487,7 +13093,7 @@ public:
     return 1000;
   }
 
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -12564,7 +13170,12 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -12637,13 +13248,24 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
                       toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model_10(const Parameters& p)
   {
@@ -12658,7 +13280,7 @@ class Model_03:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model_03* clone()const { return new Model_03;}
+  Model_03* clone()const override { return new Model_03;}
 
   class myParameters
   {
@@ -12766,7 +13388,7 @@ class Model_03:public MicrogliaModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -12915,7 +13537,7 @@ class Model_03:public MicrogliaModel
 public:
   Model_03(){}
   ~Model_03(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model_03";
   }
@@ -12924,7 +13546,7 @@ public:
     return 300;
   }
 
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -13031,7 +13653,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -13128,6 +13750,10 @@ public:
     p_.inj_width_7_=p.get("inj_width_7");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
 
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
@@ -13135,13 +13761,24 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
                       toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model_03(const Parameters& p)
   {
@@ -13156,7 +13793,7 @@ class Model_13:public MicrogliaModel
 {
   SimplestModel m;
 
-  Model_13* clone()const { return new Model_13;}
+  Model_13* clone()const override { return new Model_13;}
 
   class myParameters
   {
@@ -13288,7 +13925,7 @@ class Model_13:public MicrogliaModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -13459,7 +14096,7 @@ class Model_13:public MicrogliaModel
 public:
   Model_13(){}
   ~Model_13(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model_13";
   }
@@ -13468,7 +14105,7 @@ public:
     return 1300;
   }
 
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -13598,7 +14235,12 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -13725,13 +14367,24 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
                       toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model_13(const Parameters& p)
   {
@@ -13748,7 +14401,7 @@ class Model115:public BaseModel
 {
   SimplestModel m;
 
-  Model115* clone()const { return new Model115;}
+  Model115* clone()const override { return new Model115;}
 
 
   class myParameters
@@ -13801,7 +14454,7 @@ class Model115:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -13933,7 +14586,7 @@ class Model115:public BaseModel
 public:
   Model115(){}
   ~Model115(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.15";
   }
@@ -13941,7 +14594,7 @@ public:
   {
     return 1.15;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -13999,7 +14652,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -14046,15 +14699,31 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -14073,7 +14742,7 @@ class Model115_22:public BaseModel
 {
   SimplestModel m;
 
-  Model115_22* clone()const { return new Model115_22;}
+  Model115_22* clone()const override { return new Model115_22;}
 
 
   class myParameters
@@ -14130,7 +14799,7 @@ class Model115_22:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -14265,7 +14934,7 @@ class Model115_22:public BaseModel
 public:
   Model115_22(){}
   ~Model115_22(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.15022";
   }
@@ -14273,7 +14942,7 @@ public:
   {
     return 1.15022;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -14335,7 +15004,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -14386,15 +15055,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -14412,7 +15096,7 @@ class Model115_25:public BaseModel
 {
   SimplestModel m;
 
-  Model115_25* clone()const { return new Model115_25;}
+  Model115_25* clone()const override { return new Model115_25;}
 
 
   class myParameters
@@ -14478,7 +15162,7 @@ class Model115_25:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -14613,7 +15297,7 @@ class Model115_25:public BaseModel
 public:
   Model115_25(){}
   ~Model115_25(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.15025";
   }
@@ -14621,7 +15305,7 @@ public:
   {
     return 1.15025;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -14692,7 +15376,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -14753,15 +15437,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -14780,7 +15479,7 @@ class Model121:public BaseModel
 {
   SimplestModel m;
 
-  Model121* clone()const { return new Model121;}
+  Model121* clone()const override { return new Model121;}
 
 
   class myParameters
@@ -14828,7 +15527,7 @@ class Model121:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -14964,7 +15663,7 @@ class Model121:public BaseModel
 public:
   Model121(){}
   ~Model121(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.21";
   }
@@ -14972,7 +15671,7 @@ public:
   {
     return 1.21;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -15025,7 +15724,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -15066,15 +15765,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -15093,7 +15807,7 @@ class Model122:public BaseModel
 {
   SimplestModel m;
 
-  Model122* clone()const { return new Model122;}
+  Model122* clone()const override { return new Model122;}
 
 
   class myParameters
@@ -15141,7 +15855,7 @@ class Model122:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -15276,7 +15990,7 @@ class Model122:public BaseModel
 public:
   Model122(){}
   ~Model122(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.22";
   }
@@ -15284,7 +15998,7 @@ public:
   {
     return 1.22;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -15336,7 +16050,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -15377,15 +16091,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -15403,7 +16132,7 @@ class Model123:public BaseModel
 {
   SimplestModel m;
 
-  Model123* clone()const { return new Model123;}
+  Model123* clone()const override { return new Model123;}
 
 
   class myParameters
@@ -15454,7 +16183,7 @@ class Model123:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -15589,7 +16318,7 @@ class Model123:public BaseModel
 public:
   Model123(){}
   ~Model123(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.23";
   }
@@ -15597,7 +16326,7 @@ public:
   {
     return 1.23;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -15652,7 +16381,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -15696,15 +16425,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -15724,7 +16468,7 @@ class Model124:public BaseModel
 {
   SimplestModel m;
 
-  Model124* clone()const { return new Model124;}
+  Model124* clone()const override { return new Model124;}
 
 
   class myParameters
@@ -15778,7 +16522,7 @@ class Model124:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -15912,7 +16656,7 @@ class Model124:public BaseModel
 public:
   Model124(){}
   ~Model124(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.24";
   }
@@ -15920,7 +16664,7 @@ public:
   {
     return 1.24;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -15981,7 +16725,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -16031,15 +16775,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -16059,7 +16818,7 @@ class Model125:public BaseModel
 {
   SimplestModel m;
 
-  Model125* clone()const { return new Model125;}
+  Model125* clone()const override { return new Model125;}
 
 
   class myParameters
@@ -16116,7 +16875,7 @@ class Model125:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -16251,7 +17010,7 @@ class Model125:public BaseModel
 public:
   Model125(){}
   ~Model125(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.25";
   }
@@ -16259,7 +17018,7 @@ public:
   {
     return 1.25;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -16323,7 +17082,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -16376,15 +17135,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -16403,7 +17177,7 @@ class Model131:public BaseModel
 {
   SimplestModel m;
 
-  Model131* clone()const { return new Model131;}
+  Model131* clone()const override { return new Model131;}
 
 
   class myParameters
@@ -16451,7 +17225,7 @@ class Model131:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -16584,7 +17358,7 @@ class Model131:public BaseModel
 public:
   Model131(){}
   ~Model131(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.31";
   }
@@ -16592,7 +17366,7 @@ public:
   {
     return 1.31;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -16645,7 +17419,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -16687,15 +17461,29 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -16713,7 +17501,7 @@ class Model132:public BaseModel
 {
   SimplestModel m;
 
-  Model132* clone()const { return new Model132;}
+  Model132* clone()const override { return new Model132;}
 
 
   class myParameters
@@ -16768,7 +17556,7 @@ class Model132:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -16901,7 +17689,7 @@ class Model132:public BaseModel
 public:
   Model132(){}
   ~Model132(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.32";
   }
@@ -16909,7 +17697,7 @@ public:
   {
     return 1.32;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -16969,7 +17757,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -17020,15 +17808,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -17047,7 +17850,7 @@ class Model141:public BaseModel
 {
   SimplestModel m;
 
-  Model141* clone()const { return new Model141;}
+  Model141* clone()const override { return new Model141;}
 
 
   class myParameters
@@ -17095,7 +17898,7 @@ class Model141:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -17232,7 +18035,7 @@ class Model141:public BaseModel
 public:
   Model141(){}
   ~Model141(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.41";
   }
@@ -17240,7 +18043,7 @@ public:
   {
     return 1.41;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -17296,7 +18099,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -17338,15 +18141,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -17372,7 +18190,7 @@ class Model142:public BaseModel
 {
   SimplestModel m;
 
-  Model142* clone()const { return new Model142;}
+  Model142* clone()const override { return new Model142;}
 
 
   class myParameters
@@ -17422,7 +18240,7 @@ class Model142:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -17558,7 +18376,7 @@ class Model142:public BaseModel
 public:
   Model142(){}
   ~Model142(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.42";
   }
@@ -17566,7 +18384,7 @@ public:
   {
     return 1.42;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -17623,7 +18441,12 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -17673,9 +18496,20 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -17698,7 +18532,7 @@ class Model144:public BaseModel
 {
   SimplestModel m;
 
-  Model144* clone()const { return new Model144;}
+  Model144* clone()const override { return new Model144;}
 
 
   class myParameters
@@ -17753,7 +18587,7 @@ class Model144:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -17891,7 +18725,7 @@ class Model144:public BaseModel
 public:
   Model144(){}
   ~Model144(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.44";
   }
@@ -17899,7 +18733,7 @@ public:
   {
     return 1.44;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -17960,7 +18794,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -18008,15 +18842,31 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -18035,7 +18885,7 @@ class Model151:public BaseModel
 {
   SimplestModel m;
 
-  Model151* clone()const { return new Model151;}
+  Model151* clone()const override { return new Model151;}
 
 
   class myParameters
@@ -18086,7 +18936,7 @@ class Model151:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -18233,7 +19083,7 @@ class Model151:public BaseModel
 public:
   Model151(){}
   ~Model151(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.51";
   }
@@ -18241,7 +19091,7 @@ public:
   {
     return 1.51;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -18298,7 +19148,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -18341,15 +19191,31 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -18368,7 +19234,7 @@ class Model152:public BaseModel
 {
   SimplestModel m;
 
-  Model152* clone()const { return new Model152;}
+  Model152* clone()const override { return new Model152;}
 
 
   class myParameters
@@ -18424,7 +19290,7 @@ class Model152:public BaseModel
   {
     SimplestModel::Param s;
     s.inj_width_=p.inj_width_;
-   s.DAMP_psi_ratio_=p.DAMP_ratio_;
+    s.DAMP_psi_ratio_=p.DAMP_ratio_;
     s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
@@ -18571,7 +19437,7 @@ class Model152:public BaseModel
 public:
   Model152(){}
   ~Model152(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 1.52";
   }
@@ -18579,7 +19445,7 @@ public:
   {
     return 1.52;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -18634,7 +19500,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -18682,15 +19548,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -18708,7 +19589,7 @@ class Model20:public BaseModel
 {
   SimplestModel m;
 
-  Model20* clone()const { return new Model20;}
+  Model20* clone()const override { return new Model20;}
 
 
   class myParameters
@@ -18876,7 +19757,7 @@ class Model20:public BaseModel
 public:
   Model20(){}
   ~Model20(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 2.0";
   }
@@ -18884,7 +19765,7 @@ public:
   {
     return 2.0;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -18936,7 +19817,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -18973,18 +19854,34 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model20(const Parameters& p)
   {
@@ -19001,7 +19898,7 @@ class Model211:public BaseModel
 {
   SimplestModel m;
 
-  Model211* clone()const { return new Model211;}
+  Model211* clone()const override { return new Model211;}
 
 
   class myParameters
@@ -19050,7 +19947,7 @@ class Model211:public BaseModel
     s.inj_width_=p.inj_width_;
     s.DAMP_psi_ratio_=p.DAMP_ratio_psi_;
     s.DAMP_omega_ratio_=p.DAMP_ratio_omega_;
-   s.DAMP_omega_ratio_=0;
+    s.DAMP_omega_ratio_=0;
 
     s.prot_concentration_=p.prot_concentration_;
     s.DAMP_MW_=p.DAMP_MW_;
@@ -19171,7 +20068,7 @@ class Model211:public BaseModel
 public:
   Model211(){}
   ~Model211(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 2.11";
   }
@@ -19179,7 +20076,7 @@ public:
   {
     return 2.11;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -19230,7 +20127,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -19270,18 +20167,33 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
 
   Model211(const Parameters& p)
   {
@@ -19297,7 +20209,7 @@ class Model212:public BaseModel
 {
   SimplestModel m;
 
-  Model212* clone()const { return new Model212;}
+  Model212* clone()const override { return new Model212;}
 
 
   class myParameters
@@ -19468,7 +20380,7 @@ class Model212:public BaseModel
 public:
   Model212(){}
   ~Model212(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 2.12";
   }
@@ -19476,7 +20388,7 @@ public:
   {
     return 2.12;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -19531,7 +20443,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -19571,15 +20483,30 @@ public:
     p_.inj_width_7_=p.get("inj_width_7dpl2");
   }
 
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
+
   virtual CortexSimulation run(const CortexExperiment& e,double dt) const
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dt);
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+
+  }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -19590,6 +20517,7 @@ public:
   }
 
 
+
 };
 
 
@@ -19597,7 +20525,7 @@ class Model213:public BaseModel
 {
   SimplestModel m;
 
-  Model213* clone()const { return new Model213;}
+  Model213* clone()const override { return new Model213;}
 
 
   class myParameters
@@ -19770,7 +20698,7 @@ class Model213:public BaseModel
 public:
   Model213(){}
   ~Model213(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 2.13";
   }
@@ -19778,7 +20706,7 @@ public:
   {
     return 2.13;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -19835,7 +20763,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -19883,11 +20811,26 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
   Model213(const Parameters& p)
@@ -19903,7 +20846,7 @@ class Model214:public BaseModel
 {
   SimplestModel m;
 
-  Model214* clone()const { return new Model214;}
+  Model214* clone()const override { return new Model214;}
 
 
   class myParameters
@@ -20079,7 +21022,7 @@ class Model214:public BaseModel
 public:
   Model214(){}
   ~Model214(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 2.14";
   }
@@ -20087,7 +21030,7 @@ public:
   {
     return 2.14;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -20146,7 +21089,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -20169,7 +21112,7 @@ public:
     p_.g_max_omega_3_=p.get("g_max_omega_3");
     p_.g_max_omega_4_=p.get("g_max_omega_4");
     p_.g_max_omega_5_=p.get("g_max_omega_5");
-   p_.N_0_=p.get("N_0");
+    p_.N_0_=p.get("N_0");
     p_.N_2_=p.get("N_2");
     p_.N_N_=p.get("N_N");
     p_.a_2_=p.get("a_2");
@@ -20196,11 +21139,26 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
   Model214(const Parameters& p)
@@ -20218,7 +21176,7 @@ class Model215:public BaseModel
 {
   SimplestModel m;
 
-  Model215* clone()const { return new Model215;}
+  Model215* clone()const override { return new Model215;}
 
 
   class myParameters
@@ -20396,7 +21354,7 @@ class Model215:public BaseModel
 public:
   Model215(){}
   ~Model215(){}
-  virtual std::string id() const
+  virtual std::string id() const  override
   {
     return "Model 2.15";
   }
@@ -20404,7 +21362,7 @@ public:
   {
     return 2.15;
   }
-  virtual Parameters getParameters() const
+  virtual Parameters getParameters() const override
   {
     Parameters out;
     out.push_back("model",number());
@@ -20466,7 +21424,7 @@ public:
     return out;
 
   }
-  virtual void loadParameters(const Parameters& p)
+  virtual void loadParameters(const Parameters& p) override
   {
 
     p_.D_=p.get("D");
@@ -20491,7 +21449,7 @@ public:
     p_.g_max_omega_3_=p.get("g_max_omega_3");
     p_.g_max_omega_4_=p.get("g_max_omega_4");
     p_.g_max_omega_5_=p.get("g_max_omega_5");
-   p_.N_0_=p.get("N_0");
+    p_.N_0_=p.get("N_0");
     p_.N_2_=p.get("N_2");
     p_.N_N_=p.get("N_N");
     p_.a_2_=p.get("a_2");
@@ -20518,11 +21476,26 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
+
+  virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
+  {
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
+  }
+
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  {
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+
+  }
+
+  virtual const SimplestModel& myModel()const override{ return m;}
+  virtual SimplestModel& myModel()override {return m;}
+  virtual SimplestModel::Param toModelParameters()const override{return toModelParameters(this->p_);}
 
 
   Model215(const Parameters& p)

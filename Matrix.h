@@ -245,24 +245,13 @@ public:
   }
 
 
-  M_Matrix():
-    _nrows(std::size_t(0)),
-    _ncols(std::size_t(0)),
-    _ncells(std::size_t(0)),
-    _data(0) {}  //default constructor
+  M_Matrix()=default;
 
+  M_Matrix (const M_Matrix<T> & sample)=default;
+  M_Matrix (M_Matrix<T> && sample)=default;
 
-  M_Matrix (const M_Matrix<T> & sample)
-    : _nrows(sample._nrows),
-      _ncols(sample._ncols),
-      _ncells(sample._ncells),
-      //   _data(_ncells>0?new T[x.size()]:0)
-      _data(sample._data)
-  {
-    /*  for (std::size_t i = 0; i < size(sample); ++i)
-      (*this)[i] = sample[i];
- */
-  }
+  M_Matrix& operator= (const M_Matrix<T> & sample)=default;
+  M_Matrix& operator= (M_Matrix<T> && sample)=default;
 
   M_Matrix (std::size_t nrows,std::size_t ncols)
     : _nrows(nrows),
@@ -316,7 +305,6 @@ public:
 
 
 
-  M_Matrix<T>& operator=(const M_Matrix<T>& x)=default;
 
 
 
