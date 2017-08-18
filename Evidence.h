@@ -500,11 +500,15 @@ public:
     mcmc_prior p=model.prior(data,param);
     mcmc_post out(p);
     out.f=model.f(data,param,out.dts);
+    auto f2=model.f(data,param,out.dts);
     if (out.f.size()==0)
       out.isValid=false;
     else
       {
         out.logLik=logL(data,out.f);
+        auto logLik2=logL(data,f2);
+        std::cerr<<"logLik0 ="<<out.logLik<<" logLik2dts ="<<logLik2-out.logLik<<"\n";
+
         if (std::isnan(out.logLik))
           out.isValid=false;
         else out.isValid=true;
@@ -4879,8 +4883,12 @@ public:
             M_Matrix<double> c=sDist[i].proposed.sample(mt[i]);
             cDist=LM_Lik.get_mcmc_step
                 (lik,model,data,c,landa,aBeta.getBeta().getValue()[i],sDist[i].iscout);
+            std::cerr<<"logL "<<cDist.logLik<<" ";
             if (!cDist.isValid)
+              {
+                std::cerr<<"rection :"<<landa<<"\n";
               pars[i].push_rejection(landa);
+              }
             ++icount;
 
           }
@@ -5322,7 +5330,7 @@ public:
 
 
 
-        for( std::size_t i=0;i<nskip; ++i)
+       for( std::size_t i=0;i<nskip; ++i)
           {
             mcmc.tempered_step
                 (LMLik,lik,model,data,sDists,pars,beta,dHd,logQforward,logQbackward,pTjump,mts,o,i,does_stdout,os,startTime,timeOpt);

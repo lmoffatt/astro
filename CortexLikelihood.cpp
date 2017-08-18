@@ -83,7 +83,8 @@ CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Pa
 ,tequilibrio_(tequilibrio)
 ,f_maxlogErrorCN_(t_maxlogError)
 ,maxloop_(maxloop)
-,nstate_()
+,UseDerivative_(false)
+ ,nstate_()
 ,ntot_()
 {
   setId(id);
@@ -111,7 +112,7 @@ CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Pa
   update();
 
 }
-CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError,double f_maxlogError, double dtinf, std::size_t maxloop):
+CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError,double f_maxlogError, double dtinf, std::size_t maxloop, bool UseDerivative):
   prior_(prior)
 ,m_()
 ,e_(e)
@@ -126,6 +127,7 @@ CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Pa
 ,maxlogError_(maxlogError)
 ,f_maxlogErrorCN_(f_maxlogError)
 ,maxloop_(maxloop)
+,UseDerivative_(UseDerivative)
 ,nstate_()
 ,ntot_()
 {
@@ -377,13 +379,13 @@ CortexSimulation CortexPoisonLikelihood::simulate(const Parameters &parameters)c
     {
       if (!adapt_dt_)
         {
-          CortexSimulation s=m->run_CN(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,f_maxlogErrorCN_,maxloop_);
+          CortexSimulation s=m->run_CN(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,f_maxlogErrorCN_,maxloop_,UseDerivative_);
           return s;
         }
       else
         {
           auto s=m->run_CN_adapt(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,
-                        tequilibrio_,maxlogError_,f_maxlogErrorCN_, dtinf_,maxloop_);
+                        tequilibrio_,maxlogError_,f_maxlogErrorCN_, dtinf_,maxloop_,UseDerivative_);
           return s.first;
 
         }
@@ -419,12 +421,12 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
   else
     {
       if (!this->adapt_dt_)
-        s=m->run_CN(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,maxloop_);
+        s=m->run_CN(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,maxloop_,UseDerivative_);
       else
         {
           if (dts.first.empty())
             {
-              auto o=m->run_CN_adapt(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,f_maxlogErrorCN_*maxlogError_,dtinf_, maxloop_);
+              auto o=m->run_CN_adapt(*e_,dx_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,f_maxlogErrorCN_*maxlogError_,dtinf_, maxloop_,UseDerivative_);
               s=o.first;
               dts=o.second;
             }

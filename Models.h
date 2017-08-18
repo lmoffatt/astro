@@ -109,7 +109,7 @@ public:
 
   std::pair<CortexState, double> nextEuler_Adapt(const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, std::vector<double> &dts) const;
 
-  CortexState& nextEuler(const SimplestModel::Param &p, CortexState &c, double dt) const;
+  void nextEuler(const SimplestModel::Param &p, CortexState &c, double dt) const;
 
   std::pair<Di<CortexState>, double> nextEuler_Adapt_i(const Di<SimplestModel::Param> &p, const std::pair<Di<CortexState>, double> &c, double dt, double dtmin, double maxlogError) const;
 
@@ -121,7 +121,7 @@ public:
 
   std::pair<CortexState, std::pair<std::size_t,double> > CrankNicholsonStep(const CortexState::Der &d, const CortexState::dDer &dd, const SimplestModel::Param &p, const CortexState &c, double dt, double maxlogError, std::size_t maxloop) const;
 
-  std::pair<CortexState, double> nextCrankNicholson_Adapt(const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::pair<std::vector<double>, std::vector<std::size_t> > &dts, std::size_t maxloop) const;
+  std::pair<CortexState, double> nextCrankNicholson_Adapt(const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::pair<std::vector<double>, std::vector<std::size_t> > &dts, std::size_t maxloop, bool useDerivative) const;
   std::vector<double> dPsi_Bound_dPsi(const SimplestModel::Param &p, const CortexState &c) const;
   CortexState::dDer ddStep(const SimplestModel::Param &p, const CortexState &c) const;
   std::vector<std::vector<double> > dPsi_Bound_dRho(const SimplestModel::Param &p, const CortexState &c) const;
@@ -130,18 +130,27 @@ public:
 
 
 
- std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> simulate_CrankNicholson_Adapted(Parameters par, SimplestModel::Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxLogError, double maxlogErrorCN, double dtinfratio, std::size_t maxloop) const;
-  std::pair<CortexState, double> CrankNicholson_Adapt_2(const CortexState &one, const CortexState::Der &d, const CortexState::dDer &dd, const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::size_t maxloop, std::pair<std::vector<double>, std::vector<std::size_t> > &dts) const;
-  std::pair<CortexState, std::pair<double, std::size_t> > nextCrankNicholson(const SimplestModel::Param &p, const CortexState &c, double dt, double maxlogErrorCN, std::size_t maxloop) const;
-  CortexSimulation simulate_CrankNicholson(Parameters par, SimplestModel::Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogErrorCN, std::size_t maxloop) const;
-  CortexSimulation simulate_CrankNicholson_dt(Parameters par, Param p, const Experiment &sp, double dx, const std::vector<std::pair<double, std::size_t> > &dts, double tequilibrio) const;
+ std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> simulate_CrankNicholson_Adapted(Parameters par, SimplestModel::Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxLogError, double maxlogErrorCN, double dtinfratio, std::size_t maxloop, bool UseDerivative) const;
+
+ std::pair<CortexState, double> CrankNicholson_Adapt_2(const CortexState &one, const CortexState::Der &d, const CortexState::dDer &dd, const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::size_t maxloop, std::pair<std::vector<double>, std::vector<std::size_t> > &dts) const;
+
+  std::pair<CortexState, std::pair<double, std::size_t> > nextCrankNicholson(const SimplestModel::Param &p, const CortexState &c, double dt, double maxlogErrorCN, std::size_t maxloop, bool UseDerivative) const;
+
+  CortexSimulation simulate_CrankNicholson(Parameters par, SimplestModel::Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogErrorCN, std::size_t maxloop,bool UseDerivative) const;
+
+  CortexSimulation simulate_CrankNicholson_dt
+  (Parameters par, Param p, const Experiment &sp, double dx, const std::vector<std::pair<double, std::size_t> > &dts, double tequilibrio,bool UseDerivative) const;
+
+  std::pair<CortexState, std::pair<std::size_t, double> > CrankNicholsonStep(const CortexState::Der &d, const SimplestModel::Param &p, const CortexState &c, double dt, double maxlogError, std::size_t maxloop) const;
+
+  std::pair<CortexState, double> CrankNicholson_Adapt_2(const CortexState &one, const CortexState::Der &d, const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::size_t maxloop, std::pair<std::vector<double>, std::vector<std::size_t> > &dts) const;
 private:
   void addDamp(CortexState& c,const Param& p)const;
 
   std::vector<double> dPsi_dt(const Param &p, const CortexState& c) const;
 
 
-  std::vector<double> Psi_Bound(const Param &p, const CortexState& c) const;
+  void Psi_Bound(const Param &p, CortexState &c) const;
 
 
   std::vector<double> dOmega_dt(const Param &p, const CortexState &c)const;
@@ -188,20 +197,20 @@ public:
   virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const=0;
 
 
-  std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> run_CN_adapt(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double maxlogErrorCN,double dtinf, std::size_t maxloop) const
+  std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> run_CN_adapt(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double maxlogErrorCN,double dtinf, std::size_t maxloop, bool Usederivative) const
   {
-    return myModel().simulate_CrankNicholson_Adapted(getParameters(),toModelParameters(),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,maxlogErrorCN,dtinf,maxloop);
+    return myModel().simulate_CrankNicholson_Adapted(getParameters(),toModelParameters(),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,maxlogErrorCN,dtinf,maxloop,Usederivative);
 
   }
 
-  virtual CortexSimulation run_CN_dt(const Experiment& e,double dx,const std::vector<std::pair<double, std::size_t>>& dts,double tequilibrio) const
+  virtual CortexSimulation run_CN_dt(const Experiment& e,double dx,const std::vector<std::pair<double, std::size_t>>& dts,double tequilibrio, bool UseDerivative) const
   {
-    return myModel().simulate_CrankNicholson_dt(getParameters(),toModelParameters(),e,dx,dts,tequilibrio);
+    return myModel().simulate_CrankNicholson_dt(getParameters(),toModelParameters(),e,dx,dts,tequilibrio,UseDerivative);
 
   }
-  virtual CortexSimulation run_CN(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio,double maxlogError,std::size_t maxloop) const
+  virtual CortexSimulation run_CN(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio,double maxlogError,std::size_t maxloop, bool UseDerivative) const
   {
-    return myModel().simulate_CrankNicholson(getParameters(),toModelParameters(),e,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,maxloop);
+    return myModel().simulate_CrankNicholson(getParameters(),toModelParameters(),e,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,maxloop,UseDerivative);
 
   }
 

@@ -81,7 +81,8 @@ public:
                    double maxlogError,
                    double f_maxlogError,
                    double dtinf,
-                   std::size_t maxloop);
+                   std::size_t maxloop
+                   , bool UseDerivative);
 
   CortexLikelihood(std::string id,
                    const Experiment *e,
@@ -114,6 +115,7 @@ protected:
   double maxlogError_;
   double f_maxlogErrorCN_;
   std::size_t maxloop_;
+  bool UseDerivative_;
   std::vector<std::vector<double> > nstate_;
   std::vector<double> ntot_;
   std::vector<double> bin_dens_;
@@ -257,8 +259,9 @@ public:
                    double maxlogError,
                    double f_maxlogError,
                    double dtinf,
-                   std::size_t maxloop):
-    CortexLikelihood(id,e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,f_maxlogError,dtinf,maxloop){}
+                   std::size_t maxloop,
+                   bool UseDerivative):
+    CortexLikelihood(id,e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,f_maxlogError,dtinf,maxloop,UseDerivative){}
 
 
   CortexPoisonLikelihood(std::string id,

@@ -30,10 +30,10 @@ struct Di: public std::pair<C,std::vector<C>>
 class CortexState
 {
 private:
-  static double d(double x,double y)
+  static double d(double x,double y, double unit)
   {
     if ((x>0)&&(y>0))
-      return std::abs(log(x)-log(y));
+      return std::abs((x-y)/unit);
     else if((x>=0)&&(y>=0))
       return 0;
     else
@@ -43,9 +43,15 @@ private:
   static double d(const std::vector<double>& x, const std::vector<double>& y)
   {
     double out=0;
+    double max=x[0];
     for (std::size_t i=0; i<x.size(); ++i)
       {
-        double e=d(x[i],y[i]);
+        max=std::max(max,std::max(x[i],y[i]));
+      }
+
+    for (std::size_t i=0; i<x.size(); ++i)
+      {
+        double e=d(x[i],y[i],max);
         if (e>out)
           out=e;
       }

@@ -1165,15 +1165,16 @@ bool addStep(
     )
 {
 
+  bool result=true;
   for (unsigned i=0; i<x.size(); ++i)
     {
       x[i]+=y[i]*h;
       if (x[i]<0)
         {
-          return false;
+          result=false;
         }
     }
-  return true;
+  return result;
   }
 
 
@@ -1281,17 +1282,17 @@ bool addMStep(
     ,const std::vector<std::vector<double>> & y
     ,double h)
 {
-
+  bool result=true;
   for (unsigned i=0; i<x.size(); ++i)
     {
     for (unsigned j=0; j<x.front().size(); ++j)
       {
         x[i][j]+=y[i][j]*h;
         if ((x[i][j])<0)
-          return false;
+          result=false;
       }
     }
-  return true;
+  return result;
 }
 
 

@@ -87,6 +87,7 @@ int main(int argc, char **argv)
                    std::pair<bool,std::string>{false,"CrankNicholson"},
                    std::pair<double,std::string>{0,"f_maxlogError"},
                    std::pair<std::size_t,std::string>{0,"maxloop"},
+                   std::pair<bool,std::string>{false,"UseDerivative"},
                    std::pair<double,std::string>{0,"tequilibrio"},
                    std::pair<double,std::string>{0,"maxduration"},
                    std::pair<double,std::string>{0,"landa0"},

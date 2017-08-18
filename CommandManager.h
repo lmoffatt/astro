@@ -947,6 +947,7 @@ struct Tempering
                    bool CrankNicholson,
                    double f_maxlogError,
                    std::size_t maxloop,
+                   bool UseDerivative,
                    double tequilibrio,
                    double  maxduration,
                    double landa0,
@@ -1078,7 +1079,7 @@ struct Tempering
             else
               CL=new CortexPoisonLikelihood
                   (eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,
-                   dtmax,tequilibrio,maxlogError,f_maxlogError,dtinf,maxloop);
+                   dtmax,tequilibrio,maxlogError,f_maxlogError,dtinf,maxloop,UseDerivative);
           }
         std::cerr<<"simulation time="<<timeItm<CortexSimulation,CortexPoisonLikelihood, const Parameters&>(CL,&CortexPoisonLikelihood::simulate,prior);
         MyModel<MyData> m(CL);

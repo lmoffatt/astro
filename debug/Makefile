@@ -14,7 +14,7 @@ CC            = gcc
 CXX           = g++
 DEFINES       = 
 CFLAGS        = -pipe -O2 -Wall -W -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -fopenmp -O2 -std=c++11 -std=gnu++11 -Wall -W -fPIC $(DEFINES)
+CXXFLAGS      = -pipe -O2 -Werror -D__STRICT_ANSI__ -std=gnu++1y -Wall -W -fPIC $(DEFINES)
 INCPATH       = -I../Astro -I. -I../../../../Qt5.7.0/5.7/gcc_64/mkspecs/linux-g++
 QMAKE         = /home/luciano/Qt5.7.0/5.7/gcc_64/bin/qmake
 DEL_FILE      = rm -f
@@ -35,8 +35,8 @@ COMPRESS      = gzip -9f
 DISTNAME      = Astro1.0.0
 DISTDIR = /home/luciano/Data/celulas/Astro/build-Astro-gcc_6-Release/.tmp/Astro1.0.0
 LINK          = g++
-LFLAGS        = -fopenmp -Wl,-O1
-LIBS          = $(SUBLIBS) -lgomp -lpthread -L/home/luciano/Data/celulas/Astro/Astro/bin -lblas -llapack 
+LFLAGS        = -Wl,-O1
+LIBS          = $(SUBLIBS) -L/home/luciano/Data/celulas/Astro/Astro/bin -lblas -llapack 
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
@@ -209,10 +209,36 @@ DIST          = ../Astro/run/script \
 		../Astro/run/7dpl_resultados.txt \
 		../Astro/run/p_000m/parameters_000m.txt \
 		../Astro/run/p_100m/parameters_100m.txt \
-		../Astro/run/p_114_24_32_44m/parameter_114_24_32_44 \
 		../Astro/run/New_experiment_log_250_1 \
 		../Astro/run/evidence_script \
 		../Astro/run/runEvidence_0.sh \
+		../Astro/run/DATOS_7dpl_resultados.txt \
+		../Astro/run/DATOS_3dpl_CONTROL_resultados.txt \
+		../Astro/run/DATOS_3dpl_resultados.txt \
+		../Astro/run/E_250_50 \
+		../Astro/run/E_250 \
+		../Astro/run/p_000m/o_000m \
+		../Astro/run/p_100m/o_100m \
+		../Astro/run/p_114_24_32_44m/o_114_24_32_44m \
+		../Astro/run/p_114_24_32_44m/parameters_114_24_32_44m.txt \
+		../Astro/run/p_013_23_31m/o_013_23_31m \
+		../Astro/run/p_013_23_31m/parameters_013_23_31m.txt \
+		../Astro/run/m10/model_10.txt \
+		../Astro/run/m13/model_13.txt \
+		../Astro/run/m01/model_01.txt \
+		../Astro/run/m12/model_12.txt \
+		../Astro/run/m11/model_11.txt \
+		../Astro/run/m101/model_101.txt \
+		../Astro/run/m03/model_03.txt \
+		../Astro/run/m02/model_02.txt \
+		../Astro/run/m01/o_m01 \
+		../Astro/run/m02/o_m02 \
+		../Astro/run/m03/o_m03 \
+		../Astro/run/m10/o_m10 \
+		../Astro/run/m101/o_m101 \
+		../Astro/run/m11/o_m11 \
+		../Astro/run/m13/o_m13 \
+		../Astro/run/m12/o_m12 \
 		../../../../Qt5.7.0/5.7/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../../Qt5.7.0/5.7/gcc_64/mkspecs/common/unix.conf \
 		../../../../Qt5.7.0/5.7/gcc_64/mkspecs/common/linux.conf \
@@ -378,7 +404,10 @@ DIST          = ../Astro/run/script \
 		myOutputSerializer.h \
 		myInputSerializer.h \
 		myOrderOperators.h \
-		myTuples.h ../Astro/main.cpp \
+		myTuples.h \
+		myCommandManagement.h \
+		RungeKutta.h \
+		MatrixBanded.h ../Astro/main.cpp \
 		../Astro/CommandManager.cpp \
 		../Astro/Models.cpp \
 		../Astro/CortexSimulation.cpp \
@@ -751,7 +780,16 @@ main.o: ../Astro/main.cpp ../Astro/CommandManager.h \
 		../Astro/myOrderOperators.h \
 		../Astro/CortexMeasure.h \
 		../Astro/LevenbergMarquardt.h \
-		../Astro/Parameters.h
+		../Astro/Parameters.h \
+		../Astro/CortexSimulation.h \
+		../Astro/MatrixBanded.h \
+		../Astro/myCommandManagement.h \
+		../Astro/CortexLikelihood.h \
+		../Astro/Models.h \
+		../Astro/Evidence.h \
+		../Astro/Distributions.h \
+		../Astro/Optimization_BFGS.h \
+		../Astro/Optimization.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../Astro/main.cpp
 
 CommandManager.o: ../Astro/CommandManager.cpp ../Astro/Models.h \
@@ -766,7 +804,9 @@ CommandManager.o: ../Astro/CommandManager.cpp ../Astro/Models.h \
 		../Astro/myInputSerializer.h \
 		../Astro/myOrderOperators.h \
 		../Astro/CortexSimulation.h \
+		../Astro/MatrixBanded.h \
 		../Astro/CommandManager.h \
+		../Astro/myCommandManagement.h \
 		../Astro/CortexLikelihood.h \
 		../Astro/Evidence.h \
 		../Astro/Distributions.h \
@@ -785,7 +825,8 @@ Models.o: ../Astro/Models.cpp ../Astro/Models.h \
 		../Astro/myTuples.h \
 		../Astro/myInputSerializer.h \
 		../Astro/myOrderOperators.h \
-		../Astro/CortexSimulation.h
+		../Astro/CortexSimulation.h \
+		../Astro/MatrixBanded.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Models.o ../Astro/Models.cpp
 
 CortexSimulation.o: ../Astro/CortexSimulation.cpp ../Astro/CortexSimulation.h \
@@ -797,9 +838,17 @@ CortexSimulation.o: ../Astro/CortexSimulation.cpp ../Astro/CortexSimulation.h \
 		../Astro/myTuples.h \
 		../Astro/myInputSerializer.h \
 		../Astro/myOrderOperators.h \
+		../Astro/MatrixBanded.h \
 		../Astro/CommandManager.h \
 		../Astro/CortexMeasure.h \
-		../Astro/LevenbergMarquardt.h
+		../Astro/LevenbergMarquardt.h \
+		../Astro/myCommandManagement.h \
+		../Astro/CortexLikelihood.h \
+		../Astro/Models.h \
+		../Astro/Evidence.h \
+		../Astro/Distributions.h \
+		../Astro/Optimization_BFGS.h \
+		../Astro/Optimization.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexSimulation.o ../Astro/CortexSimulation.cpp
 
 CortexMeasure.o: ../Astro/CortexMeasure.cpp ../Astro/CommandManager.h \
@@ -812,7 +861,16 @@ CortexMeasure.o: ../Astro/CortexMeasure.cpp ../Astro/CommandManager.h \
 		../Astro/myOrderOperators.h \
 		../Astro/CortexMeasure.h \
 		../Astro/LevenbergMarquardt.h \
-		../Astro/Parameters.h
+		../Astro/Parameters.h \
+		../Astro/CortexSimulation.h \
+		../Astro/MatrixBanded.h \
+		../Astro/myCommandManagement.h \
+		../Astro/CortexLikelihood.h \
+		../Astro/Models.h \
+		../Astro/Evidence.h \
+		../Astro/Distributions.h \
+		../Astro/Optimization_BFGS.h \
+		../Astro/Optimization.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexMeasure.o ../Astro/CortexMeasure.cpp
 
 Parameters.o: ../Astro/Parameters.cpp ../Astro/Parameters.h \
@@ -854,6 +912,7 @@ LevenbergMarquardt.o: ../Astro/LevenbergMarquardt.cpp ../Astro/LevenbergMarquard
 		../Astro/Models.h \
 		../Astro/CortexMeasure.h \
 		../Astro/CortexSimulation.h \
+		../Astro/MatrixBanded.h \
 		../Astro/Evidence.h \
 		../Astro/Distributions.h \
 		../Astro/Optimization_BFGS.h \
@@ -873,11 +932,13 @@ CortexLikelihood.o: ../Astro/CortexLikelihood.cpp ../Astro/CortexLikelihood.h \
 		../Astro/myInputSerializer.h \
 		../Astro/myOrderOperators.h \
 		../Astro/CortexSimulation.h \
+		../Astro/MatrixBanded.h \
 		../Astro/Evidence.h \
 		../Astro/Distributions.h \
 		../Astro/Optimization_BFGS.h \
 		../Astro/Optimization.h \
 		../Astro/CommandManager.h \
+		../Astro/myCommandManagement.h \
 		../Astro/Splines.h \
 		../Astro/MatrixInverse.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CortexLikelihood.o ../Astro/CortexLikelihood.cpp
