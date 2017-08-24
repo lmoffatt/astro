@@ -7,7 +7,7 @@
 #$ -l h_rt=47:59:00 # Setea 48 horas de wall clock time
 
 #$ -V  # Exporta las variables de entorno
-#$ -N A02_260  # El nombre del job
+#$ -N A02_215  # El nombre del job
 #$ -cwd # Cambia al directorio actual
 
 
