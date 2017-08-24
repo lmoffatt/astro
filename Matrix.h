@@ -48,6 +48,15 @@ inline double average(double x, double y){return 0.5*(x+y);}
 inline double sqr(double x){return x*x;}
 
 
+template<typename T>
+std::size_t i_max(const std::vector<T>& x)
+{
+  std::size_t j=0;
+  for (std::size_t i=1; i<x.size(); ++i)
+    if (x[i]>x[j]) j=i;
+  return j;
+}
+
 
 
 
@@ -1851,8 +1860,17 @@ T diagProduct(const M_Matrix<T>& x)
   for (size_t i=0; i<n; ++i)
     diagprod*=x(i,i);
   return diagprod;
-
-
+}
+template<typename T>
+T logDiagProduct(const M_Matrix<T>& x)
+{
+  size_t nr=x.nrows();
+  size_t nc=x.ncols();
+  double diagprod=0;
+  std::size_t n=std::min(nr,nc);
+  for (size_t i=0; i<n; ++i)
+    diagprod+=std::log(x(i,i));
+  return diagprod;
 }
 
 template<typename T>
@@ -2032,25 +2050,18 @@ M_Matrix<double> chol(const M_Matrix<double>& x,const std::string& kind)
   int N=x.nrows();
   int LDA=N;
   int INFO;
-  double* A=new double[x.size()];
-  for (std::size_t i=0; i<x.size(); i++)
-    A[i]=res[i];
 
   if (LDA==0)
     return M_Matrix<double>();
   try
   {
-    dpotrf_(&UPLO,&N,A,&LDA,&INFO);
+    dpotrf_(&UPLO,&N,&res[0],&LDA,&INFO);
   }
   catch (...)
   {
     std::cerr<<" error";
   };
-  for (std::size_t i=0; i<x.size(); i++)
-    res[i]=A[i];
-  res=Transpose(res);
-  delete [] A;
-  return res;
+    return Transpose(res);
 
 }
 

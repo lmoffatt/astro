@@ -494,7 +494,7 @@ void SimulateCommand::run(const std::string& line, std::ostream &logs)
     {
       cm_->push_back(m);
 
-      CortexPoisonLikelihood  CL(simName+"_L",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+      CortexPoisonLikelihood  CL(simName+"_L",e,prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
 
       CortexMultinomialLikelihoodEvaluation CE(CL,p);
@@ -783,7 +783,7 @@ void LikelihoodCommand::run(const std::string& line, std::ostream &logs)
   f.close();
 
 
-  CortexLikelihood* CL= new CortexPoisonLikelihood(lName,e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+  CortexLikelihood* CL= new CortexPoisonLikelihood(lName,e,prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
   cm_->push_back(CL);
 
   CortexMultinomialLikelihoodEvaluation CE(*CL,p);
@@ -888,7 +888,7 @@ void OptimizeCommand::run(const std::string& line, std::ostream &logs)
     {
       cm_->push_back(m);
 
-      CortexPoisonLikelihood  CL(optName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+      CortexPoisonLikelihood  CL(optName+"_lik",e,prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
 
 
@@ -926,6 +926,8 @@ void EvidenceCommand::run(const std::__cxx11::string& line, std::ostream &logs)
   std::vector<std::vector<double>> apsPar;
 
   M_Matrix<std::size_t> samples, nskip;
+ double slogL_max=0;
+  std::size_t ndts_max=0;
 
   ss>>evidenceS>>eviName>>experimentName>>priorName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>landa0>>v>>nmaxloop>>initseed>>aps>>apsPar>>betas>>samples>>nskip;
 
@@ -1005,7 +1007,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line, std::ostream &logs)
     {
       cm_->push_back(m);
 
-      auto CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+      auto CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
       MyModel<MyData> m(CL);
       MyData d(CL);
@@ -1070,7 +1072,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line, std::ostream &logs)
       double timeOpt=0;
 
 
-      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,landa,beta,mt,flog,startTime,timeOpt);
+      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,landa,beta,slogL_max,ndts_max,mt,flog,startTime,timeOpt);
       std::cout<<*ev;
       flog<<*ev;
       flog.close();

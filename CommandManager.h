@@ -938,6 +938,7 @@ struct Tempering
                    std::string eviName,
                    std::string experimentName,
                    std::string priorName,
+                   double dtmin0,
                    double dtmin,
                    double dtmax,
                    double dx,
@@ -953,6 +954,8 @@ struct Tempering
                    double landa0,
                    double v,
                    double pTjump,
+                   double slogL_max,
+                   std::size_t ndts_max,
                    std::size_t nmaxloop,
                    std::mt19937_64::result_type initseed,
                    std::size_t nPoints_per_decade,
@@ -1065,23 +1068,23 @@ struct Tempering
         if (!CrankNicholson)
           {
             if (!adapt_dt)
-              CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,
+              CL=new CortexPoisonLikelihood
+                  (eviName+"_lik",e,prior,dx,dtmin0,dtmin,
                                             nPoints_per_decade,dtmax,tequilibrio);
             else
-              CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,dtinf);
+              CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,dtinf);
           }
         else
           {
             if (!adapt_dt)
               CL=new CortexPoisonLikelihood
-                  (eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,
+                  (eviName+"_lik",e,prior,dx,dtmin0,dtmin,nPoints_per_decade,
                    dtmax,tequilibrio,f_maxlogError,maxloop);
             else
               CL=new CortexPoisonLikelihood
-                  (eviName+"_lik",e,prior,dx,dtmin,nPoints_per_decade,
+                  (eviName+"_lik",e,prior,dx,dtmin0,dtmin,nPoints_per_decade,
                    dtmax,tequilibrio,maxlogError,f_maxlogError,dtinf,maxloop,UseDerivative);
           }
-        std::cerr<<"simulation time="<<timeItm<CortexSimulation,CortexPoisonLikelihood, const Parameters&>(CL,&CortexPoisonLikelihood::simulate,prior);
         MyModel<MyData> m(CL);
         MyData d(CL);
         Metropolis_Hastings_mcmc<
@@ -1120,8 +1123,25 @@ struct Tempering
         flog<<" priorName: "<<priorName<<"\n";
         flog<<" dx: "<<dx<<"\n";
         flog<<" dtmin: "<<dtmin<<"\n";
-        flog<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
         flog<<" dtmax: "<<dtmax<<"\n";
+        flog<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
+        flog<<" adapt_dt: "<<adapt_dt<<"\n";
+        flog<<" maxlogError: "<<maxlogError<<"\n";
+        flog<<" dtinf: "<<dtinf<<"\n";
+        flog<<" CrankNicholson: "<<CrankNicholson<<"\n";
+        flog<<" f_maxlogError: "<<f_maxlogError<<"\n";
+        flog<<" maxloop: "<<maxloop<<"\n";
+        flog<<" UseDerivative: "<<UseDerivative<<"\n";
+        flog<<" slogL_max: "<<slogL_max<<"\n";
+        flog<<" ndts_max: "<<ndts_max<<"\n";
+        flog<<" nmaxloop: "<<nmaxloop<<"\n";
+        flog<<" dtinf: "<<dtinf<<"\n";
+        flog<<" N_betasInit: "<<N_betasInit<<"\n";
+        flog<<" beta_min: "<<beta_min<<"\n";
+        flog<<" N_beta_2: "<<N_beta_2<<"\n";
+        flog<<" beta_infimo: "<<beta_infimo<<"\n";
+        flog<<" maxSimFileSize: "<<maxSimFileSize<<"\n";
+        flog<<" beta_min: "<<beta_min<<"\n";
         flog<<" niter: "<<niter<<"\n";
         flog<<" maxduration "<<maxduration<<"\n";
         flog<<" landa0 "<<landa0<<"\n";
@@ -1137,6 +1157,21 @@ struct Tempering
         flog<<" nskip "<<nskip<<"\n";
         flog<<" pTjump "<<pTjump<<"\n";
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         flog.close();
 
 
@@ -1144,7 +1179,7 @@ struct Tempering
         double timeOpt=0;
 
 
-        tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout);
+        tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout);
         flog.close();
       }
 

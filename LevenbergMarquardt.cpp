@@ -782,6 +782,17 @@ std::vector<double> ABC_Distribution_Model::PriorGradient(const Parameters &p)co
 
 
 
+std::vector<std::vector<double> > ABC_Distribution_Model::f
+(const std::vector<double> &p,
+ std::tuple<double, std::size_t, double> &dt_n_dtmax,
+ std::size_t dts_max,
+ std::pair<std::vector<double>,std::vector<std::size_t>>& dts)const
+
+{
+  return f(getPrior().toParameters(p),dt_n_dtmax,dts_max,dts);
+
+}
+
 std::vector<std::vector<double> > ABC_Distribution_Model::f(const std::vector<double> &p) const
 {
   std::pair<std::vector<double>, std::vector<std::size_t>> dts;

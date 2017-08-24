@@ -24,13 +24,13 @@ SimplestModel::nextEuler_Adapt_2
   CortexState two(firstHalf);
   EulerStep(d2,p,two,dt-dt/2);
 
-  double dist=one.maxlogdistance(two);
-  if (dist<maxlogError || dt<dtmin*4.0)
+  double dist=one.maxsqrdistance(two);
+  if ((dist>=0&& dist<maxlogError) || dt<dtmin*4.0)
     {
       dts.push_back(dt/2);
       dts.push_back(dt-dt/2);
 
-      return {two,std::max(dist,c.second)};
+      return {two,std::max(std::abs(dist),c.second)};
     }
   else
     {
@@ -54,11 +54,11 @@ SimplestModel::nextEuler_Adapt_2_i
   auto d2=dStep(p.first,firstHalf);
   CortexState two(firstHalf);
   EulerStep(d2,p.first,two,dt-dt/2);
-  double dist=one.maxlogdistance(two);
-  if (dist<maxlogError || dt<dtmin*4.0)
+  double dist=one.maxsqrdistance(two);
+  if ((dist>=0&& dist<maxlogError) || dt<dtmin*4.0)
     {
       auto ones_i=nextEuler_i(p.second,c.first.second,dt);
-      return {{one,ones_i},std::max(dist,c.second)};
+      return {{one,ones_i},std::max(std::abs(dist),c.second)};
     }
   else
     {
@@ -144,21 +144,23 @@ CortexState::Der SimplestModel::dStep( const SimplestModel::Param &p, const Cort
 
 void SimplestModel::EulerStep(const CortexState::Der& d, const SimplestModel::Param &p,  CortexState &c, double dt)const
 {
+  bool isValid=true;
   bool hasOmega=p.Domega_>0;
   if (hasOmega)
     {
       if (!addStep(c.omega_T_,d.dOmega,dt))
-        c.isValid_=false;
+        isValid=false;
     }
   if (!addStep(c.psi_T_,d.dPsi,dt))
-    c.isValid_=false;
+    isValid=false;
 
   if (!addMStep(c.rho_,d.dRho,dt))
-    c.isValid_=false;
+    isValid=false;
   if (hasOmega)
     Omega_Bound(p,c);
   Psi_Bound(p,c);
 
+  c.isValid_=isValid;
 }
 
 
@@ -186,16 +188,20 @@ SimplestModel::CrankNicholsonStep(const CortexState::Der& d,
   EulerStep(d,p,ch,dt/2);
   CortexState c2(ch);
   EulerStep(d3,p,c2,dt-dt/2);
-  double dist=c2.maxlogdistance(c1);
+  double dist=c2.maxsqrdistance(c1);
+  double dist0=0;
   std::size_t iter=0;
 
-  while (dist>maxlogError &&  iter<maxloop)
+  while ((std::abs(dist)<std::abs(dist0))
+         &&(dist<0||dist>maxlogError)
+         &&  iter<maxloop)
     {
       std::swap(c1,c2);
       c2=ch;
       d3=dStep(p,c1);
       EulerStep(d3,p,c2,dt-dt/2);
-      dist=c2.maxlogdistance(c1);
+      dist0=dist;
+      dist=c2.maxsqrdistance(c1);
       ++iter;
     }
 
@@ -216,23 +222,25 @@ SimplestModel::CrankNicholsonStep(const CortexState::Der& d,
 
   CortexState c1=c;
   EulerStep(d,p,c1,dt/2);
+  CortexState ch=c1;
   CortexState::Der d02=dStep(p,c1);
   EulerStep(d02,p,c1,dt-dt/2);
-  CortexState ch(c);
   CortexState::Der d3=dStep(p,c1);
-  EulerStep(d,p,ch,dt/2);
   CortexState c2(ch);
   EulerStep(d3,p,c2,dt-dt/2);
-  double dist=c2.maxlogdistance(c1);
+  double dist=c2.maxsqrdistance(c1);
   std::size_t iter=0;
-
-  while (dist>maxlogError &&  iter<maxloop)
+  double dist0=0;
+  while ((std::abs(dist)<std::abs(dist0))
+         &&(dist<0||dist>maxlogError)
+         &&  iter<maxloop)
     {
       std::swap(c1,c2);
       c2=ch;
       d3=dStep(p,c1);
       EulerStep(d3,p,c2,dt-dt/2);
-      dist=c2.maxlogdistance(c1);
+      dist0=dist;
+      dist=c2.maxsqrdistance(c1);
       ++iter;
     }
 
@@ -262,14 +270,14 @@ SimplestModel::CrankNicholson_Adapt_2
   auto two=CrankNicholsonStep(d2,dd2,p,firstHalf.first,dt-dt/2,maxlogErrorCN,maxloop);
 
 
-  double dist=one.maxlogdistance(two.first);
-  if (dist<maxlogError || dt<dtmin*4.0)
+  double dist=one.maxsqrdistance(two.first);
+  if ((dist>=0&& dist<maxlogError) || dt<dtmin*4.0)
     {
       dts.first.push_back(dt/2);
       dts.second.push_back(firstHalf.second.second);
       dts.first.push_back(dt-dt/2);
       dts.second.push_back(two.second.second);
-      return {two.first,std::max(dist,c.second)};
+      return {two.first,std::max(std::abs(dist),c.second)};
     }
   else
     {
@@ -297,14 +305,14 @@ SimplestModel::CrankNicholson_Adapt_2
   auto two=CrankNicholsonStep(d2,p,firstHalf.first,dt-dt/2,maxlogErrorCN,maxloop);
 
 
-  double dist=one.maxlogdistance(two.first);
-  if (dist<maxlogError || dt<dtmin*4.0)
+  double dist=one.maxsqrdistance(two.first);
+  if ((dist>=0&& dist<maxlogError) || dt<dtmin*4.0)
     {
       dts.first.push_back(dt/2);
-      dts.second.push_back(firstHalf.second.second);
+      dts.second.push_back(firstHalf.second.first);
       dts.first.push_back(dt-dt/2);
-      dts.second.push_back(two.second.second);
-      return {two.first,std::max(dist,c.second)};
+      dts.second.push_back(two.second.first);
+      return {two.first,std::max(std::abs(dist),c.second)};
     }
   else
     {
@@ -895,10 +903,7 @@ CortexState::dDer SimplestModel::ddStep(const SimplestModel::Param& p ,const Cor
                       *(-dOmegaBdRho[x+1][k]);
                 }
             }
-          o.dpsi_dpsi(x,x)=2.0*p.Dpsi_/c.dx_[x]*
-              (1.0/(c.dx_[x-1]+c.dx_[x])+1.0/(c.dx_[x+1]+c.dx_[x]))*
-              (1-dPsiBdPsi[x])-
-              p.kcat_psi_*dPsiBdPsi[x];
+          o.dpsi_dpsi(x,x)+=-p.kcat_psi_*dPsiBdPsi[x];
 
           o.domega_domega(x,x)=2.0*p.Domega_/c.dx_[x]*
               (1.0/(c.dx_[x-1]+c.dx_[x])+1.0/(c.dx_[x+1]+c.dx_[x]))
@@ -1271,7 +1276,8 @@ CortexSimulation SimplestModel::simulate(Parameters par,
                                          Param p,
                                          const Experiment &sp
                                          , double dx
-                                         , double dtmin,
+                                         , double dtmin0,
+                                         double dtmin,
                                          std::size_t nPoints_per_decade,
                                          double dtmax,
                                          double tequilibrio
@@ -1297,7 +1303,7 @@ CortexSimulation SimplestModel::simulate(Parameters par,
   double t=-tequilibrio;
   unsigned i=0;
   std::vector<std::vector<double>> dRho=c.rho_;
-  double dt_run=dtmin;
+  double dt_run=dtmin0;
 
   while ((t+dt_run<=0)&&(c.isValid_))
     {
@@ -1361,11 +1367,138 @@ CortexSimulation SimplestModel::simulate(Parameters par,
     }
 }
 
+std::pair<CortexSimulation, std::pair<std::vector<double>, std::vector<std::size_t> > > SimplestModel::simulate_Euler
+(Parameters par,
+ Param p,
+ const Experiment &sp
+ , double dx
+ , double dtmin0,
+ double dtmin,
+ std::size_t nPoints_per_decade,
+ double dtmax,
+ std::size_t dts_max,
+ double tequilibrio
+ )const
+{
+  /* std::cout<<"starts a Simulation on \n";
+  sp.write(std::cout);
+  par.write(std::cout);
+  std::cout<<"dt ="<<dt<<"\n";
+*/
+
+  //  find inj_width information in parameters
+
+  double dtprod=std::pow(10,1.0/nPoints_per_decade);
+
+
+
+
+  CortexState c=init(p,sp,dx);
+  CortexSimulation s(c,sp.numSimPoints());
+  std::pair<std::vector<double>,std::vector< std::size_t>>  dts;
+  if (sp.tsim()/dtmax>dts_max)
+    {
+      s.isValid_=false;
+      return {s,dts};
+    }
+  double dt_run=dtmin0;
+  s.p_=par;
+  s.dt_=dt_run;
+  s.h_=sp.h();
+  double t=-tequilibrio;
+  unsigned i=0;
+  std::vector<std::vector<double>> dRho=c.rho_;
+
+  while ((t+dt_run<=0)&&(c.isValid_))
+    {
+      nextEuler(p,c,dt_run);
+      dts.first.push_back(dt_run);
+      t+=dt_run;
+
+      if (dt_run<-t)
+        {
+          if (dt_run<dtmax)
+            {
+              dt_run*=dtprod;
+              if (dt_run>dtmax)
+                dt_run=dtmax;
+            }
+          else
+            dt_run=dtmax;
+          if (dt_run>-t)
+            dt_run=-t;
+        }
+      else if (t<0)
+        dt_run=-t;
+    }
+  if (!c.isValid_)
+    {  s.isValid_=false;
+      return {s,dts};
+    }
+  else
+    {
+      addDamp(c,p);
+      dt_run=dtmin;
+      while ((i<sp.numSimPoints())&&(c.isValid_))
+        {
+          if (t>=sp.tSimul(i))
+            {
+              s.t_[i]=t;
+              s.maxlogErrt_[i]=0;
+              s.psi_T_[i]=c.psi_T_;
+              s.psi_B_[i]=c.psi_B_;
+              if (c.hasOmega_)
+                {
+                  s.omega_T_[i]=c.omega_T_;
+                  s.omega_B_[i]=c.omega_B_;
+                }
+              s.rho_[i]=c.rho_;
+              ++i;
+
+            }
+
+          t+=dt_run;
+
+          nextEuler(p,c,dt_run);
+          dts.first.push_back(dt_run);
+
+          if (dt_run<sp.tSimul(i)-t)
+            {
+              if (dt_run<dtmax)
+                {
+                  dt_run*=dtprod;
+                  if (dt_run>dtmax)
+                    dt_run=dtmax;
+                  if (dt_run>sp.tSimul(i)-t)
+                    dt_run=sp.tSimul(i)-t;
+                }
+              else
+                dt_run=dtmax;
+            }
+          else if(t<sp.tSimul(i))
+            dt_run=sp.tSimul(i)-t;
+
+        }
+      if (!c.isValid_)
+        {  s.isValid_=false;
+          return {s,dts};
+        }
+      else
+        {
+          s.isValid_=true;
+          return {s,dts};
+        }
+    }
+}
+
+
+
 std::pair<CortexSimulation, std::vector<double>> SimplestModel::simulate_Adapted(
     Parameters par,
     SimplestModel::Param p,
     const Experiment &sp,
     double dx,
+    double dtmin0,
     double dtmin,
     std::size_t nPoints_per_decade,
     double dtmax,
@@ -1381,13 +1514,21 @@ std::pair<CortexSimulation, std::vector<double>> SimplestModel::simulate_Adapted
   s.h_=sp.h();
   double t=-tequilibrio;
   unsigned i=0;
-  std::size_t n=std::ceil(tequilibrio/dtmax);
-  double dtrun=tequilibrio/n;
+  double dt_run=dtmin0;
   std::vector<double> dts;
-  while (t+dtrun<=0)
+  while (t+dt_run<=0)
     {
-      c=nextEuler_Adapt(p,c,dtrun,dtinfratio*dtrun,maxLogError,dts);
-      t+=dtrun;
+      c=nextEuler_Adapt(p,c,dt_run,dtinfratio*dt_run,maxLogError,dts);
+      t+=dt_run;
+      if (dt_run<-t)
+        {
+          dt_run*=dtprod;
+          if (dt_run>-t)
+            dt_run=-t;
+        }
+      else if (t<0)
+        dt_run=-t;
+
     }
   if (!std::isfinite(c.second))
     {
@@ -1452,6 +1593,7 @@ std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size
     SimplestModel::Param p,
     const Experiment &sp,
     double dx,
+    double dtmin0,
     double dtmin,
     std::size_t nPoints_per_decade,
     double dtmax,
@@ -1467,17 +1609,24 @@ std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size
   std::pair<CortexState,double> c{init(p,sp,dx),0};
   CortexSimulation s(c.first,sp.numSimPoints());
   s.p_=par;
-  s.dt_=dtmax;
+  s.dt_=dtmin0;
   s.h_=sp.h();
   double t=-tequilibrio;
   unsigned i=0;
-  std::size_t n=std::ceil(tequilibrio/dtmax);
-  double dtrun=tequilibrio/n;
+  double dt_run=dtmin0;
   std::pair<std::vector<double>,std::vector< std::size_t>>  dts;
-  while (t+dtrun<=0)
+  while (t+dt_run<=0)
     {
-      c=nextCrankNicholson_Adapt(p,c,dtrun,dtinfratio*dtrun,maxLogError,maxlogErrorCN,dts,maxloop,UseDerivative);
-      t+=dtrun;
+      c=nextCrankNicholson_Adapt(p,c,dt_run,dtinfratio*dt_run,maxLogError,maxlogErrorCN,dts,maxloop,UseDerivative);
+      t+=dt_run;
+      if (dt_run<-t)
+        {
+          dt_run*=dtprod;
+          if (dt_run>-t)
+            dt_run=-t;
+        }
+      else if (t<0)
+        dt_run=-t;
     }
   if (!std::isfinite(c.second))
     {
@@ -1528,7 +1677,7 @@ std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size
           else
             dt_run=dtmax;
           t+=dt_run;
-          c=nextCrankNicholson_Adapt(p,c,dtrun,dtinfratio*dt_run,maxLogError,maxlogErrorCN,dts,maxloop,UseDerivative);
+          c=nextCrankNicholson_Adapt(p,c,dt_run,dtinfratio*dt_run,maxLogError,maxlogErrorCN,dts,maxloop,UseDerivative);
 
         }
       s.isValid_=false;
@@ -1536,11 +1685,16 @@ std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size
     }
 }
 
-CortexSimulation SimplestModel::simulate_CrankNicholson(
+std::pair<
+CortexSimulation,
+std::pair<std::vector<double>,std::vector< std::size_t> >
+>
+SimplestModel::simulate_CrankNicholson(
     Parameters par,
     SimplestModel::Param p,
     const Experiment &sp,
     double dx,
+    double dtmin0,
     double dtmin,
     std::size_t nPoints_per_decade,
     double dtmax,
@@ -1558,17 +1712,36 @@ CortexSimulation SimplestModel::simulate_CrankNicholson(
   s.h_=sp.h();
   double t=-tequilibrio;
   unsigned i=0;
-  std::size_t n=std::ceil(tequilibrio/dtmax);
-  double dtrun=tequilibrio/n;
-  while (t+dtrun<=0)
+  double dt_run=dtmin0;
+  std::pair<std::vector<double>,std::vector< std::size_t>>  dts;
+
+  while (t+dt_run<=0)
     {
-      c=nextCrankNicholson(p,c.first,dtrun,maxlogErrorCN,maxloop,UseDerivative);
-      t+=dtrun;
+      c=nextCrankNicholson(p,c.first,dt_run,maxlogErrorCN,maxloop,UseDerivative);
+      dts.first.push_back(dt_run);
+      dts.second.push_back(c.second.first);
+      t+=dt_run;
+      if (dt_run<-t)
+        {
+          if (dt_run<dtmax)
+            {
+              dt_run*=dtprod;
+              if (dt_run>dtmax)
+                dt_run=dtmax;
+            }
+          else
+            dt_run=dtmax;
+          if (dt_run>-t)
+            dt_run=-t;
+        }
+      else if (t<0)
+        dt_run=-t;
+
     }
   if (!std::isfinite(c.second.second))
     {
       s.isValid_=false;
-      return s;
+      return {s,dts};
     }
   else
     {
@@ -1592,12 +1765,12 @@ CortexSimulation SimplestModel::simulate_CrankNicholson(
                   if (!c.first.isValid_||(!std::isfinite(c.second.second)))
                     {
                       s.isValid_=false;
-                      return s;
+                      return {s,dts};
                     }
                   else
                     {
                       s.isValid_=true;
-                      return s;
+                      return {s,dts};
                     }
                 }
 
@@ -1614,11 +1787,13 @@ CortexSimulation SimplestModel::simulate_CrankNicholson(
           else
             dt_run=dtmax;
           t+=dt_run;
-          c=nextCrankNicholson(p,c.first,dtrun,maxlogErrorCN,maxloop,UseDerivative);
+          c=nextCrankNicholson(p,c.first,dt_run,maxlogErrorCN,maxloop,UseDerivative);
+          dts.first.push_back(dt_run);
+          dts.second.push_back(c.second.first);
 
         }
       s.isValid_=false;
-      return s;
+      return {s,dts};
     }
 }
 
@@ -1642,12 +1817,14 @@ CortexSimulation SimplestModel::simulate(Parameters par,
 
   std::size_t its=0;
   double dt_run=dts.first[0];
-  while ((t<0)&&(c.isValid_))
+  while ((t+dt_run-dt_run*std::sqrt(std::numeric_limits<double>::epsilon())<=
+          std::sqrt(std::numeric_limits<double>::epsilon())*dts.first[its+1])
+         &&(c.isValid_))
     {
-      dt_run=dts.first[its];
       nextEuler(p,c,dt_run);
       t+=dt_run;
       ++its;
+      dt_run=dts.first[its];
 
     }
   if (!c.isValid_)
@@ -1699,7 +1876,7 @@ CortexSimulation SimplestModel::simulate_CrankNicholson_dt(Parameters par,
                                                            Param p,
                                                            const Experiment &sp
                                                            , double dx
-                                                           , const std::vector<std::pair<double,std::size_t>>& dts,
+                                                           , const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,
                                                            double tequilibrio,
                                                            bool UseDerivative
                                                            )const
@@ -1707,19 +1884,22 @@ CortexSimulation SimplestModel::simulate_CrankNicholson_dt(Parameters par,
   std::pair<CortexState,std::pair<std::size_t,double>>  c{init(p,sp,dx),{0,0}};
   CortexSimulation s(c.first,sp.numSimPoints());
   s.p_=par;
-  s.dt_=dts[0].first;
+  s.dt_=dts.first[0];
   s.h_=sp.h();
   double t=-tequilibrio;
   unsigned i=0;
 
   std::size_t its=0;
-  double dt_run=dts[0].first;
-  while ((t<0)&&(c.first.isValid_))
+  double dt_run=dts.first[0];
+  while ((t+dt_run-dt_run*std::sqrt(std::numeric_limits<double>::epsilon())<=
+          std::sqrt(std::numeric_limits<double>::epsilon())*dts.first[its+1])
+         &&(c.first.isValid_))
+
     {
-      dt_run=dts[its].first;
-      c=nextCrankNicholson(p,c.first,dt_run,0,dts[0].second,UseDerivative);
+      c=nextCrankNicholson(p,c.first,dt_run,0,dts.second[its],UseDerivative);
       t+=dt_run;
       ++its;
+      dt_run=dts.first[its];
 
     }
   if (!c.first.isValid_)
@@ -1751,8 +1931,8 @@ CortexSimulation SimplestModel::simulate_CrankNicholson_dt(Parameters par,
 
 
             }
-          dt_run=dts[its].first;
-          c=nextCrankNicholson(p,c.first,dt_run,0,dts[0].second,UseDerivative);
+          dt_run=dts.first[its];
+          c=nextCrankNicholson(p,c.first,dt_run,0,dts.second[its],UseDerivative);
           t+=dt_run;
           ++its;
 
@@ -1880,7 +2060,7 @@ void SimplestModel::addDamp(CortexState &c, const SimplestModel::Param &p) const
 {
   unsigned i=0;
   double damp=p.prot_concentration_*p.DAMP_psi_ratio_/p.DAMP_MW_/1000;
-  while (c.x_[i]<p.inj_width_+c.x_[0])
+  while ((c.x_[i]<p.inj_width_+c.x_[0])&&(i<c.x_.size()))
     {
       double inj_size_cell=std::min(p.inj_width_+c.x_[0],c.x_[i]+c.dx_[i])-c.x_[i];
 
@@ -1891,7 +2071,7 @@ void SimplestModel::addDamp(CortexState &c, const SimplestModel::Param &p) const
   if (p.DAMP_omega_ratio_>0)
     {
       double damp2=p.prot_concentration_*p.DAMP_omega_ratio_/p.DAMP_MW_/1000;
-      while (c.x_[i]<p.inj_width_+c.x_[0])
+      while ((c.x_[i]<p.inj_width_+c.x_[0])&&(i<c.x_.size()))
         {
           double inj_size_cell=std::min(p.inj_width_+c.x_[0],c.x_[i]+c.dx_[i])-c.x_[i];
 

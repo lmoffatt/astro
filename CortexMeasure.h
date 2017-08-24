@@ -1169,7 +1169,7 @@ bool addStep(
   for (unsigned i=0; i<x.size(); ++i)
     {
       x[i]+=y[i]*h;
-      if (x[i]<0)
+      if ((x[i]<0)|| !std::isfinite(x[i]))
         {
           result=false;
         }
@@ -1288,7 +1288,7 @@ bool addMStep(
     for (unsigned j=0; j<x.front().size(); ++j)
       {
         x[i][j]+=y[i][j]*h;
-        if ((x[i][j])<0)
+        if (x[i][j]<0||!std::isfinite(x[i][j]))
           result=false;
       }
     }

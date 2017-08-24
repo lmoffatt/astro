@@ -30,62 +30,113 @@ struct Di: public std::pair<C,std::vector<C>>
 class CortexState
 {
 private:
-  static double d(double x,double y, double unit)
+  static double d(double x,double y)
   {
-    if ((x>0)&&(y>0))
-      return std::abs((x-y)/unit);
-    else if((x>=0)&&(y>=0))
-      return 0;
-    else
+    if (!std::isfinite(x)||!std::isfinite(y))
       return std::numeric_limits<double>::infinity();
+    if ((x>=0)&&(y>=0))
+      return sqr(x-y);
+    else
+      return -sqr(x-y);
   }
 
   static double d(const std::vector<double>& x, const std::vector<double>& y)
   {
+    bool allpositive=true;
     double out=0;
-    double max=x[0];
+    double sumx=0;
+    double sumy=0;
     for (std::size_t i=0; i<x.size(); ++i)
       {
-        max=std::max(max,std::max(x[i],y[i]));
+        sumx+=std::abs(x[i]);
+        sumy+=std::abs(y[i]);
       }
-
-    for (std::size_t i=0; i<x.size(); ++i)
+    if ((sumx==0)&&(sumy==0))
+      return 0;
+    else  for (std::size_t i=0; i<x.size(); ++i)
       {
-        double e=d(x[i],y[i],max);
-        if (e>out)
-          out=e;
+        double e=d(x[i],y[i]);
+        if (!std::isfinite(e))
+          return std::numeric_limits<double>::infinity();
+        else if (e>=0)
+          out+=e;
+        else
+          {
+            out+=-e;
+            allpositive=false;
+          }
       }
-    return out;
+    if (allpositive)
+      return out/sqr(std::max(sumx,sumy));
+    else
+      return -out/sqr(std::max(sumx,sumy));
   }
   static double d(const std::vector<std::vector<double>>& x, const std::vector<std::vector<double>>& y)
   {
+    bool allpositive=true;
     double out=0;
     for (std::size_t i=0; i<x.size(); ++i)
       {
-        out=std::max(d(x[i],y[i]),out);
-        if (!std::isfinite(out)) return out;
+        double e=d(x[i],y[i]);
+        if (!std::isfinite(e))
+          return std::numeric_limits<double>::infinity();
+        else if (e>=0)
+          out+=e;
+        else
+          {
+            out+=-e;
+            allpositive=false;
+          }
       }
-    return out;
+    if (allpositive)
+      return out/x.size();
+    else
+      return -out/x.size();
   }
 
 
 public:
 
-  double maxlogdistance(const CortexState& other)const
+  double maxsqrdistance(const CortexState& other)const
   {
+    bool allPositive=true;
+    double out;
     if (!isValid_||!other.isValid_)
       return std::numeric_limits<double>::infinity();
     else
       {
-        double out=d(rho_,other.rho_);
-        out=std::max(d(psi_T_,other.psi_T_),out);
-        out=std::max(d(psi_B_,other.psi_B_),out);
+        double e=d(rho_,other.rho_);
+        if (e>=0)
+          out=e;
+        else
+          {
+            out=-e;
+            allPositive=false;
+          }
+        e=d(psi_T_,other.psi_T_);
+        if (e>=0)
+          out+=e;
+        else
+          {
+            out+=-e;
+            allPositive=false;
+          }
+
         if (hasOmega_)
           {
-            out=std::max(d(omega_T_,other.omega_T_),out);
-            out=std::max(d(omega_B_,other.omega_B_),out);
+            e=d(omega_T_,other.omega_T_);
+            if (e>=0)
+              out+=e;
+            else
+              {
+                out+=-e;
+                allPositive=false;
+              }
           }
-        return out;
+        if (allPositive)
+          return std::sqrt(out);
+        else
+          return -std::sqrt(out);
       }
   }
 
@@ -271,7 +322,7 @@ public:
     std::size_t rho_ix_ik(std::size_t ix, std::size_t ik) const
     {
       if (hasOmega_)
-       return ix*m_+2+ik;
+        return ix*m_+2+ik;
       else
         return ix*m_+1+ik;
     }
@@ -285,12 +336,12 @@ public:
       return out;
     }
 
-   private:
-      std::size_t nx_;
-      std::size_t nks_;
-      std::size_t m_;
-      bool hasOmega_;
-      MatrixBanded d_;
+  private:
+    std::size_t nx_;
+    std::size_t nks_;
+    std::size_t m_;
+    bool hasOmega_;
+    MatrixBanded d_;
 
 
 
@@ -396,6 +447,7 @@ public:
     double dx;
     std::size_t nPoints_per_decade;
     double dtmax;
+    double dtmin0;
     double dtmin; double tequilibrio;
     double desiredError;
     double dtinf;

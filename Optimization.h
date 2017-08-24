@@ -38,7 +38,7 @@ double Normal(const M_Matrix<T>& x,const M_Matrix<T>& m,const M_Matrix<T>& s_or_
 
       auto covinv=inv(cov);
       auto cho_cov_=chol(cov,"upper");
-      auto logDetCov_=log(diagProduct(cho_cov_));
+      auto logDetCov_=logDiagProduct(cho_cov_);
 
       return -0.5*x.size()*log(PI)-logDetCov_-0.5*xTSigmaX(x.toVector_of_Cols()-m.toVector_of_Cols(),covinv);
 
@@ -1416,7 +1416,7 @@ struct multivariate_normal_distribution
     if (Sinv.empty())
       return std::numeric_limits<double>::quiet_NaN();
     M_Matrix<double> cho_cov_(chol(S,"upper"));
-    double logDetCov_(log(diagProduct(cho_cov_)));
+    double logDetCov_(logDiagProduct(cho_cov_));
 
     double out= -0.5*y.size()*log(PI)-logDetCov_-0.5*xTSigmaX(y-m,Sinv);
     if (std::isfinite(out) && out>1e8)

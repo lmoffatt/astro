@@ -35,7 +35,7 @@ MultivariateGaussian::MultivariateGaussian(const M_Matrix<double> &mean,
     cov_(cov),
     covinv_(invSafe(cov)),
     cho_cov_(chol(cov,"upper")),
-    logDetCov_(log(diagProduct(cho_cov_)))
+    logDetCov_(logDiagProduct(cho_cov_))
 {}
 
 MultivariateGaussian::MultivariateGaussian(const M_Matrix<double>&mean
@@ -44,8 +44,8 @@ MultivariateGaussian::MultivariateGaussian(const M_Matrix<double>&mean
 mean_(mean),
 cov_(cov),
 covinv_(covInv),
-cho_cov_(chol(cov,"upper")),
-logDetCov_(log(diagProduct(cho_cov_)))
+cho_cov_(chol(cov,"lower")),
+logDetCov_(logDiagProduct(cho_cov_))
 {}
 
 MultivariateGaussian::MultivariateGaussian():
@@ -57,8 +57,10 @@ MultivariateGaussian::MultivariateGaussian():
 
 double MultivariateGaussian::logP(const M_Matrix<double> &x) const
 {
+  if (mean_.size()>0)
 
      return -0.5*size()*log(PI)-logDetCov_-0.5*xTSigmaX(x-mean_,covinv_);
+  else return std::numeric_limits<double>::quiet_NaN();
 }
 
 

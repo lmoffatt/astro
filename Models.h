@@ -98,10 +98,10 @@ public:
 
   CortexSimulation simulate(const Parameters& par,const Param &p, const CortexExperiment &sp, double dt)const;
 
-  CortexSimulation simulate(Parameters par,  Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio)const;
+  CortexSimulation simulate(Parameters par,  Param p, const Experiment &sp, double dx, double dtmin0,  double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio)const;
 
   std::pair<CortexSimulation, std::vector<double> >
-  simulate_Adapted(Parameters par,  Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxLogError, double dtinf)const;
+  simulate_Adapted(Parameters par,  Param p, const Experiment &sp, double dx, double dtmin0,  double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxLogError, double dtinf)const;
 
 
 
@@ -114,14 +114,14 @@ public:
   std::pair<Di<CortexState>, double> nextEuler_Adapt_i(const Di<SimplestModel::Param> &p, const std::pair<Di<CortexState>, double> &c, double dt, double dtmin, double maxlogError) const;
 
 
-  Di<CortexSimulation> simulate_Adapted_i(const Di<Parameters> &par, const Di<Param> &p, const Experiment &sp, double dx, double desiredError, double dt0, std::size_t nPoints_per_decade, double dtmax, double dtmin, double tequilibrio) const;
+  Di<CortexSimulation> simulate_Adapted_i(const Di<Parameters> &par, const Di<Param> &p, const Experiment &sp, double dx, double desiredError, double dt0, std::size_t nPoints_per_decade, double dtmax,  double dtmin, double tequilibrio) const;
   CortexSimulation simulate(Parameters par, Param p, const Experiment &sp, double dx, const std::pair<std::vector<double>,std::vector<std::size_t>> &dts, double tequilibrio) const;
 
   void CrankNicholsonStep(const CortexState::Der &d, const CortexState::dDer &dd, const SimplestModel::Param &p, CortexState &c, double dt) const;
 
   std::pair<CortexState, std::pair<std::size_t,double> > CrankNicholsonStep(const CortexState::Der &d, const CortexState::dDer &dd, const SimplestModel::Param &p, const CortexState &c, double dt, double maxlogError, std::size_t maxloop) const;
 
-  std::pair<CortexState, double> nextCrankNicholson_Adapt(const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::pair<std::vector<double>, std::vector<std::size_t> > &dts, std::size_t maxloop, bool useDerivative) const;
+  std::pair<CortexState, double> nextCrankNicholson_Adapt(const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt,  double dtmin, double maxlogError, double maxlogErrorCN, std::pair<std::vector<double>, std::vector<std::size_t> > &dts, std::size_t maxloop, bool useDerivative) const;
   std::vector<double> dPsi_Bound_dPsi(const SimplestModel::Param &p, const CortexState &c) const;
   CortexState::dDer ddStep(const SimplestModel::Param &p, const CortexState &c) const;
   std::vector<std::vector<double> > dPsi_Bound_dRho(const SimplestModel::Param &p, const CortexState &c) const;
@@ -130,20 +130,21 @@ public:
 
 
 
- std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> simulate_CrankNicholson_Adapted(Parameters par, SimplestModel::Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxLogError, double maxlogErrorCN, double dtinfratio, std::size_t maxloop, bool UseDerivative) const;
+  std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> simulate_CrankNicholson_Adapted(Parameters par, SimplestModel::Param p, const Experiment &sp, double dx, double dtmin0,  double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxLogError, double maxlogErrorCN, double dtinfratio, std::size_t maxloop, bool UseDerivative) const;
 
- std::pair<CortexState, double> CrankNicholson_Adapt_2(const CortexState &one, const CortexState::Der &d, const CortexState::dDer &dd, const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::size_t maxloop, std::pair<std::vector<double>, std::vector<std::size_t> > &dts) const;
+  std::pair<CortexState, double> CrankNicholson_Adapt_2(const CortexState &one, const CortexState::Der &d, const CortexState::dDer &dd, const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::size_t maxloop, std::pair<std::vector<double>, std::vector<std::size_t> > &dts) const;
 
   std::pair<CortexState, std::pair<double, std::size_t> > nextCrankNicholson(const SimplestModel::Param &p, const CortexState &c, double dt, double maxlogErrorCN, std::size_t maxloop, bool UseDerivative) const;
 
-  CortexSimulation simulate_CrankNicholson(Parameters par, SimplestModel::Param p, const Experiment &sp, double dx, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogErrorCN, std::size_t maxloop,bool UseDerivative) const;
+  std::pair<CortexSimulation, std::pair<std::vector<double>, std::vector<std::size_t> > >  simulate_CrankNicholson(Parameters par, SimplestModel::Param p, const Experiment &sp, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogErrorCN, std::size_t maxloop,bool UseDerivative) const;
 
   CortexSimulation simulate_CrankNicholson_dt
-  (Parameters par, Param p, const Experiment &sp, double dx, const std::vector<std::pair<double, std::size_t> > &dts, double tequilibrio,bool UseDerivative) const;
+  (Parameters par, Param p, const Experiment &sp, double dx, const std::pair<std::vector<double>, std::vector<std::size_t> > &dts, double tequilibrio, bool UseDerivative) const;
 
   std::pair<CortexState, std::pair<std::size_t, double> > CrankNicholsonStep(const CortexState::Der &d, const SimplestModel::Param &p, const CortexState &c, double dt, double maxlogError, std::size_t maxloop) const;
 
   std::pair<CortexState, double> CrankNicholson_Adapt_2(const CortexState &one, const CortexState::Der &d, const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, double maxlogErrorCN, std::size_t maxloop, std::pair<std::vector<double>, std::vector<std::size_t> > &dts) const;
+  std::pair<CortexSimulation, std::pair<std::vector<double>, std::vector<std::size_t> > > simulate_Euler(Parameters par, Param p, const Experiment &sp, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, std::size_t dts_max,double tequilibrio) const;
 private:
   void addDamp(CortexState& c,const Param& p)const;
 
@@ -164,7 +165,7 @@ private:
   std::pair<CortexState, double> nextEuler_Adapt_2(const CortexState &one, const CortexState::Der &d, const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, std::vector<double> &dts) const;
 
 
-  std::pair<Di<CortexState>, double> nextEuler_Adapt_2_i(CortexState one, const CortexState::Der &d, const Di<SimplestModel::Param> &p, const std::pair<Di<CortexState>, double> &c, double dt, double dtmin, double maxlogError) const;
+  std::pair<Di<CortexState>, double> nextEuler_Adapt_2_i(CortexState one, const CortexState::Der &d, const Di<SimplestModel::Param> &p, const std::pair<Di<CortexState>, double> &c, double dt,  double dtmin, double maxlogError) const;
 
   void EulerStep(const CortexState::Der &d, const SimplestModel::Param &p, CortexState &c, double dt) const;
 
@@ -186,7 +187,9 @@ public:
 
   virtual void loadParameters(const Parameters& p)=0;
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio) const=0;
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio) const=0;
+
+
 
 
   virtual const SimplestModel& myModel()const=0;
@@ -197,25 +200,33 @@ public:
   virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const=0;
 
 
-  std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> run_CN_adapt(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double maxlogErrorCN,double dtinf, std::size_t maxloop, bool Usederivative) const
+  std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> run_CN_adapt(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double maxlogErrorCN,double dtinf, std::size_t maxloop, bool Usederivative) const
   {
-    return myModel().simulate_CrankNicholson_Adapted(getParameters(),toModelParameters(),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,maxlogErrorCN,dtinf,maxloop,Usederivative);
+    return myModel().simulate_CrankNicholson_Adapted(getParameters(),toModelParameters(),e,dx,dtmin0,dtmin,
+                                                     nPoints_per_decade,dtmax,teq,maxlogError,maxlogErrorCN,dtinf,maxloop,Usederivative);
 
   }
 
-  virtual CortexSimulation run_CN_dt(const Experiment& e,double dx,const std::vector<std::pair<double, std::size_t>>& dts,double tequilibrio, bool UseDerivative) const
+  virtual CortexSimulation run_CN_dt(const Experiment& e,double dx,const std::pair<std::vector<double>, std::vector<std::size_t>>& dts,double tequilibrio, bool UseDerivative) const
   {
     return myModel().simulate_CrankNicholson_dt(getParameters(),toModelParameters(),e,dx,dts,tequilibrio,UseDerivative);
 
   }
-  virtual CortexSimulation run_CN(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio,double maxlogError,std::size_t maxloop, bool UseDerivative) const
+  std::pair<CortexSimulation, std::pair<std::vector<double>, std::vector<std::size_t> > > run_CN(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio,double maxlogError,std::size_t maxloop, bool UseDerivative) const
   {
-    return myModel().simulate_CrankNicholson(getParameters(),toModelParameters(),e,dx,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,maxloop,UseDerivative);
+    return myModel().simulate_CrankNicholson(getParameters(),toModelParameters(),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,maxloop,UseDerivative);
+  }
+
+  std::pair<CortexSimulation, std::pair<std::vector<double>, std::vector<std::size_t> > >
+  run_Euler(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,  std::size_t dts_max,double tequilibrio) const
+  {
+    return myModel().simulate_Euler
+        (getParameters(),toModelParameters(),e,
+         dx,dtmin0,dtmin,nPoints_per_decade,dtmax,dts_max,tequilibrio);
 
   }
 
-
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio,double maxlogError,double dtinf) const=0;
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,  double tequilibrio,double maxlogError,double dtinf) const=0;
 
   virtual BaseModel* clone()const =0;
 
@@ -622,9 +633,9 @@ public:
 
 
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
   virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
@@ -633,9 +644,11 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run
+  (const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade,
+   double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -930,9 +943,9 @@ public:
 
 
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -943,9 +956,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -1204,9 +1217,9 @@ public:
   }
 
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -1216,9 +1229,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -1490,9 +1503,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -1502,9 +1515,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -1789,9 +1802,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -1801,9 +1814,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -2097,9 +2110,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -2110,9 +2123,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -2389,9 +2402,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -2402,9 +2415,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -2707,9 +2720,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -2719,9 +2732,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -3049,9 +3062,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -3061,9 +3074,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -3415,9 +3428,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -3428,9 +3441,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -3728,9 +3741,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -3740,9 +3753,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -4023,9 +4036,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -4035,9 +4048,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -4317,9 +4330,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -4328,9 +4341,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -4620,9 +4633,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -4632,9 +4645,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -4906,9 +4919,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -4917,9 +4930,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -5199,9 +5212,9 @@ public:
 
   }
 
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq) const  override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -5210,9 +5223,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -5532,9 +5545,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -5543,9 +5556,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -5891,9 +5904,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -5902,9 +5915,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -6220,9 +6233,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -6232,9 +6245,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -6546,9 +6559,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -6558,9 +6571,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -6879,9 +6892,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -6891,9 +6904,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -7213,9 +7226,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -7224,9 +7237,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -7562,9 +7575,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -7573,9 +7586,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -7927,9 +7940,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -7939,9 +7952,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -8261,9 +8274,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -8272,9 +8285,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -8606,9 +8619,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -8618,9 +8631,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -8942,9 +8955,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -8954,9 +8967,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -9349,9 +9362,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -9361,9 +9374,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -9797,9 +9810,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -9809,9 +9822,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -10314,10 +10327,10 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
-                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+                      toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -10326,9 +10339,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -10764,10 +10777,10 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
-                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+                      toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -10776,9 +10789,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -11283,10 +11296,10 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
-                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+                      toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -11295,9 +11308,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -11747,10 +11760,10 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
-                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+                      toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -11759,9 +11772,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -12280,10 +12293,10 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
-                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+                      toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -12293,9 +12306,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -12857,10 +12870,10 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
-                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+                      toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -12871,9 +12884,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -13257,10 +13270,10 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
-                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+                      toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -13270,9 +13283,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -13770,10 +13783,10 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
-                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+                      toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -13783,9 +13796,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -14376,10 +14389,10 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
     return m.simulate(getParameters(),
-                      toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+                      toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -14389,9 +14402,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -14718,9 +14731,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -14730,9 +14743,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -15074,9 +15087,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -15085,9 +15098,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -15456,9 +15469,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -15467,9 +15480,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -15784,9 +15797,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -15795,9 +15808,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -16110,9 +16123,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -16121,9 +16134,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -16444,9 +16457,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -16455,9 +16468,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -16794,9 +16807,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -16805,9 +16818,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -17154,9 +17167,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -17165,9 +17178,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -17480,9 +17493,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
   virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
@@ -17490,9 +17503,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -17827,9 +17840,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -17838,9 +17851,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -18160,9 +18173,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -18171,9 +18184,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -18505,9 +18518,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
   virtual CortexSimulation run_dt(const Experiment& e,double dx,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts,double tequilibrio) const  override
@@ -18516,9 +18529,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -18861,9 +18874,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -18873,9 +18886,9 @@ public:
   }
 
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -19210,9 +19223,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -19222,9 +19235,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -19567,9 +19580,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -19578,9 +19591,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -19873,9 +19886,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -19886,9 +19899,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -20186,9 +20199,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -20198,9 +20211,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -20502,9 +20515,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -20513,9 +20526,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -20820,9 +20833,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -20831,9 +20844,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -21148,9 +21161,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -21159,9 +21172,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 
@@ -21485,9 +21498,9 @@ public:
 
 
   }
-  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
+  virtual CortexSimulation run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax,double teq) const override
   {
-    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq);
+    return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq);
 
   }
 
@@ -21496,9 +21509,9 @@ public:
     return m.simulate(getParameters(),toModelParameters(this->p_),e,dx,dts,tequilibrio);
   }
 
-  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
+  virtual std::pair<CortexSimulation, std::vector<double>> run(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double dtinf) const override
   {
-    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
+    return m.simulate_Adapted(getParameters(),toModelParameters(this->p_),e,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,teq,maxlogError,dtinf);
 
   }
 

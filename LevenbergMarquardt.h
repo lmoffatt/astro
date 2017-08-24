@@ -45,6 +45,14 @@ public:
 
   virtual  std::vector<std::vector<double>> f(const Parameters& parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts)const=0;
 
+  virtual  std::vector<std::vector<double>> f
+  (const Parameters& parameters,
+   std::tuple<double,std::size_t,double>& dt_n_dtmax,
+   std::size_t dts_max,
+   std::pair<std::vector<double>,std::vector<std::size_t>>& dts)const=0;
+
+  virtual  std::vector<std::vector<double>> f(const std::vector<double>& p, std::tuple<double,std::size_t,double>& dt_n_dtmax, std::size_t dts_max, std::pair<std::vector<double>, std::vector<std::size_t> > &dts)const;
+
   virtual  std::vector<std::vector<double>> f(const std::vector<double>& p)const;
 
   virtual  std::vector<std::vector<double>> f(const std::vector<double>& p, std::pair<std::vector<double>,std::vector<std::size_t>>& dts)const;
@@ -123,10 +131,10 @@ class ABC_MultiPoison_Model:virtual public ABC_Distribution_Model
 {
 public:
 
-//  virtual void setPrior(const Parameters& parameters)=0;
-//  virtual const ABC_Freq_obs& getData()const=0;
+  //  virtual void setPrior(const Parameters& parameters)=0;
+  //  virtual const ABC_Freq_obs& getData()const=0;
 
-//  virtual const Parameters& getPrior()const=0;
+  //  virtual const Parameters& getPrior()const=0;
 
 
   //virtual  std::vector<std::vector<double>> f(const Parameters& parameters)const=0;
