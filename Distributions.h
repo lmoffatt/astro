@@ -32,6 +32,27 @@ public:
   double logP(const M_Matrix<double>& x)const ;
   double P(const M_Matrix<double>& x)const ;
 
+  void autoTest(std::mt19937_64& mt,std::size_t n)const
+  {
+    std::cerr<<"chi test n="<<size()<<" chis\n";
+    double chisum=0;
+    double chisqr=0;
+    for (std::size_t i=0; i<n; ++i)
+      {
+        auto s=sample(mt);
+        auto chi=chi2(s);
+      //  std::cerr<<chi<<" ";
+        chisum+=chi;
+        chisqr+=chi*chi;
+      }
+    chisum/=n;
+    chisqr-=n*chisum*chisum;
+    chisqr/=(n-1);
+    std::cerr<<"\n chimean="<<chisum<<" chisqr="<<chisqr;
+  }
+
+  double chi2(const M_Matrix<double>& x)const;
+
   double operator()(const M_Matrix<double>& x)const
   {
     return logP(x);

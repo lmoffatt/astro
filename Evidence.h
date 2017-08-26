@@ -4336,6 +4336,7 @@ public:
           double logPcurrent=sLik.mlogbPL();
           double logPcandidate=cLik.mlogbPL();
 
+
           double logQforward=sLik.proposed.logP(cLik.param);
           double logQbackward=cLik.proposed.logP(sLik.param);
           double logForward=logPcandidate-logQforward;
@@ -4352,14 +4353,20 @@ public:
                        double& dHd,
                        double& logPcurrent,
                        double& logPcandidate,
-                       double& logQforward,
-                       double& logQbackward )
+                       double& logChi2forward,
+                       double& logChi2backward,
+                       double& logDetCurrent,
+                       double& logDetCandidate)
     {
       logPcurrent=sLik.logbPL(mt);
       logPcandidate=cLik.logbPL(mt);
 
-      logQforward=sLik.proposed.logP(cLik.param);
-      logQbackward=cLik.proposed.logP(sLik.param);
+      logChi2forward=sLik.proposed.chi2(cLik.param);
+      logChi2backward=cLik.proposed.chi2(sLik.param);
+      logDetCandidate=cLik.proposed.logDetCov();
+      logDetCurrent=sLik.proposed.logDetCov();
+      auto logQforward=sLik.proposed.logP(cLik.param);
+      auto logQbackward=cLik.proposed.logP(sLik.param);
       auto d=cLik.param-sLik.param;
       auto H=sLik.beta*sLik.D_lik.H+sLik.D_prior.H;
       dHd=0.5*xTSigmaX(d,H);
@@ -4695,10 +4702,12 @@ public:
         double dHd;
         double logPcandidate;
         double logPcurrent;
-        double logQforward;
-        double logQbackward;
+        double logChiforward;
+        double logChibackward;
+        double logDetCurrent;
+        double logDetCandidate;
         if (step(LM_Lik,lik,model,data,sDist,cDist,landa,
-                 dHd,logPcandidate,logPcurrent,logQforward, logQbackward,slogL_max,ndts_max,mt,i,os,startTime,timeOpt))
+                 dHd,logPcandidate,logPcurrent,logChiforward, logChibackward,logDetCurrent,logDetCandidate,slogL_max,ndts_max,mt,i,os,startTime,timeOpt))
           {
             pars.push_acceptance(landa,dHd);
           }
@@ -4885,8 +4894,8 @@ public:
    const double& logQforward,const double& logQbackward)
   {
     os<<" dHd "<<dHd<<" ";
-    os<<" logQf "<<logQforward<<" logQb "<<logQbackward;
-    os<<" logPca "<<logPcandidate<<" logPcu "<<logPcurrent;
+    os<<" Qf "<<logQforward<<" Qb "<<logQbackward;
+    os<<" Pca "<<logPcandidate<<" Pcu "<<logPcurrent;
     os<<sLik.logPrior<<" "<<cLik.logPrior<<" ";
     os<<sLik.logLik<<" "<<cLik.logLik<<" ";
     os<<sLik.proposed.landa<<" "<<cLik.proposed.landa<<" ";
@@ -4902,8 +4911,10 @@ public:
    const std::vector<double>& dHd,
    const std::vector<double>& logPforward,
    const std::vector<double>& logPbackward,
-   const std::vector<double>& logQforward,
-   const std::vector<double>& logQbackward
+   const std::vector<double>& logChiforward,
+   const std::vector<double>& logChibackward,
+   const std::vector<double>& logDetCurrent,
+   const std::vector<double>& logDetCandidate
    )
   {
     for (std::size_t  i=0; i<sLik.size(); ++i)
@@ -4915,13 +4926,15 @@ public:
           os<<"rej ";
         os<<sLik[i].proposed.landa<<" ";
         os<<" dHd "<<dHd[i]<<" ";
-        os<<" logQf "<<logQforward[i]<<" ";
-        os<<" logQb "<<logQbackward[i]<<" ";
-        os<<" logPf "<<logPforward[i]<<" ";
-        os<<" logPb "<<logPbackward[i]<<" ";
+        os<<" chif "<<logChiforward[i]<<" ";
+        os<<" chib "<<logChibackward[i]<<" ";
+        os<<" sD "<<logDetCurrent[i]<<" ";
+        os<<" cD "<<logDetCandidate[i]<<" ";
+        os<<" Pf "<<logPforward[i]<<" ";
+        os<<" Pb "<<logPbackward[i]<<" ";
         os<<sLik[i].logPrior<<" ";
         os<<sLik[i].mlogbPL()<<" ";
-        os<<sLik[i].logLik<<"+/- "<<sLik[i].slogLik;
+        os<<sLik[i].logLik<<"s"<<sLik[i].slogLik;
         os<<"("<<sLik[i].dts.first.size()<<")\n";
       }
     return os;
@@ -4940,8 +4953,10 @@ public:
    ,double& dHd
    ,double& logPcandidate
    ,double& logPcurrent
-   ,double& logQforward
-   ,double& logQbackward
+   ,double& logChiforward
+   ,double& logChibackward
+   ,double& logDetCurrent
+   ,double& logDetCandidate
    ,double slogL_max
    ,std::size_t ndts_max
    ,std::mt19937_64& mt
@@ -4954,7 +4969,7 @@ public:
     LM_Lik.update_mcmc_step(lik,model,data,sDist,landa,sDist.beta);
     M_Matrix<double> c=sDist.proposed.sample(mt);
     cDist=LM_Lik.get_mcmc_step(lik,model,data,c,landa,sDist.beta,sDist.iscout,slogL_max,ndts_max);
-    if (test::accept(sDist,cDist,mt,dHd,logPcandidate,logPcurrent,logQforward,logQbackward))
+    if (test::accept(sDist,cDist,mt,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate))
       {
         out =true;
       }
@@ -4969,11 +4984,11 @@ public:
     auto timeIter_=60*(timeOpt-t0);
     std::cout<<i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<sDist.beta;
     //test::put(std::cout,sDist,cDist);
-    put(std::cout,sDist,cDist,dHd,logPcandidate,logPcurrent,logQforward,logQbackward);
+    put(std::cout,sDist,cDist,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward);
 
     os<<"n_steps::"<<i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<sDist.beta;
     test::put(os,sDist,cDist);
-    put(os,sDist,cDist,dHd,logPcandidate,logPcurrent,logQforward,logQbackward);
+    put(os,sDist,cDist,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward);
     if (out)
       {
         sDist=cDist;
@@ -5004,8 +5019,10 @@ public:
    ,std::vector<double>& dHd
    ,std::vector<double>& logPcandidate
    ,std::vector<double>& logPcurrent
-   ,std::vector<double>& logQforward
-   ,std::vector<double>& logQbackward
+   ,std::vector<double>& logChiforward
+   ,std::vector<double>& logChibackward
+   ,std::vector<double>& logDetCurrent
+   ,std::vector<double>& logDetCandidate
    , double p_Tjump
    ,std::vector<std::mt19937_64>& mt
    ,std::size_t isamples
@@ -5043,7 +5060,8 @@ public:
 
 
         if (test::accept(sDist[i],cDist,mt[i],dHd[i],
-                         logPcandidate[i],logPcurrent[i],logQforward[i],logQbackward[i]))
+                         logPcandidate[i],logPcurrent[i],logChiforward[i],
+                         logChibackward[i],logDetCurrent[i],logDetCandidate[i]))
           {
             aBeta.new_acceptance(i,sDist[i],cDist);
             pars[i].push_acceptance(landa,dHd[i]);
@@ -5071,10 +5089,9 @@ public:
 
     os<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSamples<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<"Evidence\t"<<evidence<<"\n";
 
-    put(os,sDist,out,dHd,logPcandidate,logPcurrent,logQforward,logQbackward);
+    put(os,sDist,out,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate);
     if (does_stdout)
-      put(std::cout,sDist,out,dHd,logPcandidate,logPcurrent,logQforward,logQbackward);
-
+    put(std::cout,sDist,out,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate);
 
     for(std::size_t i=1; i<sDist.size(); ++i)
       {
@@ -5439,8 +5456,11 @@ public:
     std::vector<double> dHd(beta.size());
     std::vector<double> logPcandidate(beta.size());
     std::vector<double> logPcurrent(beta.size());
-    std::vector<double> logQforward(beta.size());
-    std::vector<double> logQbackward(beta.size());
+    std::vector<double> logChiforward(beta.size());
+    std::vector<double> logChibackward(beta.size());
+    std::vector<double> logDetCurrent(beta.size());
+    std::vector<double> logDetCandidate(beta.size());
+
     std::uniform_int_distribution<typename std::mt19937_64::result_type> useed;
     std::vector<std::mt19937_64> mts(n);
     for (std::size_t i=0; i<n; ++i)
@@ -5491,7 +5511,7 @@ public:
           {
             mcmc.tempered_step
                 (LMLik,lik,model,data,sDists,pars,beta,dHd,
-                 logPcandidate,logPcurrent,logQforward,logQbackward,pTjump,mts,o,i,does_stdout,slogL_max,ndts_max,os,startTime,timeOpt);
+                 logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate,pTjump,mts,o,i,does_stdout,slogL_max,ndts_max,os,startTime,timeOpt);
           }
 
         o++;
@@ -5545,6 +5565,13 @@ public:
                 std::cerr<<f_par_name<<"is completed !!\n";
 
                 ++i_sim;
+
+
+                std::rename(f_sim_name.c_str(),f_sim_name.append(".done").c_str());
+                std::rename(f_fit_name.c_str(),f_fit_name.append(".done").c_str());
+                std::rename(f_logL_name.c_str(),f_logL_name.append(".done").c_str());
+                std::rename(f_log_name.c_str(),f_log_name.append(".done").c_str());
+                std::rename(f_par_name.c_str(),f_par_name.append(".done").c_str());
 
                 f_sim_name=f_sim_name0    +"."+std::to_string(i_sim);
                 f_sim.open(f_sim_name.c_str(), std::ofstream::out | std::ofstream::app);

@@ -2061,7 +2061,13 @@ M_Matrix<double> chol(const M_Matrix<double>& x,const std::string& kind)
   {
     std::cerr<<" error";
   };
-    return Transpose(res);
+if (INFO!=0)
+  {
+   std::cerr<< "wrong cholesky!";
+  return {};
+  }
+else
+  return Transpose(res);
 
 }
 

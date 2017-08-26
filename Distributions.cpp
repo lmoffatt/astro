@@ -6,7 +6,14 @@
 
 double MultivariateGaussian::P(const M_Matrix<double>& x)const
 {
-    return exp(logP(x));
+  return exp(logP(x));
+}
+
+double MultivariateGaussian::chi2(const M_Matrix<double> &x) const
+{
+  if (!mean_.empty())
+  return 0.5*xTSigmaX(x-mean_,covinv_);
+ else return std::numeric_limits<double>::quiet_NaN();
 }
 
 
@@ -24,7 +31,7 @@ M_Matrix<double> MultivariateGaussian::sample(std::mt19937_64 &mt)const
         M_Matrix<double> z(mean_.nrows(),mean_.ncols());
         for (std::size_t i=0; i<size(); i++)
             z[i]=normal(mt);
-        r=mean_+(z*cho_cov_);
+        r=mean_+multTransp(z,cho_cov_);
     }
     return r;
 }
@@ -34,7 +41,7 @@ MultivariateGaussian::MultivariateGaussian(const M_Matrix<double> &mean,
     mean_(mean),
     cov_(cov),
     covinv_(invSafe(cov)),
-    cho_cov_(chol(cov,"upper")),
+    cho_cov_(chol(cov,"lower")),
     logDetCov_(logDiagProduct(cho_cov_))
 {}
 
@@ -59,9 +66,11 @@ double MultivariateGaussian::logP(const M_Matrix<double> &x) const
 {
   if (mean_.size()>0)
 
-     return -0.5*size()*log(PI)-logDetCov_-0.5*xTSigmaX(x-mean_,covinv_);
+     return -0.5*size()*log(PI)-logDetCov()-chi2(x);
   else return std::numeric_limits<double>::quiet_NaN();
 }
+
+
 
 
 MultivariateGaussian::~MultivariateGaussian(){}
