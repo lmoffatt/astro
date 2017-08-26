@@ -7,7 +7,7 @@
 #$ -l h_rt=47:59:00 # Setea 48 horas de wall clock time
 
 #$ -V  # Exporta las variables de entorno
-#$ -N A01_50k30  # El nombre del job
+#$ -N A01_50k60  # El nombre del job
 #$ -cwd # Cambia al directorio actual
 
 
@@ -15,4 +15,4 @@
 # Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/local/gcc-6.2.0/lib64/
 
-/home/lmoffatt.inquimae/Astro/release/Astro /home/lmoffatt.inquimae/Astro/Astro/run/evidence_script_6 LABEL model_01
+/home/lmoffatt.inquimae/Astro/release/Astro /home/lmoffatt.inquimae/Astro/Astro/run/evidence_script_7 LABEL model_01
