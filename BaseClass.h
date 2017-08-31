@@ -25,6 +25,18 @@ std::string leadingZero(int i)
 }
 
 inline
+std::string leadingZeroZero(int i)
+{
+  if (i==0)
+    return "000";
+  else if (i<10)
+    return "00"+std::to_string(i);
+  else if (i<100)
+    return "0"+std::to_string(i);
+  else return std::to_string(i);
+}
+
+inline
 std::string time_now()
 {
   auto tc=std::chrono::system_clock::now();

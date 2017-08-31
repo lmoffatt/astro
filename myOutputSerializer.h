@@ -16,6 +16,12 @@ std::ostream& operator<<(std::ostream& os,const std::pair<T1,T2>& other)
   return os;
 }
 
+
+
+
+
+
+
 inline
 std::ostream& operator<<(
     std::ostream& s,const std::vector< std::vector< double> >& matrix)
@@ -33,9 +39,11 @@ std::ostream& operator<<(
 inline
 std::ostream& operator<<(
     std::ostream& s,const std::vector<  double> & aVector){
-    for (std::size_t j=0; j<aVector.size();j++)
+
+  s<<"[";
+  for (std::size_t j=0; j<aVector.size();j++)
         s<<aVector[j]<<"\t";
-    s<<"\n";
+    s<<"]";
 return s;
 }
 
@@ -44,27 +52,30 @@ return s;
 template<typename T>
 std::ostream& operator<<(std::ostream& s, const std::vector<T>& v)
 {
+  s<<"[";
   for (T x:v)
     s<<x<<"\t";
-  s<<"\n";
+  s<<"]";
   return s;
 }
 
 template<typename T>
 std::ostream& operator<<(std::ostream& s, const std::vector<std::vector<T>>& m)
 {
+  s<<"[";
   for (const std::vector<T>& v:m)
     s<<v;
-  s<<"\n";
+  s<<"]";
   return s;
 }
 
 template<typename K,typename T>
 std::ostream& operator<<(std::ostream& s, const std::map<K,T>& v)
 {
+  s<<"{";
   for (auto it=v.begin(); it!=v.end(); ++it)
     s<<*it<<"\t";
-  s<<"\n";
+  s<<"}";
   return s;
 }
 
@@ -89,9 +100,10 @@ std::ostream& operator<<(std::ostream& s, const std::set<T>& v)
 template<typename T>
 std::ostream& operator<<(std::ostream& s, const std::multiset<T>& v)
 {
+ s<<"{";
   for (auto it=v.begin(); it!=v.end(); ++it)
     s<<*it<<"\t";
-  s<<"\n";
+  s<<"}";
   return s;
 }
 

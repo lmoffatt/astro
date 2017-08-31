@@ -473,28 +473,28 @@ public:
       {
         for (std::size_t idx=0; idx<x_.size(); ++idx)
           {
-            os<<"psi_T...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
+            os<<"psi_F...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
           }
       }
     for (std::size_t idt=0; idt<t_.size(); ++idt)
       {
         for (std::size_t idx=0; idx<x_.size(); ++idx)
           {
-            os<<"psi_B...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
+            os<<"psi_rB...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
           }
       }
     for (std::size_t idt=0; idt<t_.size(); ++idt)
       {
         for (std::size_t idx=0; idx<x_.size(); ++idx)
           {
-            os<<"omega_T...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
+            os<<"omega_F...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
           }
       }
     for (std::size_t idt=0; idt<t_.size(); ++idt)
       {
         for (std::size_t idx=0; idx<x_.size(); ++idx)
           {
-            os<<"omega_B...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
+            os<<"omega_rB...t.."<<t_[idt]<<"..x.."<<x_[idx]<<"\t";
           }
       }
     for (std::size_t idt=0; idt<t_.size(); ++idt)
@@ -518,28 +518,28 @@ public:
       {
         for (std::size_t idx=0; idx<x_.size(); ++idx)
           {
-            os<<psi_T_[idt][idx]<<"\t";
+            os<<psi_T_[idt][idx]-psi_B_[idt][idx]<<"\t";
           }
       }
     for (std::size_t idt=0; idt<t_.size(); ++idt)
       {
         for (std::size_t idx=0; idx<x_.size(); ++idx)
           {
-            os<<psi_B_[idt][idx]<<"\t";
+            os<<psi_B_[idt][idx]/psi_T_[idt][idx]<<"\t";
           }
       }
     for (std::size_t idt=0; idt<t_.size(); ++idt)
       {
         for (std::size_t idx=0; idx<x_.size(); ++idx)
           {
-            os<<omega_T_[idt][idx]<<"\t";
+            os<<omega_T_[idt][idx]-omega_B_[idt][idx]<<"\t";
           }
       }
     for (std::size_t idt=0; idt<t_.size(); ++idt)
       {
         for (std::size_t idx=0; idx<x_.size(); ++idx)
           {
-            os<<omega_B_[idt][idx]<<"\t";
+            os<<omega_B_[idt][idx]/omega_T_[idt][idx]<<"\t";
           }
       }
     for (std::size_t idt=0; idt<t_.size(); ++idt)

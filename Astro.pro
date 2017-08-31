@@ -241,7 +241,7 @@ DISTFILES += \
     run/evidence_script_5 \
     run/evidence_script_6 \
     run/evidence_script_7 \
-    run/evidence_script_0
+    run/evidence_script
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

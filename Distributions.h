@@ -62,6 +62,18 @@ public:
   {
     return sample(mt);
   }
+  friend
+  std::istream& operator>>(std::istream& is, MultivariateGaussian& x)
+  {
+    std::string line;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>x.mean_;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>x.cov_;
+    return is;
+  }
 
 
   const M_Matrix<double>& Mean()const;
@@ -112,11 +124,10 @@ std::ostream& operator<<(std::ostream& os,const MultivariateGaussian& x)
 {
   os<<"\nMean\n"<<x.Mean();
   os<<"\nCov\n"<<x.Cov();
-  os<<"\nCovInv\n"<<x.CovInv();
-  os<<"\nChol\n"<<x.Chol();
-  os<<"\nlogDetCov\n"<<x.logDetCov();
   return os;
 }
+
+
 
 
 #endif // DISTRIBUTIONS_H

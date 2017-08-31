@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "myTuples.h"
 
 inline
 std::istream &safeGetline(std::istream &is, std::string &t)
@@ -25,10 +26,10 @@ auto operator>>(std::istream& is, T& v)
 {
   std::string s;
   if (!v.read(s,is, std::cerr))
-  {
-    is.setstate(std::ios::failbit);
+    {
+      is.setstate(std::ios::failbit);
 
-  }
+    }
   return is;
 
 }
@@ -58,27 +59,25 @@ template<typename T
 std::istream& operator>>(std::istream& is, std::vector<T>& v)
 {
   std::string line;
-  if (is.peek()=='[')
+  char c;
+  is>>c;
+  if (c=='[')
     {
-      std::vector<T> o;
-      char ch;
-      while ((is>>ch)&&(ch!='[')){}
-      while (ch!=']')
+      v.clear();
+      while (c!=']')
         {
-          std::string s;
-          while ((is.get(ch))&&((ch!=']')))
+          is>>c;
+          if (c!=']')
             {
-              s.push_back(ch);
+              is.putback(c);
+              T e;
+              if(is>>e)
+                 v.push_back(e);
+              else
+                 break;
             }
-          std::stringstream ss(s);
-          T e;
-          while (ss>>e) o.push_back(e);
-          is.clear();
-
         }
-      v=o;
       return is;
-
     }
   else
     {
@@ -98,36 +97,23 @@ template<typename T>
 std::istream& operator>>(std::istream& is, std::vector<T*>& v)
 {
   std::string line;
-  if (is.peek()=='[')
+  char c;
+  is>>c;
+  if (c=='[')
     {
-      std::vector<T*> o;
-      char ch;
-      while ((is>>ch)&&(ch!='[')){}
-      while (ch!=']')
+      while (c!=']')
         {
-          std::string s;
-          while ((is.get(ch))&&((ch!=']')))
+          is>>c;
+          if (c!=']')
             {
-              s.push_back(ch);
+              T* e=new T{};
+              is.putback(c);
+              if(is>>*e)
+                 v.push_back(e);
+              else
+                 break;
             }
-          if (s.empty())
-            break;
-          std::stringstream ss(s);
-          T* e=new T;
-          while (ss>>*e)
-            {
-              o.push_back(e);
-              e=new T;
-            }
-          delete e;
-          if (!s.empty()&& o.empty())
-            {
-              is.setstate(std::ios::failbit);
-              return is;
-            }
-
         }
-      v=o;
       return is;
     }
   else
@@ -140,8 +126,8 @@ std::istream& operator>>(std::istream& is, std::vector<T*>& v)
       std::stringstream ss(line);
       while (ss>>*x)
         {
-        v.push_back(x);
-        x=new T;
+          v.push_back(x);
+          x=new T;
         }
       delete x;
       return is;
@@ -152,38 +138,28 @@ std::istream& operator>>(std::istream& is, std::vector<T*>& v)
 template<typename T>
 std::istream& operator>>(std::istream& is, std::vector<std::vector<T>>& m)
 {
-  char ch;
-  is>>ch;
-  if (ch=='[')
+  char c;
+  is>>c;
+  if (c=='[')
     {
-      std::vector<std::vector<T>> mo;
-      while ((is>>ch)&&(ch!='[')){}
-      while (ch!=']')
+      while (c!=']')
         {
-          std::vector<T> o;
-          while (ch!=']')
+          is>>c;
+          if (c!=']')
             {
-
-              std::string s;
-              while ((is.get(ch))&&((ch!=']')))
-                {
-                  s.push_back(ch);
-                }
-              std::stringstream ss(s);
-              T e;
-              while (ss>>e) o.push_back(e);
+              is.putback(c);
+              std::vector<T> e;
+              if(is>>e)
+                 m.push_back(e);
+              else
+                 break;
             }
-         mo.push_back(o);
-         while ((is>>ch)&&(ch!='[')&&(ch!=']')){}
-
         }
-      m=mo;
       return is;
-
     }
   else
     {
-      is.putback(ch);
+      is.putback(c);
       std::vector<T> v;
       while((is>>v)&& !v.empty())
         {
@@ -197,7 +173,128 @@ std::istream& operator>>(std::istream& is, std::vector<std::vector<T>>& m)
 
 
 
+template<typename K,typename T>
+std::istream& operator>>(std::istream& is, std::map<K,T>& v)
+{ char c;
+  is>>c;
+  if (c=='{')
+    {
+      while (c!='}')
+        {
+          is>>c;
+          if (c!='}')
+            {
+              is.putback(c);
+              std::pair<K,T> e;
+              if(is>>e)
+                 v.insert(e);
+              else
+                 break;
+            }
+        }
+      return is;
+    }
+  else
+    {
+      is.setstate(std::ios::failbit);
+      return is;
+    }
+}
 
+template<typename T1, typename T2>
+std::istream& operator>>(std::istream& os,std::pair<T1,T2>& other)
+{
+  char ch;
+  os>>other.first>>ch>>other.second;
+  return os;
+}
+
+template<typename K,typename T>
+std::istream& operator>>(std::istream& is,  std::multimap<K,T>& v)
+{
+  char c;
+  is>>c;
+  if (c=='{')
+    {
+      while (c!='}')
+        {
+          is>>c;
+          if (c!='}')
+            {
+              std::pair<K,T> e;
+              is.putback(c);
+              if(is>>e)
+                 v.insert(e);
+              else
+                 break;
+            }
+        }
+      return is;
+    }
+  else
+    {
+      is.setstate(std::ios::failbit);
+    }
+}
+template<typename T>
+std::istream& operator>>(std::istream& is, std::multiset<T>& v)
+{
+  char c;
+  is>>c;
+  if (c=='{')
+    {
+      while (c!='}')
+        {
+          is>>c;
+          if (c!='}')
+            {
+              T e;
+              is.putback(c);
+              if(is>>e)
+                 v.insert(e);
+              else
+                 break;
+            }
+        }
+      return is;
+    }
+  else
+    {
+      is.setstate(std::ios::failbit);
+      return is;
+    }
+  }
+
+
+template<typename Last>
+std::istream& get_impl(std::istream& is, Last& last)
+{
+  is>>last;
+  return is;
+}
+
+template<typename First, typename ... Rest>
+std::istream& get_impl(std::istream& is,  First& first, Rest&...rest)
+{
+  get_impl(is,first);
+  get_impl(is,rest...);
+  return is;
+}
+
+template< int ... Indexes, typename ... Args>
+std::istream& get_helper(std::istream& is, index_tuple<Indexes...>, std::tuple<Args...>& tup)
+{
+  get_impl( is, std::get<Indexes>(tup)...);
+  return is;
+}
+
+
+template<typename ...Args>
+std::istream& operator>>(std::istream& is,  std::tuple<Args...>& tu)
+{
+  return get_helper(is,typename make_indexes<Args...>::type(),
+                    tu);
+}
 
 
 

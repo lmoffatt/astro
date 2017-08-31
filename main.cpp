@@ -78,6 +78,7 @@ int main(int argc, char **argv)
                    std::pair<std::string,std::string>{"","eviName"},
                    std::pair<std::string,std::string>{"","experimentName"},
                    std::pair<std::string,std::string>{"","priorName"},
+                   std::pair<std::string,std::string>{"","stateFile"},
                    std::pair<double,std::string>{0,"dtmin0"},
                    std::pair<double,std::string>{0,"dtmin"},
                    std::pair<double,std::string>{0,"dtmax"},

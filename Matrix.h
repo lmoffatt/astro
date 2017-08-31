@@ -1501,8 +1501,9 @@ std::istream& operator>>(std::istream& is,M_Matrix<T>& x)
         }
       std::stringstream ss(s);
       T e;
+      std::size_t i=o.size();
       while (ss>>e) o.push_back(e);
-      if (!o.empty()) ++nrows;
+      if (o.size()>i) ++nrows;
     }
   std::size_t ncols=o.size()/nrows;
   x=M_Matrix<T>(nrows,ncols,o);

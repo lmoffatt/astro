@@ -938,6 +938,7 @@ struct Tempering
                    std::string eviName,
                    std::string experimentName,
                    std::string priorName,
+                   std::string state_file,
                    double dtmin0,
                    double dtmin,
                    double dtmax,
@@ -1179,7 +1180,7 @@ struct Tempering
         double timeOpt=0;
 
 
-        tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout);
+        tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
         flog.close();
       }
 

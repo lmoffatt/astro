@@ -4,6 +4,7 @@
 #include "Matrix.h"
 #include "Distributions.h"
 #include "Optimization_BFGS.h"
+#include "BaseClass.h"
 
 #include <random>
 
@@ -13,8 +14,8 @@
 #include <chrono>
 #include <algorithm>
 #include <set>
-
-
+#include <cstdio>
+#include <iomanip>
 template<typename T>
 std::size_t ncells(const std::vector<T>& v)
 {
@@ -142,6 +143,17 @@ std::ostream& operator<<(std::ostream& os,const D_logL& d)
   return os;
 }
 
+inline
+std::istream& operator>>(std::istream& is,D_logL& d)
+{
+  std::string line;
+  std::getline(is,line);
+  is>>d.G;
+  std::getline(is,line);
+  std::getline(is,line);
+  is>>d.H;
+  return is;
+}
 
 
 struct mcmc_prior
@@ -158,6 +170,20 @@ std::ostream& operator<<(std::ostream& os,const mcmc_prior& x)
   return os;
 }
 
+inline
+std::istream& operator>>(std::istream& is, mcmc_prior& x)
+{
+  std::string line;
+  std::getline(is,line);
+  is>>x.param;
+  std::getline(is,line);
+  std::getline(is,line);
+  is>>x.logPrior;
+  std::getline(is,line);
+  std::getline(is,line);
+  is>>x.D_prior;
+  return is;
+}
 
 struct mcmc_post: public mcmc_prior
 {
@@ -196,6 +222,26 @@ std::ostream& operator<<(std::ostream& os,const mcmc_post& x)
   return os;
 }
 
+inline
+std::istream& operator>>(std::istream& is, mcmc_post& x)
+{
+  std::string line;
+  mcmc_prior& p=x;
+
+  is>>p;
+  std::getline(is,line);
+  std::getline(is,line);
+  is>>x.isValid;
+  if (x.isValid)
+    {
+      std::getline(is,line);
+      is>>x.f;
+      std::getline(is,line);
+      std::getline(is,line);
+      is>>x.logLik;
+    }
+  return is;
+}
 
 struct mcmc_Dpost: public mcmc_post
 {
@@ -226,6 +272,21 @@ std::ostream& operator<<(std::ostream& os,const mcmc_Dpost& x)
   return os;
 }
 
+inline
+std::istream& operator>>(std::istream& is, mcmc_Dpost& x)
+{
+  mcmc_post& p=x;
+
+  is>>p;
+  if (x.isValid)
+    {
+      std::string line;
+      std::getline(is,line);
+      std::getline(is,line);
+      is>>x.D_lik;
+    }
+  return is;
+}
 
 
 
@@ -302,6 +363,22 @@ std::ostream& operator<<(std::ostream& os,const mcmc_step<Dist>& x)
   os<<b;
   os<<"\nbeta\n"<<x.beta;
   os<<"\nproposed\n"<<x.proposed;
+
+  return os;
+}
+
+template<typename Dist>
+std::istream& operator>>(std::istream& os, mcmc_step<Dist>& x)
+{
+  std::string line;
+  mcmc_Dpost& b=x;
+  os>>b;
+  std::getline(os,line);
+  std::getline(os,line);
+  os>>x.beta;
+  std::getline(os,line);
+  std::getline(os,line);
+  os>>x.proposed;
 
   return os;
 }
@@ -1257,6 +1334,7 @@ public:
                     const  std::vector<std::vector<double>>& par):
     Adaptive_discrete(uniform_prior(landa),AP::uniform_parameter_prior(par)){}
 
+  Adaptive_discrete(){}
 
   Adaptive_discrete partialReset()const
   {
@@ -1264,7 +1342,7 @@ public:
   }
 
   friend
-  std::ostream& operator<<(std::ostream& os, const Adaptive_discrete<AP>& me)
+  std::ostream& put(std::ostream& os, const Adaptive_discrete<AP>& me)
   {
     os<<AP::ClassName()<<" distribution\n";
     for (auto &e:me.p_)
@@ -1295,7 +1373,52 @@ public:
   }
 
   friend
-  std::ostream& operator<<(std::ostream& os, const std::vector<Adaptive_discrete<AP>>& me)
+  std::ostream& operator<<(std::ostream& os, const Adaptive_discrete<AP>& me)
+  {
+    os<<AP::ClassName()<<" distribution\n";
+    os<<me.p_<<"\n";
+    os<<AP::ClassName()<<" parameter distribution\n";
+    os<<me.parDist_<<"\n";
+    os<<AP::ClassName()<<" reverse distribution\n";
+    os<<me.rev_<<"\n";
+    os<<AP::ClassName()<<" currently rejected\n";
+    os<<me.currentRejected_<<"\n";
+    os<<AP::ClassName()<<" history of rejected accepted\n";
+    os<<me.rejAccCount_<<"\n";
+
+    return os;
+
+  }
+
+  friend
+  std::istream& operator>>(std::istream& is,  Adaptive_discrete<AP>& me)
+  {
+    std::string line;
+    std::getline(is,line);
+    is>>me.p_;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.parDist_;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.rev_;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.currentRejected_;
+    std::getline(is,line);
+    std::getline(is,line);
+
+    is>>me.rejAccCount_;
+    std::getline(is,line);
+
+    return is;
+
+  }
+
+
+
+  friend
+  std::ostream& put(std::ostream& os, const std::vector<Adaptive_discrete<AP>>& me)
   {
     os<<AP::ClassName()<<" distribution\n";
 
@@ -1353,6 +1476,9 @@ public:
     return os;
 
   }
+
+
+
 
   std::map<AP,std::tuple<double,double,std::size_t>>
   history()const
@@ -1649,7 +1775,7 @@ public:
   std::ostream& operator<<(std::ostream& os, const Luciano_Adaptive_Beta& me)
   {
     os<<"Beta\n"<<me.beta_;
-    os<<"History of likelihoods\n";
+    os<<"\nHistory of likelihoods\n";
 
     for (auto &e: me.data_)
       {
@@ -1864,7 +1990,33 @@ struct Likelihood_Record{
     particle.push_back(p);
   }
 
+  friend std::ostream& operator<<(std::ostream& os, const Particle& me)
+  {
+    os<<me.isValid<<"\t"<<me.logLikInit<<"\t"<<me.logLikNext<<"\t";
+    return os;
+  }
+  friend std::istream& operator>>(std::istream& is,  Particle& me)
+  {
+    is>>me.isValid>>me.logLikInit>>me.logLikNext;
+    return is;
+  }
+
+
   std::vector<double> desc_beta;
+
+  friend std::ostream& operator<<(std::ostream& os, const Likelihood_Record& me)
+  {
+    os<<me.particle;
+    os<<me.desc_beta;
+    return os;
+  }
+  friend std::istream& operator>>(std::istream& is, Likelihood_Record& me)
+  {
+    is>>me.particle;
+    is>>me.desc_beta;
+    return is;
+  }
+
 
 };
 
@@ -3895,15 +4047,6 @@ public:
     ++accepts_[{betaless,betamore}].second;
   }
 
-  friend
-  std::ostream& operator<<(std::ostream& os, const Master_Adaptive_Beta_New& me)
-  {
-    os<<"Beta\n"<<me.desc_beta_;
-    os<<"History of likelihoods\n";
-
-    return os;
-
-  }
 
 
 
@@ -3925,6 +4068,34 @@ public:
   std::size_t size()const {return desc_beta_.size();}
 
   Beta const& getBeta()const {return desc_beta_;}
+
+  friend
+  std::ostream& operator<<(std::ostream& os, const Master_Adaptive_Beta_New& me)
+  {
+    os<<"Beta\n"<<me.desc_beta_;
+    os<<"accepts\n";
+    os<<me.accepts_;
+    os<<"data\n";
+    os<<me.data_;
+    return os;
+
+  }
+
+  friend
+  std::istream& operator>>(std::istream& os, Master_Adaptive_Beta_New& me)
+  {
+    std::string line;
+    std::getline(os,line);
+    os>>me.desc_beta_;
+    std::getline(os,line);
+    os>>me.accepts_;
+    std::getline(os,line);
+    os>>me.data_;
+    return os;
+
+  }
+
+
 
 
 private:
@@ -3956,8 +4127,8 @@ std::ostream& operator<<(std::ostream& os,const LM_MultivariateGaussian& x)
 {
   const MultivariateGaussian& b=x;
   os<<b;
-  os<<"\nlanda\t"<<x.landa;
-  os<<"\texp_delta_next_logL\t"<<x.exp_delta_next_logL<<"\n";
+  os<<"\nlanda\n"<<x.landa;
+  os<<"\nexp_delta_next_logL\n"<<x.exp_delta_next_logL<<"\n";
   return os;
 }
 
@@ -4378,7 +4549,8 @@ public:
       else
         {
 
-          if (!std::isfinite(logQforward)|| !std::isfinite(logQbackward))
+          if (!std::isfinite(logQforward)|| !std::isfinite(logQbackward)
+              ||!std::isfinite(logPcandidate))
             {
               return false;
             }
@@ -5091,7 +5263,7 @@ public:
 
     put(os,sDist,out,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate);
     if (does_stdout)
-    put(std::cout,sDist,out,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate);
+      put(std::cout,sDist,out,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate);
 
     for(std::size_t i=1; i<sDist.size(); ++i)
       {
@@ -5121,6 +5293,55 @@ public:
 
 
 
+  static
+  void save_state(std::ostream& os,
+                  std::vector<mcmc_step<pDist>>& sDist
+                  ,std::vector<Adaptive_discrete<AP>>& pars
+                  ,Master_Adaptive_Beta_New& aBeta
+                  ,std::size_t isamples)
+  {
+    os<<"sDist\n";
+    for (std::size_t i=0; i<sDist.size(); ++i)
+      {
+        os<<sDist[i].iscout<<"\t"<<sDist[i].beta<<"\n";
+        os<<sDist[i].param<<"\n";
+      }
+    os<<"pars\n";
+    os<<pars<<"\n";
+    os<<"aBeta\n";
+    os<<aBeta<<"\n";
+    os<<"isamples\n";
+    os<< isamples<<"\n";
+
+  };
+
+  static
+  void load_state(std::istream& is,
+                  std::vector<mcmc_step<pDist>>& sDist
+                  ,std::vector<Adaptive_discrete<AP>>& pars
+                  ,Master_Adaptive_Beta_New& aBeta
+                  ,std::size_t& isamples)
+  {
+    std::string line;
+    std::getline(is,line);
+    for (std::size_t i=0; i<sDist.size(); ++i)
+      {
+        is>>sDist[i].iscout>>sDist[i].beta;
+        std::getline(is,line);
+
+        is>>sDist[i].param;
+        std::getline(is,line);
+      }
+    std::getline(is,line);
+    is>>pars;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>aBeta;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>> isamples;
+    std::getline(is,line);
+    };
 
 
 
@@ -5330,8 +5551,15 @@ public:
 
 };
 
-
-
+inline
+int rename_done(const std::string& f_name)
+{
+  std::string f_name_done=f_name+".done";
+  int res= std::rename(f_name.c_str(),f_name_done.c_str());
+  if (res!=0)
+    std::cerr<<"could not rename file"<<f_name<<"\n";
+  return res;
+}
 
 
 
@@ -5391,7 +5619,8 @@ public:
    ,const std::chrono::steady_clock::time_point& startTime
    ,double& timeOpt
    ,std::size_t maxSimFileSize
-   ,bool does_stdout)
+   ,bool does_stdout
+   , const std::string& state_file)
   {
     std::mt19937_64 mt;
     mt.seed(seed);
@@ -5402,11 +5631,13 @@ public:
     std::string f_fit_name0=EviName+"_fit.txt";
     std::string f_sim_name0=EviName+"_sim.txt";
 
-    std::string f_par_name=f_par_name0    +"."+std::to_string(i_sim);
-    std::string f_logL_name=f_logL_name0    +"."+std::to_string(i_sim);
-    std::string f_fit_name=f_fit_name0    +"."+std::to_string(i_sim);
-    std::string f_sim_name=f_sim_name0    +"."+std::to_string(i_sim);
-    std::string f_log_name=EviNameLog0    +"."+std::to_string(i_sim);
+    std::string f_state_name=EviName+"_state.txt";
+
+    std::string f_par_name=f_par_name0    +"."+leadingZeroZero(i_sim);
+    std::string f_logL_name=f_logL_name0    +"."+leadingZeroZero(i_sim);
+    std::string f_fit_name=f_fit_name0    +"."+leadingZeroZero(i_sim);
+    std::string f_sim_name=f_sim_name0    +"."+leadingZeroZero(i_sim);
+    std::string f_log_name=EviNameLog0    +"."+leadingZeroZero(i_sim);
 
     std::ofstream os;
     std::ofstream f_par;
@@ -5414,11 +5645,15 @@ public:
     std::ofstream f_sim;
     std::ofstream f_fit;
 
+
+    f_par<<std::setprecision(std::numeric_limits<double>::digits10 + 1);
+
     os.open(f_log_name.c_str(), std::ofstream::out | std::ofstream::app);
     f_par.open(f_par_name.c_str(), std::ofstream::out | std::ofstream::app);
     f_logL.open(f_logL_name.c_str(), std::ofstream::out | std::ofstream::app);
     f_sim.open(f_sim_name.c_str(), std::ofstream::out | std::ofstream::app);
     f_fit.open(f_fit_name.c_str(), std::ofstream::out | std::ofstream::app);
+
 
 
 
@@ -5448,6 +5683,7 @@ public:
 
 
 
+
     Master_Adaptive_Beta_New beta(beta0);
     auto n=beta.size();
     std::vector<mystep> sDists(n);
@@ -5466,31 +5702,52 @@ public:
     for (std::size_t i=0; i<n; ++i)
       mts[i].seed(useed(mt));
     std::size_t o=0;
-    for (std::size_t i=0; i<beta.size(); ++i)
-      {
-        M_Matrix<double> pinit;
-        double beta0=beta.getBeta().getValue()[i];
-        std::size_t ntrialsi=0;
-        std::size_t ntrialsj=0;
 
-        bool isvalid=false;
-        AP landa;
-        while(!isvalid)
+    bool isContinuation =!state_file.empty();
+    if (isContinuation)
+      {
+        std::ifstream f_state;
+        f_state.open(state_file.c_str(), std::ifstream::in );
+        mcmc.load_state(f_state,sDists,pars,beta,o);
+        f_state.close();
+        for (std::size_t i=0; i<beta.size(); ++i)
           {
+            double beta0=beta.getBeta().getValue()[i];
+            AP landa;
             mcmc_post postL;
-            while(!postL.isValid)
-              {
-                pinit=model.sample(mt);
-                postL=lik.get_mcmc_Post(model,data,pinit,slogL_max,ndts_max);
-                ++ntrialsi;
-              }
+            postL=lik.get_mcmc_Post(model,data,sDists[i].param,slogL_max,ndts_max);
             landa=pars[i].sample(mts[i]);
-            sDists[i]=LMLik.get_mcmc_step(lik,model,data,pinit,postL,landa,beta0,i);
-            isvalid=sDists[i].isValid;
-            ++ntrialsj;
+            sDists[i]=LMLik.get_mcmc_step(lik,model,data,sDists[i].param,postL,landa,beta0,i);
           }
-        // LMLik.update_mcmc_step(lik,model,data,sDists[i],landa,beta0);
+
       }
+
+    else
+      for (std::size_t i=0; i<beta.size(); ++i)
+        {
+          M_Matrix<double> pinit;
+          double beta0=beta.getBeta().getValue()[i];
+          std::size_t ntrialsj=0;
+
+          bool isvalid=false;
+          AP landa;
+          while(!isvalid)
+            {
+              std::size_t ntrialsi=0;
+              mcmc_post postL;
+              while(!postL.isValid)
+                {
+                  pinit=model.sample(mt);
+                  postL=lik.get_mcmc_Post(model,data,pinit,slogL_max,ndts_max);
+                  ++ntrialsi;
+                }
+              landa=pars[i].sample(mts[i]);
+              sDists[i]=LMLik.get_mcmc_step(lik,model,data,pinit,postL,landa,beta0,i);
+              isvalid=sDists[i].isValid;
+              ++ntrialsj;
+            }
+          // LMLik.update_mcmc_step(lik,model,data,sDists[i],landa,beta0);
+        }
 
     auto sim=model.getSimulation(sDists[0].param,sDists[0].dts);
     sim.writeHeaderDataFrame(f_sim);
@@ -5498,6 +5755,7 @@ public:
     auto& cl=model.getLikelihood();
     cl.writeYfitHeaderDataFrame(f_fit,sim);
     f_fit<<std::endl;
+
 
 
     while (o<nsamples&&timeOpt<maxTime*60)
@@ -5514,7 +5772,13 @@ public:
                  logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate,pTjump,mts,o,i,does_stdout,slogL_max,ndts_max,os,startTime,timeOpt);
           }
 
+        std::ofstream f_state;
+        f_state.open(f_state_name.c_str(), std::ofstream::out | std::ofstream::trunc);
+        f_state<<std::setprecision(std::numeric_limits<double>::digits10 + 1);
+        mcmc.save_state(f_state,sDists,pars,beta,o);
+        f_state.close();
         o++;
+
 
         auto tnow=std::chrono::steady_clock::now();
         auto d=tnow-startTime;
@@ -5566,27 +5830,26 @@ public:
 
                 ++i_sim;
 
+                rename_done(f_sim_name);
+                rename_done(f_logL_name);
+                rename_done(f_log_name);
+                rename_done(f_par_name);
+                rename_done(f_fit_name);
 
-                std::rename(f_sim_name.c_str(),f_sim_name.append(".done").c_str());
-                std::rename(f_fit_name.c_str(),f_fit_name.append(".done").c_str());
-                std::rename(f_logL_name.c_str(),f_logL_name.append(".done").c_str());
-                std::rename(f_log_name.c_str(),f_log_name.append(".done").c_str());
-                std::rename(f_par_name.c_str(),f_par_name.append(".done").c_str());
-
-                f_sim_name=f_sim_name0    +"."+std::to_string(i_sim);
+                f_sim_name=f_sim_name0    +"."+leadingZeroZero(i_sim);
                 f_sim.open(f_sim_name.c_str(), std::ofstream::out | std::ofstream::app);
 
-                f_log_name=EviNameLog0+"."+std::to_string(i_sim);
+                f_log_name=EviNameLog0+"."+leadingZeroZero(i_sim);
                 os.open(f_log_name.c_str(), std::ofstream::out | std::ofstream::app);
 
 
-                f_par_name=f_par_name0    +"."+std::to_string(i_sim);
+                f_par_name=f_par_name0    +"."+leadingZeroZero(i_sim);
                 f_par.open(f_par_name.c_str(), std::ofstream::out | std::ofstream::app);
 
-                f_fit_name=f_fit_name0    +"."+std::to_string(i_sim);
+                f_fit_name=f_fit_name0    +"."+leadingZeroZero(i_sim);;
                 f_fit.open(f_fit_name.c_str(), std::ofstream::out | std::ofstream::app);
 
-                f_logL_name=f_logL_name0    +"."+std::to_string(i_sim);
+                f_logL_name=f_logL_name0    +"."+leadingZeroZero(i_sim);;
                 f_logL.open(f_logL_name.c_str(), std::ofstream::out | std::ofstream::app);
 
                 std::cerr<<f_sim_name<<"is opened !!\n";
