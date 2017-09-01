@@ -23,6 +23,7 @@ public:
 
   virtual std::ostream& writeYfitHeaderDataFrame(std::ostream& os,const CortexSimulation &)const{return os;}
 
+
   std::vector<double> getNBins(const Experiment *e);
   // ABC_Multinomial_Model interface
 public:
@@ -32,7 +33,7 @@ public:
   virtual const Parameters &getPrior() const override;
 
   CortexLikelihood(std::string id,
-                   const Experiment* e,
+                    Experiment* e,
                    const Parameters& prior
                    , double dx
                    , double dtmin0,
@@ -42,7 +43,7 @@ public:
                    , double tequilibrio);
 
   CortexLikelihood(std::string id,
-                   const Experiment* e,
+                   Experiment *e,
                    const Parameters& prior
                    , double dx
                    , double dtmin0,
@@ -51,7 +52,7 @@ public:
                    double dtmax
                    , double tequilibrio
                    , double maxlogError
-                   ,double dtinf);
+                   , double dtinf);
 
   // ABC_Freq_obs interface
   virtual const std::vector<std::vector<double>> & n_obs()const override;
@@ -72,8 +73,13 @@ public:
 
   const BaseModel* getModel()const;
 
+
+  virtual void setSimulation();
+
+  virtual void setMeasure();
+
   CortexLikelihood(std::string id,
-                   const Experiment *e,
+                   Experiment *e,
                    const Parameters &prior,
                    double dx,
                    double dtmin0,
@@ -88,7 +94,7 @@ public:
                    , bool UseDerivative);
 
   CortexLikelihood(std::string id,
-                   const Experiment *e,
+                    Experiment *e,
                    const Parameters &prior,
                    double dx,
                    double dtmin0,
@@ -107,7 +113,7 @@ protected:
 
   Parameters prior_;
   const BaseModel* m_;
-  const Experiment* e_;
+  Experiment* e_;
   bool adapt_dt_;
   bool CrankNicholson_;
   double dx_;
@@ -137,7 +143,7 @@ class CortexMultinomialLikelihood:public ABC_Multinomial_Model, virtual public C
 public:
 
   CortexMultinomialLikelihood(std::string id,
-                              const Experiment* e,
+                               Experiment* e,
                               const Parameters& prior
                               ,double dx
                               ,double dtmin0
@@ -236,7 +242,7 @@ public:
 
 
   CortexPoisonLikelihood(std::string id,
-                         const Experiment* e,
+                          Experiment* e,
                          const Parameters& prior
                          ,double dx
                          ,double dtmin0
@@ -247,7 +253,7 @@ public:
     CortexLikelihood(id,e,prior,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,tequilibrio){}
 
   CortexPoisonLikelihood(std::string id,
-                         const Experiment* e,
+                          Experiment* e,
                          const Parameters& prior
                          ,double dx
                          ,double dtmin0
@@ -262,7 +268,7 @@ public:
 
 
   CortexPoisonLikelihood(std::string id,
-                         const Experiment *e,
+                          Experiment *e,
                          const Parameters &prior,
                          double dx,
                          double dtmin0,
@@ -279,7 +285,7 @@ public:
 
 
   CortexPoisonLikelihood(std::string id,
-                         const Experiment *e,
+                          Experiment *e,
                          const Parameters &prior,
                          double dx,
                          double dtmin0,
@@ -596,7 +602,11 @@ public:
 
   CortexSimulation getSimulation(const M_Matrix<double>& par,std::pair<std::vector<double>, std::vector<std::size_t>> dts)const
   {
-    return CL_->simulate(getParameter(par),dts);
+    auto CLc= const_cast<CortexLikelihood*> (CL_);
+    CLc->setSimulation();
+    auto out= CLc->simulate(getParameter(par),dts);
+    CLc->setMeasure();
+    return out;
   }
 
   const CortexLikelihood& getLikelihood()const

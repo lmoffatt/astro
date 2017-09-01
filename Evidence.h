@@ -5341,7 +5341,7 @@ public:
     std::getline(is,line);
     is>> isamples;
     std::getline(is,line);
-    };
+  };
 
 
 
@@ -5797,14 +5797,17 @@ public:
           {
 
             auto param=model.getParameter(sDists[i].param);
-            auto sim=model.getSimulation(sDists[i].param,sDists[i].dts);
             (sDists[i].writelogLRowDataFrame(f_logL<<ss1.str()))<<"\n";
 
             (sDists[i].writelogLRowDataFrame(f_par<<ss1.str()))<<"\t";
             param.writeRowDataFrame(f_par)<<"\n";
 
-            (sDists[i].writelogLRowDataFrame(f_sim<<ss1.str()))<<"\t";
-            sim.writeRowDataFrame(f_sim)<<"\n";
+            if (o%5==0)
+              {
+                auto sim=model.getSimulation(sDists[i].param,sDists[i].dts);
+                (sDists[i].writelogLRowDataFrame(f_sim<<ss1.str()))<<"\t";
+                sim.writeRowDataFrame(f_sim)<<"\n";
+              }
             (sDists[i].writelogLRowDataFrame(f_fit<<ss1.str()))<<"\t";
             sDists[i].writeYfitRowDataFrame(f_fit)<<"\n";
             f_logL.flush();

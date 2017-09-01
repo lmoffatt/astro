@@ -51,7 +51,7 @@ const Parameters &CortexLikelihood::getPrior() const
 
 
 
-CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade,double dtmax, double tequilibrio):
+CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade,double dtmax, double tequilibrio):
   prior_(prior)
 ,m_()
 ,e_(e)
@@ -71,7 +71,7 @@ CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Pa
 
 }
 
-CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade,double dtmax, double tequilibrio, double t_maxlogError, std::size_t maxloop):
+CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade,double dtmax, double tequilibrio, double t_maxlogError, std::size_t maxloop):
   prior_(prior)
 ,m_()
 ,e_(e)
@@ -94,7 +94,7 @@ CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Pa
 
 }
 
-CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError, double dtinf):
+CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError, double dtinf):
   prior_(prior)
 ,m_()
 ,e_(e)
@@ -115,7 +115,7 @@ CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Pa
   update();
 
 }
-CortexLikelihood::CortexLikelihood(std::string id, const Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError,double f_maxlogError, double dtinf, std::size_t maxloop, bool UseDerivative):
+CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError,double f_maxlogError, double dtinf, std::size_t maxloop, bool UseDerivative):
   prior_(prior)
 ,m_()
 ,e_(e)
@@ -184,6 +184,16 @@ std::ostream &CortexLikelihood::write(std::ostream &s) const
 const Experiment *CortexLikelihood::getExperiment() const{return e_;}
 
 const BaseModel *CortexLikelihood::getModel() const {return m_;}
+
+void CortexLikelihood::setSimulation()
+{
+  e_->setSimulation();
+}
+
+void CortexLikelihood::setMeasure()
+{
+  e_->setMeasure();
+}
 
 std::vector<std::vector<double> > CortexLikelihood::getstate(const Experiment *e)
 {

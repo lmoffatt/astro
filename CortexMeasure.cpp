@@ -1351,6 +1351,9 @@ std::size_t Experiment::numSimPoints() const
 
 double Experiment::tsim() const
 {
+  if (isMeasure_)
+    return tmeas_;
+  else
   return tsim_;
 }
 
@@ -1362,12 +1365,15 @@ double Experiment::tMeas(unsigned i) const
 
 double Experiment::tSimul(unsigned i) const
 {
+  if (isMeasure_)
+    return tMeasures_[i];
+else
   return tSimulates_[i];
 }
 
 
 Experiment::Experiment(std::string ide, std::vector<CortexMeasure> mv,const  std::vector<double> &tsimul):
-  m_(mv),tMeasures_(mv.size()),tsim_(0),tSimulates_()
+  isMeasure_(true),m_(mv),tMeasures_(mv.size()),tsim_(0),tSimulates_()
 {
   setId(ide);
   std::size_t isimul=0;

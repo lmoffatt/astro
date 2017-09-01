@@ -832,8 +832,9 @@ public:
 public:
   virtual std::ostream &writeBody(std::ostream &s) const override
   {
+    writeField(s,"measure_time",tmeas_);
     writeField(s,"simulation_time",tsim_);
-    writeField(s,"time_of_Measures",tMeasures_);
+     writeField(s,"time_of_Measures",tMeasures_);
     writeField(s,"time_of_Simulated_Points",tSimulates_);
 
     writeField(s,"Measures",m_);
@@ -849,6 +850,8 @@ public:
 
   virtual bool readBody(std::string& line,std::istream &s, std::ostream& logs) override
   {
+    if (!readField(line,s,"measure_time",tmeas_,logs))
+      return false;
     if (!readField(line,s,"simulation_time",tsim_,logs))
       return false;
     else if (!readField(line,s,"time_of_Measures",tMeasures_,logs))
@@ -884,7 +887,16 @@ public:
   }
 
 
+  void setSimulation(
+      )
+  {
+    isMeasure_=false;
+  }
 
+  void setMeasure()
+  {
+    isMeasure_=true;
+  }
 protected:
   void update()override{}
 
@@ -892,8 +904,10 @@ protected:
 
 
 private:
+  bool isMeasure_=true;
   std::vector<CortexMeasure> m_;
   std::vector<double> tMeasures_;
+  double tmeas_;
   double tsim_;
   std::vector<double> tSimulates_;
 
