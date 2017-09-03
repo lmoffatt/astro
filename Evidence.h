@@ -1268,7 +1268,7 @@ public:
     for (auto& e:p2)
       sum_p+=e.second;
 
-    if (false)
+    if (true)
       {
         std::cerr<<"p logit"<<p_<<"\n";
         std::cerr<<"p lagrange"<<p2<<"\n"<<sum_p<<"\n";
@@ -1462,16 +1462,19 @@ public:
           }
         os<<"\n";
       }
-    os<<AP::ClassName()<<" history of rejected accepted\n";
-    std::vector<std::map<AP,std::tuple<double,double,std::size_t>>> hist(me.size());
-    for (std::size_t i=0; i<me.size(); ++i) hist[i]=me[i].history();
-    for (auto &e:hist[0])
+    if (false)
       {
-        auto a=e.first;
-        os<<a<<"\t";
-        for (std::size_t i=0; i<hist.size(); ++i)
-          os<<i<<": "<<hist[i][a]<<"\t";
-        os<<"\n";
+        os<<AP::ClassName()<<" history of rejected accepted\n";
+        std::vector<std::map<AP,std::tuple<double,double,std::size_t>>> hist(me.size());
+        for (std::size_t i=0; i<me.size(); ++i) hist[i]=me[i].history();
+        for (auto &e:hist[0])
+          {
+            auto a=e.first;
+            os<<a<<"\t";
+            for (std::size_t i=0; i<hist.size(); ++i)
+              os<<i<<": "<<hist[i][a]<<"\t";
+            os<<"\n";
+          }
       }
     return os;
 
@@ -5872,46 +5875,52 @@ public:
           {
             pars[i].actualize();
           }
-        // std::cerr<<pars;
-        os<<pars;
-        // std::cout<<beta;
-        os<<beta;
-        if (n!=beta.size())
+      if (o<nsamples/10)
+        for (std::size_t i=0; i<n;++i)
           {
-            for (std::size_t i=n; i<beta.size(); ++i)
-              {
-                M_Matrix<double> pinit;
-                double beta0=beta.getBeta().getValue()[i];
-                std::size_t ntrials=0;
-                mcmc_post postL;
-                while(!postL.isValid)
-                  {
-                    pinit=model.sample(mt);
-                    postL=lik.get_mcmc_Post(model,data,pinit,slogL_max,ndts_max);
-                    ++ntrials;
-                  }
-                pars.push_back(pars[n-1]);
-                mts.push_back(std::mt19937_64{});
-                mts[i].seed(useed(mt));
-
-                AP landa=pars[i].sample(mts[i]);
-                sDists.push_back
-                    (LMLik.get_mcmc_step(lik,model,data,pinit,postL,landa,beta0,i));
-                LMLik.update_mcmc_step(lik,model,data,sDists[i],landa,beta0);
-              }
-
+            pars[i]=pars[i].partialReset();
           }
 
-        n=beta.size();
+                // std::cerr<<pars;
+             //   os<<pars;
+            // std::cout<<beta;
+            //os<<beta;
+            if (n!=beta.size())
+              {
+                for (std::size_t i=n; i<beta.size(); ++i)
+                  {
+                    M_Matrix<double> pinit;
+                    double beta0=beta.getBeta().getValue()[i];
+                    std::size_t ntrials=0;
+                    mcmc_post postL;
+                    while(!postL.isValid)
+                      {
+                        pinit=model.sample(mt);
+                        postL=lik.get_mcmc_Post(model,data,pinit,slogL_max,ndts_max);
+                        ++ntrials;
+                      }
+                    pars.push_back(pars[n-1]);
+                    mts.push_back(std::mt19937_64{});
+                    mts[i].seed(useed(mt));
+
+                    AP landa=pars[i].sample(mts[i]);
+                    sDists.push_back
+                        (LMLik.get_mcmc_step(lik,model,data,pinit,postL,landa,beta0,i));
+                    LMLik.update_mcmc_step(lik,model,data,sDists[i],landa,beta0);
+                  }
+
+              }
+
+            n=beta.size();
+          }
+
+
       }
 
 
-  }
 
 
-
-
-};
+  };
 
 
 
