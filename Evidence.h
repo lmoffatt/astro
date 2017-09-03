@@ -5875,7 +5875,7 @@ public:
           {
             pars[i].actualize();
           }
-      if (o<nsamples/10)
+      if (o%5==0&&o<nsamples/10)
         for (std::size_t i=0; i<n;++i)
           {
             pars[i]=pars[i].partialReset();
