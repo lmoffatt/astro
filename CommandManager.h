@@ -965,6 +965,8 @@ struct Tempering
                    double beta_min,
                    std::size_t N_beta_2,
                    double beta_infimo,
+                   const std::string Landa_algorithm,
+                   double targetProb,
                    M_Matrix<Landa> aps,
                    std::vector<std::vector<double>> apsPar,
                    double maxTime,
@@ -1017,10 +1019,6 @@ struct Tempering
 
     Experiment esim;
 
-    Adaptive_discrete<AP> landa(aps,apsPar);
-
-    if (does_stdout)
-      std::cout<<landa;
 
 
     Experiment *e=new Experiment;
@@ -1071,7 +1069,7 @@ struct Tempering
             if (!adapt_dt)
               CL=new CortexPoisonLikelihood
                   (eviName+"_lik",e,prior,dx,dtmin0,dtmin,
-                                            nPoints_per_decade,dtmax,tequilibrio);
+                   nPoints_per_decade,dtmax,tequilibrio);
             else
               CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,tequilibrio,maxlogError,dtinf);
           }
@@ -1088,11 +1086,9 @@ struct Tempering
           }
         MyModel<MyData> m(CL);
         MyData d(CL);
-        Metropolis_Hastings_mcmc<
-            MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
         LevenbergMarquardt_step<MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> LMLik;
         Poisson_DLikelihood<MyData,MyModel> DLik;
-        TT tt;
+
 
         std::random_device rd;
 
@@ -1141,6 +1137,8 @@ struct Tempering
         flog<<" beta_min: "<<beta_min<<"\n";
         flog<<" N_beta_2: "<<N_beta_2<<"\n";
         flog<<" beta_infimo: "<<beta_infimo<<"\n";
+        flog<<" Landa_algorithm: "<<Landa_algorithm<<"\n";
+        flog<<" targetProb: "<<targetProb<<"\n";
         flog<<" maxSimFileSize: "<<maxSimFileSize<<"\n";
         flog<<" beta_min: "<<beta_min<<"\n";
         flog<<" niter: "<<niter<<"\n";
@@ -1161,27 +1159,61 @@ struct Tempering
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         flog.close();
 
 
         std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now();
         double timeOpt=0;
 
+        if (Landa_algorithm.find("Probability")!=std::string::npos)
+          {
+            typedef
+            Adaptive_probability<One<AP>,TargetProb,AP> Ad;
+            TargetProb t(targetProb);
+            Ad landa(t,aps);
+            if (does_stdout)
+              std::cout<<landa;
 
-        tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
-        flog.close();
+            Metropolis_Hastings_mcmc<Ad,
+                MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
+            TT<Ad> tt;
+
+            tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+            flog.close();
+
+          }
+          else if (Landa_algorithm.find("Velocity")!=std::string::npos)
+          {
+            typedef
+            Adaptive_probability<AP::ExpectedVelocity,PascalProb,AP> Ad;
+            Ad landa(aps);
+            if (does_stdout)
+              std::cout<<landa;
+
+            Metropolis_Hastings_mcmc<Ad,
+                MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
+            TT<Ad> tt;
+
+            tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+            flog.close();
+
+          }
+        else
+        {
+          Adaptive_discrete<AP> landa(aps,apsPar);
+
+          if (does_stdout)
+            std::cout<<landa;
+
+          Metropolis_Hastings_mcmc<Adaptive_discrete<AP>,
+              MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
+          TT<Adaptive_discrete<AP>> tt;
+
+          tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+          flog.close();
+        }
+
+
       }
 
 

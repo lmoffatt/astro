@@ -105,6 +105,8 @@ int main(int argc, char **argv)
                    std::pair<double,std::string>{0,"beta_min"},
                    std::pair<std::size_t,std::string>{0,"N_betas_2"},
                    std::pair<double,std::string>{0,"beta_infimo"},
+                   std::pair<std::string,std::string>{"","Landa_algorithm"},
+                   std::pair<double,std::string>{0,"targetProb"},
                    std::pair<M_Matrix<Landa>,std::string>{{},"aps"},
                    std::pair<std::vector<std::vector<double>>,std::string>{{},"apsPar"},
                    std::pair<double,std::string>{0,"maxTime"},

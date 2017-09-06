@@ -1,6 +1,7 @@
 #ifndef EVIDENCE_H
 #define EVIDENCE_H
 
+#define __STDCPP_WANT_MATH_SPEC_FUNCS__ 1
 #include "Matrix.h"
 #include "Distributions.h"
 #include "Optimization_BFGS.h"
@@ -113,7 +114,17 @@ private:
 };
 
 
+inline double log_beta_f(double a,double b)
+{
+  return std::lgamma(a)+lgamma(b)-lgamma(a+b);
+}
 
+inline double binom(std::size_t n, std::size_t k) { return 1/((n+1)*std::exp(log_beta_f(n-k+1,k+1))); }
+
+inline double BetaDistribution(double p, std::size_t success, std::size_t failures)
+{
+  return std::pow(p,success)*std::pow(1.0-p,failures)/std::exp(log_beta_f(1.0+success,1.0+failures));
+}
 
 
 inline std::pair<double,double> logit(const std::pair<std::size_t,std::size_t>& x)
@@ -1530,6 +1541,259 @@ private:
 };
 
 
+template<class AP>
+struct One
+{
+  double operator()(const AP& )const {return 1.0;}
+};
+
+
+
+struct TargetProb
+{
+  double operator()(const std::pair<std::size_t, std::size_t>& p)const
+  {
+      return BetaDistribution(p_target_,p.first,p.second);
+  }
+  TargetProb(double p_target):p_target_(p_target){}
+  TargetProb(){}
+private:
+  double p_target_;
+
+};
+
+struct PascalProb
+{
+  double operator()(const std::pair<std::size_t, std::size_t>& p)const
+  {
+      return (p.first+1)/(p.first+p.second+2);
+  }
+};
+
+
+
+template < class EV,class Tp,class AP=Landa>
+class Adaptive_probability
+{
+public:
+  AP sample(std::mt19937_64& mt)const
+  {
+    return sample_rev_map(rev_,mt);
+  }
+
+  void push_acceptance(AP landa,double /*dHd*/)
+  {
+     ++rejAccCount_[landa].first;
+  }
+
+
+  void push_rejection(AP landa)
+  {
+    ++rejAccCount_[landa].second;
+
+  }
+
+  void actualize()
+  {
+
+    auto pnew=this->p_;
+
+    double sum=0;
+    for (auto it=pnew.begin(); it!=pnew.end(); ++it)
+      {
+         auto ns=rejAccCount_[it->first];
+         double l=f_(it->first)*tp_(ns);
+         sum+=l;
+         it->second=l;
+      }
+    for (auto it=pnew.begin(); it!=pnew.end(); ++it)
+      {
+        it->second*=1.0/sum;
+      }
+    p_=pnew;
+
+
+    this->rev_=cumulative_reverse_map(this->p_);
+  }
+
+
+
+  Adaptive_probability(const std::map<AP,double>& prior_landa):
+    f_(),tp_(),
+    p_{prior_landa},
+    rev_{cumulative_reverse_map(p_)},
+    rejAccCount_{}{}
+
+  Adaptive_probability(const Tp& tp,const std::map<AP,double>& prior_landa):
+    f_(),tp_(tp),
+    p_{prior_landa},
+    rev_{cumulative_reverse_map(p_)},
+    rejAccCount_{}{}
+
+  template<template<typename>class V>
+  Adaptive_probability(const V<AP>& landa):
+    Adaptive_probability(uniform_prior(landa)){}
+
+  template<template<typename>class V>
+  Adaptive_probability(const Tp tp,const V<AP>& landa):
+    Adaptive_probability(tp,uniform_prior(landa)){}
+
+  Adaptive_probability(){}
+
+  Adaptive_probability partialReset()const
+  {
+    return Adaptive_probability(tp_,p_);
+  }
+
+  friend
+  std::ostream& put(std::ostream& os, const Adaptive_probability<EV,Tp,AP>& me)
+  {
+    os<<AP::ClassName()<<" distribution\n";
+    for (auto &e:me.p_)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+
+    os<<AP::ClassName()<<" reverse distribution\n";
+    for (auto &e:me.rev_)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+
+    os<<AP::ClassName()<<" history of rejected accepted\n";
+    for (auto &e:me.rejAccCount_)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+    return os;
+
+  }
+
+  friend
+  std::ostream& operator<<(std::ostream& os, const Adaptive_probability<EV,Tp,AP>& me)
+  {
+    os<<AP::ClassName()<<" distribution\n";
+    os<<me.p_<<"\n";
+    os<<AP::ClassName()<<" reverse distribution\n";
+    os<<me.rev_<<"\n";
+    os<<AP::ClassName()<<" history of rejected accepted\n";
+    os<<me.rejAccCount_<<"\n";
+
+    return os;
+
+  }
+
+  friend
+  std::istream& operator>>(std::istream& is,  Adaptive_probability<EV,Tp,AP>& me)
+  {
+    std::string line;
+    std::getline(is,line);
+    is>>me.p_;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.rev_;
+    std::getline(is,line);
+    std::getline(is,line);
+
+    is>>me.rejAccCount_;
+    std::getline(is,line);
+
+    return is;
+
+  }
+
+
+
+  friend
+  std::ostream& put(std::ostream& os, const std::vector<Adaptive_probability<EV,Tp,AP>>& me)
+  {
+    os<<AP::ClassName()<<" distribution\n";
+
+    for (auto &e:me[0].p_)
+      {
+        auto a=e.first;
+        os<<a<<"\t";
+        for (std::size_t i=0; i<me.size(); ++i)
+          {
+            auto it=me[i].p_.find(a);
+            os<<*it<<"\t";
+          }
+        os<<"\n";
+      }
+    os<<AP::ClassName()<<" parameter distribution\n";
+    os<<"count\t"<<me[0].parDist_.second<<"\n";
+    for (auto &e:me[0].parDist_.first)
+      {
+        auto a=e.first;
+        os<<a<<"\t";
+        for (std::size_t i=0; i<me.size(); ++i)
+          {
+            auto it=me[i].parDist_.first.find(a);
+            os<<*it<<"\t";
+          }
+        os<<"\n";
+
+      }
+
+    os<<AP::ClassName()<<" reverse distribution\n";
+    std::vector<typename std::map<double,AP>::const_iterator> its(me.size());
+    for (std::size_t i=0; i<me.size(); ++i)
+      its[i]=me[i].rev_.begin();
+
+    while (its[0]!=me[0].rev_.end())
+      {
+        for (std::size_t i=0; i<me.size(); ++i)
+          {
+            os<<i<<" "<<its[i]->first<<"\t"<<its[i]->second<<"\t";
+            ++its[i];
+          }
+        os<<"\n";
+      }
+    if (false)
+      {
+        os<<AP::ClassName()<<" history of rejected accepted\n";
+        std::vector<std::map<AP,std::tuple<double,double,std::size_t>>> hist(me.size());
+        for (std::size_t i=0; i<me.size(); ++i) hist[i]=me[i].history();
+        for (auto &e:hist[0])
+          {
+            auto a=e.first;
+            os<<a<<"\t";
+            for (std::size_t i=0; i<hist.size(); ++i)
+              os<<i<<": "<<hist[i][a]<<"\t";
+            os<<"\n";
+          }
+      }
+    return os;
+
+  }
+
+
+
+
+
+private:
+  EV f_;
+  Tp tp_;
+
+  std::map<AP,double> p_;
+
+  std::map<double,AP> rev_;
+
+  std::map<AP,std::pair<std::size_t,std::size_t>> rejAccCount_;
+
+  template<template<typename>class V>
+  static std::map<AP,double> uniform_prior(const V<AP>& v)
+  {
+    std::map<AP,double> out;
+    double p=1.0/v.size();
+    for (auto it=v.begin(); it!=v.end(); ++it)
+      out[*it]+=p;
+    return out;
+  }
+
+
+
+};
 
 
 
@@ -4478,7 +4742,7 @@ public:
 
 
 template
-<
+<   class Adaptive_discrete,
     class D
     , template<class> class M
     , template<class,template<class> class > class D_Lik//=Poisson_DLikelihood
@@ -4640,7 +4904,7 @@ public:
    ,const M<D>& model
    ,const D& data
    ,mcmc_step<pDist>& sDist,
-   Adaptive_discrete<AP>& landa,
+   Adaptive_discrete& landa,
    const std::tuple<double,std::size_t,std::size_t>& betas,
    double slogL_max,
    std::size_t ndts_max,
@@ -4772,7 +5036,7 @@ public:
    ,const D& data
    ,mcmc_step<pDist>& sDist,
    mcmc_step<pDist>& cDist
-   ,Adaptive_discrete<AP>& landa
+   ,Adaptive_discrete& landa
    ,std::size_t nsamples_per_par,
    std::mt19937_64& mt
    ,std::ostream& os
@@ -4860,7 +5124,7 @@ public:
    ,const D& data
    ,mcmc_step<pDist>& sDist,
    mcmc_step<pDist>& cDist,
-   Adaptive_discrete<AP>& pars
+   Adaptive_discrete& pars
    ,double slogL_max
    ,std::size_t ndts_max,
    std::mt19937_64& mt
@@ -4900,7 +5164,7 @@ public:
    ,const M<D>& model
    ,const D& data
    ,std::vector<mcmc_step<pDist>>& sDist,
-   std::vector<Adaptive_discrete<AP>>& pars,
+   std::vector<Adaptive_discrete>& pars,
    std::vector<std::mt19937_64>& mt
    ,double pJump,
    std::size_t nsteps
@@ -5038,7 +5302,7 @@ public:
    ,const M<D>& model
    ,const D& data
    ,mcmc_step<pDist>& sDist,
-   Adaptive_discrete<AP>& aps,
+   Adaptive_discrete& aps,
    std::size_t nsamples_0,
    std::mt19937_64& mt
    ,std::ostream& os
@@ -5189,7 +5453,7 @@ public:
    ,const M<D>& model
    ,const D& data
    ,std::vector<mcmc_step<pDist>>& sDist
-   ,std::vector<Adaptive_discrete<AP>>& pars
+   ,std::vector<Adaptive_discrete>& pars
    ,Master_Adaptive_Beta_New& aBeta
    ,std::vector<double>& dHd
    ,std::vector<double>& logPcandidate
@@ -5299,7 +5563,7 @@ public:
   static
   void save_state(std::ostream& os,
                   std::vector<mcmc_step<pDist>>& sDist
-                  ,std::vector<Adaptive_discrete<AP>>& pars
+                  ,std::vector<Adaptive_discrete>& pars
                   ,Master_Adaptive_Beta_New& aBeta
                   ,std::size_t isamples)
   {
@@ -5321,7 +5585,7 @@ public:
   static
   void load_state(std::istream& is,
                   std::vector<mcmc_step<pDist>>& sDist
-                  ,std::vector<Adaptive_discrete<AP>>& pars
+                  ,std::vector<Adaptive_discrete>& pars
                   ,Master_Adaptive_Beta_New& aBeta
                   ,std::size_t& isamples)
   {
@@ -5353,7 +5617,7 @@ public:
 
 
 template
-<
+<  class Ad,
     class D
     , template<class> class M
     , template<class,template<class> class > class D_Lik=Poisson_DLikelihood
@@ -5369,7 +5633,7 @@ template
     class propDistStep=LevenbergMarquardt_step
     >
 std::ostream& operator<<(std::ostream& os
-                         ,const Metropolis_Hastings_mcmc<D,M,D_Lik,my_PropD,AP,propDistStep>& /*mcmc*/)
+                         ,const Metropolis_Hastings_mcmc<Ad,D,M,D_Lik,my_PropD,AP,propDistStep>& /*mcmc*/)
 {
   return os;
 }
@@ -5452,6 +5716,7 @@ std::ostream& operator<<(std::ostream& os,Tempered_Evidence_Evaluation<mcmc>& x)
 
 
 template<
+    class Ad,
     class D
     , template<class>   class M
     , template<class,template<class> class >   class D_Lik//=Poisson_DLikelihood
@@ -5467,6 +5732,7 @@ template<
     class propDist//=LevenbergMarquardt_step
     ,template<
       class
+      ,class
       , template<class> class
       , template<class,template<class> class >class
       ,class
@@ -5489,7 +5755,7 @@ public:
 
   static Evidence_Evaluation<mystep> *
   run
-  (const MH<D,M,D_Lik,my_PropD,AP,propDist>& mcmc
+  (const MH<Ad,D,M,D_Lik,my_PropD,AP,propDist>& mcmc
    ,const propDist<D,M,D_Lik,my_PropD,AP>& LMLik
    ,const D_Lik<D,M>& lik
    ,const M<D>& model
@@ -5567,6 +5833,7 @@ int rename_done(const std::string& f_name)
 
 
 template<
+    class Ad,
     class D
     , template<class>   class M
     , template<class,template<class> class >   class D_Lik//=Poisson_DLikelihood
@@ -5582,6 +5849,7 @@ template<
     class propDist//=LevenbergMarquardt_step
     ,template<
       class
+      ,class
       , template<class> class
       , template<class,template<class> class >class
       ,class
@@ -5603,12 +5871,12 @@ public:
 
   static void
   run
-  (const MH<D,M,D_Lik,my_PropD,AP,propDist>& mcmc
+  (const MH<Ad,D,M,D_Lik,my_PropD,AP,propDist>& mcmc
    ,const propDist<D,M,D_Lik,my_PropD,AP>& LMLik
    ,const D_Lik<D,M>& lik
    ,const M<D>& model
    ,const D& data
-   , const Adaptive_discrete<AP>& landa_Dist0
+   , const Ad& landa_Dist0
    ,const Master_Adaptive_Beta_New& beta0
    , double maxTime
    , std::size_t nsamples
@@ -5691,7 +5959,7 @@ public:
     auto n=beta.size();
     std::vector<mystep> sDists(n);
 
-    std::vector<Adaptive_discrete<AP>> pars(n,landa_Dist0);
+    std::vector<Ad> pars(n,landa_Dist0);
     std::vector<double> dHd(beta.size());
     std::vector<double> logPcandidate(beta.size());
     std::vector<double> logPcurrent(beta.size());

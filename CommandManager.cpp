@@ -1011,11 +1011,11 @@ void EvidenceCommand::run(const std::__cxx11::string& line, std::ostream &logs)
 
       MyModel<MyData> m(CL);
       MyData d(CL);
-      Metropolis_Hastings_mcmc<
+      Metropolis_Hastings_mcmc<Adaptive_discrete<Landa>,
           MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
       LevenbergMarquardt_step<MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> LMLik;
       Poisson_DLikelihood<MyData,MyModel> DLik;
-      TI ti;
+      TI<Adaptive_discrete<Landa>> ti;
       std::mt19937_64 mt;
       std::random_device rd;
 
@@ -1072,7 +1072,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line, std::ostream &logs)
       double timeOpt=0;
 
 
-      typename TI::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,landa,beta,slogL_max,ndts_max,mt,flog,startTime,timeOpt);
+      typename TI<Adaptive_discrete<Landa>>::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,landa,beta,slogL_max,ndts_max,mt,flog,startTime,timeOpt);
       std::cout<<*ev;
       flog<<*ev;
       flog.close();

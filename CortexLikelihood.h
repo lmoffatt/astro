@@ -648,14 +648,15 @@ getBeta(const M_Matrix<double>& b
 
 
 
+template <class Ad>
+using TI=
+Thermodynamic_Integration_mcmc<Ad,
+MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa,LevenbergMarquardt_step>;
 
-typedef
-Thermodynamic_Integration_mcmc<
-MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa,LevenbergMarquardt_step> TI;
-
-typedef
-Template_Tempering_mcmc<
-MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa,LevenbergMarquardt_step> TT;
+template <class Ad>
+using TT=
+Template_Tempering_mcmc<Ad,
+MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa,LevenbergMarquardt_step> ;
 
 
 
