@@ -244,7 +244,9 @@ DISTFILES += \
     run/evidence_script \
     run/m01/o_m01_1 \
     run/m01/o_m01_2 \
-    run/m01/o_m01_3
+    run/m01/o_m01_3 \
+    run/0 \
+    run/runLandas_0.sh
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
