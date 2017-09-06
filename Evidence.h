@@ -1566,7 +1566,7 @@ struct PascalProb
 {
   double operator()(const std::pair<std::size_t, std::size_t>& p)const
   {
-      return (p.first+1)/(p.first+p.second+2);
+      return (1.0+p.first)/(2.0+p.first+p.second);
   }
 };
 
