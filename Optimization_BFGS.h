@@ -97,6 +97,8 @@ std::ostream& operator<<(std::ostream& os, const opt_max_iter& iter)
   return os;
 }
 
+
+/// minimiza
 struct BFGS_optimal
 {
   template<class F, class D>
@@ -104,7 +106,7 @@ struct BFGS_optimal
                           const D& x,
                           const M_Matrix<double>& binit,
                           double alfaInit=1e-5,
-                          std::size_t maxIter=100,
+                          std::size_t maxIter=500,
                           double maxTime=600)
   {
 

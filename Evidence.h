@@ -907,6 +907,11 @@ cumulative_reverse_map(const std::map<T,double>& normalized_map)
 }
 
 
+template<typename AP, template<typename...>class S>
+std::size_t num_points(const std::pair<S<AP>, AP>& data)
+{
+  return data.first.size()+1;
+}
 
 
 
@@ -915,14 +920,14 @@ struct BayesIterator
 
   template <typename Data,  class T, class LikelihoodFunction_with_count>
 
-  static std::map<T,double>
-  posterior(const LikelihoodFunction_with_count& f,const Data& newData, std::map<T,double> prior,  double & Evidence, std::size_t& n)
+  static std::pair<std::map<T,double>,double>
+  posterior(const LikelihoodFunction_with_count& f,const Data& newData, const std::map<T,double>& prior)
   {
-    Evidence=0;
+    double Evidence=0;
     std::map<T,double> out(prior);
     for (auto it=out.begin(); it!=out.end(); ++it)
       {
-        double lik=f(newData,it->first,n);
+        double lik=f(newData,it->first);
         it->second*=lik;
         Evidence+=it->second;
       }
@@ -931,26 +936,22 @@ struct BayesIterator
         it->second/=Evidence;
 
       }
-    return out;
+    return {out,Evidence};
   }
 
   template <typename Data,  class T, class LikelihoodFunction_with_count>
-  static std::pair<std::map<T,double>,std::size_t>
-  multinomial_posterior(const LikelihoodFunction_with_count& f,const Data& newData, std::pair<std::map<T,double>, std::size_t> prior, double & Evidence)
+  static std::pair<Dirichlet_map<T>,double>
+  multinomial_posterior(const LikelihoodFunction_with_count& f,const Data& newData, const std::map<T,double>& prior, Dirichlet_map<T> dist)
   {
-    std::map<T,double> out(prior.first);
-    std::size_t count=prior.second;
-    std::size_t n;
-    std::map<T,double> sample=posterior(f,newData,prior.first,Evidence,n);
-
-    for (auto it=out.begin(); it!=out.end(); ++it)
-      {
-        it->second=(it->second*count +sample[it->first])/(count+n);
-      }
-    count+=n;
-
-    return {out,count};
+    std::size_t n=num_points(newData);
+    auto o=posterior(f,newData,prior);
+    double Evidence=o.second;
+    auto out=dist+Dirichlet_map<T>(o.first*n);
+    //  std::cerr<<"\npar update\n"<<out<<"\n";
+    //  std::cerr<<out.count()<<"\t Evidence\t"<<Evidence;
+    return {out,Evidence};
   }
+
 
 };
 
@@ -966,19 +967,18 @@ struct OptimalDistribution
   template<typename T, class GainFunction, class Data>
   static std::map<T,double> optimal(const GainFunction& g
                                     ,const Data& data
-                                    , const std::map<T,double>& initDistribution,
-                                    std::size_t count)
+                                    , const std::map<T,double>& initDistribution)
   {
 
     auto init=to_logit(initDistribution);
-    auto g_logit=logit_to_Function<GainFunction,T,Data>(g,initDistribution,count);
+    auto g_logit=logit_to_Function<GainFunction,T,Data>(g,initDistribution);
     std::map<T,double> out;
     opt_max_iter res;
     // M_Matrix<double> init=init0;
     res=BFGS_optimal::opt(g_logit,data,init);
     out=logit_to_distribution(res.sample.b,initDistribution);
-    //  std::cerr<<"res\n"<<res;
-    //  std::cerr<<out;
+    //std::cerr<<"res\n"<<res;
+    //std::cerr<<out;
     return out;
 
   }
@@ -1001,8 +1001,9 @@ struct OptimalDistribution
   }
 
   template<typename T>
-  static std::map<T,double>  logit_to_distribution(const M_Matrix<double>& logParam
-                                                   ,const std::map<T,double>& dist)
+  static std::map<T,double>  logit_to_distribution
+  (const M_Matrix<double>& logParam
+   ,const std::map<T,double>& dist)
   {
     std::map<T,double> out(dist);
     double q=1.0;
@@ -1025,27 +1026,18 @@ struct OptimalDistribution
   {
     const GainFunction& g_;
     const std::map<T,double>& initDistribution;
-    M_Matrix<double> bmean;
-    M_Matrix<double> bstd;
-    std::size_t count;
 
     logit_to_Function(const GainFunction& g,
-                      const std::map<T,double>& initDistribution_,
-                      std::size_t count_)
+                      const std::map<T,double>& initDistribution_)
       :g_(g)
       ,initDistribution(initDistribution_)
-      ,bmean(to_logit(initDistribution))
-      ,bstd()
-      ,count(count_){
-      bstd=ones(bmean);
-    }
+    {}
 
     double operator()(const Data& data
                       ,const M_Matrix<double>& logitValues)const
     {
       auto lo=logit_to_distribution(logitValues,initDistribution);
-      double prior=Normal(logitValues,bmean,bstd);
-      return log(g_(data,lo))*count-prior;
+      return log(g_(data,lo));
     }
 
   };
@@ -1059,11 +1051,11 @@ struct Optimal_Lagrange_Distribution
   template<typename T, class GainFunction, class Data>
   static std::map<T,double> optimal(const GainFunction& g
                                     ,const Data& data
-                                    , const std::map<T,double>& initDistribution,
-                                    std::size_t count)
+                                    , const std::map<T,double>& initDistribution
+                                    )
   {
-    auto init=to_logit(initDistribution);
-    auto g_logit=logit_to_landa_Function<GainFunction,T,Data>(g,initDistribution,count);
+    auto init=to_logit_landa(initDistribution,1.0);
+    auto g_logit=logit_to_landa_Function<GainFunction,T,Data>(g,initDistribution);
     std::map<T,double> out;
     opt_max_iter res;
     // M_Matrix<double> init=init0;
@@ -1129,32 +1121,23 @@ struct Optimal_Lagrange_Distribution
   {
     const GainFunction& g_;
     const std::map<T,double>& initDistribution;
-    M_Matrix<double> bmean;
-    M_Matrix<double> bstd;
-    std::size_t count;
 
     logit_to_landa_Function(const GainFunction& g,
-                            const std::map<T,double>& initDistribution_,
-                            std::size_t count_)
+                            const std::map<T,double>& initDistribution_)
       :g_(g)
       ,initDistribution(initDistribution_)
-      ,bmean(to_logit(initDistribution))
-      ,bstd()
-      ,count(count_){
-      bstd=ones(bmean);
-    }
+    {}
 
     double operator()(const Data& data
                       ,const M_Matrix<double>& logit_landa_Values)const
     {
 
       auto lo=logit_to_distribution(logit_landa_Values,initDistribution);
-      double prior=Normal(logit_landa_Values,bmean,bstd);
       double landa=logit_landa_Values[logit_landa_Values.size()];
       double sum_p=0;
       for (auto& e:lo)
         sum_p+=e.second;
-      return log(g_(data,lo))*count-prior-landa*(sum_p-1);
+      return log(g_(data,lo))+landa*(sum_p-1);
     }
 
   };
@@ -1257,9 +1240,9 @@ public:
     std::get<1>(rejAccCount_[p])+=dHd;
     std::get<2>(rejAccCount_[p])+=dHd*dHd;
 
-    double Evidence=0;
-    parDist_=BayesIterator::multinomial_posterior
-        (&likelihood,p,parDist_,Evidence);
+    auto d=BayesIterator::multinomial_posterior
+        (&likelihood,p,parPrior_,parDist_);
+    parDist_=d.first;
   }
 
 
@@ -1269,51 +1252,74 @@ public:
 
   }
 
-  void actualize()
+  void actualize(std::mt19937_64& mt,double nmax)
+  {
+    actualize(mt);
+    if (parDist_.count()>nmax)
+      parDist_=Dirichlet_map<typename AP::myParameter>(parDist_.p()*nmax);
+
+  }
+
+  void actualize(std::mt19937_64& mt)
   {
     auto pold=this->p_;
-    this->p_=OptimalDistribution::optimal(&expectedVelocity,parDist_.first,this->p_,parDist_.second);
-    auto p2=Optimal_Lagrange_Distribution::optimal(&expectedVelocity,parDist_.first,pold,parDist_.second);
+    if (errorJitter_>0)
+      {
+         auto psum=p_;
+         for (auto& e:psum) e.second=0;
+         for (std::size_t i=0; i<errorJitter_; ++i)
+           {
+             auto parSample=parDist_(mt);
+             auto psample=OptimalDistribution::optimal(&expectedVelocity,parSample,this->p_init_);
+             for (auto& e:psum) e.second+=psample[e.first];
+           }
+         for (auto& e:psum) e.second/=errorJitter_;
+         p_=psum;
+      }
+    else
+         p_=OptimalDistribution::optimal(&expectedVelocity,parDist_,this->p_init_);
+    // auto p2=Optimal_Lagrange_Distribution::optimal(&expectedVelocity,parDist_,pold);
 
-    double sum_p=0;
-    for (auto& e:p2)
-      sum_p+=e.second;
+    //   double sum_p=0;
+    //    for (auto& e:p2)
+    //      sum_p+=e.second;
 
     if (true)
       {
-        std::cerr<<"p logit"<<p_<<"\n";
-        std::cerr<<"p lagrange"<<p2<<"\n"<<sum_p<<"\n";
+        std::cerr<<"\n par Dist\n"<<parDist_<<"\n";
+        std::cerr<<"\n par Dist count\n"<<parDist_.count()<<"\n";
+        std::cerr<<"\np old"<<pold<<"\n";
+        std::cerr<<"\np logit new"<<p_<<"\n";
+        //       std::cerr<<"p lagrange"<<p2<<"\n"<<sum_p<<"\n";
       }
 
     this->rev_=cumulative_reverse_map(this->p_);
   }
 
   static double likelihood(std::pair<std::multiset<AP>,AP> data,
-                           const typename AP::myParameter& par
-                           , std::size_t& n)
+                           const typename AP::myParameter& par)
   {
     double p=1;
-    n=0;
     typename AP::myAcceptProb pA;
     for (const AP& landa:data.first)
       {
         p*=(1.0-pA(landa,par));
-        n++;
       }
     p*=pA(data.second,par);
-    n++;
     return p;
 
   }
 
-  static double expectedVelocity(const std::map<typename AP::myParameter, double>& parDist,
+  static double expectedVelocity(const Dirichlet_map<typename AP::myParameter>& parDist,
                                  const std::map<AP,double>& pAp)
   {
     double sum=0;
     typename AP::ExpectedVelocity E;
     typename AP::AcceptanceProbability AcP;
 
-    for (auto& e1:parDist)
+    auto p=parDist.p();
+    double ss=0;
+    for (auto& e1:p)
       {
         double sum2=0;
         for (auto&e2: pAp)
@@ -1321,36 +1327,36 @@ public:
             sum2+=e2.second*AcP(e2.first,e1.first)*E(e2.first);
           }
         sum+=e1.second/sum2;
+        ss+=e1.second;
       }
     return sum;
   }
 
 
   Adaptive_discrete(const std::map<AP,double>& prior_landa,
-                    const std::map<typename AP::myParameter, double>& prior_par):
-    p_{prior_landa},parDist_{prior_par,1},
+                    const std::map<typename AP::myParameter, double>& prior_par, bool unInformative , std::size_t errorJitter):
+    errorJitter_(errorJitter),
+    p_init_{prior_landa},
+    p_{prior_landa},
+    parPrior_{prior_par},
+    parDist_(unInformative?
+               Dirichlet_map<typename AP::myParameter>::
+               UninformativePrior(prior_par):
+               Dirichlet_map<typename AP::myParameter>::
+               UniformPrior(prior_par)),
     rev_{cumulative_reverse_map(p_)},
     rejAccCount_{}{}
 
-  Adaptive_discrete(std::map<AP,double>&& prior_landa,
-                    std::map<typename AP::myParameter, double> prior_par):
-    p_{prior_landa},parDist_{prior_par,1},
-    rev_{},
-    rejAccCount_{}{
-    rev_=cumulative_reverse_map(p_);
-  }
 
   template<template<typename>class V>
   Adaptive_discrete(const V<AP>& landa,
-                    const  std::vector<std::vector<double>>& par):
-    Adaptive_discrete(uniform_prior(landa),AP::uniform_parameter_prior(par)){}
+                    const  std::vector<std::vector<double>>& par,
+                    bool unInformative, std::size_t nJitter):
+    Adaptive_discrete(uniform_prior(landa),
+                      AP::uniform_parameter_prior(par),unInformative,nJitter){}
 
   Adaptive_discrete(){}
 
-  Adaptive_discrete partialReset()const
-  {
-    return Adaptive_discrete(p_,parDist_.first);
-  }
 
   friend
   std::ostream& put(std::ostream& os, const Adaptive_discrete<AP>& me)
@@ -1386,6 +1392,10 @@ public:
   friend
   std::ostream& operator<<(std::ostream& os, const Adaptive_discrete<AP>& me)
   {
+    os<<"ErrorJitter\n";
+    os<<me.errorJitter_<<"\n";
+    os<<AP::ClassName()<<" initial distribution\n";
+    os<<me.p_init_<<"\n";
     os<<AP::ClassName()<<" distribution\n";
     os<<me.p_<<"\n";
     os<<AP::ClassName()<<" parameter distribution\n";
@@ -1405,6 +1415,12 @@ public:
   std::istream& operator>>(std::istream& is,  Adaptive_discrete<AP>& me)
   {
     std::string line;
+    std::getline(is,line);
+    is>>me.errorJitter_;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.p_init_;
+    std::getline(is,line);
     std::getline(is,line);
     is>>me.p_;
     std::getline(is,line);
@@ -1518,9 +1534,14 @@ public:
   }
 
 private:
+  std::size_t errorJitter_;
+  std::map<AP,double> p_init_;
+
   std::map<AP,double> p_;
 
-  std::pair<std::map<typename AP::myParameter, double>,std::size_t> parDist_;
+  std::map<typename AP::myParameter,double> parPrior_;
+
+  Dirichlet_map<typename AP::myParameter> parDist_;
   std::map<double,AP> rev_;
 
   std::multiset<AP> currentRejected_;
@@ -1553,7 +1574,7 @@ struct TargetProb
 {
   double operator()(const std::pair<std::size_t, std::size_t>& p)const
   {
-      return BetaDistribution(p_target_,p.first,p.second);
+    return BetaDistribution(p_target_,p.first,p.second);
   }
   TargetProb(double p_target):p_target_(p_target){}
   TargetProb(){}
@@ -1566,7 +1587,7 @@ struct PascalProb
 {
   double operator()(const std::pair<std::size_t, std::size_t>& p)const
   {
-      return (1.0+p.first)/(2.0+p.first+p.second);
+    return (1.0+p.first)/(2.0+p.first+p.second);
   }
 };
 
@@ -1583,17 +1604,23 @@ public:
 
   void push_acceptance(AP landa,double /*dHd*/)
   {
-     ++rejAccCount_[landa].first;
+    landaDist_[landa].push_accept();
   }
 
 
   void push_rejection(AP landa)
   {
-    ++rejAccCount_[landa].second;
+    landaDist_[landa].push_reject();
 
   }
 
-  void actualize()
+  void actualize(std::mt19937_64& mt,double nmax)
+  {
+    actualize(mt);
+    landaDist_.reduce(nmax);
+  }
+
+  void actualize(std::mt19937_64& )
   {
 
     auto pnew=this->p_;
@@ -1601,15 +1628,17 @@ public:
     double sum=0;
     for (auto it=pnew.begin(); it!=pnew.end(); ++it)
       {
-         auto ns=rejAccCount_[it->first];
-         double l=f_(it->first)*tp_(ns);
-         sum+=l;
-         it->second=l;
+        auto ns=landaDist_[it->first].Parameters();
+        double l=f_(it->first)*tp_(ns);
+        sum+=l;
+        it->second=l;
       }
     for (auto it=pnew.begin(); it!=pnew.end(); ++it)
       {
         it->second*=1.0/sum;
       }
+
+    std::cerr<<"pnew"<<pnew;
     p_=pnew;
 
 
@@ -1618,17 +1647,17 @@ public:
 
 
 
-  Adaptive_probability(const std::map<AP,double>& prior_landa):
+  Adaptive_probability (const std::map<AP,double>& prior_landa):
     f_(),tp_(),
     p_{prior_landa},
     rev_{cumulative_reverse_map(p_)},
-    rejAccCount_{}{}
+    landaDist_{Beta_map<AP>::UnInformativePrior(prior_landa)}{}
 
   Adaptive_probability(const Tp& tp,const std::map<AP,double>& prior_landa):
     f_(),tp_(tp),
     p_{prior_landa},
     rev_{cumulative_reverse_map(p_)},
-    rejAccCount_{}{}
+    landaDist_{Beta_map<AP>::UnInformativePrior(prior_landa)}{}
 
   template<template<typename>class V>
   Adaptive_probability(const V<AP>& landa):
@@ -1640,10 +1669,6 @@ public:
 
   Adaptive_probability(){}
 
-  Adaptive_probability partialReset()const
-  {
-    return Adaptive_probability(tp_,p_);
-  }
 
   friend
   std::ostream& put(std::ostream& os, const Adaptive_probability<EV,Tp,AP>& me)
@@ -1677,7 +1702,7 @@ public:
     os<<AP::ClassName()<<" reverse distribution\n";
     os<<me.rev_<<"\n";
     os<<AP::ClassName()<<" history of rejected accepted\n";
-    os<<me.rejAccCount_<<"\n";
+    os<<me.landaDist_<<"\n";
 
     return os;
 
@@ -1695,7 +1720,7 @@ public:
     std::getline(is,line);
     std::getline(is,line);
 
-    is>>me.rejAccCount_;
+    is>>me.landaDist_;
     std::getline(is,line);
 
     return is;
@@ -1779,7 +1804,7 @@ private:
 
   std::map<double,AP> rev_;
 
-  std::map<AP,std::pair<std::size_t,std::size_t>> rejAccCount_;
+  Beta_map<AP> landaDist_;
 
   template<template<typename>class V>
   static std::map<AP,double> uniform_prior(const V<AP>& v)
@@ -4920,19 +4945,19 @@ public:
     if (sDist.isValid)
       {
         SamplesSeries<mcmc_step<pDist>> o(nsamples);
-        landa.actualize();
+        landa.actualize(mt);
         mcmc_step<pDist> cDist;
         n_steps_try(LM_Lik,lik,model,data,sDist,cDist,landa,slogL_max,ndts_max,mt,nskip,os,startTime,timeOpt);
-        landa.actualize();
+        landa.actualize(mt);
         //std::cerr<<landa;
         //os<<landa;
-        landa=landa.partialReset();
+        //landa=landa.partialReset();
 
         while (!o.full())
           {
             n_steps_try(LM_Lik,lik,model,data,sDist,cDist,landa,slogL_max,ndts_max,mt,nskip,os,startTime,timeOpt);
             o.push_back(sDist);
-            landa.actualize();
+            landa.actualize(mt);
             std::cerr<<landa;
             os<<landa;
           }
@@ -5618,20 +5643,20 @@ public:
 
 template
 <  class Ad,
-    class D
-    , template<class> class M
-    , template<class,template<class> class > class D_Lik=Poisson_DLikelihood
-    , class my_PropD=LM_MultivariateGaussian
-    , class AP=trust_region
-    ,template<
-      class
-      , template<class> class
-      , template<class,template<class> class > class
-      , class
-      , class
-      >
-    class propDistStep=LevenbergMarquardt_step
-    >
+   class D
+   , template<class> class M
+   , template<class,template<class> class > class D_Lik=Poisson_DLikelihood
+   , class my_PropD=LM_MultivariateGaussian
+   , class AP=trust_region
+   ,template<
+     class
+     , template<class> class
+     , template<class,template<class> class > class
+     , class
+     , class
+     >
+   class propDistStep=LevenbergMarquardt_step
+   >
 std::ostream& operator<<(std::ostream& os
                          ,const Metropolis_Hastings_mcmc<Ad,D,M,D_Lik,my_PropD,AP,propDistStep>& /*mcmc*/)
 {
@@ -5791,7 +5816,7 @@ public:
       {
         double betaval=std::get<0>(beta[i]);
         LMLik.update_mcmc_step(lik,model,data,cDist,landa,betaval);
-        Adaptive_discrete<AP> landa_Dist_run=landa_Dist.partialReset();
+        Adaptive_discrete<AP> landa_Dist_run=landa_Dist;
 
         auto s=mcmc.run_new
             (LMLik,lik,model,data,cDist,landa_Dist_run,beta[i],slogL_max,ndts_max,mt,os,startTime,timeOpt);
@@ -5881,6 +5906,7 @@ public:
    , double maxTime
    , std::size_t nsamples
    ,std::size_t nskip
+   ,std::size_t nAdapt
    ,double pTjump
    ,double slogL_max
    ,std::size_t ndts_max
@@ -5999,6 +6025,7 @@ public:
           M_Matrix<double> pinit;
           double beta0=beta.getBeta().getValue()[i];
           std::size_t ntrialsj=0;
+          pars[i].actualize(mts[i]);
 
           bool isvalid=false;
           AP landa;
@@ -6008,7 +6035,7 @@ public:
               mcmc_post postL;
               while(!postL.isValid)
                 {
-                  pinit=model.sample(mt);
+                  pinit=model.sample(mts[i]);
                   postL=lik.get_mcmc_Post(model,data,pinit,slogL_max,ndts_max);
                   ++ntrialsi;
                 }
@@ -6139,56 +6166,58 @@ public:
 
 
 
-        for (std::size_t i=0; i<n;++i)
-          {
-            pars[i].actualize();
-          }
-      if (o%5==0&&o<nsamples/10)
-        for (std::size_t i=0; i<n;++i)
-          {
-            pars[i]=pars[i].partialReset();
-          }
+        if (o>nsamples/5)
+          for (std::size_t i=0; i<n;++i)
+            {
+              pars[i].actualize(mts[i]);
+            }
+        else
+          for (std::size_t i=0; i<n;++i)
+            {
+              pars[i].actualize(mts[i],nAdapt*nskip);
+            }
 
-                // std::cerr<<pars;
-             //   os<<pars;
-            // std::cout<<beta;
-            //os<<beta;
-            if (n!=beta.size())
+
+        // std::cerr<<pars;
+        //   os<<pars;
+        // std::cout<<beta;
+        //os<<beta;
+        if (n!=beta.size())
+          {
+            for (std::size_t i=n; i<beta.size(); ++i)
               {
-                for (std::size_t i=n; i<beta.size(); ++i)
+                M_Matrix<double> pinit;
+                double beta0=beta.getBeta().getValue()[i];
+                std::size_t ntrials=0;
+                mcmc_post postL;
+                while(!postL.isValid)
                   {
-                    M_Matrix<double> pinit;
-                    double beta0=beta.getBeta().getValue()[i];
-                    std::size_t ntrials=0;
-                    mcmc_post postL;
-                    while(!postL.isValid)
-                      {
-                        pinit=model.sample(mt);
-                        postL=lik.get_mcmc_Post(model,data,pinit,slogL_max,ndts_max);
-                        ++ntrials;
-                      }
-                    pars.push_back(pars[n-1]);
-                    mts.push_back(std::mt19937_64{});
-                    mts[i].seed(useed(mt));
-
-                    AP landa=pars[i].sample(mts[i]);
-                    sDists.push_back
-                        (LMLik.get_mcmc_step(lik,model,data,pinit,postL,landa,beta0,i));
-                    LMLik.update_mcmc_step(lik,model,data,sDists[i],landa,beta0);
+                    pinit=model.sample(mt);
+                    postL=lik.get_mcmc_Post(model,data,pinit,slogL_max,ndts_max);
+                    ++ntrials;
                   }
+                pars.push_back(pars[n-1]);
+                mts.push_back(std::mt19937_64{});
+                mts[i].seed(useed(mt));
 
+                AP landa=pars[i].sample(mts[i]);
+                sDists.push_back
+                    (LMLik.get_mcmc_step(lik,model,data,pinit,postL,landa,beta0,i));
+                LMLik.update_mcmc_step(lik,model,data,sDists[i],landa,beta0);
               }
 
-            n=beta.size();
           }
 
-
+        n=beta.size();
       }
 
 
+  }
 
 
-  };
+
+
+};
 
 
 

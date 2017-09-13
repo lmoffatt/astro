@@ -969,9 +969,13 @@ struct Tempering
                    double targetProb,
                    M_Matrix<Landa> aps,
                    std::vector<std::vector<double>> apsPar,
+                   std::size_t errorJitter,
+                   bool unInformativePriorPar,
                    double maxTime,
                    std::size_t samples,
                    std::size_t nskip,
+                   std::size_t nAdapt,
+
                    std::size_t maxSimFileSize,
                    bool does_stdout
                    , std::ostream *logs)const
@@ -1138,6 +1142,8 @@ struct Tempering
         flog<<" N_beta_2: "<<N_beta_2<<"\n";
         flog<<" beta_infimo: "<<beta_infimo<<"\n";
         flog<<" Landa_algorithm: "<<Landa_algorithm<<"\n";
+        flog<<" errorJitter: "<<errorJitter<<"\n";
+        flog<<" unInformativePriorPar: "<<unInformativePriorPar<<"\n";
         flog<<" targetProb: "<<targetProb<<"\n";
         flog<<" maxSimFileSize: "<<maxSimFileSize<<"\n";
         flog<<" beta_min: "<<beta_min<<"\n";
@@ -1154,6 +1160,7 @@ struct Tempering
 
         flog<<" samples "<<samples<<"\n";
         flog<<" nskip "<<nskip<<"\n";
+        flog<<" nAdapt "<<nAdapt<<"\n";
         flog<<" pTjump "<<pTjump<<"\n";
 
 
@@ -1178,7 +1185,7 @@ struct Tempering
                 MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
             TT<Ad> tt;
 
-            tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+            tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
             flog.close();
 
           }
@@ -1194,13 +1201,13 @@ struct Tempering
                 MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
             TT<Ad> tt;
 
-            tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+            tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
             flog.close();
 
           }
         else
         {
-          Adaptive_discrete<AP> landa(aps,apsPar);
+          Adaptive_discrete<AP> landa(aps,apsPar,unInformativePriorPar,errorJitter);
 
           if (does_stdout)
             std::cout<<landa;
@@ -1209,7 +1216,7 @@ struct Tempering
               MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
           TT<Adaptive_discrete<AP>> tt;
 
-          tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+          tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
           flog.close();
         }
 

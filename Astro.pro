@@ -246,7 +246,11 @@ DISTFILES += \
     run/m01/o_m01_2 \
     run/m01/o_m01_3 \
     run/0 \
-    run/runLandas_0.sh
+    run/runLandas_0.sh \
+    run/m01/o_m01_4 \
+    run/m01/o_m01_5 \
+    run/m01/o_m01_6 \
+    run/m01/o_m01_7
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

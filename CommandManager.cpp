@@ -959,7 +959,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line, std::ostream &logs)
   std::cout<<" samples "<<samples;
   std::cout<<" nskip "<<nskip;
 
-  Adaptive_discrete<AP> landa(aps,apsPar);
+  Adaptive_discrete<AP> landa(aps,apsPar, true,0);
 
   std::cout<<landa;
 
