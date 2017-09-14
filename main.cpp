@@ -109,7 +109,7 @@ int main(int argc, char **argv)
                    std::pair<double,std::string>{0,"targetProb"},
                    std::pair<M_Matrix<Landa>,std::string>{{},"aps"},
                    std::pair<std::vector<std::vector<double>>,std::string>{{},"apsPar"},
-                   std::pair<std::size_t,std::string>{0,"errorJitter"},
+                   std::pair<std::size_t,std::string>{0,"gainMoment"},
                    std::pair<bool,std::string>{false,"unInformativePriorPar"},
                    std::pair<double,std::string>{0,"maxTime"},
                    std::pair<std::size_t,std::string>{0,"samples"},

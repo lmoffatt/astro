@@ -11,6 +11,55 @@ const double PI  =3.141592653589793238463;
 #endif
 
 
+template<class P>
+struct complement_prob
+{
+  complement_prob(const P& p):p_{p}{}
+  template<typename... Ts>
+  double operator()(Ts... xs)const
+  {
+    return 1.0-p_(xs...);
+  }
+  private:
+    const P& p_;
+};
+
+template<class P>
+ complement_prob<P>
+ Complement_prob(const P& p){return complement_prob<P>(p);}
+
+
+template<class P>
+struct log_of
+{
+  log_of(const P& p):p_{p}{}
+  template<typename... Ts>
+  double operator()(Ts... xs)const
+  {
+    return std::log(p_(xs...));
+  }
+  private:
+    const P& p_;
+};
+
+
+template<class P>
+log_of<P> Log_of(const P& p){return log_of<P>(p);}
+
+template<class P>
+struct exp_of
+{
+  exp_of(const P& p):p_{p}{}
+  template<typename... Ts>
+  double operator()(Ts... xs)const
+  {
+    return std::exp(p_(xs...));
+  }
+  private:
+    const P& p_;
+};
+
+
 
 class MultivariateGaussian
 {
@@ -360,9 +409,7 @@ public:
         for (auto& e:a_)
           {
             e.second.Parameters().first*=f;
-            e.second.Parameters().first+=(1.-f)*0.5;
             e.second.Parameters().second*=f;
-            e.second.Parameters().second+=(1.-f)*0.5;
 
           }
       }
@@ -374,7 +421,7 @@ public:
     for (auto& e:a)
       o[e.first]=Beta_Distribution::UniformPrior();
     return Beta_map(o);
-   }
+  }
 
 
   static Beta_map UnInformativePrior(const std::map<T,double> a)
@@ -477,6 +524,294 @@ public:
 private:
   std::map<T,Beta_Distribution> a_;
 };
+
+template <typename T>
+T sample_rev_map(const std::map<double,T>& reverse_prior,std::mt19937_64& mt)
+{
+  std::uniform_real_distribution<> u;
+  double r= u(mt);
+  auto it=reverse_prior.lower_bound(r);
+  return it->second;
+
+}
+
+template <class T>
+std::pair<std::map<T,double>,double>
+normalize_map(const std::map<T,double>& unnormalized_map)
+{
+  std::map<T,double> out(unnormalized_map);
+  double Evidence=0;
+  for (auto& e:out)
+    {
+      Evidence+=e.second;
+    }
+  for (auto& e:out) e.second/=Evidence;
+
+  return {out,Evidence};
+}
+template <class T>
+std::pair<std::map<T,double>,double>
+logLik_to_p(const std::map<T,double>& logLikelihoods)
+{
+  std::map<T,double> out(logLikelihoods);
+  double Evidence=0;
+  double maxlog=out.begin()->second;
+  for (auto& e:out)
+    {
+      if (e.second>maxlog) maxlog=e.second;
+    }
+  for (auto& e:out)
+    {
+      e.second=std::exp(e.second-maxlog);
+      Evidence+=e.second;
+    }
+
+  for (auto& e:out) e.second/=Evidence;
+
+  return {out,Evidence};
+}
+
+template <class T>
+std::map<double,T>
+cumulative_reverse_map(const std::map<T,double>& normalized_map)
+{
+  std::map<double,T> out;
+  double sump=0;
+  for (auto& e:normalized_map)
+    {
+      sump+=e.second;
+      out[sump]=e.first;
+    }
+  return out;
+}
+
+template <class T>
+std::map<double,T>
+cumulative_reverse_logmap(const std::map<T,double>& normalized_logmap)
+{
+  std::map<double,T> out;
+  double sump=0;
+  for (auto& e:normalized_logmap)
+    {
+      sump+=std::exp(e.second);
+      out[sump]=e.first;
+    }
+  return out;
+}
+
+
+template<typename T>
+class Probability_map
+{
+public:
+  T operator()(std::mt19937_64& mt)const
+  {
+    return sample_rev_map(rev_,mt);
+  }
+
+  const std::map<T,double>& p() const
+  {
+    return p_;
+  }
+
+  Probability_map(const std::map<T,double>& myNormalized_map, double nsamples)
+    :
+      p_{myNormalized_map},rev_{cumulative_reverse_map(p_)}, nsamples_(nsamples)
+  {
+
+  }
+
+  template<template<typename...>class V>
+  Probability_map(const V<T>& x):p_(Uniform(x)),rev_(cumulative_reverse_map(p_)), nsamples_(0)
+  {}
+  Probability_map()=default;
+
+  template<template<typename...>class V>
+  static
+  std::map<T,double> Uniform(const V<T>& x)
+  {
+    std::map<T,double> out;
+    std::size_t n=x.size();
+    double p=1.0/n;
+    for (std::size_t i=0; i<n;++i )
+      out[x[i]]+=p;
+    return out;
+  }
+
+
+  void reduce(double nmax)
+  {
+    double f=nsamples_/nmax;
+    if (f<1.0)
+      {
+        auto o=p_;
+        for (auto& e:o) e.second=std::pow(e.second,f);
+        *this=normalize(o,nmax).first;
+      }
+
+  }
+  double nsamples()const {return nsamples_;}
+
+  static std::pair<Probability_map,double> normalize(const std::map<T,double>& myposterior , double nsamples)
+  {
+    auto out= normalize_map(myposterior);
+    return {Probability_map(out.first,nsamples),out.second};
+  }
+
+  friend
+  std::istream& operator>>(std::istream& is, Probability_map& me)
+  {
+    std::string line;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.p_;
+    me.rev_=cumulative_reverse_map(me.p_);
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.nsamples_;
+    return is;
+  }
+
+  friend
+  std::ostream& operator<<(std::ostream& os,const Probability_map& me)
+  {
+    os<<"\nProbability map\n";
+    os<<me.p_;
+    os<<"\nNumSamples\n";
+    os<<me.nsamples();
+    return os;
+  }
+
+
+private:
+
+  std::map<T,double> p_;
+  std::map<double,T> rev_;
+  double nsamples_;
+};
+
+template<typename T>
+class logLikelihood_map
+{
+public:
+  T operator()(std::mt19937_64& mt)
+  {
+    return sample_rev_map(rev_,mt);
+  }
+
+  const std::map<T,double>& logLik() const
+  {
+    return logLik_;
+  }
+
+  std::map<T,double>const & p()const
+  {
+    return p_;
+  }
+
+  logLikelihood_map(const std::map<T,double>& mylogLikelihood_Map, double nsamples)
+    :
+      logLik_{mylogLikelihood_Map}
+  {
+   auto p=logLik_to_p(mylogLikelihood_Map);
+   p_=std::move(p.first);
+   Evidence_=p.second;
+   rev_=cumulative_reverse_map(p_);
+   nsamples_=nsamples;
+  }
+
+  logLikelihood_map()=default;
+  void reduce(double nmax)
+  {
+    double f=nsamples_/nmax;
+    if (f<1.0)
+      {
+        auto o=logLik_;
+        for (auto& e:o) e.second*=f;
+        *this=logLikelihood_map(o,nmax);
+      }
+  }
+
+
+  double nsamples()const {return nsamples_;}
+  friend
+  std::istream& operator>>(std::istream& is, logLikelihood_map& me)
+  {
+    std::string line;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.logLik_;
+    me.p_=logLik_to_p(me.logLik_).first;
+    me.rev_=cumulative_reverse_map(me.p_);
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.nsamples_;
+    return is;
+  }
+
+  friend
+  std::ostream& operator<<(std::ostream& os,const logLikelihood_map& me)
+  {
+    os<<"\nlogLikelihood map\n";
+    os<<me.logLik_;
+    os<<"\nNumSamples\n";
+    os<<me.nsamples();
+    return os;
+  }
+
+private:
+  std::map<T,double> logLik_;
+  std::map<T,double>p_;
+  std::map<double,T> rev_;
+  double Evidence_;
+  double nsamples_;
+
+};
+
+
+
+
+template<class Likelihood, class Data, typename T>
+std::pair<Probability_map<T>,double>
+Bayes_rule(const Likelihood& lik, const Data& data, const Probability_map<T>& prior)
+{
+  auto p=prior.p();
+  for (auto& e:p)
+    {
+      double l=lik(e.first,data);
+      e.second*=l;
+    }
+  double nsamples=prior.nsamples()+1;
+  return Probability_map<T>::normalize(p,nsamples);
+}
+
+template<class logLikelihood, class Data, typename T>
+logLikelihood_map<T>
+logBayes_rule(const logLikelihood& loglik, const Data& data, const logLikelihood_map<T>& prior)
+{
+  auto logP=prior.logLik();
+  for (auto& e:logP)
+    {
+      double logL=loglik(e.first,data);
+      e.second+=logL;
+    }
+  double nsamples=prior.nsamples()+1;
+  return logLikelihood_map<T>(logP,nsamples);
+}
+
+
+template< typename T, class F, class Likelihood,class P_map>
+double Expectance(const F& f, const Likelihood& lik,const P_map& pm, const T& landa  )
+{
+  auto p=pm;
+  double sum=0;
+  for (auto& e:p)
+    sum+=e.second*lik(e.first,landa)*f(landa);
+  return sum;
+}
+
+
+
 
 
 

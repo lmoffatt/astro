@@ -969,7 +969,7 @@ struct Tempering
                    double targetProb,
                    M_Matrix<Landa> aps,
                    std::vector<std::vector<double>> apsPar,
-                   std::size_t errorJitter,
+                   std::size_t gainMoment,
                    bool unInformativePriorPar,
                    double maxTime,
                    std::size_t samples,
@@ -1142,7 +1142,7 @@ struct Tempering
         flog<<" N_beta_2: "<<N_beta_2<<"\n";
         flog<<" beta_infimo: "<<beta_infimo<<"\n";
         flog<<" Landa_algorithm: "<<Landa_algorithm<<"\n";
-        flog<<" errorJitter: "<<errorJitter<<"\n";
+        flog<<" gainMoment: "<<gainMoment<<"\n";
         flog<<" unInformativePriorPar: "<<unInformativePriorPar<<"\n";
         flog<<" targetProb: "<<targetProb<<"\n";
         flog<<" maxSimFileSize: "<<maxSimFileSize<<"\n";
@@ -1207,14 +1207,14 @@ struct Tempering
           }
         else
         {
-          Adaptive_discrete<AP> landa(aps,apsPar,unInformativePriorPar,errorJitter);
+          Adaptive_parameterized<AP> landa(aps,apsPar,gainMoment);
 
           if (does_stdout)
             std::cout<<landa;
 
-          Metropolis_Hastings_mcmc<Adaptive_discrete<AP>,
+          Metropolis_Hastings_mcmc<Adaptive_parameterized<AP>,
               MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
-          TT<Adaptive_discrete<AP>> tt;
+          TT<Adaptive_parameterized<AP>> tt;
 
           tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
           flog.close();

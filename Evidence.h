@@ -882,29 +882,7 @@ std::ostream& operator<<(std::ostream& os, const landa_report& l)
 
 
 
-template <typename T>
-T sample_rev_map(const std::map<double,T>& reverse_prior,std::mt19937_64& mt)
-{
-  std::uniform_real_distribution<> u;
-  double r= u(mt);
-  auto it=reverse_prior.lower_bound(r);
-  return it->second;
 
-}
-
-template <class T>
-std::map<double,T>
-cumulative_reverse_map(const std::map<T,double>& normalized_map)
-{
-  std::map<double,T> out;
-  double sump=0;
-  for (auto& e:normalized_map)
-    {
-      sump+=e.second;
-      out[sump]=e.first;
-    }
-  return out;
-}
 
 
 template<typename AP, template<typename...>class S>
@@ -1183,11 +1161,15 @@ public:
 
   struct myAcceptProb
   {
-    double operator()(Landa landa,const myParameter& param)const
+    double operator()(const Landa& landa,const myParameter& param)const
     {
       double landa50=param.first.getValue();
       double h=param.second;
-      return 1.0/(1.0+std::pow(landa50/(landa.getValue()+1),h));
+      return 1.0/(1.0+std::pow(landa50/(landa.getValue()+1.0),h));
+    }
+    double operator()(const myParameter& param, const Landa& landa)const
+    {
+      return operator()(landa,param);
     }
   };
   typedef myAcceptProb AcceptanceProbability;
@@ -1202,10 +1184,11 @@ public:
 
   typedef myExpectVelocity ExpectedVelocity;
 
-  static std::map<myParameter, double> uniform_parameter_prior(const  std::vector<std::vector<double>>& v)
+  static std::map<myParameter, double> uniform_parameter_prior(const  std::vector<std::vector<double>>& v, double p=-1)
   {
     std::map<myParameter, double> out;
-    double p=1.0/(v[0].size()*v[1].size());
+    if (p==-1)
+      p=1.0/(v[0].size()*v[1].size());
     for (std::size_t i=0; i<v[0].size(); ++i)
       for (std::size_t j=0; j<v[1].size(); ++j)
         out[{Landa{v[0][i]},v[1][j]}]+=p;
@@ -1223,7 +1206,7 @@ inline bool operator<(const Landa& one,const Landa& two)
 
 
 template <class AP=Landa>
-class Adaptive_discrete
+class Adaptive_discrete_multinomial
 {
 public:
   AP sample(std::mt19937_64& mt)const
@@ -1263,21 +1246,21 @@ public:
   void actualize(std::mt19937_64& mt)
   {
     auto pold=this->p_;
-    if (errorJitter_>0)
+    if (gainMoment_>0)
       {
-         auto psum=p_;
-         for (auto& e:psum) e.second=0;
-         for (std::size_t i=0; i<errorJitter_; ++i)
-           {
-             auto parSample=parDist_(mt);
-             auto psample=OptimalDistribution::optimal(&expectedVelocity,parSample,this->p_init_);
-             for (auto& e:psum) e.second+=psample[e.first];
-           }
-         for (auto& e:psum) e.second/=errorJitter_;
-         p_=psum;
+        auto psum=p_;
+        for (auto& e:psum) e.second=0;
+        for (std::size_t i=0; i<gainMoment_; ++i)
+          {
+            auto parSample=parDist_(mt);
+            auto psample=OptimalDistribution::optimal(&expectedVelocity,parSample,this->p_init_);
+            for (auto& e:psum) e.second+=psample[e.first];
+          }
+        for (auto& e:psum) e.second/=gainMoment_;
+        p_=psum;
       }
     else
-         p_=OptimalDistribution::optimal(&expectedVelocity,parDist_,this->p_init_);
+      p_=OptimalDistribution::optimal(&expectedVelocity,parDist_,this->p_init_);
     // auto p2=Optimal_Lagrange_Distribution::optimal(&expectedVelocity,parDist_,pold);
 
     //   double sum_p=0;
@@ -1333,9 +1316,9 @@ public:
   }
 
 
-  Adaptive_discrete(const std::map<AP,double>& prior_landa,
-                    const std::map<typename AP::myParameter, double>& prior_par, bool unInformative , std::size_t errorJitter):
-    errorJitter_(errorJitter),
+  Adaptive_discrete_multinomial(const std::map<AP,double>& prior_landa,
+                                const std::map<typename AP::myParameter, double>& prior_par, bool unInformative , std::size_t gainMoment):
+    gainMoment_(gainMoment),
     p_init_{prior_landa},
     p_{prior_landa},
     parPrior_{prior_par},
@@ -1349,17 +1332,17 @@ public:
 
 
   template<template<typename>class V>
-  Adaptive_discrete(const V<AP>& landa,
-                    const  std::vector<std::vector<double>>& par,
-                    bool unInformative, std::size_t nJitter):
-    Adaptive_discrete(uniform_prior(landa),
-                      AP::uniform_parameter_prior(par),unInformative,nJitter){}
+  Adaptive_discrete_multinomial(const V<AP>& landa,
+                                const  std::vector<std::vector<double>>& par,
+                                bool unInformative, std::size_t nJitter):
+    Adaptive_discrete_multinomial(uniform_prior(landa),
+                                  AP::uniform_parameter_prior(par),unInformative,nJitter){}
 
-  Adaptive_discrete(){}
+  Adaptive_discrete_multinomial(){}
 
 
   friend
-  std::ostream& put(std::ostream& os, const Adaptive_discrete<AP>& me)
+  std::ostream& put(std::ostream& os, const Adaptive_discrete_multinomial<AP>& me)
   {
     os<<AP::ClassName()<<" distribution\n";
     for (auto &e:me.p_)
@@ -1390,10 +1373,10 @@ public:
   }
 
   friend
-  std::ostream& operator<<(std::ostream& os, const Adaptive_discrete<AP>& me)
+  std::ostream& operator<<(std::ostream& os, const Adaptive_discrete_multinomial<AP>& me)
   {
-    os<<"ErrorJitter\n";
-    os<<me.errorJitter_<<"\n";
+    os<<"gainMoment\n";
+    os<<me.gainMoment_<<"\n";
     os<<AP::ClassName()<<" initial distribution\n";
     os<<me.p_init_<<"\n";
     os<<AP::ClassName()<<" distribution\n";
@@ -1412,11 +1395,11 @@ public:
   }
 
   friend
-  std::istream& operator>>(std::istream& is,  Adaptive_discrete<AP>& me)
+  std::istream& operator>>(std::istream& is,  Adaptive_discrete_multinomial<AP>& me)
   {
     std::string line;
     std::getline(is,line);
-    is>>me.errorJitter_;
+    is>>me.gainMoment_;
     std::getline(is,line);
     std::getline(is,line);
     is>>me.p_init_;
@@ -1445,7 +1428,7 @@ public:
 
 
   friend
-  std::ostream& put(std::ostream& os, const std::vector<Adaptive_discrete<AP>>& me)
+  std::ostream& put(std::ostream& os, const std::vector<Adaptive_discrete_multinomial<AP>>& me)
   {
     os<<AP::ClassName()<<" distribution\n";
 
@@ -1534,7 +1517,7 @@ public:
   }
 
 private:
-  std::size_t errorJitter_;
+  std::size_t gainMoment_;
   std::map<AP,double> p_init_;
 
   std::map<AP,double> p_;
@@ -1560,6 +1543,236 @@ private:
 
 
 };
+
+template <class AP=Landa,
+          class Gain=typename Landa::ExpectedVelocity,
+          class Likelihood=typename Landa::myAcceptProb>
+class Adaptive_parameterized
+{
+public:
+  AP sample(std::mt19937_64& mt)const
+  {
+    return p_(mt);
+  }
+
+  void push_acceptance(AP landa)
+  {
+    parDist_=logBayes_rule(Log_of(lik_),landa,parDist_);
+  }
+
+
+  void push_rejection(AP landa)
+  {
+    parDist_=logBayes_rule
+        (Log_of(Complement_prob(lik_)),landa,parDist_);
+  }
+
+  void actualize(double nmax)
+  {
+    actualize();
+    parDist_.reduce(nmax);
+
+  }
+
+  static
+  std::pair<Probability_map<AP>, double>
+  Distribute_on_gain(const Gain& g, const Likelihood& lik,const  logLikelihood_map<typename AP::myParameter>& par, const Probability_map<AP> & landas, double moment)
+  {
+    auto out=landas.p();
+    auto p_par=par.p();
+    for (auto& e:out)
+      {
+        double meangain=Expectance(g,lik,p_par,e.first);
+        e.second=std::pow(meangain,moment);
+      }
+    auto o=Probability_map<AP>::normalize(out,landas.nsamples());
+    double sum=0;
+    for (auto& e:o.first.p())
+      {
+        sum+=e.second*std::pow(out[e.first],1.0/moment);
+      }
+    return {o.first,sum};
+  }
+
+  void actualize()
+  {
+    auto pold=p_;
+    auto o=Distribute_on_gain(g_,lik_,parDist_,p_,gainMoment_);
+    p_=o.first;
+
+    if (true)
+      {
+        std::cerr<<"\n par Dist\t"<<parDist_<<"\n";
+        std::cerr<<"\np old \t"<<pold<<"\n";
+        std::cerr<<"\np logit new \t"<<p_<<"\n";
+        std::cerr<<"\n expected gain\t"<<o.second<<"\n";
+      }
+
+  }
+
+
+  Adaptive_parameterized(const std::map<AP,double>& prior_landa,
+                         const std::map<typename AP::myParameter, double>& prior_par,  double nsamples,std::size_t gainMoment):
+    gainMoment_(gainMoment),
+    p_{prior_landa,nsamples},
+    parDist_(prior_par,nsamples){}
+
+
+  template<template<typename>class V>
+  Adaptive_parameterized(const V<AP>& landa,
+                         const  std::vector<std::vector<double>>& par,
+                         double gainMoment):
+    gainMoment_(gainMoment),
+    p_{landa},
+    parDist_{AP::uniform_parameter_prior(par,0.0),0}{}
+
+
+  Adaptive_parameterized(){}
+
+
+  friend
+  std::ostream& put(std::ostream& os, const Adaptive_parameterized<AP>& me)
+  {
+    os<<AP::ClassName()<<" distribution\n";
+    for (auto &e:me.p_)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+    os<<AP::ClassName()<<" parameter distribution\n";
+    os<<"count\t"<<me.parDist_.second<<"\n";
+    for (auto &e:me.parDist_.first)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+
+    os<<AP::ClassName()<<" reverse distribution\n";
+    for (auto &e:me.rev_)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+
+    os<<AP::ClassName()<<" currently rejected\n"<<me.currentRejected_<<"\n";
+    os<<AP::ClassName()<<" history of rejected accepted\n";
+    for (auto &e:me.rejAccCount_)
+      {
+        os<<e.first<<"\t"<<e.second<<"\n";
+      }
+    return os;
+
+  }
+
+  friend
+  std::ostream& operator<<(std::ostream& os, const Adaptive_parameterized<AP>& me)
+  {
+    os<<"gainMoment\n";
+    os<<me.gainMoment_<<"\n";
+    os<<AP::ClassName()<<" distribution\n";
+    os<<me.p_<<"\n";
+    os<<AP::ClassName()<<" parameter distribution\n";
+    os<<me.parDist_<<"\n";
+
+    return os;
+
+  }
+
+  friend
+  std::istream& operator>>(std::istream& is,  Adaptive_parameterized<AP>& me)
+  {
+    std::string line;
+    std::getline(is,line);
+    is>>me.gainMoment_;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.p_;
+    std::getline(is,line);
+    std::getline(is,line);
+    is>>me.parDist_;
+    std::getline(is,line);
+    std::getline(is,line);
+    return is;
+
+  }
+
+
+
+  friend
+  std::ostream& put(std::ostream& os, const std::vector<Adaptive_parameterized<Gain,Likelihood,AP>>& me)
+  {
+    os<<AP::ClassName()<<" distribution\n";
+
+    for (auto &e:me[0].p_)
+      {
+        auto a=e.first;
+        os<<a<<"\t";
+        for (std::size_t i=0; i<me.size(); ++i)
+          {
+            auto it=me[i].p_.find(a);
+            os<<*it<<"\t";
+          }
+        os<<"\n";
+      }
+    os<<AP::ClassName()<<" parameter distribution\n";
+    os<<"count\t"<<me[0].parDist_.second<<"\n";
+    for (auto &e:me[0].parDist_.first)
+      {
+        auto a=e.first;
+        os<<a<<"\t";
+        for (std::size_t i=0; i<me.size(); ++i)
+          {
+            auto it=me[i].parDist_.first.find(a);
+            os<<*it<<"\t";
+          }
+        os<<"\n";
+
+      }
+
+    os<<AP::ClassName()<<" reverse distribution\n";
+    std::vector<typename std::map<double,AP>::const_iterator> its(me.size());
+    for (std::size_t i=0; i<me.size(); ++i)
+      its[i]=me[i].rev_.begin();
+
+    while (its[0]!=me[0].rev_.end())
+      {
+        for (std::size_t i=0; i<me.size(); ++i)
+          {
+            os<<i<<" "<<its[i]->first<<"\t"<<its[i]->second<<"\t";
+            ++its[i];
+          }
+        os<<"\n";
+      }
+    if (false)
+      {
+        os<<AP::ClassName()<<" history of rejected accepted\n";
+        std::vector<std::map<AP,std::tuple<double,double,std::size_t>>> hist(me.size());
+        for (std::size_t i=0; i<me.size(); ++i) hist[i]=me[i].history();
+        for (auto &e:hist[0])
+          {
+            auto a=e.first;
+            os<<a<<"\t";
+            for (std::size_t i=0; i<hist.size(); ++i)
+              os<<i<<": "<<hist[i][a]<<"\t";
+            os<<"\n";
+          }
+      }
+    return os;
+
+  }
+
+
+
+
+
+private:
+  Likelihood lik_;
+  Gain g_;
+  std::size_t gainMoment_;
+
+  Probability_map<AP> p_;
+
+  logLikelihood_map<typename AP::myParameter> parDist_;
+  double logEvidence;
+};
+
 
 
 template<class AP>
@@ -1602,7 +1815,7 @@ public:
     return sample_rev_map(rev_,mt);
   }
 
-  void push_acceptance(AP landa,double /*dHd*/)
+  void push_acceptance(AP landa)
   {
     landaDist_[landa].push_accept();
   }
@@ -1614,15 +1827,14 @@ public:
 
   }
 
-  void actualize(std::mt19937_64& mt,double nmax)
+  void actualize(double nmax)
   {
-    actualize(mt);
+    actualize();
     landaDist_.reduce(nmax);
   }
 
-  void actualize(std::mt19937_64& )
+  void actualize()
   {
-
     auto pnew=this->p_;
 
     double sum=0;
@@ -1633,16 +1845,20 @@ public:
         sum+=l;
         it->second=l;
       }
+    double expectedGain=0;
     for (auto it=pnew.begin(); it!=pnew.end(); ++it)
       {
+        auto ns=landaDist_[it->first].Parameters();
         it->second*=1.0/sum;
+        expectedGain+=it->second*f_(it->first)*tp_(ns);
       }
 
-    std::cerr<<"pnew"<<pnew;
+    std::cerr<<"\nlanda dist\t"<<landaDist_<<"\n";
+    std::cerr<<"\npold\t"<<p_;
+    std::cerr<<"\npnew\t"<<pnew<<"\nexpectedGain\t"<<expectedGain<<"\n";
     p_=pnew;
-
-
     this->rev_=cumulative_reverse_map(this->p_);
+
   }
 
 
@@ -4767,7 +4983,7 @@ public:
 
 
 template
-<   class Adaptive_discrete,
+<   class Adaptive_parameterized,
     class D
     , template<class> class M
     , template<class,template<class> class > class D_Lik//=Poisson_DLikelihood
@@ -4929,7 +5145,7 @@ public:
    ,const M<D>& model
    ,const D& data
    ,mcmc_step<pDist>& sDist,
-   Adaptive_discrete& landa,
+   Adaptive_parameterized& landa,
    const std::tuple<double,std::size_t,std::size_t>& betas,
    double slogL_max,
    std::size_t ndts_max,
@@ -4945,10 +5161,10 @@ public:
     if (sDist.isValid)
       {
         SamplesSeries<mcmc_step<pDist>> o(nsamples);
-        landa.actualize(mt);
+        landa.actualize();
         mcmc_step<pDist> cDist;
         n_steps_try(LM_Lik,lik,model,data,sDist,cDist,landa,slogL_max,ndts_max,mt,nskip,os,startTime,timeOpt);
-        landa.actualize(mt);
+        landa.actualize();
         //std::cerr<<landa;
         //os<<landa;
         //landa=landa.partialReset();
@@ -4957,7 +5173,7 @@ public:
           {
             n_steps_try(LM_Lik,lik,model,data,sDist,cDist,landa,slogL_max,ndts_max,mt,nskip,os,startTime,timeOpt);
             o.push_back(sDist);
-            landa.actualize(mt);
+            landa.actualize();
             std::cerr<<landa;
             os<<landa;
           }
@@ -5061,7 +5277,7 @@ public:
    ,const D& data
    ,mcmc_step<pDist>& sDist,
    mcmc_step<pDist>& cDist
-   ,Adaptive_discrete& landa
+   ,Adaptive_parameterized& landa
    ,std::size_t nsamples_per_par,
    std::mt19937_64& mt
    ,std::ostream& os
@@ -5149,7 +5365,7 @@ public:
    ,const D& data
    ,mcmc_step<pDist>& sDist,
    mcmc_step<pDist>& cDist,
-   Adaptive_discrete& pars
+   Adaptive_parameterized& pars
    ,double slogL_max
    ,std::size_t ndts_max,
    std::mt19937_64& mt
@@ -5173,7 +5389,7 @@ public:
         if (step(LM_Lik,lik,model,data,sDist,cDist,landa,
                  dHd,logPcandidate,logPcurrent,logChiforward, logChibackward,logDetCurrent,logDetCandidate,slogL_max,ndts_max,mt,i,os,startTime,timeOpt))
           {
-            pars.push_acceptance(landa,dHd);
+            pars.push_acceptance(landa);
           }
         else
           pars.push_rejection(landa);
@@ -5189,7 +5405,7 @@ public:
    ,const M<D>& model
    ,const D& data
    ,std::vector<mcmc_step<pDist>>& sDist,
-   std::vector<Adaptive_discrete>& pars,
+   std::vector<Adaptive_parameterized>& pars,
    std::vector<std::mt19937_64>& mt
    ,double pJump,
    std::size_t nsteps
@@ -5327,7 +5543,7 @@ public:
    ,const M<D>& model
    ,const D& data
    ,mcmc_step<pDist>& sDist,
-   Adaptive_discrete& aps,
+   Adaptive_parameterized& aps,
    std::size_t nsamples_0,
    std::mt19937_64& mt
    ,std::ostream& os
@@ -5478,7 +5694,7 @@ public:
    ,const M<D>& model
    ,const D& data
    ,std::vector<mcmc_step<pDist>>& sDist
-   ,std::vector<Adaptive_discrete>& pars
+   ,std::vector<Adaptive_parameterized>& pars
    ,Master_Adaptive_Beta_New& aBeta
    ,std::vector<double>& dHd
    ,std::vector<double>& logPcandidate
@@ -5528,7 +5744,7 @@ public:
                          logChibackward[i],logDetCurrent[i],logDetCandidate[i]))
           {
             aBeta.new_acceptance(i,sDist[i],cDist);
-            pars[i].push_acceptance(landa,dHd[i]);
+            pars[i].push_acceptance(landa);
             sDist[i]=cDist;
             out[i] =true;
           }
@@ -5588,7 +5804,7 @@ public:
   static
   void save_state(std::ostream& os,
                   std::vector<mcmc_step<pDist>>& sDist
-                  ,std::vector<Adaptive_discrete>& pars
+                  ,std::vector<Adaptive_parameterized>& pars
                   ,Master_Adaptive_Beta_New& aBeta
                   ,std::size_t isamples)
   {
@@ -5610,7 +5826,7 @@ public:
   static
   void load_state(std::istream& is,
                   std::vector<mcmc_step<pDist>>& sDist
-                  ,std::vector<Adaptive_discrete>& pars
+                  ,std::vector<Adaptive_parameterized>& pars
                   ,Master_Adaptive_Beta_New& aBeta
                   ,std::size_t& isamples)
   {
@@ -5785,7 +6001,7 @@ public:
    ,const D_Lik<D,M>& lik
    ,const M<D>& model
    ,const D& data
-   , const Adaptive_discrete<AP>& landa_Dist0
+   , const Adaptive_parameterized<AP>& landa_Dist0
    ,const std::vector<std::tuple<double,std::size_t,std::size_t>>& beta
    ,double slogL_max
    ,std::size_t ndts_max
@@ -5796,7 +6012,7 @@ public:
   {
 
     std::vector<std::pair<double,SamplesSeries<mystep>>> o;
-    Adaptive_discrete<AP> landa_Dist(landa_Dist0);
+    Adaptive_parameterized<AP> landa_Dist(landa_Dist0);
 
     M_Matrix<double> pinit;
     double beta0=std::get<0>(beta[0]);
@@ -5816,7 +6032,7 @@ public:
       {
         double betaval=std::get<0>(beta[i]);
         LMLik.update_mcmc_step(lik,model,data,cDist,landa,betaval);
-        Adaptive_discrete<AP> landa_Dist_run=landa_Dist;
+        Adaptive_parameterized<AP> landa_Dist_run=landa_Dist;
 
         auto s=mcmc.run_new
             (LMLik,lik,model,data,cDist,landa_Dist_run,beta[i],slogL_max,ndts_max,mt,os,startTime,timeOpt);
@@ -6025,7 +6241,7 @@ public:
           M_Matrix<double> pinit;
           double beta0=beta.getBeta().getValue()[i];
           std::size_t ntrialsj=0;
-          pars[i].actualize(mts[i]);
+          pars[i].actualize();
 
           bool isvalid=false;
           AP landa;
@@ -6169,12 +6385,12 @@ public:
         if (o>nsamples/5)
           for (std::size_t i=0; i<n;++i)
             {
-              pars[i].actualize(mts[i]);
+              pars[i].actualize();
             }
         else
           for (std::size_t i=0; i<n;++i)
             {
-              pars[i].actualize(mts[i],nAdapt*nskip);
+              pars[i].actualize(nAdapt*nskip);
             }
 
 

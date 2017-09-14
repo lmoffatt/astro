@@ -1345,6 +1345,9 @@ std::size_t Experiment::numMeasures() const
 
 std::size_t Experiment::numSimPoints() const
 {
+  if (isMeasure_)
+    return tMeasures_.size();
+else
   return tSimulates_.size();
 }
 
