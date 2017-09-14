@@ -259,7 +259,10 @@ DISTFILES += \
     run/runParallel_0.sh \
     run/m01/p_m01_1 \
     run/m10/p_m10_1 \
-    run/m101/p_m101_1
+    run/m101/p_m101_1 \
+    run/m01/p_m01_2 \
+    run/m10/p_m10_2 \
+    run/m101/p_m101_2
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
