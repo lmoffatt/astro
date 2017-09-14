@@ -253,7 +253,9 @@ DISTFILES += \
     run/m01/o_m01_7 \
     run/paralel/Makefile \
     run/m01/o_m01_copy1 \
-    run/m01/p_m01
+    run/m01/p_m01 \
+    run/m01/p_m02 \
+    run/m01/p_m03
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
