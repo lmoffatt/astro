@@ -5717,7 +5717,7 @@ public:
     std::vector<bool> out(sDist.size());
     aBeta.push_step();
 
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for(std::size_t i=0; i<sDist.size(); ++i)
       {
         AP landa;

@@ -12,13 +12,13 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 
 # add the desired -O3 if not present
 QMAKE_CXXFLAGS_RELEASE += -O2 -Werror
-#QMAKE_CXXFLAGS_RELEASE += -std=c++14 #-lpthread
-#QMAKE_CXXFLAGS_DEBUG += -std=c++14 #-lpthread
+QMAKE_CXXFLAGS_RELEASE += -lpthread
+QMAKE_CXXFLAGS_DEBUG += -lpthread
 
 
-#QMAKE_CXXFLAGS += -fopenmp
-#QMAKE_LFLAGS +=  -fopenmp
-#LIBS += -lgomp -lpthread
+QMAKE_CXXFLAGS += -fopenmp
+QMAKE_LFLAGS +=  -fopenmp
+LIBS += -lpthread
 
 QMAKE_CXXFLAGS_RELEASE+="-D__STRICT_ANSI__"
 QMAKE_CXXFLAGS_DEBUG+="-D__STRICT_ANSI__"
@@ -250,7 +250,10 @@ DISTFILES += \
     run/m01/o_m01_4 \
     run/m01/o_m01_5 \
     run/m01/o_m01_6 \
-    run/m01/o_m01_7
+    run/m01/o_m01_7 \
+    run/paralel/Makefile \
+    run/m01/o_m01_copy1 \
+    run/m01/p_m01
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
