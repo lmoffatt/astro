@@ -1602,7 +1602,7 @@ public:
 
     if (true)
       {
-        std::cerr<<"\n par Dist\t"<<parDist_<<"\n";
+        std::cerr<<"\t par Dist\t"<<parDist_<<"\n";
         std::cerr<<"\np old \t"<<pold<<"\n";
         std::cerr<<"\np logit new \t"<<p_<<"\n";
         std::cerr<<"\n expected gain\t"<<o.second<<"\n";
@@ -1853,7 +1853,7 @@ public:
         expectedGain+=it->second*f_(it->first)*tp_(ns);
       }
 
-    std::cerr<<"\nlanda dist\t"<<landaDist_<<"\n";
+    std::cerr<<"landa dist\t"<<landaDist_<<"\n";
     std::cerr<<"\npold\t"<<p_;
     std::cerr<<"\npnew\t"<<pnew<<"\nexpectedGain\t"<<expectedGain<<"\n";
     p_=pnew;
@@ -5717,7 +5717,7 @@ public:
     std::vector<bool> out(sDist.size());
     aBeta.push_step();
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for(std::size_t i=0; i<sDist.size(); ++i)
       {
         AP landa;
@@ -6382,17 +6382,22 @@ public:
 
 
 
-        if (o>nsamples/5)
-          for (std::size_t i=0; i<n;++i)
-            {
-              pars[i].actualize();
-            }
+        if (o>nsamples/10)
+          {
+            for (std::size_t i=0; i<n;++i)
+              {
+                std::cerr<<"\n"<<beta.getBeta().getValue()[i]<<"\t";
+                pars[i].actualize();
+              }
+          }
         else
-          for (std::size_t i=0; i<n;++i)
-            {
-              pars[i].actualize(nAdapt*nskip);
-            }
-
+          {
+            for (std::size_t i=0; i<n;++i)
+              {
+                std::cerr<<"\n"<<beta.getBeta().getValue()[i]<<"\t";
+                pars[i].actualize(nAdapt*nskip);
+              }
+          }
 
         // std::cerr<<pars;
         //   os<<pars;

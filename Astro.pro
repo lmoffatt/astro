@@ -229,7 +229,6 @@ DISTFILES += \
     run/m02/o_m02 \
     run/m03/o_m03 \
     run/m10/o_m10 \
-    run/m101/o_m101 \
     run/m11/o_m11 \
     run/m13/o_m13 \
     run/m12/o_m12 \
@@ -252,10 +251,15 @@ DISTFILES += \
     run/m01/o_m01_6 \
     run/m01/o_m01_7 \
     run/paralel/Makefile \
-    run/m01/o_m01_copy1 \
     run/m01/p_m01 \
     run/m01/p_m02 \
-    run/m01/p_m03
+    run/m01/p_m03 \
+    run/m10/p_m10 \
+    run/m101/p_m101 \
+    run/runParallel_0.sh \
+    run/m01/p_m01_1 \
+    run/m10/p_m10_1 \
+    run/m101/p_m101_1
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
