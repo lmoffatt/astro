@@ -264,7 +264,10 @@ DISTFILES += \
     run/m10/p_m10_2 \
     run/m101/p_m101_2 \
     run/m03/p_m03 \
-    run/m13/p_m13
+    run/m13/p_m13 \
+    run/m02/p_m02 \
+    run/m11/p_m11 \
+    run/m12/p_m12
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

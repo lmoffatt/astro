@@ -5,7 +5,7 @@
 
 # Opciones SGE
 #$ -pe openmp 8
-#$ -l h_rt=47:59:00 # Setea 48 horas de wall clock time
+#$ -l h_rt=95:59:00 # Setea 48 horas de wall clock time
 
 #$ -V  # Exporta las variables de entorno
 #$ -N P13_2k30  # El nombre del job

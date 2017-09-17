@@ -235,6 +235,7 @@ std::vector<double>  CortexLikelihood::getNBins(const Experiment *e)
 }
 
 void CortexLikelihood::update(){
+  delete m_;
   m_=BaseModel::create(prior_);
   bin_dens_=getNBins(e_);
   nstate_=getstate(e_);
@@ -323,7 +324,7 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
 {
   std::vector<std::vector<double>> o(nstate_.size());
 
-  BaseModel* m=BaseModel::create(parameters);
+  std::unique_ptr<BaseModel> m(BaseModel::create(parameters));
 
   CortexSimulation s;
   if (!this->adapt_dt_)
@@ -375,7 +376,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f
 
   double h=1e-5;
 
-  BaseModel * m=BaseModel::create(parameters);
+  std::unique_ptr<BaseModel> m(BaseModel::create(parameters));
   CortexSimulation s;
   double& dtmin=std::get<0>(dt_n_dtmax);
   std::size_t& nPoints_per_decade=std::get<1>(dt_n_dtmax);
@@ -494,7 +495,7 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
   std::vector<std::vector<double>> o(nstate_.size());
 
 
-  BaseModel * m=BaseModel::create(parameters);
+  std::unique_ptr<BaseModel> m(BaseModel::create(parameters));
   CortexSimulation s;
   double dtmin=std::get<0>(dt_n_dtmax);
   double nPoints_per_decade=std::get<1>(dt_n_dtmax);
@@ -575,7 +576,7 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
 CortexSimulation CortexPoisonLikelihood::simulate(const Parameters &parameters,const std::pair<std::vector<double>, std::vector<std::size_t>>& dts)const
 {
 
-    BaseModel * m=BaseModel::create(parameters);
+    std::unique_ptr<BaseModel> m(BaseModel::create(parameters));
     CortexSimulation s;
     if (!this->CrankNicholson_)
       {
@@ -628,7 +629,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
 
   double h=1e-5;
 
-  BaseModel * m=BaseModel::create(parameters);
+  std::unique_ptr<BaseModel> m(BaseModel::create(parameters));
   CortexSimulation s;
   if (!this->CrankNicholson_)
     {
