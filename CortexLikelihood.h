@@ -33,7 +33,7 @@ public:
   virtual const Parameters &getPrior() const override;
 
   CortexLikelihood(std::string id,
-                    Experiment* e,
+                   Experiment* e,
                    const Parameters& prior
                    , double dx
                    , double dtmin0,
@@ -94,7 +94,7 @@ public:
                    , bool UseDerivative);
 
   CortexLikelihood(std::string id,
-                    Experiment *e,
+                   Experiment *e,
                    const Parameters &prior,
                    double dx,
                    double dtmin0,
@@ -143,7 +143,7 @@ class CortexMultinomialLikelihood:public ABC_Multinomial_Model, virtual public C
 public:
 
   CortexMultinomialLikelihood(std::string id,
-                               Experiment* e,
+                              Experiment* e,
                               const Parameters& prior
                               ,double dx
                               ,double dtmin0
@@ -242,7 +242,7 @@ public:
 
 
   CortexPoisonLikelihood(std::string id,
-                          Experiment* e,
+                         Experiment* e,
                          const Parameters& prior
                          ,double dx
                          ,double dtmin0
@@ -253,7 +253,7 @@ public:
     CortexLikelihood(id,e,prior,dx,dtmin0,dtmin,nPoints_per_decade,dtmax,tequilibrio){}
 
   CortexPoisonLikelihood(std::string id,
-                          Experiment* e,
+                         Experiment* e,
                          const Parameters& prior
                          ,double dx
                          ,double dtmin0
@@ -268,7 +268,7 @@ public:
 
 
   CortexPoisonLikelihood(std::string id,
-                          Experiment *e,
+                         Experiment *e,
                          const Parameters &prior,
                          double dx,
                          double dtmin0,
@@ -285,7 +285,7 @@ public:
 
 
   CortexPoisonLikelihood(std::string id,
-                          Experiment *e,
+                         Experiment *e,
                          const Parameters &prior,
                          double dx,
                          double dtmin0,
@@ -509,9 +509,9 @@ public:
 
 
   }
-  mcmc_prior prior(const Data& , M_Matrix<double> param)const
+  mcmc_prior<double> prior(const Data& , M_Matrix<double> param)const
   {
-    mcmc_prior out;
+    mcmc_prior<double> out;
     out.param=param;
 
     auto& p=CL_->getPrior();
@@ -619,6 +619,169 @@ public:
 private:
   const CortexLikelihood* CL_;
 };
+
+
+template<class Data=std::vector<MyData>>
+class MyRandomEffectsModel
+{
+public:
+  typedef  M_Matrix<M_Matrix<double>>   E;
+
+  M_Matrix<E> sample(std::mt19937_64& mt, std::size_t n)const
+  {
+    Parameters hyperParameter=CL_->getPrior().randomHiperSample(mt,1);
+
+    M_Matrix<E> out(1,2);
+    out[0]=hyperParameter.hyperParameters();
+
+    E   samples(1,n);
+    for (std::size_t i=0; i<n; ++i)
+      {
+        auto sample=hyperParameter.randomSample(mt,1.0);
+        samples[i]=M_Matrix<double>(1,sample.size(),sample.trMeans());
+
+      }
+    out[1]=std::move(samples);
+    return out;
+  }
+  mcmc_prior<E> prior(const Data& , M_Matrix<E> param)const
+  {
+    mcmc_prior<E> out;
+    out.param=param;
+
+    auto& p=CL_->getPrior();
+    std::size_t npar=param.size();
+
+    std::size_t nrep=param[1].size();
+    Parameters Pa=p.toHyperParameters(param[0]);
+    double logPrior=p.logHiperProb(Pa);
+    out.D_prior.H=M_Matrix<E>(2,2,M_Matrix<E>::SYMMETRIC);
+    out.D_prior.G=M_Matrix<E>(1,2,M_Matrix<E>::FULL);
+
+    auto dm=-M_Matrix<double>(1,npar,p.trMeans());
+    dm+=param[0][0];
+
+    auto ds=-M_Matrix<double>(1,npar,p.mean_of_log_std());
+    ds+=param[0][1];
+
+    out.D_prior.H(0,0)=p.getHyperHessian();
+
+    out.D_prior.G[0][0]=dm*out.D_prior.H(0,0)(0,0);
+    out.D_prior.G[0][1]=ds*out.D_prior.H(0,0)(1,1);
+
+
+    out.D_prior.H(1,1)=E(nrep,nrep,E::SCALAR_DIAGONAL);
+    out.D_prior.G[1]=E(1,nrep);
+
+
+
+
+    out.D_prior.H(1,1)[0]=Pa.getHessian();
+
+    out.D_prior.H(0,1)=E(2,nrep,E::FULL);
+
+
+
+    double logPriorEff=0;
+    for (std::size_t i=0; i<nrep; ++i)
+      {
+        Parameters P_i=p.toParameters(param[1][i].toVector());
+        logPriorEff+=Pa.logProb(P_i);
+        M_Matrix<double> d=param[1][i]-param[0][0];
+        out.D_prior.G[1][i]=d*out.D_prior.H(1,1)[0];
+        out.D_prior.G[0][0]-=out.D_prior.G[1][i];
+        out.D_prior.G[0][1]-=diag(d)*out.D_prior.G[1][i]+eye<double>(npar);
+
+        out.D_prior.H(0,0)(0,0)+=out.D_prior.H(1,1)[0];
+
+        out.D_prior.H(0,1)(0,i)=-out.D_prior.H(1,1)[0];
+        out.D_prior.H(0,1)(1,i)=
+            d*out.D_prior.H(0,1)(0,i)*2.0;
+
+
+        out.D_prior.H(0,0)(0,1)-=out.D_prior.H(0,1)(1,i);
+        out.D_prior.H(0,0)(1,1)-=diag(d)*out.D_prior.H(0,1)(1,i);
+
+
+      }
+
+    out.logPrior=logPrior+logPriorEff;
+
+    return out;
+
+  }
+  M_Matrix<E> f(const Data& , M_Matrix<E> param, std::vector<std::pair<std::vector<double>,std::vector<std::size_t>>>& dts)
+  const
+  {
+    std::size_t nrep=param[1].size();
+    M_Matrix<E> out(1,1,E(nrep,1));
+    for (std::size_t ir=0; ir<nrep; ++ir)
+      {
+        auto ff=CL_->f(param[1][ir].toVector(),dts[ir]);
+        std::size_t nrows= ff.size();
+        if (nrows>0)
+          {
+            std::size_t ncols=ff[0].size();
+            out[0][ir]=M_Matrix<double>(nrows,ncols);
+            for (std::size_t i=0; i<nrows; ++i)
+              for (std::size_t j=0; j<ncols; ++j)
+                out[0][ir](i,j)=ff[i][j];
+          }
+        else return {};
+      }
+    return out;
+  }
+
+
+
+
+  M_Matrix<double> logLanda(const Data& data, M_Matrix<double> param, std::pair<std::vector<double>,std::vector<std::size_t>>& dts)const{
+    M_Matrix<double> out=f(data,param,dts);
+    out=out.apply([](double x){return log10_guard(x);});
+    return out;
+
+  }
+
+  std::string id()const {return CL_->getPrior().id();}
+
+
+  Parameters getPrior()const
+  {
+    return CL_->getPrior();
+  }
+
+
+  Parameters getParameter(const M_Matrix<double>& par)const
+  {
+    return CL_->getPrior().toParameters(par.toVector());
+  }
+
+  CortexSimulation getSimulation(const Parameters& par,const std::pair<std::vector<double>,std::vector<std::size_t>>& dts)const
+  {
+    return CL_->simulate(par,dts);
+  }
+
+  CortexSimulation getSimulation(const M_Matrix<double>& par,std::pair<std::vector<double>, std::vector<std::size_t>> dts)const
+  {
+    auto CLc= const_cast<CortexLikelihood*> (CL_);
+    CLc->setSimulation();
+    auto out= CLc->simulate(getParameter(par),dts);
+    CLc->setMeasure();
+    return out;
+  }
+
+  const CortexLikelihood& getLikelihood()const
+  {
+    return *CL_;
+  }
+
+
+  MyRandomEffectsModel(CortexLikelihood* CL):CL_(CL){}
+private:
+  const CortexLikelihood* CL_;
+};
+
+
 
 inline
 std::vector<std::tuple<double,std::size_t,std::size_t>>

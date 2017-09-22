@@ -90,6 +90,8 @@ Parameters::Parameters(const Parameters& other):
 ,trans_(other.trans_)
 ,unit_(other.unit_)
 ,std_of_tr_(other.std_of_tr_)
+,mean_of_random_effects_std_{other.mean_of_random_effects_std_}
+,std_of_random_effects_std_{other.std_of_random_effects_std_}
 ,corr_(other.corr_)
 ,comment_(other.comment_)
 ,cov_(other.cov_)
@@ -122,7 +124,8 @@ bool Parameters::readBody(std::string &line, std::istream &s, std::ostream& /*lo
     }
   while (true)
     {
-      double val, std_in_dB;
+      double val, std_in_dB, mean_of_random_logstd, std_of_random_log_std;
+      bool hasHyperparameters=false;
       std::string transformation,unit, db,comment;
       std::vector<double> corrCoef;
       ss.str(line);
@@ -158,6 +161,24 @@ bool Parameters::readBody(std::string &line, std::istream &s, std::ostream& /*lo
                   db.push_back(ch);
               else
                 db="";
+              if (ss>>mean_of_random_logstd)
+                {
+                  hasHyperparameters=true;
+                  while ((ss>>ch)&&(ch!='[')) {}
+                  if (ch=='[')
+                    while ((ss>>ch)&&(ch!=']'))
+                      db.push_back(ch);
+                  else
+                    db="";
+                  ss>>std_of_random_log_std;
+                  while ((ss>>ch)&&(ch!='[')) {}
+                  if (ch=='[')
+                    while ((ss>>ch)&&(ch!=']'))
+                      db.push_back(ch);
+                  else
+                    db="";
+
+                }
               double corrcoef;
               while (ss>>corrcoef)
                 corrCoef.push_back(corrcoef);
@@ -174,7 +195,11 @@ bool Parameters::readBody(std::string &line, std::istream &s, std::ostream& /*lo
               db="";
               comment="";
             }
-          push_back_dB(name,transformation,val,unit,std_in_dB,corrCoef,comment);
+          if (!hasHyperparameters)
+            push_back_dB(name,transformation,val,unit,std_in_dB,corrCoef,comment);
+          else
+            push_back_Hyper_dB(name,transformation,val,unit,std_in_dB,mean_of_random_logstd,std_of_random_log_std,comment);
+
           line.clear();
         }
     }
@@ -204,6 +229,8 @@ void swap(Parameters& one, Parameters& other)
 
   std::swap(one.mean_of_tr_,other.mean_of_tr_);
   std::swap(one.std_of_tr_,other.std_of_tr_);
+  std::swap(one.mean_of_random_effects_std_,other.mean_of_random_effects_std_);
+  std::swap(one.std_of_random_effects_std_,other.std_of_random_effects_std_);
 
   std::swap(one.trans_,other.trans_);
   std::swap(one.corr_,other.corr_);
@@ -252,6 +279,11 @@ std::ostream &Parameters::writeBody(std::ostream &s) const
       s<<"<"<<Tr(trans_[i])->myClass()<<">\t";
       s<<Tr(trans_[i])->inverse(mean_of_tr_[i])<<"\t";
       s<<"["+unit_[i]+"]"<<"\t"<<std_of_tr_[i]*10<<"[dB]\t";
+      if(!this->mean_of_random_effects_std_.empty())
+        {
+          s<<mean_of_random_effects_std_[i]<<"[dB]\t";
+          s<<std_of_random_effects_std_[i]<<"[dB^2]\t";
+        }
       if (!corr_.empty())
         {
           for (std::size_t j=0; j<corr_[i].size(); ++j)
@@ -267,24 +299,26 @@ void Parameters::clear()
 {
   name_to_i_.clear();
 
-    names_.clear();
+  names_.clear();
 
-    mean_of_tr_.clear();
-    trans_.clear();
-    unit_.clear();
-    std_of_tr_.clear();
+  mean_of_tr_.clear();
+  trans_.clear();
+  unit_.clear();
+  std_of_tr_.clear();
+  mean_of_random_effects_std_.clear();
+  std_of_random_effects_std_.clear();
 
-    corr_.clear();
+  corr_.clear();
 
-    comment_.clear();
+  comment_.clear();
 
 
 
-    cov_.clear();
-    cov_inv_.clear();
+  cov_.clear();
+  cov_inv_.clear();
 
-    cho_.clear();
-   logDetCov_=0;
+  cho_.clear();
+  logDetCov_=0;
 }
 
 double Parameters::mean(const std::string& name)const
@@ -504,7 +538,7 @@ double Parameters::dBStd(const std::string& name)const
 /// returns the standard deviation in dB (deciBel)
 double Parameters::dBStd(std::size_t i)const
 {
-   return std_of_tr_[i]*10;
+  return std_of_tr_[i]*10;
 }
 
 
@@ -591,6 +625,21 @@ void Parameters::push_back_dB(const std::string& name,
                               const std::string& comment)
 {
   push_back_dB(name,toTr(tranformation),meanValue,unit,dBError,Correlations,comment);
+}
+
+void Parameters::push_back_Hyper_dB(const std::string &name, const std::string &tranformation, double meanValue, const std::string &unit, double dBErrorMean, double mean_log_std_dev, double std_log_std_dev, const std::string &comment)
+{
+  name_to_i_[name]=mean_of_tr_.size();
+  names_.push_back(name);
+  TRANSFORM tr=toTr(tranformation);
+  trans_.push_back(tr);
+  double t=Tr(tr)->eval(meanValue);
+  mean_of_tr_.push_back(t);
+  std_of_tr_.push_back(dBErrorMean/10);
+  mean_of_random_effects_std_.push_back(mean_log_std_dev/10);
+  std_of_random_effects_std_.push_back(std_log_std_dev/10);
+  unit_.push_back(unit);
+  comment_.push_back(comment);
 }
 
 
@@ -758,8 +807,7 @@ std::vector<double> Parameters::randomSampleValues(std::mt19937_64 &mt, Paramete
 
         {
 
-          o[i]=randNormal(mt,mean_of_tr_[i]
-                                           ,prior.std_of_tr_[i]*factor);
+          o[i]=randNormal(mt,mean_of_tr_[i],prior.std_of_tr_[i]*factor);
         }
     }
   else
@@ -785,7 +833,7 @@ std::vector<double> Parameters::randomSampleValues(std::mt19937_64 &mt, Paramete
 double Parameters::logProb(const Parameters& sample)const
 {
   std::size_t n=sample.size();
-   std::vector<double> d(n);
+  std::vector<double> d(n);
   for (std::size_t i=0; i<n; ++i)
     d[i]=sample.mean_of_tr_[i]-this->mean_of_tr_[i];
 
@@ -795,6 +843,24 @@ double Parameters::logProb(const Parameters& sample)const
       z+=d[i]*this->cov_inv_[i][j]*d[j];
 
   return -0.5*(logDetCov_+z+n*log(2*PI));
+
+}
+
+double Parameters::logHiperProb(const Parameters &sample) const
+{
+  double logPmean=logProb(sample);
+  std::size_t n=sample.size();
+  double logPStd=0;
+  for (std::size_t i=0; i<n; ++i)
+    {
+      double chi   =sqr(sample.std_of_tr_[i]-mean_of_random_effects_std_[i])
+          /sqr(std_of_random_effects_std_[i]);
+      double loglik=-0.5*(chi+std::log(2*PI))
+          -std::log(std_of_random_effects_std_[i]);
+      logPStd+=loglik;
+    }
+
+  return logPmean+logPStd;
 
 }
 
@@ -894,6 +960,7 @@ const std::vector<double>& Parameters::pStds()const
 }
 
 
+
 const double& Parameters::operator[](std::size_t i)const
 {
   return mean_of_tr_[i];
@@ -940,9 +1007,9 @@ double Parameters::chi2Distance(const Parameters &one, const Parameters &other)c
 
   for (std::size_t i=0;i<size();i++)
     {
-       double e=one.trMeans()[i]-other.trMeans()[i];
-       double s=std_of_tr_[i];
-       result+=std::pow(e/s,2)/2.0;
+      double e=one.trMeans()[i]-other.trMeans()[i];
+      double s=std_of_tr_[i];
+      result+=std::pow(e/s,2)/2.0;
     }
   // result=sqrt(result/one.size())*10;
   return result;

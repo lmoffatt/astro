@@ -105,6 +105,15 @@ public:
                     const std::string& comment="");
 
 
+  void push_back_Hyper_dB(const std::string& name,
+                    const std::string &tranformation,
+                    double meanValue,
+                    const std::string &unit,
+                    double dBErrorMean,
+                    double mean_log_std_dev,
+                    double std_log_std_dev,
+                    const std::string& comment="");
+
 
 
   double mean(const std::string& name)const;
@@ -188,8 +197,36 @@ public:
 
   const std::vector< std::vector <double> >& getInvCovariance()const;
 
+  M_Matrix<double> getHessian()const
+  {
+       M_Matrix<double> out(size(),size(),M_Matrix<double>::DIAGONAL);
+       for (std::size_t i =0; i<size(); ++i)
+         out[i]=-std::pow(std_of_tr_[i],-2);
+       return out;
+  }
+
+  M_Matrix<M_Matrix<double>>  getHyperHessian()const
+  {
+    M_Matrix<M_Matrix<double>>
+        out(2,2,M_Matrix<M_Matrix<double>>::SYMMETRIC);
+
+    M_Matrix<double> covinvMean(size(),size(),M_Matrix<double>::DIAGONAL);
+    for (std::size_t i=0; i<size(); ++i)
+      covinvMean[i]=-std::pow(std_of_tr_[i],-2);
+    M_Matrix<double> covinvStd(size(),size(),M_Matrix<double>::DIAGONAL);
+    for (std::size_t i=0; i<size(); ++i)
+      covinvStd[i]=-std::pow(std_of_random_effects_std_[i],-2);
+    out(0,0)=covinvMean;
+    out(1,1)=covinvStd;
+    return out;
+
+  }
+
   Parameters randomSample(std::mt19937_64 &mt, double factor=1)const;
 
+  Parameters randomHiperSample(std::mt19937_64 &mt, double factor=1)const;
+
+  M_Matrix<M_Matrix<double>> hyperParameters()const;
 
 
 
@@ -204,10 +241,17 @@ public:
   {
     return Parameters(id(),model_,name_to_i_,names_,o,trans_,unit_);
   }
+  Parameters toHyperParameters(const M_Matrix<M_Matrix<double>>& o)const
+  {
+    auto std_of_tr=o[1].apply([](double x){return std::exp(x);}).toVector();
+
+    return Parameters(id(),model_,name_to_i_,names_,o[0].toVector(),trans_,unit_,std_of_tr);
+  }
 
 
   double logProb(const Parameters &sample) const;
 
+  double logHiperProb(const Parameters &sample)const;
 
   Parameters(const Parameters& other);
   Parameters();
@@ -228,6 +272,10 @@ public:
   unsigned size() const;
   std::string unit(const std::string &name) const;
 
+  const std::vector<double>& mean_of_log_std() const
+  {
+     return mean_of_random_effects_std_;
+  }
   static Transformation* Tr(TRANSFORM tr);
 
   static TRANSFORM toTr(const std::string& trs);
@@ -246,7 +294,8 @@ protected:
   ,mean_of_tr_(meanoftr)
   ,trans_(trans)
   ,unit_(unit)
-  ,std_of_tr_{}
+  ,mean_of_random_effects_std_{}
+  ,std_of_random_effects_std_{}
   ,corr_{}
   ,comment_{}
   ,cov_{}
@@ -254,6 +303,33 @@ protected:
   ,cho_{}
   ,logDetCov_(){
     setId(id);
+  }
+
+  Parameters(const std::string id,
+             double model
+             ,std::map<std::string, std::size_t> nametoi,
+             std::vector<std::string> names,
+             std::vector<double> meanoftr,
+             std::vector<TRANSFORM> trans,
+             std::vector<std::string> unit,
+             std::vector<double> stdoftr):
+    model_(model)
+  ,name_to_i_(nametoi)
+  ,names_(names)
+  ,mean_of_tr_(meanoftr)
+  ,trans_(trans)
+  ,unit_(unit)
+  ,std_of_tr_{stdoftr}
+  ,mean_of_random_effects_std_{}
+  ,std_of_random_effects_std_{}
+  ,corr_{}
+  ,comment_{}
+  ,cov_{}
+  ,cov_inv_{}
+  ,cho_{}
+  ,logDetCov_(){
+    setId(id);
+    update();
   }
 
 
@@ -290,6 +366,10 @@ private:
   std::vector<std::string> unit_;
   std::vector<double> std_of_tr_;
 
+  std::vector<double> mean_of_random_effects_std_;
+  std::vector<double> std_of_random_effects_std_;
+
+
   std::vector<std::vector<double>> corr_;
 
   std::vector<std::string> comment_;
@@ -301,6 +381,8 @@ private:
 
   std::vector< std::vector <double> > cho_;
   double logDetCov_;
+
+
 
 
 
@@ -329,7 +411,7 @@ public:
         if (i+1<size()) os<<"\t";
 
       }
-        return os;
+    return os;
   }
 
   std::ostream& writeRowDataFrame(std::ostream& os)const
@@ -340,7 +422,7 @@ public:
         os<<(*this)[i];
         if (i+1<size()) os<<"\t";
       }
-        return os;
+    return os;
   }
 
 

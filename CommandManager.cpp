@@ -1072,7 +1072,7 @@ void EvidenceCommand::run(const std::__cxx11::string& line, std::ostream &logs)
       double timeOpt=0;
 
 
-      typename TI<Adaptive_parameterized<Landa>>::myEvidence * ev= ti.run(mcmc,LMLik,DLik,m,d,landa,beta,slogL_max,ndts_max,mt,flog,startTime,timeOpt);
+      typename TI<Adaptive_parameterized<Landa>>::myEvidence<double> * ev= ti.run<double>(mcmc,LMLik,DLik,m,d,landa,beta,slogL_max,ndts_max,mt,flog,startTime,timeOpt);
       std::cout<<*ev;
       flog<<*ev;
       flog.close();

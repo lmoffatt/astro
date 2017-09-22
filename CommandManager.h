@@ -1185,7 +1185,7 @@ struct Tempering
                 MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
             TT<Ad> tt;
 
-            tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+            tt.run<double>(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
             flog.close();
 
           }
@@ -1201,7 +1201,7 @@ struct Tempering
                 MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
             TT<Ad> tt;
 
-            tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+            tt.run<double>(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
             flog.close();
 
           }
@@ -1216,7 +1216,7 @@ struct Tempering
               MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
           TT<Adaptive_parameterized<AP>> tt;
 
-          tt.run(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+          tt.run<double>(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
           flog.close();
         }
 

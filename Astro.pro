@@ -67,7 +67,8 @@ HEADERS += \
     myTuples.h \
     myCommandManagement.h \
     RungeKutta.h \
-    MatrixBanded.h
+    MatrixBanded.h \
+    MatrixBlock.h
 
 DISTFILES += \
     run/script \

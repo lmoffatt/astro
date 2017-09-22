@@ -202,7 +202,7 @@ public:
 
   std::pair<CortexSimulation, std::pair<std::vector<double>,std::vector< std::size_t>>> run_CN_adapt(const Experiment& e,double dx,double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double teq, double maxlogError,double maxlogErrorCN,double dtinf, std::size_t maxloop, bool Usederivative) const
   {
-    return myModel().simulate_CrankNicholson_Adapted(getParameters(),toModelParameters(),e,dx,dtmin0,dtmin,
+    return   myModel().simulate_CrankNicholson_Adapted(getParameters(),toModelParameters(),e,dx,dtmin0,dtmin,
                                                      nPoints_per_decade,dtmax,teq,maxlogError,maxlogErrorCN,dtinf,maxloop,Usederivative);
 
   }

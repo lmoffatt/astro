@@ -4,10 +4,11 @@
 #
 
 # Opciones SGE
+#$ -pe openmp 8
 #$ -l h_rt=95:59:00 # Setea 48 horas de wall clock time
 
 #$ -V  # Exporta las variables de entorno
-#$ -N C11_2k15  # El nombre del job
+#$ -N P11_2k30  # El nombre del job
 #$ -cwd # Cambia al directorio actual
 
 
@@ -15,4 +16,4 @@
 # Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/local/gcc-6.2.0/lib64/
 
-/home/lmoffatt.inquimae/Astro/release/Astro /home/lmoffatt.inquimae/Astro/Astro/run/evidence_script LABEL model_11
+/home/lmoffatt.inquimae/Astro/parallel/Astro /home/lmoffatt.inquimae/Astro/Astro/run/evidence_script LABEL model_11
