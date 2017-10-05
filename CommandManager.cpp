@@ -85,7 +85,6 @@ CommandManager::CommandManager()
   cmd_["simulate"]=new SimulateCommand(this);
   cmd_["experiment"]=new ExperimentCommand(this);
   cmd_["likelihood"]=new LikelihoodCommand(this);
-  cmd_["optimize"]=new OptimizeCommand(this);
   cmd_["evidence"]=new EvidenceCommand(this);
   //cmd_["tempering"]=new TemperingCommand(this);
 
@@ -494,14 +493,14 @@ void SimulateCommand::run(const std::string& line, std::ostream &logs)
     {
       cm_->push_back(m);
 
-      CortexPoisonLikelihood  CL(simName+"_L",e,prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+      CortexPoisonLikelihood  CL(simName+"_L",prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
 
       CortexMultinomialLikelihoodEvaluation CE(CL,p);
       std::ofstream fo;
       std::string fnameout=simName+"_lik.txt";
       fo.open(fnameout.c_str());
-      CE.extract(fo);
+      CE.extract(e,fo);
       fo.close();
 
 
@@ -783,14 +782,14 @@ void LikelihoodCommand::run(const std::string& line, std::ostream &logs)
   f.close();
 
 
-  CortexLikelihood* CL= new CortexPoisonLikelihood(lName,e,prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+  CortexLikelihood* CL= new CortexPoisonLikelihood(lName,prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
   cm_->push_back(CL);
 
   CortexMultinomialLikelihoodEvaluation CE(*CL,p);
   std::ofstream fo;
   std::string fnameout=lName+"_lik.txt";
   fo.open(fnameout.c_str(),std::ofstream::out);
-  CE.extract(fo);
+  CE.extract(e,fo);
   fo.close();
 
 }
@@ -806,103 +805,6 @@ std::string LikelihoodCommand::id() const
 }
 
 
-void OptimizeCommand::run(const std::string& line, std::ostream &logs)
-{
-
-  //optimize opt experiment1 parameters_10 parameters_10 10 100
-
-  std::string optimizeS, optName, experimentName, priorName, paramName;
-  double dtmin,dtmax, dx, tequilibrio=100000, maxduration;
-  double factor=0;
-  std::mt19937_64::result_type initseed=0;
-  std::size_t nPoints_per_decade,niter,nseeds=0;
-  std::stringstream ss(line);
-
-  ss>>optimizeS>>optName>>experimentName>>priorName>>paramName>>dx>>dtmin>>nPoints_per_decade>>dtmax>>niter>>maxduration>>factor>>nseeds>>initseed;
-
-  Experiment *e=new Experiment;
-  e->load(experimentName,logs);
-  if (e->numMeasures()==0)
-    {
-      logs<<"Experiment "<<experimentName<<" not found\n";
-      return;
-    }
-
-  std::string filename=priorName;
-  std::fstream f;
-
-  f.open(filename.c_str());
-  if (!f)
-    {
-      std::string filenaExt=filename+".txt";
-      f.open(filenaExt.c_str());
-      if (!f)
-        {
-          logs<<"Parameters file "<<filename<<" or "<<filenaExt<<" not found"<<std::endl;
-          f.close();
-          return;
-        }
-    }
-  std::string line2;
-  safeGetline(f,line2);
-  Parameters prior;
-
-  if (!prior.read(line2,f,logs))
-    {
-      logs<<"File "<<filename<<" is not a Parameters file"<<std::endl;
-      f.close();
-      return;
-    }
-
-  f.close();
-
-  filename=paramName;
-  f.open(filename.c_str());
-  if (!f)
-    {
-      std::string filenaExt=filename+".txt";
-      f.open(filenaExt.c_str());
-    }
-  if (!f)
-    {
-      logs<<"Parameters file "<<filename<<" not found"<<std::endl;
-      f.close();
-      return;
-    }
-
-
-  safeGetline(f,line2);
-  Parameters p;
-
-  if (!p.read(line2,f,logs))
-    {
-      logs<<"File "<<filename<<" is not a Parameters file"<<std::endl;
-      f.close();
-      return;
-    }
-
-  f.close();
-
-  BaseModel*m=BaseModel::create(prior);
-  if (m!=nullptr)
-    {
-      cm_->push_back(m);
-
-      CortexPoisonLikelihood  CL(optName+"_lik",e,prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
-
-
-
-      LevenbergMarquardtDistribution LM(&CL,p,niter,maxduration,optName);
-
-
-      LM.optimize(optName,factor,nseeds,initseed);
-
-    }
-
-
-
-
-}
 
 
 
@@ -1007,13 +909,14 @@ void EvidenceCommand::run(const std::__cxx11::string& line, std::ostream &logs)
     {
       cm_->push_back(m);
 
-      auto CL=new CortexPoisonLikelihood(eviName+"_lik",e,prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
+      auto CL=new CortexPoisonLikelihood(eviName+"_lik",prior,dx,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio);
 
-      MyModel<MyData> m(CL);
-      MyData d(CL);
+      MyModel m(CL);
+      MyData d(CL,&e[0]);
       Metropolis_Hastings_mcmc<Adaptive_parameterized<Landa>,
-          MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> mcmc;
-      LevenbergMarquardt_step<MyData,MyModel,Poisson_DLikelihood,LM_MultivariateGaussian,Landa> LMLik;
+          MyData,MyModel,Poisson_DLikelihood<MyData,MyModel>,
+          LM_MultivariateGaussian<double>,Landa> mcmc;
+      LevenbergMarquardt_step<MyData,MyModel,Poisson_DLikelihood<MyData,MyModel>,LM_MultivariateGaussian<double>,Landa> LMLik;
       Poisson_DLikelihood<MyData,MyModel> DLik;
       TI<Adaptive_parameterized<Landa>> ti;
       std::mt19937_64 mt;

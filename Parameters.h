@@ -226,7 +226,13 @@ public:
 
   Parameters randomHiperSample(std::mt19937_64 &mt, double factor=1)const;
 
-  M_Matrix<M_Matrix<double>> hyperParameters()const;
+  M_Matrix<M_Matrix<double>> hyperParameters()const
+  {
+    M_Matrix<M_Matrix<double>> out(1,2);
+    out[0]=M_Matrix<double>(1,size(),mean_of_tr_);
+    out[1]=M_Matrix<double>(1,size(),std_of_tr_);
+    return out;
+  }
 
 
 
@@ -251,7 +257,24 @@ public:
 
   double logProb(const Parameters &sample) const;
 
-  double logHiperProb(const Parameters &sample)const;
+  M_Matrix<double> logHiperProb(const Parameters &sample)const
+  {
+    M_Matrix<double> out(1,2);
+    out[0]=logProb(sample);
+    std::size_t n=sample.size();
+    out[1]=0;
+    for (std::size_t i=0; i<n; ++i)
+      {
+        double chi   =sqr(std::log(sample.std_of_tr_[i])-mean_of_random_effects_std_[i])
+            /sqr(std_of_random_effects_std_[i]);
+        double loglik=-0.5*(chi+std::log(2*PI))
+            -std::log(std_of_random_effects_std_[i]);
+        out[1]+=loglik;
+      }
+
+    return out;
+
+  }
 
   Parameters(const Parameters& other);
   Parameters();
@@ -403,15 +426,15 @@ public:
 
 
   std::ostream& writeHeaderDataFrame(std::ostream& os)const
-  {
-    for (std::size_t i=0; i<size(); ++i)
-      {
-        os<<"Value...paramName.."<<indexToName(i)<<"\t";
-        os<<"TrasnfValue...transfParm.."<<Tr(trans_[i])->myClass()<<indexToName(i);
-        if (i+1<size()) os<<"\t";
+    {
+      for (std::size_t i=0; i<size(); ++i)
+        {
+          os<<"Value...paramName.."<<indexToName(i)<<"\t";
+          os<<"TrasnfValue...transfParm.."<<Tr(trans_[i])->myClass()<<indexToName(i);
+          if (i+1<size()) os<<"\t";
 
-      }
-    return os;
+        }
+          return os;
   }
 
   std::ostream& writeRowDataFrame(std::ostream& os)const
@@ -531,6 +554,10 @@ public:
 
 
 };
+
+
+
+
 
 //std::ostream& operator<<(std::ostream& s, const Parameters& p);
 //std::istream& operator>>(std::istream& s, Parameters& p);

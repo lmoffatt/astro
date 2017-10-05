@@ -7,7 +7,7 @@
 #include <fstream>
 #include <limits>
 #include <sstream>
-
+#include <memory>
 #include "LevenbergMarquardt.h"
 #include "BaseClass.h"
 
@@ -442,33 +442,33 @@ public:
 
   bool add(const CortexMeasure& other)
   {
-     if ((other.dia_==dia_)&&
-         (other.h_==h_)&&
-         (other.x_==x_))
-       {
-         injWidth_+=other.injWidth_*other.rata_.size();
-         injWidth_/=1.0+other.rata_.size();
-         injLength_+=other.injLength_;
+    if ((other.dia_==dia_)&&
+        (other.h_==h_)&&
+        (other.x_==x_))
+      {
+        injWidth_+=other.injWidth_*other.rata_.size();
+        injWidth_/=1.0+other.rata_.size();
+        injLength_+=other.injLength_;
 
-         rata_.insert(rata_.begin(),other.rata_.begin(),other.rata_.end());
-         measAreaAstro_+=other.measAreaAstro_;
-         meanAstro_+=other.meanAstro_;
-         covAstro_+=other.covAstro_;
-         for (unsigned i=0; i<meanAstro_.size(); ++i)
-           {
-             for (unsigned j=0; j<meanAstro_[i].size();++j)
-               {
-                 numAstro_[i]+=meanAstro_[i][j];
-               }
-             densAstro_[i]=numAstro_[i]/measAreaAstro_[i];
+        rata_.insert(rata_.begin(),other.rata_.begin(),other.rata_.end());
+        measAreaAstro_+=other.measAreaAstro_;
+        meanAstro_+=other.meanAstro_;
+        covAstro_+=other.covAstro_;
+        for (unsigned i=0; i<meanAstro_.size(); ++i)
+          {
+            for (unsigned j=0; j<meanAstro_[i].size();++j)
+              {
+                numAstro_[i]+=meanAstro_[i][j];
+              }
+            densAstro_[i]=numAstro_[i]/measAreaAstro_[i];
 
-           }
+          }
 
-         return true;
-       }
-     else {
-         return false;
-       }
+        return true;
+      }
+    else {
+        return false;
+      }
 
 
 
@@ -676,7 +676,7 @@ public:
 
     os<<id()<<"\t";
     for (std::size_t ir=0; ir<rata_.size(); ++ir)
-       os<<rata_[ir]<<"_";
+      os<<rata_[ir]<<"_";
     os<<"\t";
     os<<dia_<<"\t";
     os<<h_<<"\t";
@@ -818,7 +818,7 @@ public:
 
   void insert_tSim(double t);
 
- void push_back(CortexMeasure c);
+  void push_back(CortexMeasure c);
 
 
   Experiment(std::string ide, std::vector<CortexMeasure> mv,const std::vector<double>& tsimul);
@@ -827,6 +827,11 @@ public:
 
   Experiment(){}
 
+  static
+  std::vector<Experiment>
+  loadList(const std::string& name,
+           std::ostream *logs);
+
 
   // BaseObject interface
 public:
@@ -834,7 +839,7 @@ public:
   {
     writeField(s,"measure_time",tmeas_);
     writeField(s,"simulation_time",tsim_);
-     writeField(s,"time_of_Measures",tMeasures_);
+    writeField(s,"time_of_Measures",tMeasures_);
     writeField(s,"time_of_Simulated_Points",tSimulates_);
 
     writeField(s,"Measures",m_);
@@ -911,6 +916,9 @@ private:
   double tsim_;
   std::vector<double> tSimulates_;
 
+  std::vector<std::vector<double> > nstate_;
+  std::vector<double> ntot_;
+  std::vector<double> bin_dens_;
 
 
 
@@ -1189,7 +1197,7 @@ bool addStep(
         }
     }
   return result;
-  }
+}
 
 
 
@@ -1299,12 +1307,12 @@ bool addMStep(
   bool result=true;
   for (unsigned i=0; i<x.size(); ++i)
     {
-    for (unsigned j=0; j<x.front().size(); ++j)
-      {
-        x[i][j]+=y[i][j]*h;
-        if (x[i][j]<0||!std::isfinite(x[i][j]))
-          result=false;
-      }
+      for (unsigned j=0; j<x.front().size(); ++j)
+        {
+          x[i][j]+=y[i][j]*h;
+          if (x[i][j]<0||!std::isfinite(x[i][j]))
+            result=false;
+        }
     }
   return result;
 }

@@ -425,6 +425,7 @@ private:
   std::string id_;
 };
 
+class Experiment;
 
 class BaseObject: public BaseClass
 {
@@ -530,7 +531,8 @@ public:
   virtual void clear()=0;
 
 
-  virtual std::ostream& extract(std::ostream& s,
+  virtual std::ostream& extract(const Experiment* ,
+                                std::ostream& s,
                                 const std::string& ,
                                 const std::string& )const{return s;}
 

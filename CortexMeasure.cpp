@@ -7,6 +7,7 @@
 #include <set>
 #include <algorithm>
 #include <limits>
+#include "mySerializer.h"
 
 #include "Parameters.h"
 
@@ -1399,6 +1400,55 @@ Experiment::Experiment(std::string ide, std::vector<CortexMeasure> mv,const  std
 const CortexMeasure *Experiment::getMeasure(unsigned i) const
 {
   return &m_[i];
+}
+
+std::vector<Experiment> Experiment::loadList(const std::string &name, std::ostream *logs)
+{
+  Experiment e;
+  e.load(name, *logs);
+  if (e.numMeasures()!=0)
+    {
+      return {e};
+    }
+  else
+    {
+      std::string filename=name;
+      std::ifstream fi;
+      fi.open(filename.c_str(),std::ios_base::in);
+      if (!fi)
+        {
+          fi.close();
+          filename=name+".txt";
+          fi.open(filename.c_str(),std::ios_base::in);
+          if (!fi)
+            {
+              fi.close();
+
+              *logs<<"cannot load "<<name<<" file "<<filename<<" not found\n";
+              return {};
+            }
+          else
+            *logs<<"file "<<filename<<" opened successfully\n";
+
+        }
+      else
+        *logs<<"file "<<filename<<" opened successfully\n";
+
+      std::vector<std::string> fnames;
+      if (fi>>fnames)
+        {
+          std::vector<Experiment> out;
+          for (auto & f:fnames)
+            {
+               Experiment e;
+               e.load(f,*logs);
+               out.push_back(e);
+
+            }
+          return out;
+        }
+      else return {};
+    }
 }
 
 

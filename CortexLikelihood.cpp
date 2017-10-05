@@ -51,10 +51,9 @@ const Parameters &CortexLikelihood::getPrior() const
 
 
 
-CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade,double dtmax, double tequilibrio):
+CortexLikelihood::CortexLikelihood(std::string id,   const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade,double dtmax, double tequilibrio):
   prior_(prior)
 ,m_()
-,e_(e)
 , adapt_dt_(false)
 ,CrankNicholson_(false)
 ,dx_(dx)
@@ -63,18 +62,15 @@ CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Paramet
 ,nPoints_per_decade_(nPoints_per_decade)
 ,dtmax_(dtmax)
 ,tequilibrio_(tequilibrio)
-,nstate_()
-,ntot_()
 {
   setId(id);
   update();
 
 }
 
-CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade,double dtmax, double tequilibrio, double t_maxlogError, std::size_t maxloop):
+CortexLikelihood::CortexLikelihood(std::string id,   const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade,double dtmax, double tequilibrio, double t_maxlogError, std::size_t maxloop):
   prior_(prior)
 ,m_()
-,e_(e)
 , adapt_dt_(false)
 ,CrankNicholson_(false)
 ,dx_(dx)
@@ -86,18 +82,15 @@ CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Paramet
 ,f_maxlogErrorCN_(t_maxlogError)
 ,maxloop_(maxloop)
 ,UseDerivative_(false)
-,nstate_()
-,ntot_()
 {
   setId(id);
   update();
 
 }
 
-CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError, double dtinf):
+CortexLikelihood::CortexLikelihood(std::string id,   const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError, double dtinf):
   prior_(prior)
 ,m_()
-,e_(e)
 , adapt_dt_(true)
 ,CrankNicholson_(false)
 ,dx_(dx)
@@ -108,17 +101,14 @@ CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Paramet
 ,tequilibrio_(tequilibrio)
 ,dtinf_(dtinf)
 ,maxlogError_(maxlogError)
-,nstate_()
-,ntot_()
 {
   setId(id);
   update();
 
 }
-CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError,double f_maxlogError, double dtinf, std::size_t maxloop, bool UseDerivative):
+CortexLikelihood::CortexLikelihood(std::string id,   const Parameters &prior, double dx, double dtmin0, double dtmin, std::size_t nPoints_per_decade, double dtmax, double tequilibrio, double maxlogError,double f_maxlogError, double dtinf, std::size_t maxloop, bool UseDerivative):
   prior_(prior)
 ,m_()
-,e_(e)
 , adapt_dt_(true)
 ,CrankNicholson_(true)
 ,dx_(dx)
@@ -132,8 +122,6 @@ CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Paramet
 ,f_maxlogErrorCN_(f_maxlogError)
 ,maxloop_(maxloop)
 ,UseDerivative_(UseDerivative)
-,nstate_()
-,ntot_()
 {
   setId(id);
   update();
@@ -141,27 +129,23 @@ CortexLikelihood::CortexLikelihood(std::string id,  Experiment *e, const Paramet
 }
 
 
-const std::vector<std::vector<double> > &CortexLikelihood::n_obs() const
+const std::vector<std::vector<double> > CortexLikelihood::n_obs(const Experiment* e) const
 {
-  return nstate_;
+  return getstate(e);
 }
 
 
 
 
-const std::vector<double> &CortexLikelihood::n_obs(unsigned i) const
+
+const std::vector<double> CortexLikelihood::bin_dens(const Experiment* e) const
 {
-  return nstate_[i];
+  return getNBins(e);
 }
 
-const std::vector<double> &CortexLikelihood::bin_dens() const
+const std::vector<double> CortexLikelihood::ntot_obs(const Experiment* e) const
 {
-  return bin_dens_;
-}
-
-const std::vector<double> &CortexLikelihood::ntot_obs() const
-{
-  return ntot_;
+ return getNtot(n_obs(e));
 }
 
 std::ostream &CortexLikelihood::put(std::ostream &s) const
@@ -175,27 +159,16 @@ std::ostream &CortexLikelihood::write(std::ostream &s) const
 {
   s<<"Likelihood \n";
 
-  s<<"Experiment \t"<<e_->id()<<"\n";
   s<<"Prior  \t" <<getPrior().id();
 
   return s;
 }
 
-const Experiment *CortexLikelihood::getExperiment() const{return e_;}
 
 const BaseModel *CortexLikelihood::getModel() const {return m_;}
 
-void CortexLikelihood::setSimulation()
-{
-  e_->setSimulation();
-}
 
-void CortexLikelihood::setMeasure()
-{
-  e_->setMeasure();
-}
-
-std::vector<std::vector<double> > CortexLikelihood::getstate(const Experiment *e)
+std::vector<std::vector<double> > CortexLikelihood::getstate(const Experiment *e)const
 {
   std::vector<std::vector<double>> o;
   for (unsigned ie=0; ie<e->numMeasures(); ie++)
@@ -219,7 +192,7 @@ std::vector<std::vector<double> > CortexLikelihood::getstate(const Experiment *e
 }
 
 
-std::vector<double>  CortexLikelihood::getNBins(const Experiment *e)
+std::vector<double>  CortexLikelihood::getNBins(const Experiment *e)const
 {
   std::vector<double> o;
   for (unsigned ie=0; ie<e->numMeasures(); ie++)
@@ -237,14 +210,11 @@ std::vector<double>  CortexLikelihood::getNBins(const Experiment *e)
 void CortexLikelihood::update(){
   delete m_;
   m_=BaseModel::create(prior_);
-  bin_dens_=getNBins(e_);
-  nstate_=getstate(e_);
-  ntot_=getNtot(nstate_);
 
 }
 
 
-std::vector<double> CortexLikelihood::getNtot(const std::vector<std::vector<double> > nstate)
+std::vector<double> CortexLikelihood::getNtot(const std::vector<std::vector<double> > nstate)const
 {
   std::vector<double> o(nstate.size(),0);
   for (std::size_t i=0; i<o.size(); ++i)
@@ -262,7 +232,6 @@ CortexLikelihood::CortexLikelihood(){}
 std::ostream &CortexLikelihood::writeBody(std::ostream &s) const
 {
   writeField(s,"prior",prior_);
-  writeField(s,"experimental_results",e_->id());
   writeField(s,"grid_legth",dx_);
   writeField(s,"min_sample_time",dtmin_);
   writeField(s,"prod_sample_time",nPoints_per_decade_);
@@ -276,27 +245,19 @@ std::ostream &CortexLikelihood::writeBody(std::ostream &s) const
 void CortexLikelihood::clear()
 {
   prior_.clear();
-  e_=nullptr;
-  nstate_.clear();
-  ntot_.clear();
-}
+  }
 
 bool CortexLikelihood::readBody(std::string &line, std::istream &s, std::ostream& logs)
 {
 
   if (!readField(line,s,"prior",prior_,logs)) return false;
   std::string experimentName;
-  if (!readField(line,s,"experimental_results",experimentName,logs)) return false;
-  else
-    e_=cm_->getExperiment(experimentName);
   if (!readField(line,s,"grid_length",dx_,logs)) return false;
   if (!readField(line,s,"min_sample_time",dtmin_,logs)) return false;
   if (!readField(line,s,"prod_sample_time",nPoints_per_decade_,logs)) return false;
 
   if (!readField(line,s,"max_sample_time",dtmax_,logs)) return false;
   if (!readField(line,s,"tiempo_equilibrio",tequilibrio_,logs)) return false;
-  if (!readField(line,s,"num_Astrocitos_cada_estado",nstate_,logs)) return false;
-  if (!readField(line,s,"num_total_Astrocitos",ntot_,logs)) return false;
   return true;
 }
 
@@ -320,34 +281,35 @@ const ABC_Freq_obs& CortexLikelihood::getData() const
 
 
 
-std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameters &parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const
+std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Experiment* e,const Parameters &parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const
 {
+  auto nstate_=n_obs(e);
   std::vector<std::vector<double>> o(nstate_.size());
 
   std::unique_ptr<BaseModel> m(BaseModel::create(parameters));
 
   CortexSimulation s;
   if (!this->adapt_dt_)
-    s=m->run(*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+    s=m->run(*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
   else
     {
       if (dts.first.empty())
         {
-          auto o=m->run(*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,dtinf_);
+          auto o=m->run(*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,dtinf_);
           s=o.first;
           dts.first=o.second;
         }
       else
-        s=m->run_dt(*e_,dx_,dts,tequilibrio_);
+        s=m->run_dt(*e,dx_,dts,tequilibrio_);
     }
 
   if (!s.isValid_)
     return{};
   std::size_t ic=0;
   unsigned is=0;
-  for (unsigned ie=0; ie<e_->numMeasures(); ie++)
+  for (unsigned ie=0; ie<e->numMeasures(); ie++)
     {
-      const CortexMeasure* cm=e_->getMeasure(ie);
+      const CortexMeasure* cm=e->getMeasure(ie);
       double t=cm->dia()*24*60*60;
       while (s.t_[is]<t
              &&is<s.t_.size())
@@ -366,12 +328,13 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
 
 
 std::vector<std::vector<double> > CortexPoisonLikelihood::f
-(const Parameters &parameters,
+(const Experiment *e, const Parameters &parameters,
  std::tuple<double,std::size_t,double>& dt_n_dtmax,
  std::size_t dts_max,
  std::pair<std::vector<double>,std::vector<std::size_t>>& dts
  )const
 {
+  auto nstate_=n_obs(e);
   std::vector<std::vector<double>> o(nstate_.size());
 
   double h=1e-5;
@@ -393,7 +356,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f
     {
       if (!this->adapt_dt_)
         {
-          auto o=m->run_Euler(*e_,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,dts_max,tequilibrio_);
+          auto o=m->run_Euler(*e,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,dts_max,tequilibrio_);
           s=o.first;
           dts=o.second;
 
@@ -401,7 +364,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f
       else
         {
           auto o=m->run
-              (*e_,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio_,maxlogError_,dtinf_);
+              (*e,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio_,maxlogError_,dtinf_);
           s=o.first;
           dts.first=o.second;
         }
@@ -412,7 +375,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f
         {
 
           auto o=m->run_CN
-              (*e_,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,
+              (*e,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,
                tequilibrio_,maxlogError_,maxloop_,UseDerivative_);
           s=o.first;
           dts=o.second;
@@ -420,7 +383,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f
       else
         {
           auto o=m->run_CN_adapt
-              (*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,
+              (*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,
                dtmax_,tequilibrio_,maxlogError_,f_maxlogErrorCN_*maxlogError_,
                dtinf_, maxloop_,UseDerivative_);
           s=o.first;
@@ -433,9 +396,9 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f
   std::size_t ic=0;
   unsigned is=0;
 
-  for (unsigned ie=0; ie<e_->numMeasures(); ie++)
+  for (unsigned ie=0; ie<e->numMeasures(); ie++)
     {
-      const CortexMeasure* cm=e_->getMeasure(ie);
+      const CortexMeasure* cm=e->getMeasure(ie);
       double t=cm->dia()*24*60*60;
       while (s.t_[is]<t
              &&is<s.t_.size())
@@ -490,8 +453,10 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f
 }
 
 
-std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameters &parameters, std::tuple<double, std::size_t, double> &dt_n_dtmax, std::size_t dt_max, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const
+std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Experiment *e, const Parameters &parameters, std::tuple<double, std::size_t, double> &dt_n_dtmax, std::size_t dt_max, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const
 {
+  auto nstate_=n_obs(e);
+
   std::vector<std::vector<double>> o(nstate_.size());
 
 
@@ -505,7 +470,7 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
     {
       if (!this->adapt_dt_)
         {
-          auto o=m->run_Euler(*e_,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,dt_max,tequilibrio_);
+          auto o=m->run_Euler(*e,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,dt_max,tequilibrio_);
           s=o.first;
           dts=o.second;
 
@@ -513,7 +478,7 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
       else
         {
           auto o=m->run
-              (*e_,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio_,maxlogError_,dtinf_);
+              (*e,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,tequilibrio_,maxlogError_,dtinf_);
           s=o.first;
           dts.first=o.second;
         }
@@ -524,7 +489,7 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
         {
 
           auto o=m->run_CN
-              (*e_,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,
+              (*e,dx_,dtmin,dtmin,nPoints_per_decade,dtmax,
                tequilibrio_,maxlogError_,maxloop_,UseDerivative_);
           s=o.first;
           dts=o.second;
@@ -532,7 +497,7 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
       else
         {
           auto o=m->run_CN_adapt
-              (*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,
+              (*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,
                dtmax_,tequilibrio_,maxlogError_,f_maxlogErrorCN_*maxlogError_,
                dtinf_, maxloop_,UseDerivative_);
           s=o.first;
@@ -545,9 +510,9 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
 
   std::size_t ic=0;
   unsigned is=0;
-  for (unsigned ie=0; ie<e_->numMeasures(); ie++)
+  for (unsigned ie=0; ie<e->numMeasures(); ie++)
     {
-      const CortexMeasure* cm=e_->getMeasure(ie);
+      const CortexMeasure* cm=e->getMeasure(ie);
       double t=cm->dia()*24*60*60;
       while (s.t_[is]<t
              &&is<s.t_.size())
@@ -573,7 +538,7 @@ std::vector<std::vector<double> > CortexMultinomialLikelihood::f(const Parameter
 
 
 
-CortexSimulation CortexPoisonLikelihood::simulate(const Parameters &parameters,const std::pair<std::vector<double>, std::vector<std::size_t>>& dts)const
+CortexSimulation CortexPoisonLikelihood::simulate(const Experiment* e,const Parameters &parameters,const std::pair<std::vector<double>, std::vector<std::size_t>>& dts)const
 {
 
     std::unique_ptr<BaseModel> m(BaseModel::create(parameters));
@@ -583,38 +548,38 @@ CortexSimulation CortexPoisonLikelihood::simulate(const Parameters &parameters,c
         if (!this->adapt_dt_)
           {
             if (dts.first.empty())
-              s=m->run(*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+              s=m->run(*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
             else
-              s=m->run_dt(*e_,dx_,dts,tequilibrio_);
+              s=m->run_dt(*e,dx_,dts,tequilibrio_);
 
           }
         else
           {
             if (dts.first.empty())
               {
-                auto o=m->run(*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,dtinf_);
+                auto o=m->run(*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,dtinf_);
                 s=o.first;
               }
             else
-              s=m->run_dt(*e_,dx_,dts,tequilibrio_);
+              s=m->run_dt(*e,dx_,dts,tequilibrio_);
           }
       }
     else
       {
         if (!this->adapt_dt_)
           {
-            auto o=m->run_CN(*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,maxloop_,UseDerivative_);
+            auto o=m->run_CN(*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,maxloop_,UseDerivative_);
             s=o.first;
           }
         else
           {
             if (dts.first.empty())
               {
-                auto o=m->run_CN_adapt(*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,f_maxlogErrorCN_*maxlogError_,dtinf_, maxloop_,UseDerivative_);
+                auto o=m->run_CN_adapt(*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,f_maxlogErrorCN_*maxlogError_,dtinf_, maxloop_,UseDerivative_);
                 s=o.first;
               }
             else
-              s=m->run_CN_dt(*e_,dx_,dts,tequilibrio_, UseDerivative_);
+              s=m->run_CN_dt(*e,dx_,dts,tequilibrio_, UseDerivative_);
           }
 
       }
@@ -623,8 +588,10 @@ CortexSimulation CortexPoisonLikelihood::simulate(const Parameters &parameters,c
 
 
 
-std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const
+std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Experiment* e,const Parameters &parameters, std::pair<std::vector<double>,std::vector<std::size_t>>& dts) const
 {
+  auto nstate_=n_obs(e);
+
   std::vector<std::vector<double>> o(nstate_.size());
 
   double h=1e-5;
@@ -636,40 +603,40 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
       if (!this->adapt_dt_)
         {
           if (dts.first.empty())
-            s=m->run(*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
+            s=m->run(*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_);
           else
-            s=m->run_dt(*e_,dx_,dts,tequilibrio_);
+            s=m->run_dt(*e,dx_,dts,tequilibrio_);
 
         }
       else
         {
           if (dts.first.empty())
             {
-              auto o=m->run(*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,dtinf_);
+              auto o=m->run(*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,dtinf_);
               s=o.first;
               dts.first=o.second;
             }
           else
-            s=m->run_dt(*e_,dx_,dts,tequilibrio_);
+            s=m->run_dt(*e,dx_,dts,tequilibrio_);
         }
     }
   else
     {
       if (!this->adapt_dt_)
         {
-          auto o=m->run_CN(*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,maxloop_,UseDerivative_);
+          auto o=m->run_CN(*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,maxloop_,UseDerivative_);
           s=o.first;
         }
       else
         {
           if (dts.first.empty())
             {
-              auto o=m->run_CN_adapt(*e_,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,f_maxlogErrorCN_*maxlogError_,dtinf_, maxloop_,UseDerivative_);
+              auto o=m->run_CN_adapt(*e,dx_,dtmin0_,dtmin_,nPoints_per_decade_,dtmax_,tequilibrio_,maxlogError_,f_maxlogErrorCN_*maxlogError_,dtinf_, maxloop_,UseDerivative_);
               s=o.first;
               dts=o.second;
             }
           else
-            s=m->run_CN_dt(*e_,dx_,dts,tequilibrio_, UseDerivative_);
+            s=m->run_CN_dt(*e,dx_,dts,tequilibrio_, UseDerivative_);
         }
 
     }
@@ -678,9 +645,9 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
   std::size_t ic=0;
   unsigned is=0;
 
-  for (unsigned ie=0; ie<e_->numMeasures(); ie++)
+  for (unsigned ie=0; ie<e->numMeasures(); ie++)
     {
-      const CortexMeasure* cm=e_->getMeasure(ie);
+      const CortexMeasure* cm=e->getMeasure(ie);
       double t=cm->dia()*24*60*60;
       while (s.t_[is]<t
              &&is<s.t_.size())
@@ -737,7 +704,7 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
 
 
 
-std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(std::ostream &os,const CortexSimulation& s) const
+std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(const Experiment * e,std::ostream &os,const CortexSimulation& s) const
 
 {
 
@@ -745,9 +712,9 @@ std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(std::ostream &os,
     {
       unsigned is=0;
 
-      for (unsigned ie=0; ie<e_->numMeasures(); ie++)
+      for (unsigned ie=0; ie<e->numMeasures(); ie++)
         {
-          const CortexMeasure* cm=e_->getMeasure(ie);
+          const CortexMeasure* cm=e->getMeasure(ie);
           double t=cm->dia()*24*60*60;
           while (s.t_[is]<t
                  &&is<s.t_.size())
@@ -793,7 +760,7 @@ std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(std::ostream &os,
                   os<<"rhoFit..day.."<<cm->dia()<<"..x_start.."<<cm->xpos()[ix];
                   os<<"..x_end.."<<cm->xpos()[ix+1];
                   os<<"..rhoType.."<<typesRho[is];
-                  if (ie+1<e_->numMeasures()||(ix+1<rho.size()-1)||is+1<typesRho.size())
+                  if (ie+1<e->numMeasures()||(ix+1<rho.size()-1)||is+1<typesRho.size())
                     os<<"\t";
                   else
                     os<<"";
@@ -808,8 +775,10 @@ std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(std::ostream &os,
 
 
 
-std::vector<std::vector<double> > CortexPoisonLikelihood::g(const Parameters& parameters,const CortexSimulation &s) const
+std::vector<std::vector<double> > CortexPoisonLikelihood::g(const Experiment* e,const Parameters& parameters,const CortexSimulation &s) const
 {
+  auto nstate_=n_obs(e);
+
   std::vector<std::vector<double>> o(nstate_.size());
 
   double h=1e-5;
@@ -819,9 +788,9 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::g(const Parameters& pa
   std::size_t ic=0;
   unsigned is=0;
 
-  for (unsigned ie=0; ie<e_->numMeasures(); ie++)
+  for (unsigned ie=0; ie<e->numMeasures(); ie++)
     {
-      const CortexMeasure* cm=e_->getMeasure(ie);
+      const CortexMeasure* cm=e->getMeasure(ie);
       double t=cm->dia()*24*60*60;
       while (s.t_[is]<t
              &&is<s.t_.size())
@@ -910,44 +879,44 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::writeBody(std::ostream &s) 
 
 }
 
-std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, const std::string &, const std::string &) const
+std::ostream &CortexMultinomialLikelihoodEvaluation::extract(const Experiment* e,std::ostream &s, const std::string &, const std::string &) const
 {
 
-  std::size_t numMeasures=CL_->getExperiment()->numMeasures();
+  std::size_t numMeasures=e->numMeasures();
 
   std::vector<double> x;
   for (std::size_t i=0; i<numMeasures; ++i)
     {
-      if (CL_->getExperiment()->getMeasure(i)->inj_Width()>0)
+      if (e->getMeasure(i)->inj_Width()>0)
         {
-          double injW=this->p_.get("inj_width_"+CL_->getExperiment()->getMeasure(i)->id());
+          double injW=this->p_.get("inj_width_"+e->getMeasure(i)->id());
           x.insert(x.end(),this->CL_->getModel()->getNumberOfSimulatedStatesAtInjury(),-injW);
         }
-      x.insert(x.end(),++CL_->getExperiment()->getMeasure(i)->xpos().begin(),
-               CL_->getExperiment()->getMeasure(i)->xpos().end());
+      x.insert(x.end(),++e->getMeasure(i)->xpos().begin(),
+               e->getMeasure(i)->xpos().end());
     }
   std::pair<std::vector<double>,std::vector<std::size_t>> dts;
-  CortexSimulation simul=CL_->simulate(p_,dts);
-  std::vector<std::vector<double>> f=CL_->g(p_,simul);
+  CortexSimulation simul=CL_->simulate(e,p_,dts);
+  std::vector<std::vector<double>> f=CL_->g(e,p_,simul);
 
 
 
 
 
-  std::vector<double> ntot=CL_->getData().ntot_obs();
+  std::vector<double> ntot=CL_->getData().ntot_obs(e);
 
-  std::vector<double> binDens=CL_->getData().bin_dens();
-
-
-
-  std::vector<std::vector<double>> nobs=CL_->getData().n_obs();
+  std::vector<double> binDens=CL_->getData().bin_dens(e);
 
 
 
+  std::vector<std::vector<double>> nobs=CL_->getData().n_obs(e);
 
 
-  auto logLcell=CL_->logLikCells(f);
-  auto logLSam=CL_->logLikSamples(f);
+
+
+
+  auto logLcell=CL_->logLikCells(e,f);
+  auto logLSam=CL_->logLikSamples(e,f);
 
   if (CL_->myClass()==CortexMultinomialLikelihood::ClassName())
     {
@@ -1010,13 +979,13 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
   for (std::size_t ime=0; ime<numMeasures; ++ime)
     {
       i0=ie;
-      if (CL_->getExperiment()->getMeasure(ime)->inj_Width()>0)
-        ie=i0+CL_->getExperiment()->getMeasure(ime)->meanAstro().size()
+      if (e->getMeasure(ime)->inj_Width()>0)
+        ie=i0+e->getMeasure(ime)->meanAstro().size()
             +CL_->getModel()->getNumberOfSimulatedStatesAtInjury();
       else
-        ie=i0+CL_->getExperiment()->getMeasure(ime)->meanAstro().size();
+        ie=i0+e->getMeasure(ime)->meanAstro().size();
 
-      std::string title=CL_->getExperiment()->getMeasure(ime)->id()+"_predicted_measured_Likelihdood";
+      std::string title=e->getMeasure(ime)->id()+"_predicted_measured_Likelihdood";
       writeTable(s,title,xtitle,x,ytitles,ytable,i0,ie);
     }
 
@@ -1046,7 +1015,7 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
 
 
 
-  std::size_t numSims=CL_->getExperiment()->numSimPoints();
+  std::size_t numSims=e->numSimPoints();
   for (std::size_t isim=0; isim<numSims; ++isim)
     {
       ytable.clear();
@@ -1094,35 +1063,35 @@ std::ostream &CortexMultinomialLikelihoodEvaluation::extract(std::ostream &s, co
 
 
 
-std::ostream &CortexPoisonLikelihoodEvaluation::extract(std::ostream &s, const std::string &, const std::string &) const
+std::ostream &CortexPoisonLikelihoodEvaluation::extract(const Experiment* e,std::ostream &s, const std::string &, const std::string &) const
 {
 
-  std::size_t numMeasures=CL_->getExperiment()->numMeasures();
+  std::size_t numMeasures=e->numMeasures();
 
   std::vector<double> x;
   for (std::size_t i=0; i<numMeasures; ++i)
-    x.insert(x.begin(),++CL_->getExperiment()->getMeasure(i)->xpos().begin(),
-             CL_->getExperiment()->getMeasure(i)->xpos().end());
+    x.insert(x.begin(),++e->getMeasure(i)->xpos().begin(),
+             e->getMeasure(i)->xpos().end());
 
   std::pair<std::vector<double>, std::vector<std::size_t>> dts;
-  std::vector<std::vector<double>> f=CL_->f(p_,dts);
+  std::vector<std::vector<double>> f=CL_->f(e,p_,dts);
 
 
 
-  std::vector<double> ntot=CL_->getData().ntot_obs();
+  std::vector<double> ntot=CL_->getData().ntot_obs(e);
 
-  std::vector<double> binDens=CL_->getData().bin_dens();
-
-
-
-  std::vector<std::vector<double>> nobs=CL_->getData().n_obs();
+  std::vector<double> binDens=CL_->getData().bin_dens(e);
 
 
 
+  std::vector<std::vector<double>> nobs=CL_->getData().n_obs(e);
 
 
-  auto logLcell=CL_->logLikCells(f);
-  auto logLSam=CL_->logLikSamples(f);
+
+
+
+  auto logLcell=CL_->logLikCells(e,f);
+  auto logLSam=CL_->logLikSamples(e,f);
 
   if (CL_->myClass()==CortexMultinomialLikelihood::ClassName())
     {
@@ -1179,8 +1148,8 @@ std::ostream &CortexPoisonLikelihoodEvaluation::extract(std::ostream &s, const s
   for (std::size_t ime=0; ime<numMeasures; ++ime)
     {
       i0=ie;
-      ie=i0+CL_->getExperiment()->getMeasure(ime)->meanAstro().size();
-      std::string title=CL_->getExperiment()->getMeasure(ime)->id()+"_predicted_measured_Likelihdood";
+      ie=i0+e->getMeasure(ime)->meanAstro().size();
+      std::string title=e->getMeasure(ime)->id()+"_predicted_measured_Likelihdood";
       writeTable(s,title,xtitle,x,ytitles,ytable,i0,ie);
     }
 

@@ -1410,12 +1410,13 @@ struct multivariate_normal_distribution
     assert(S.nrows()==n);
     auto d0=Transpose(S)-S;
 
-    M_Matrix<double> Sinv=invSafe(S);
+    M_Matrix<double> Sinv=inv(S).first;
     auto ide= S*Sinv;
     auto d=Transpose(Sinv)-Sinv;
     if (Sinv.empty())
       return std::numeric_limits<double>::quiet_NaN();
-    M_Matrix<double> cho_cov_(chol(S,"upper"));
+
+    M_Matrix<double> cho_cov_(chol(S,"upper").first);
     double logDetCov_(logDiagProduct(cho_cov_));
 
     double out= -0.5*y.size()*log(PI)-logDetCov_-0.5*xTSigmaX(y-m,Sinv);
@@ -1729,7 +1730,7 @@ struct univariate_gaussian_process_distribution
     for (std::size_t i=0; i<n; ++i)
       mu[i]=m[i];
     auto Cov=cov(x, sigma2,lambda,epsilon2);
-    auto Covinv=invSafe(Cov);
+    auto Covinv=inv(Cov).first;
     auto L=multivariate_normal_distribution::logL(y,mu,Cov);
     auto g=G(y,mu,x,Cov,Covinv,sigma2,lambda,epsilon2);
     auto h=H(x,Cov,Covinv,sigma2,lambda,epsilon2);
@@ -1744,9 +1745,9 @@ struct univariate_gaussian_process_distribution
 
 struct Gauss_Newton
 {
-  template<class D, template<class>class M, class Y, class P>
+  template<class D, class M, class Y, class P>
   std::tuple<double,M_Matrix<double>, M_Matrix<double> >
-  GH(const D& dist, const M<D>& model,const Y& data, const P& parameters )
+  GH(const D& dist, const M& model,const Y& data, const P& parameters )
   {
     std::size_t n=data.size();
     std::size_t k=parameters.size();

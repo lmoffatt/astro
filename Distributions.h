@@ -20,13 +20,13 @@ struct complement_prob
   {
     return 1.0-p_(xs...);
   }
-  private:
-    const P& p_;
+private:
+  const P& p_;
 };
 
 template<class P>
- complement_prob<P>
- Complement_prob(const P& p){return complement_prob<P>(p);}
+complement_prob<P>
+Complement_prob(const P& p){return complement_prob<P>(p);}
 
 
 template<class P>
@@ -38,8 +38,8 @@ struct log_of
   {
     return std::log(p_(xs...));
   }
-  private:
-    const P& p_;
+private:
+  const P& p_;
 };
 
 
@@ -55,31 +55,53 @@ struct exp_of
   {
     return std::exp(p_(xs...));
   }
-  private:
-    const P& p_;
+private:
+  const P& p_;
 };
 
 
-
+template<class E>
 class MultivariateGaussian
 {
 public:
 
+  MultivariateGaussian(const M_Matrix<E> &mean,
+                       const M_Matrix<E>& cov):
+    mean_(mean),
+    cov_(cov),
+    covinv_(inv(cov).first),
+    cho_cov_(chol(cov,"lower")),
+    logDetCov_(logDiagProduct(cho_cov_))
+  {}
+
+  MultivariateGaussian(const M_Matrix<E>&mean
+                       , const M_Matrix<E> &cov
+                       , const M_Matrix<E> &covInv):
+    mean_(mean),
+    cov_(cov),
+    covinv_(covInv),
+    cho_cov_(chol(cov,"lower").first),
+    logDetCov_(logDiagProduct(cho_cov_))
+  {}
 
 
-  MultivariateGaussian(const M_Matrix<double>& mean,
-                       const M_Matrix<double>& cov);
 
 
-  MultivariateGaussian(const M_Matrix<double>& mean,
-                       const M_Matrix<double>& cov,
-                       const M_Matrix<double>& covInv
-                       );
 
-  MultivariateGaussian();
 
-  double logP(const M_Matrix<double>& x)const ;
-  double P(const M_Matrix<double>& x)const ;
+  MultivariateGaussian()=default;
+
+  double logP(const M_Matrix<E> &x) const
+  {
+    if (mean_.size()>0)
+
+      return -0.5*size()*log(PI)-logDetCov()-chi2(x);
+    else return std::numeric_limits<double>::quiet_NaN();
+  }
+  double P(const M_Matrix<E>& x)const
+  {
+    return exp(logP(x));
+  }
 
   void autoTest(std::mt19937_64& mt,std::size_t n)const
   {
@@ -100,14 +122,29 @@ public:
     std::cerr<<"\n chimean="<<chisum<<" chisqr="<<chisqr;
   }
 
-  double chi2(const M_Matrix<double>& x)const;
+  double chi2(const M_Matrix<E> &x) const
+  {
+    if (!mean_.empty())
+      return 0.5*xTSigmaX(x-mean_,covinv_);
+    else return std::numeric_limits<double>::quiet_NaN();
+  }
 
-  double operator()(const M_Matrix<double>& x)const
+  double operator()(const M_Matrix<E>& x)const
   {
     return logP(x);
   }
-  M_Matrix<double> sample(std::mt19937_64& mt)const ;
-  M_Matrix<double> operator()(std::mt19937_64& mt)const
+  M_Matrix<E> sample(std::mt19937_64& mt)const
+  {
+    M_Matrix<E> r;
+    std::normal_distribution<> normal;
+    if (this->size()>0)
+      {
+        auto z=Rand(mean_,normal,mt);
+        r=mean_+multTransp(z,cho_cov_);
+      }
+    return r;
+  }
+  M_Matrix<E> operator()(std::mt19937_64& mt)const
   {
     return sample(mt);
   }
@@ -125,37 +162,56 @@ public:
   }
 
 
-  const M_Matrix<double>& Mean()const;
-  M_Matrix<double> Cov()const;
-  const M_Matrix<double>& CovInv()const;
+  const M_Matrix<E>& Mean()const
+  {
+    return mean_;
+  }
+  M_Matrix<E> Cov()const
+  {
+    return inv(covinv_).first;
+  }
+
+  const M_Matrix<E>& CovInv()const
+  {
+    return covinv_;
+  }
 
 
-  const M_Matrix<double>& Chol()const{return cho_cov_;}
+
+
+  const M_Matrix<E>& Chol()const{return cho_cov_;}
 
   double logDetCov()const {return logDetCov_;}
 
-  virtual M_Matrix<double> logPGradient(const M_Matrix<double>& x)const
+  virtual M_Matrix<E> logPGradient(const M_Matrix<E>& x)const
   {
-    return M_Matrix<double>(1u,x.size(),(x-Mean())*Cov());
+    return M_Matrix<E>(1u,x.size(),(x-Mean())*Cov());
   }
-  virtual M_Matrix<double> logPHessian(const M_Matrix<double>& )const
+  virtual M_Matrix<E> logPHessian(const M_Matrix<E>& )const
   {
     return Cov();
   }
+
+
+
+  std::size_t size()const
+  {
+    return mean_.size();
+  }
+
 
 
   MultivariateGaussian(const MultivariateGaussian& other)=default;
   MultivariateGaussian& operator=(const MultivariateGaussian& other)=default;
 
 
-  ~MultivariateGaussian();
+  ~MultivariateGaussian(){};
 
-  std::size_t size() const;
 private:
-  M_Matrix<double> mean_;
-  M_Matrix<double> cov_;
-  M_Matrix<double> covinv_;
-  M_Matrix<double> cho_cov_;
+  M_Matrix<E> mean_;
+  M_Matrix<E> cov_;
+  M_Matrix<E> covinv_;
+  M_Matrix<E> cho_cov_;
   double logDetCov_;
 
   // Distribution interface
@@ -168,8 +224,8 @@ public:
 
 
 
-inline
-std::ostream& operator<<(std::ostream& os,const MultivariateGaussian& x)
+template<class E>
+std::ostream& operator<<(std::ostream& os,const MultivariateGaussian<E>& x)
 {
   os<<"\nMean\n"<<x.Mean();
   os<<"\nCov\n"<<x.Cov();
@@ -713,11 +769,11 @@ public:
     :
       logLik_{mylogLikelihood_Map}
   {
-   auto p=logLik_to_p(mylogLikelihood_Map);
-   p_=std::move(p.first);
-   Evidence_=p.second;
-   rev_=cumulative_reverse_map(p_);
-   nsamples_=nsamples;
+    auto p=logLik_to_p(mylogLikelihood_Map);
+    p_=std::move(p.first);
+    Evidence_=p.second;
+    rev_=cumulative_reverse_map(p_);
+    nsamples_=nsamples;
   }
 
   logLikelihood_map()=default;

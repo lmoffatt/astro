@@ -758,6 +758,45 @@ Parameters Parameters::randomSample(std::mt19937_64& mt,double factor)const
 
 }
 
+Parameters Parameters::randomHiperSample(std::mt19937_64 &mt, double factor) const
+{
+  Parameters sample(*this);
+  if (cho_.empty())
+    {
+      for (std::size_t i=0; i<mean_of_tr_.size();i++)
+
+        {
+
+          sample.mean_of_tr_[i]=randNormal(mt,mean_of_tr_[i]
+                                           ,std_of_tr_[i]*factor);
+          sample.std_of_tr_[i]=std::exp(randNormal
+              (mt,mean_of_random_effects_std_[i]
+               ,std_of_random_effects_std_[i]*factor));
+        }
+    }
+  else
+    {
+      std::vector<double> z(mean_of_tr_.size());
+      for (std::size_t i=0; i<mean_of_tr_.size();i++)
+        {
+          z[i]=randNormal(mt)*factor;
+        }
+      for (std::size_t i=0; i<mean_of_tr_.size();i++)
+        {
+
+          sample.mean_of_tr_[i]=mean_of_tr_[i];
+          sample.std_of_tr_[i]=std::exp(randNormal
+              (mt,mean_of_random_effects_std_[i]
+               ,std_of_random_effects_std_[i]*factor));
+          for (std::size_t j=0; j<i+1;j++)
+            {
+              sample.mean_of_tr_[i]+=cho_[i][j]*z[j];
+            }
+        }
+    }
+  return sample;
+}
+
 
 Parameters Parameters::randomSample(std::mt19937_64& mt,Parameters prior,double factor)const
 
@@ -846,23 +885,7 @@ double Parameters::logProb(const Parameters& sample)const
 
 }
 
-double Parameters::logHiperProb(const Parameters &sample) const
-{
-  double logPmean=logProb(sample);
-  std::size_t n=sample.size();
-  double logPStd=0;
-  for (std::size_t i=0; i<n; ++i)
-    {
-      double chi   =sqr(sample.std_of_tr_[i]-mean_of_random_effects_std_[i])
-          /sqr(std_of_random_effects_std_[i]);
-      double loglik=-0.5*(chi+std::log(2*PI))
-          -std::log(std_of_random_effects_std_[i]);
-      logPStd+=loglik;
-    }
 
-  return logPmean+logPStd;
-
-}
 
 
 
