@@ -360,7 +360,7 @@ public:
             }
           break;
         case LT_IT:
-          if (j_>=i_)
+          if (j_>i_)
             {
               j_=0;
               ++i_;
@@ -432,7 +432,7 @@ public:
     MyConstIterator(const M_Matrix<T>& x)
       :m(x),i_(0),j_(0),type_(const_iter_type(x.type())) {}
 
-    MyConstIterator(M_Matrix<T>& x, ITER_TYPE t)
+    MyConstIterator(const M_Matrix<T>& x, ITER_TYPE t)
       :m(x),i_(0),j_(0),type_(t) {}
 
     MyConstIterator(const M_Matrix<T>& x, std::size_t i, std::size_t j)
@@ -458,7 +458,7 @@ public:
             }
           break;
         case LT_IT:
-          if (j_>=i_)
+          if (j_>i_)
             {
               j_=0;
               ++i_;
@@ -582,8 +582,6 @@ public:
   M_Matrix (const M_Matrix<T> & sample)=default;
   M_Matrix (M_Matrix<T> && sample)=default;
 
-  M_Matrix& operator= (const M_Matrix<T> & sample)=default;
-  M_Matrix& operator= (M_Matrix<T> && sample)=default;
 
   M_Matrix (std::size_t nrows,std::size_t ncols)
     : type_(FULL),
@@ -618,6 +616,27 @@ public:
 
   }
 
+  M_Matrix (TYPE t,const std::vector<std::vector<T>> & sample)
+    : type_(t),
+      _nrows(sample.size()),
+      _ncols(sample[0].size()),
+      _data(getSize(t,sample.size(),sample[0].size()))
+  {
+    for (auto it=begin(); it!=end(); ++it)
+      (*it)=sample[it.iRow()][it.jCol()];
+
+  }
+
+  M_Matrix (TYPE t,const M_Matrix<T> & sample)
+    : type_(t),
+      _nrows(sample.nrows()),
+      _ncols(sample.ncols()),
+      _data(getSize(t,sample.nrows(),sample.ncols()))
+  {
+    for (auto it=begin(); it!=end(); ++it)
+      (*it)=sample(it);
+
+  }
 
   template<typename S>
   M_Matrix (const std::vector<std::vector<S>> & sample)
@@ -631,12 +650,22 @@ public:
 
   }
 
-
-  ~M_Matrix()
+  M_Matrix(std::size_t nrows_,std::size_t ncols_,TYPE t,T data):
+    type_(t),
+    _nrows(nrows_),
+    _ncols(ncols_),
+    _data(getSize(t,nrows_,ncols_),data)
   {
-    //  if (_data>0)
-    //	delete [] _data;
   }
+
+  M_Matrix(std::size_t nrows_,std::size_t ncols_,TYPE t):
+    type_(t),
+    _nrows(nrows_),
+    _ncols(ncols_),
+    _data(getSize(t,nrows_,ncols_))
+  {
+  }
+
 
 
 
@@ -690,9 +719,8 @@ public:
 
     assert(data.nrows()==nrows());
     assert(data.ncols()==ncols());
-    for (size_t i=0; i<nrows(); ++i)
-      for (std::size_t j=0; j<ncols(); ++j)
-        (*this)(i,j)=data(i,j);
+    for (auto it=begin(); it!=end(); ++it)
+      (*it)=data(it);
   }
 
 
@@ -705,6 +733,18 @@ public:
   {
 
   }
+
+
+  M_Matrix& operator= (const M_Matrix<T> & sample)=default;
+  M_Matrix& operator= (M_Matrix<T> && sample)=default;
+
+
+  ~M_Matrix()
+  {
+    //  if (_data>0)
+    //	delete [] _data;
+  }
+
 
 
   template<class F>
@@ -769,9 +809,9 @@ public:
         return (*this)[i*_ncols+j];
       case SYMMETRIC:
         if(i>=j)
-          return (*this)[i*(i+1)/2+j]; //stores at lower triangular portion
+          return (*this)[(i*(i+1))/2+j]; //stores at lower triangular portion
         else
-          return (*this)[j*(j+1)/2+i];
+          return (*this)[(j*(j+1))/2+i];
       case DIAGONAL:
         assert(i==j);
         return (*this)[i];
@@ -988,22 +1028,6 @@ public:
     @post (ones(n,m))(i,j)==T(1)
      */
 
-  M_Matrix(std::size_t nrows_,std::size_t ncols_,TYPE t,T data):
-    type_(t),
-    _nrows(nrows_),
-    _ncols(ncols_),
-    _data(getSize(t,nrows_,ncols_),data)
-  {
-  }
-
-  M_Matrix(std::size_t nrows_,std::size_t ncols_,TYPE t):
-    type_(t),
-    _nrows(nrows_),
-    _ncols(ncols_),
-    _data(getSize(t,nrows_,ncols_))
-  {
-  }
-
 
 
   static
@@ -1178,7 +1202,7 @@ M_Matrix<T> operator-(const M_Matrix<T>& x)
 {
   M_Matrix<T> out(x.nrows(), x.ncols(), x.type());
   for (auto it=out.begin(); it!=out.end(); ++it)
-    *it= -(*it);
+    *it= -x(it);
   return out;
 }
 
@@ -1323,10 +1347,11 @@ namespace lapack
     M_Matrix<double> y(x.nrows(),x.ncols());
     for (std::size_t i=0;i<x.nrows();i++)
       {
-        for (std::size_t j=0;j<i; j++)
-          y(j,i)=0;
+        for (std::size_t j=0; j<i; j++)
+          y(i,j)=0;
         for (std::size_t j=i;j<x.ncols(); j++)
-          y(j,i)=x(i,j);
+          y(i,j)=x(i,j);
+
       }
     return y;
   }
@@ -1337,9 +1362,9 @@ namespace lapack
     for (std::size_t i=0;i<x.nrows();i++)
       {
         for (std::size_t j=0;j<i+1; j++)
-          y(j,i)=x(i,j);
+          y(i,j)=x(i,j);
         for (std::size_t j=i+1;j<x.ncols(); j++)
-          y(j,i)=0;
+          y(i,j)=0;
       }
     return y;
   }
@@ -1366,8 +1391,21 @@ namespace Matrix_Binary_Transformations
 
   template<typename T, typename S>
   auto
+  operator *
+  (const M_Matrix<T>& one,
+   const M_Matrix<S>& other)
+  ->M_Matrix<decltype(std::declval<T>()*std::declval<S>())>;
+
+  template<typename T, typename S>
+  auto
   quadraticForm_BT_A_B (const M_Matrix<T>& A, const M_Matrix<S>& B)
   ->M_Matrix<decltype(std::declval<T>()*std::declval<S>())>;
+
+  template<typename T, typename S>
+  auto
+  quadraticForm_B_A_BT (const M_Matrix<T>& A, const M_Matrix<S>& B)
+  ->M_Matrix<decltype(std::declval<T>()*std::declval<S>())>;
+
 
   inline
   M_Matrix<double>
@@ -1641,6 +1679,9 @@ namespace Matrix_Unary_Transformations
 {
   using Matrix_Binary_Transformations::
   quadraticForm_BT_A_B;
+
+  using Matrix_Binary_Transformations::
+  quadraticForm_B_A_BT;
 
   template<class E,class F, typename T>
   M_Matrix<T>
@@ -2204,7 +2245,7 @@ namespace Matrix_Unary_Transformations
           auto IPIV=std::make_unique<int[]>(N);
           int LWORK=N*N; //
           M_Matrix<double> B(a.nrows(),a.ncols());
-          if (kind=="lower")
+          if (kind!="lower")
             {
               for (std::size_t i=0; i<a.nrows(); ++i)
                 for (std::size_t j=i; j<a.ncols(); ++j)
@@ -2227,7 +2268,7 @@ namespace Matrix_Unary_Transformations
             }
           else if (INFO>0)
             {
-              return {B,"SINGULAR MATRIX ON "+std::to_string(INFO)};
+              return {{},"SINGULAR MATRIX ON "+std::to_string(INFO)};
             }
           else
             {
@@ -2308,7 +2349,33 @@ namespace Matrix_Unary_Transformations
                   return {B,"cannot invert a singular matrix"};
                 }
               else
-                return {B,""};
+                {
+                  M_Matrix<double> out
+                      (B.nrows(),B.ncols(),M_Matrix<double>::SYMMETRIC);
+                  if (kind=="lower")
+                    {
+                      for (std::size_t i=0; i<B.nrows(); ++i)
+                        for(std::size_t j=0; j<=i; ++j)
+                          out(i,j)=B(i,j);
+                    }
+                  else
+                    {
+                      for (std::size_t i=0; i<B.nrows(); ++i)
+                        for(std::size_t j=0; j<=i; ++j)
+                          out(i,j)=B(j,i);
+                    }
+
+                  /*    auto aa=a;
+                 M_Matrix<double> test(a.nrows(),a.ncols(),M_Matrix<double>::FULL,a);
+
+                 auto invtest=inv(test).first;
+
+                 auto test_it=test*out;
+                 auto test_a=aa*out;
+                 auto invv=invtest*test;
+             */
+                  return {out,""};
+                }
             }
         }
     }
@@ -2452,14 +2519,14 @@ namespace Matrix_Unary_Transformations
         return {{},"cholesky of ZERO MATRIX"};
       char UPLO='L';
       M_Matrix<double> res;
-      if (kind!="lower")
+      if (kind=="lower")
         {
           UPLO='U';
-          res=lapack::UT(x);
+          res=lapack::LT(x);
         }
       else
         {
-          res=lapack::LT(x);
+          res=lapack::UT(x);
         }
       int N=x.nrows();
       int LDA=N;
@@ -2473,7 +2540,18 @@ namespace Matrix_Unary_Transformations
           return {{},"Cholesky fails, zero diagonal at"+std::to_string(INFO)};
         }
       else
-        return {Transpose(res),""};
+        {
+          if (kind=="lower")
+            {
+              auto test=res*Transpose(res)-x;
+            }
+          else
+            {
+              auto test=Transpose(res)*res-x;
+
+            }
+          return {res,""};
+        }
 
     }
 
@@ -2666,7 +2744,7 @@ namespace Matrix_Unary_Transformations
         std::size_t n=std::min(nr,nc);
         M_Matrix<T> diagV(1,n);
         for (size_t i=0; i<n; ++i)
-          diagV(1,i)=x(i,i);
+          diagV(0,i)=x(i,i);
         return diagV;
       }
     else
@@ -2906,9 +2984,125 @@ namespace Matrix_Binary_Transformations
     else if ((x.type()==M_Matrix<T>::SCALAR_FULL)||
              (y.type()==M_Matrix<S>::SCALAR_FULL))
       return M_Matrix<T>::SCALAR_FULL;
-    else return M_Matrix<T>::ZERO;
+    else
+      return M_Matrix<T>::ZERO;
 
   }
+
+  /**
+   *  use only when x.size()>=y.size()
+   */
+  template<typename T, typename S>
+  typename M_Matrix<S>::ITER_TYPE
+  iterator_of_sum
+  (const  M_Matrix<T>& x,const  M_Matrix<S>&  y)
+  {
+    switch(x.type())
+      {
+      case M_Matrix<T>::FULL:
+        {
+          switch (y.type())
+            {
+            case M_Matrix<S>::FULL:
+            case M_Matrix<S>::SYMMETRIC:
+            case M_Matrix<S>::SCALAR_FULL:
+              return M_Matrix<S>::FULL_IT;
+            case M_Matrix<S>::DIAGONAL:
+            case M_Matrix<S>::SCALAR_DIAGONAL:
+              return M_Matrix<S>::DIAG_IT;
+            case M_Matrix<S>::ZERO:
+            default:
+              return M_Matrix<S>::ZERO_IT;
+            }
+        }
+      case M_Matrix<T>::SYMMETRIC:
+        {
+          switch (y.type())
+            {
+            case M_Matrix<S>::FULL:
+              assert(false);
+            case M_Matrix<S>::SYMMETRIC:
+            case M_Matrix<S>::SCALAR_FULL:
+              return M_Matrix<S>::LT_IT;
+            case M_Matrix<S>::DIAGONAL:
+            case M_Matrix<S>::SCALAR_DIAGONAL:
+              return M_Matrix<S>::DIAG_IT;
+            case M_Matrix<S>::ZERO:
+            default:
+              return M_Matrix<S>::ZERO_IT;
+            }
+        }
+      case M_Matrix<T>::DIAGONAL:
+        {
+          switch (y.type())
+            {
+            case M_Matrix<S>::FULL:
+            case M_Matrix<S>::SYMMETRIC:
+            case M_Matrix<S>::SCALAR_FULL:
+              assert(false);
+            case M_Matrix<S>::DIAGONAL:
+            case M_Matrix<S>::SCALAR_DIAGONAL:
+              return M_Matrix<S>::DIAG_IT;
+            case M_Matrix<S>::ZERO:
+            default:
+              return M_Matrix<S>::ZERO_IT;
+            }
+        }
+      case M_Matrix<T>::SCALAR_DIAGONAL:
+        {
+          switch (y.type())
+            {
+            case M_Matrix<S>::FULL:
+            case M_Matrix<S>::SYMMETRIC:
+            case M_Matrix<S>::SCALAR_FULL:
+            case M_Matrix<S>::DIAGONAL:
+              assert(false);
+            case M_Matrix<S>::SCALAR_DIAGONAL:
+              return M_Matrix<S>::SCALAR_IT;
+            case M_Matrix<S>::ZERO:
+            default:
+              return M_Matrix<S>::ZERO_IT;
+            }
+        }
+      case M_Matrix<T>::SCALAR_FULL:
+        {
+          switch (y.type())
+            {
+            case M_Matrix<S>::FULL:
+            case M_Matrix<S>::SYMMETRIC:
+            case M_Matrix<S>::DIAGONAL:
+            case M_Matrix<S>::SCALAR_DIAGONAL:
+              assert(false);
+            case M_Matrix<S>::SCALAR_FULL:
+              return M_Matrix<S>::SCALAR_IT;
+            case M_Matrix<S>::ZERO:
+            default:
+              return M_Matrix<S>::ZERO_IT;
+            }
+        }
+      case M_Matrix<T>::ZERO:
+      default:
+        {
+          switch (y.type())
+            {
+            case M_Matrix<S>::FULL:
+            case M_Matrix<S>::SYMMETRIC:
+            case M_Matrix<S>::DIAGONAL:
+            case M_Matrix<S>::SCALAR_DIAGONAL:
+            case M_Matrix<S>::SCALAR_FULL:
+              assert(false);
+            case M_Matrix<S>::ZERO:
+            default:
+              return M_Matrix<S>::ZERO_IT;
+            }
+        }
+
+      }
+
+  }
+
+
+
 
 
   template<typename T, typename S>
@@ -2974,14 +3168,6 @@ namespace Matrix_Binary_Transformations
 
   namespace product
   {
-    /**
-      Matrix multiplication.
-      @pre \p x.ncols()==y.nrows()
-      @returns z=x*y
-      @post z.nrows()=rows(x), z.ncols()=ncols(y)
-      @post z(i,j)= sum on k of x(i,k)*y(k,j)
-      @post assert(x.ncols()==y.nrows())
-      */
     inline M_Matrix<double> Lapack_Full_Product(const M_Matrix<double>& x,const M_Matrix<double>& y, bool transpose_x, bool transpose_y)
     {
       using lapack::dgemm_;
@@ -3043,10 +3229,19 @@ namespace Matrix_Binary_Transformations
 
       double  ALPHA=1.0;
       double*  A=const_cast<double*> (&y[0]);
-      int  	LDA=M;
+      int  	LDA;
+      if (transpose_y)
+        LDA=K;
+      else LDA=M;
+
 
       double*  B=const_cast<double*> (&x[0]);
-      int  	LDB=K;
+
+      int  	LDB;
+      if (transpose_x)
+        LDB=N;
+      else
+        LDB=K;
 
       double BETA=0.0;
 
@@ -3067,7 +3262,11 @@ namespace Matrix_Binary_Transformations
     }
 
 
-    inline M_Matrix<double> Lapack_Symmetric_Transpose_Product(const M_Matrix<double>& Sym,const M_Matrix<double>& Reg, bool SymRegT=true, const std::string& kind="upper")
+    inline M_Matrix<double> Lapack_Symmetric_Regular_Product
+    (const M_Matrix<double>& Sym,
+     const M_Matrix<double>& Reg,
+     bool SymReg=true,
+     const std::string& kind="upper")
     {
       using lapack::dsymm_;
 
@@ -3184,29 +3383,36 @@ namespace Matrix_Binary_Transformations
       if (kind=="lower")
         {
           for (std::size_t i=0; i<Sym.nrows(); i++)
-            for (std::size_t j=0; j<i; ++j)
+            for (std::size_t j=0; j<=i; ++j)
               S(i,j)=Sym(i,j);
         }
+      else
+        {
+          for (std::size_t i=0; i<Sym.nrows(); i++)
+            for (std::size_t j=i; j<Sym.ncols(); ++j)
+              S(i,j)=Sym(i,j);
+        }
+
 
       std::size_t rows_e;
       std::size_t cols_i;
       std::size_t rows_i;
       std::size_t cols_e;
 
-      if (SymRegT)  // calculo Sym * Reg^T
+      if (SymReg)  // calculo Sym * Reg
         {
           rows_e=Sym.nrows();
           cols_i=Sym.ncols();
-          rows_i=Reg.ncols();
-          cols_e=Reg.nrows();
+          rows_i=Reg.nrows();
+          cols_e=Reg.ncols();
 
         }
       else   // calculo  Reg^T * Sym
         {
-          rows_e=Reg.ncols();
-          cols_i=Reg.nrows();
-          rows_i=Sym.ncols();
-          cols_e=Sym.nrows();
+          rows_e=Reg.nrows();
+          cols_i=Reg.ncols();
+          rows_i=Sym.nrows();
+          cols_e=Sym.ncols();
         }
       assert(rows_i==cols_i);
       // First it has to find out if the last dimension of x matches the
@@ -3238,7 +3444,7 @@ namespace Matrix_Binary_Transformations
 
      */
       char SIDE;
-      if (SymRegT)
+      if (SymReg)
         SIDE='R';
       else
         SIDE='L';
@@ -3307,7 +3513,7 @@ namespace Matrix_Binary_Transformations
      */
 
       double * /*, dimension(lda,*)*/ A=const_cast<double*> (&S[0]);
-      int  	LDA=S.nrows();
+      int  	LDA=S.ncols();
       double*  B=const_cast<double*> (&Reg[0]);
 
       int  	LDB=Reg.ncols();
@@ -3317,21 +3523,14 @@ namespace Matrix_Binary_Transformations
       int  	LDC=M;
 
 
-      try
-      {
-        dsymm_(&SIDE,&UPLO,&M,&N,&ALPHA,A,&LDA,B,&LDB,&BETA,C,&LDC);
-      }
-      catch (...)
-      {
-        assert(false);
-      }
+      dsymm_(&SIDE,&UPLO,&M,&N,&ALPHA,A,&LDA,B,&LDB,&BETA,C,&LDC);
       return z;
     }
 
 
     inline M_Matrix<double> Lapack_Transpose_Symmetric_Product(const M_Matrix<double>& Reg,const M_Matrix<double>& Sym, const std::string kind="upper")
     {
-      return Lapack_Symmetric_Transpose_Product(Sym,Reg,false, kind);
+      return Lapack_Symmetric_Regular_Product(Sym,Reg,false, kind);
     }
 
     template<typename T, typename S>
@@ -3447,6 +3646,22 @@ namespace Matrix_Binary_Transformations
 
     }
 
+    template<typename T, typename S>
+    auto
+    quadraticForm_Symmetric_T (const M_Matrix<T>& A, const M_Matrix<S>& B)
+    ->M_Matrix<decltype(std::declval<T>()*std::declval<S>())>
+    {
+      typedef   decltype(std::declval<T>()*std::declval<S>()) R;
+
+      auto BA=B*A;
+      M_Matrix<R> out(B.nrows(),B.nrows(),M_Matrix<R>::SYMMETRIC, R{});
+      for (std::size_t i=0; i<out.nrows(); ++i)
+        for (std::size_t j=i; j<out.ncols(); ++j)
+          for (std::size_t k=0; k<B.ncols(); ++k)
+            out(i,j)+=BA(i,k)*B(j,k);
+      return out;
+
+    }
 
 
     /*
@@ -3862,28 +4077,34 @@ namespace Matrix_Binary_Transformations
                (other.type()==M_Matrix<double>::SYMMETRIC))
         {
           if (transpose_x)
-            return Lapack_Transpose_Symmetric_Product(one,other);
-          else
             {
               auto tr=Transpose(one);
-              return Lapack_Transpose_Symmetric_Product(tr,other);
+              return Lapack_Symmetric_Regular_Product(other,tr,false);
+            }
+          else
+            {
+              return Lapack_Symmetric_Regular_Product(other,one,false);
             }
         }
       else if ((one.type()==M_Matrix<double>::SYMMETRIC)&&
                (other.type()==M_Matrix<double>::FULL))
         {
           if (transpose_y)
-            return Lapack_Symmetric_Transpose_Product(one,other);
-          else
             {
               auto tr=Transpose(other);
-              return Lapack_Symmetric_Transpose_Product(one,tr);
+
+              return Lapack_Symmetric_Regular_Product(one,tr,true);
+            }
+          else
+            {
+              return Lapack_Symmetric_Regular_Product(one,other,true);
             }
         }
       else if ((one.type()==M_Matrix<double>::SYMMETRIC)&&
                (other.type()==M_Matrix<double>::SYMMETRIC))
         {
-          return Lapack_Symmetric_Transpose_Product(one,other);
+          auto copy_other=M_Matrix<double>(other.nrows(),other.ncols(), M_Matrix<double>::FULL,other);
+          return Lapack_Symmetric_Regular_Product(one,copy_other,true);
         }
       else
         return All_Product(one, other, transpose_x,transpose_y);
@@ -4058,7 +4279,7 @@ namespace Matrix_Binary_Transformations
   ->M_Matrix<decltype(std::declval<T>()*std::declval<S>())>
   {
     assert(A.ncols()==B.nrows());
-    assert(B.ncols()==A.nrows());
+    assert(B.nrows()==A.nrows());
     typedef   decltype(std::declval<T>()*std::declval<S>()) R;
     if ((A.type()==M_Matrix<T>::ZERO)||
         (B.type()==M_Matrix<S>::ZERO))
@@ -4068,6 +4289,25 @@ namespace Matrix_Binary_Transformations
     else
       return TranspMult(B,A*B);
   }
+
+
+  template<typename T, typename S>
+  auto
+  quadraticForm_B_A_BT (const M_Matrix<T>& A, const M_Matrix<S>& B)
+  ->M_Matrix<decltype(std::declval<T>()*std::declval<S>())>
+  {
+    assert(A.ncols()==B.ncols());
+    assert(B.ncols()==A.nrows());
+    typedef   decltype(std::declval<T>()*std::declval<S>()) R;
+    if ((A.type()==M_Matrix<T>::ZERO)||
+        (B.type()==M_Matrix<S>::ZERO))
+      return M_Matrix<R>(B.nrows(),B.nrows(),M_Matrix<R>::ZERO);
+    else if (A.isSymmetric())
+      return product::quadraticForm_Symmetric_T(A,B);
+    else
+      return multTransp(B*A,B);
+  }
+
 
 
   /**
@@ -4113,68 +4353,44 @@ namespace Matrix_Binary_Transformations
 
   namespace additive
   {
+
+
     using namespace Matrix_Unary_Transformations;
+
     template<typename T, typename S>
     M_Matrix<T>& sum_assigment(M_Matrix<T>& itself,
                                const M_Matrix<S>& other)
     {
-      if (itself.size()<other.size())
+      auto resType=result_of_sum(itself,other);
+      if (resType!=itself.type())
         {
-          M_Matrix<T> temp(other);
-          sum_assigment(temp,itself);
-          itself=std::move(temp);
-          return itself;
+          itself=M_Matrix<T>(itself.nrows(),itself.ncols(),resType,itself);
         }
-      else
-        {
-          auto resType=result_of_sum(itself,other);
-          if (resType!=itself.type())
-            {
-              itself=M_Matrix<T>(itself.nrows(),itself.ncols(),resType,itself);
-              for (auto it=itself.begin(); it!=itself.end(); ++it)
-                *it+=other(it);
-              return itself;
-            }
-          else
-            {
-              for (auto it=other.begin(); it!=other.end(); ++it)
-                itself(it)+=*it;
-              return itself;
-            }
-        }
+      auto itType=iterator_of_sum(itself,other);
+      for (auto it=other.begin(itType); it!=other.end(); ++it)
+        itself(it)+=*it;
+      return itself;
+
     }
+
 
     template<typename T, typename S>
     M_Matrix<T>& substraction_assigment(M_Matrix<T>& itself,
                                         const M_Matrix<S>& other)
     {
-      if (itself.size()<other.size())
+      auto resType=result_of_sum(itself,other);
+      if (resType!=itself.type())
         {
-          M_Matrix<T> temp(other.nrows(), other.ncols(), other.type());
-          for (auto it=temp.begin(); it!=temp.end(); ++it)
-            (*it) = - (other(it));
-          sum_assigment(temp,itself);
-          itself=std::move(temp);
-          return itself;
+          itself=M_Matrix<T>(itself.nrows(),itself.ncols(),resType,itself);
         }
-      else
-        {
-          auto resType=result_of_sum(itself,other);
-          if (resType!=itself.type())
-            {
-              itself=M_Matrix<T>(itself.nrows(),itself.ncols(),resType,itself);
-              for (auto it=itself.begin(); it!=itself.end(); ++it)
-                *it-=other(it);
-              return itself;
-            }
-          else
-            {
-              for (auto it=other.begin(); it!=other.end(); ++it)
-                itself(it)-=*it;
-              return itself;
-            }
-        }
+      auto itType=iterator_of_sum(itself,other);
+      for (auto it=other.begin(itType); it!=other.end(); ++it)
+        itself(it)-=*it;
+      return itself;
+
     }
+
+
 
 
     template<typename T, typename S>
@@ -4185,7 +4401,9 @@ namespace Matrix_Binary_Transformations
       typedef decltype(std::declval<T>()+std::declval<S>()) R;
       if (itself.size()<other.size())
         {
-          return sum_Operator(other,itself);
+          M_Matrix<R> out(other);
+          sum_assigment(out,itself);
+          return out;
         }
       else
         {
@@ -4194,6 +4412,8 @@ namespace Matrix_Binary_Transformations
           return out;
         }
     }
+
+
     template<typename T, typename S>
     auto sum_Operator( M_Matrix<T>&& itself,
                        M_Matrix<S>&& other)
@@ -4202,7 +4422,9 @@ namespace Matrix_Binary_Transformations
       typedef decltype(std::declval<T>()+std::declval<S>()) R;
       if (itself.size()<other.size())
         {
-          return sum_Operator(other,itself);
+          M_Matrix<R> out(other);
+          sum_assigment(out,itself);
+          return out;
         }
       else
         {
@@ -4219,16 +4441,9 @@ namespace Matrix_Binary_Transformations
     ->M_Matrix<decltype(std::declval<T>()+std::declval<S>())>
     {
       typedef decltype(std::declval<T>()+std::declval<S>()) R;
-      if (itself.size()<other.size())
-        {
-          return substraction_Operator(other,itself);
-        }
-      else
-        {
-          M_Matrix<R> out(itself);
-          substraction_assigment(out,other);
-          return out;
-        }
+      M_Matrix<R> out(itself);
+      substraction_assigment(out,other);
+      return out;
     }
     template<typename T, typename S>
     auto substraction_Operator( M_Matrix<T>&& itself,
@@ -4236,16 +4451,9 @@ namespace Matrix_Binary_Transformations
     ->M_Matrix<decltype(std::declval<T>()+std::declval<S>())>
     {
       typedef decltype(std::declval<T>()+std::declval<S>()) R;
-      if (itself.size()<other.size())
-        {
-          return substraction_Operator(other,itself);
-        }
-      else
-        {
-          M_Matrix<R> out(itself);
-          substraction_assigment(out,other);
-          return out;
-        }
+      M_Matrix<R> out(itself);
+      substraction_assigment(out,other);
+      return out;
     }
 
 
@@ -4395,7 +4603,8 @@ namespace Matrix_Binary_Transformations
   template<typename T>
   M_Matrix<T> operator+(const M_Matrix<T>& x,const M_Matrix<T>& y)
   {
-    return additive::sum_Operator(x,y);
+    auto out=additive::sum_Operator(x,y);
+    return out;
   }
 
   template<typename T, typename S>

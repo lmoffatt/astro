@@ -41,7 +41,7 @@ public:
     Parameters Pa=p.toParameters(param.toVector());
 
     out.logPriorLikelihood=p.logProb(Pa);
-    out.D_prior.H=M_Matrix<double>(p.getInvCovariance());
+    out.D_prior.H=M_Matrix<double>(M_Matrix<double>::SYMMETRIC,p.getInvCovariance());
     M_Matrix<double> d(param.nrows(),param.ncols(),p.trMeans());
     d=param - d;
 

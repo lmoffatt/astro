@@ -1173,15 +1173,13 @@ private:
     {
 	std::size_t n=landa.size();
 	std::size_t npar=J.ncols();
-	M_Matrix<double> out(npar,npar,0.0);
+	M_Matrix<double> out(npar,npar,M_Matrix<double>::SYMMETRIC,0.0);
 	for (std::size_t j=0; j<npar; ++j)
 	    for (std::size_t j2=j; j2<npar; ++j2)
 		for (std::size_t i=0; i<n; ++i)
 		    out(j,j2)+=landa[i]*J(i,j)*J(i,j2);
-	for (std::size_t j=0; j<npar; ++j)
-	    for (std::size_t j2=0; j2<j; ++j2)
-		out(j,j2)=out(j2,j);
 
+	//auto test=out-Transpose(J)*diag(landa.toVector_of_Rows())*J;
 	return out;
 
     }
@@ -5431,6 +5429,13 @@ public:
 	LM_logL<E> out;
 	out.G=postL.D_prior.G+postL.D_lik.G*beta;
 	out.H=postL.D_prior.H+postL.D_lik.H*beta;
+
+	/*uto Hp=M_Matrix<E>(M_Matrix<E>::FULL,postL.D_prior.H);
+	auto Ht=M_Matrix<E>(M_Matrix<E>::FULL,postL.D_lik.H);
+
+
+	auto test=out.H-(Hp+Ht*beta);
+	*/
 	out.logL=postL.mlogbPL(beta);
 	for (std::size_t i=0; i<out.H.nrows(); ++i)
 	    //    out.H(i,i)=out.H(i,i)+postL.D_lik.H(i,i)*beta*landa;
@@ -5484,10 +5489,10 @@ public:
 			(next,LM_logL.Hinv,LM_logL.H),
 			landa,
 			LM_logL.exp_delta_next_logL);
-			if ((out.proposed.logDetCov()>0)|| ! std::isfinite( out.proposed.logDetCov()))
+			if (!out.proposed.isValid())
 			    {
 				out.isValid=false;
-				std::cerr<<"\ninvalid logDetCov\n";
+				std::cerr<<"\ninvalid cholesky\n";
 			    }
 		    }
 		else
@@ -5642,7 +5647,7 @@ public:
 	    auto logQbackward=cLik.proposed.logP(sLik.param);
 	    auto d=cLik.param-sLik.param;
 	    auto H=sLik.D_lik.H*sLik.beta+sLik.D_prior.H;
-	    dHd=0.5*fullSum(quadraticForm_BT_A_B(H,d));
+	    dHd=0.5*fullSum(quadraticForm_B_A_BT(H,d));
 
 	    if (!cLik.isValid)
 		{
@@ -5704,8 +5709,8 @@ public:
 		    auto d=cLik.param-sLik.param;
 		    auto s_H=sLik.D_lik.H*sLik.beta+sLik.D_prior.H+cLik.D_lik.H*sLik.beta+cLik.D_prior.H;
 		    auto c_H=sLik.D_lik.H*cLik.beta+sLik.D_prior.H+cLik.D_lik.H*cLik.beta+cLik.D_prior.H;
-		    s_dHd=0.25*fullSum(quadraticForm_BT_A_B(s_H,d));
-		    c_dHd=0.25*fullSum(quadraticForm_BT_A_B(c_H,d));
+		    s_dHd=0.25*fullSum(quadraticForm_B_A_BT(s_H,d));
+		    c_dHd=0.25*fullSum(quadraticForm_B_A_BT(c_H,d));
 
 		    double r=u(mt);
 		    bool accept_=r<A;
@@ -6794,7 +6799,6 @@ public:
 	ss<<"nsteps\t";
 	ss<<"nsample\t";
 	ss<<"Evidence\t";
-	ss<<"Sample\t";
 
 	auto s=mystep<E>{};
 	s.writelogLHeaderDataFrame(ss);
@@ -6933,8 +6937,8 @@ public:
 
 			if (o%5==0)
 			    {
-				(sDists[i].writeSimulationRowDataFrame
-				(f_logL,data,model,ss1.str()))<<"\n";
+			  	(sDists[i].writeSimulationRowDataFrame
+				(f_sim,data,model,ss1.str()))<<"\n";
 			    }
 			f_logL.flush();
 			f_par.flush();

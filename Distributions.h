@@ -72,7 +72,10 @@ public:
     covinv_(inv(cov).first),
     cho_cov_(chol(cov,"lower")),
     logDetCov_(logDiagProduct(cho_cov_))
-  {}
+  {
+    assert(!cho_cov_.empty());
+
+  }
 
   MultivariateGaussian(const M_Matrix<E>&mean
                        , const M_Matrix<E> &cov
@@ -82,7 +85,9 @@ public:
     covinv_(covInv),
     cho_cov_(chol(cov,"lower").first),
     logDetCov_(logDiagProduct(cho_cov_))
-  {}
+  {
+    assert(!cho_cov_.empty());
+  }
 
 
 
@@ -199,6 +204,10 @@ public:
     return mean_.size();
   }
 
+  bool isValid()const
+  {
+    return !cho_cov_.empty();
+  }
 
 
   MultivariateGaussian(const MultivariateGaussian& other)=default;

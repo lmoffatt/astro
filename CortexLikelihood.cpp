@@ -405,24 +405,24 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f
         ++is;
 
 
-      double currInjury=parameters.get("inj_width_"+std::to_string(std::size_t(cm->dia())));
-      if (std::isnan(currInjury))
-        currInjury=0;
+      double currInjury_fit=parameters.get("inj_width_"+std::to_string(std::size_t(cm->dia())));
+      if (std::isnan(currInjury_fit))
+        currInjury_fit=0;
 
       // voy a interpolar los resultados de la medicion a partir de la simulacion.
       // la simulacion pasa a ser independiente de la medicion
 
       // rho debe estar en celulas por litro
-      auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury*1e-6);
+      auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury_fit*1e-6);
 
       ///horrible hack for the lession:
       /// dedico una fila para la probabilidad de cada estado antes de la lesion
 
-      if ( currInjury>0)
+      if ( currInjury_fit>0)
         {
           double measHeigth=cm->areaAstro()[0]/(cm->xpos()[1]-cm->xpos()[0]);
-          double injVolume_liters=currInjury*measHeigth*1e-12*h*1000;
-          double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
+          double injVolume_liters=cm->inj_Width()*measHeigth*1e-12*h*1000;
+          double simVol_liters=currInjury_fit*1e-6*cm->h()*cm->h()*1000;
           double f=injVolume_liters/simVol_liters;
 
           auto rhoInj=m_->getNumberAtInjuryFromModel(rho[0],f);
@@ -654,25 +654,25 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Experiment* e,
         ++is;
 
 
-      double currInjury=parameters.get("inj_width_"+std::to_string(std::size_t(cm->dia())));
-      if (std::isnan(currInjury))
-        currInjury=0;
+      double currInjury_fit=parameters.get("inj_width_"+std::to_string(std::size_t(cm->dia())));
+      if (std::isnan(currInjury_fit))
+        currInjury_fit=0;
 
       // voy a interpolar los resultados de la medicion a partir de la simulacion.
       // la simulacion pasa a ser independiente de la medicion
 
       // rho debe estar en celulas por litro
-      auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury*1e-6);
+      auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury_fit*1e-6);
 
       ///horrible hack for the lession:
       /// dedico una fila para la probabilidad de cada estado antes de la lesion
 
-      if ( currInjury>0)
+      if ( currInjury_fit>0)
         {
           double measHeigth=cm->areaAstro()[0]/(cm->xpos()[1]-cm->xpos()[0]);
-          double injVolume_liters=currInjury*measHeigth*1e-12*h*1000;
-          double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
-          double f=injVolume_liters/simVol_liters;
+          double measure_injVolume_liters=cm->inj_Width()*measHeigth*1e-12*h*1000;
+          double simVol_liters=currInjury_fit*1e-6*cm->h()*cm->h()*1000;
+          double f=measure_injVolume_liters/simVol_liters;
 
           auto rhoInj=m_->getNumberAtInjuryFromModel(rho[0],f);
 
@@ -686,10 +686,12 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Experiment* e,
         }
       for (std::size_t ix=0; ix<rho.size()-1;++ix)
         {
-          /// en celulas por litro
+          /// en celulas por litro no es, es en celulas en un volumen de simulacion
           auto rho_sim=m_->getObservedNumberFromModel(rho[ix+1]);
 
-          double measuredVolume_inLiters=cm->areaAstro()[ix]*1e-12*h*1000; // en um cuadrados  h indica el espesor del corte
+          double measuredVolume_inLiters=cm->areaAstro()[ix]*1e-12*h*1000; // en um cuadrados  h indica el espesor del corte , tipicamente 10 micrones
+
+          /// en este caso el cm->h() indica el espesor de la simulacion (tipicamente 100 micrones)
           double simVol_liters=cm->h()*cm->h()*(cm->xpos()[ix+1]-cm->xpos()[ix])*1e-6*1000;
           double f=measuredVolume_inLiters/simVol_liters;
 
@@ -721,21 +723,21 @@ std::ostream &CortexPoisonLikelihood::writeYfitHeaderDataFrame(const Experiment 
             ++is;
 
 
-          double currInjury=getPrior().get("inj_width_"+std::to_string(std::size_t(cm->dia())));
-          if (std::isnan(currInjury))
-            currInjury=0;
+          double currInjury_fit=getPrior().get("inj_width_"+std::to_string(std::size_t(cm->dia())));
+          if (std::isnan(currInjury_fit))
+            currInjury_fit=0;
 
           // voy a interpolar los resultados de la medicion a partir de la simulacion.
           // la simulacion pasa a ser independiente de la medicion
 
           // rho debe estar en celulas por litro
-          auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury*1e-6);
+          auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury_fit*1e-6);
           auto typesRho=m_->getObservedStateLabels();
 
           ///horrible hack for the lession:
           /// dedico una fila para la probabilidad de cada estado antes de la lesion
 
-          if ( currInjury>0)
+          if ( currInjury_fit>0)
             {
 
               auto typesInjury=m_->getApoptoticStatesAtInjuryLabels();
@@ -797,25 +799,25 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::g(const Experiment* e,
         ++is;
 
 
-      double currInjury=parameters.get("inj_width_"+cm->id());
-      if (std::isnan(currInjury))
-        currInjury=0;
+      double currInjury_fit=parameters.get("inj_width_"+cm->id());
+      if (std::isnan(currInjury_fit))
+        currInjury_fit=0;
 
 
       // voy a interpolar los resultados de la medicion a partir de la simulacion.
       // la simulacion pasa a ser independiente de la medicion
 
       // rho debe estar en celulas por litro
-      auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury*1e-6);
+      auto rho=interpolateInjury(s.x_,s.rho_[is],cm->xpos()*1e-6,currInjury_fit*1e-6);
 
       ///horrible hack for the lession:
       /// dedico una fila para la probabilidad de cada estado antes de la lesion
 
-      if ( currInjury>0)
+      if ( currInjury_fit>0)
         {
           double measHeigth=cm->areaAstro()[0]/(cm->xpos()[1]-cm->xpos()[0]);
-          double injVolume_liters=currInjury*measHeigth*1e-12*h*1000;
-          double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
+          double injVolume_liters=cm->inj_Width()*measHeigth*1e-12*h*1000;
+          double simVol_liters=currInjury_fit*1e-6*cm->h()*cm->h()*1000;
           double f=injVolume_liters/simVol_liters;
 
           auto rhoInj=m_->getNumberAtInjuryFromModel(rho[0],f);
