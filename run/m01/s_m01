@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Correr con `sbatch /ruta/a/este/script
+
+#SBATCH --job-name="ejemplo openmp"
+#SBATCH --nodes=4
+#SBATCH --cpus-per-tasks=16
+#SBATCH --workdir=/home/USUARIO/ejemplos
+#SBATCH --error="ejemplo-openmp-%j.err"
+#SBATCH --output="ejemplo-openmp-%j.out"
+#SBATCH --partition=fast
+#SBATCH --time=10:00
+
+echo "trabajo \"${SLURM_JOB_NAME}\""
+echo "    id: ${SLURM_JOB_ID}"
+echo "    partición: ${SLURM_JOB_PARTITION}"
+echo "    nodos: ${SLURM_JOB_NODELIST}"
+echo
+date +"inicio %F - %T"
+
+echo "
+--------------------------------------------------------------------------------
+"
+
+# INICIO VARIABLES IMPORTANTES
+#
+# NO TOCAR. No se aceptan reclamos en caso de modificar estas líneas. Deberán
+# incluirlas siempre, hasta próximo aviso.
+#
+[ -r /etc/profile.d/odin-users.sh ] && . /etc/profile.d/odin-users.sh
+#
+# FIN VARIABLES IMPORTANTES
+
+# El path al programa es `/home/USUARIO/ejemplos/programa-openmp`. Como más
+# arriba seteamos el directorio de trabajo a `/home/USUARIO/ejemplos`, el
+# programa se encuentra en el directorio de trabajo, por lo que basta poner
+# `./programa-openmp`.
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt/gcc-7.2.0/lib64/
+
+srun /home/lmoffatt/Astro/parallel/Astro /home/lmoffatt/Astro/Astro/run/evidence_script LABEL model_01
+
+
+echo "
+--------------------------------------------------------------------------------
+"
+
+date +"fin %F - %T"
