@@ -280,7 +280,8 @@ DISTFILES += \
     run/m11/s_m11 \
     run/m12/s_m12 \
     run/m13/s_m13 \
-    run/runOdin
+    run/runOdin \
+    run/m01/t_m01
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
