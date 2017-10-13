@@ -9,7 +9,7 @@
 #SBATCH --workdir=/home/lmoffatt/Astro/astro/run/m01
 #SBATCH --error="m01-%j.err"
 #SBATCH --output="m01-%j.out"
-#SBATCH --partition=freeriders
+#SBATCH --partition=batch
 #SBATCH --time=01-11
 
 echo "trabajo \"${SLURM_JOB_NAME}\""
