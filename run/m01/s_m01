@@ -10,7 +10,7 @@
 #SBATCH --error="m01-%j.err"
 #SBATCH --output="m01-%j.out"
 #SBATCH --partition=freeriders
-#SBATCH --time=02-11
+#SBATCH --time=01-11
 
 echo "trabajo \"${SLURM_JOB_NAME}\""
 echo "    id: ${SLURM_JOB_ID}"
