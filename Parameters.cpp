@@ -499,7 +499,7 @@ std::vector<double> Parameters::getStdDev(const std::vector<std::vector<double> 
 
 void Parameters::update()
 {
-  if (corr_[1].size()==0)
+  if (corr_.empty()||corr_[1].size()==0)
     {
       cov_=std::vector<std::vector<double>>(size(),std::vector<double>(size(),0));
       for (std::size_t i=0; i<size(); ++i)
