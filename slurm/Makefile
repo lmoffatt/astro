@@ -15,7 +15,7 @@ CXX           = ~/GCC-7.2.0/bin/g++
 DEFINES       =
 CFLAGS        = -pipe -O2 -Wall -W -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -fopenmp -O2 -lpthread -std=gnu++1y -Wall -W -fPIC $(DEFINES)
-INCPATH       = -I../Astro -I. -I../../../../Qt5.7.0/5.7/gcc_64/mkspecs/linux-g++
+INCPATH       = -I../astro -I. -I../../../../Qt5.7.0/5.7/gcc_64/mkspecs/linux-g++
 QMAKE         = /home/luciano/Qt5.7.0/5.7/gcc_64/bin/qmake
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
