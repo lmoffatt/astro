@@ -273,7 +273,14 @@ DISTFILES += \
     run/m02/p_m02 \
     run/m01/s_m01 \
     slurm/Makefile \
-    run/m02/s_m02
+    run/m02/s_m02 \
+    run/m03/s_m03 \
+    run/m10/s_m10 \
+    run/m101/s_m101 \
+    run/m11/s_m11 \
+    run/m12/s_m12 \
+    run/m13/s_m13 \
+    run/runOdin
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
