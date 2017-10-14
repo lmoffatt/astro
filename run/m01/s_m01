@@ -11,7 +11,6 @@
 #SBATCH --output="m01-%j.out"
 #SBATCH --account=freeriders
 #SBATCH --partition=freeriders
-#SBATCH --time=01-11
 
 echo "trabajo \"${SLURM_JOB_NAME}\""
 echo "    id: ${SLURM_JOB_ID}"
