@@ -15,7 +15,7 @@ CXX           = ~/GCC-7.2.0/bin/g++
 DEFINES       =
 CFLAGS        = -DNDEBUG -pipe -O3 -Wall -W -fPIC  $(DEFINES)
 CXXFLAGS      =  -DNDEBUG -pipe -fopenmp -O3 -lpthread -std=gnu++1y -Wall -W -fPIC $(DEFINES)
-INCPATH       = -I../astro -I.
+INCPATH       = -I../astro -I. -I../../../../Qt5.7.0/5.7/gcc_64/mkspecs/linux-g++
 QMAKE         = /home/luciano/Qt5.7.0/5.7/gcc_64/bin/qmake
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -36,7 +36,7 @@ DISTNAME      = Astro1.0.0
 DISTDIR = /home/luciano/Data/celulas/astro/build-Astro-gcc_6-Release/.tmp/Astro1.0.0
 LINK          = ~/GCC-7.2.0/bin/g++
 LFLAGS        = -fopenmp -Wl,-O1,-rpath=/home/lmoffatt/GCC-7.2.0/lib/
-LIBS          = $(SUBLIBS) -L/usr/lib64 -lblas -llapack
+LIBS          = $(SUBLIBS) -L/usr/lib64/atlas -lf77blas -llapack
 AR            = ar cqs
 RANLIB        =
 SED           = sed
