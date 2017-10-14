@@ -458,8 +458,9 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f
       if ( currInjury>0)
         {
           double measHeigth=cm->areaAstro()[0]/(cm->xpos()[1]-cm->xpos()[0]);
-          double injVolume_liters=currInjury*measHeigth*1e-12*h*1000;
-          double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
+          double injVolume_liters=cm->inj_Width()*measHeigth*1e-12*h*1000;
+          double simVol_liters=currInjury*1e-6*cm->h()*cm->h()*1000;
+
           double f=injVolume_liters/simVol_liters;
 
           auto rhoInj=m_->getNumberAtInjuryFromModel(rho[0],f);
@@ -703,8 +704,8 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::f(const Parameters &pa
       if ( currInjury>0)
         {
           double measHeigth=cm->areaAstro()[0]/(cm->xpos()[1]-cm->xpos()[0]);
-          double injVolume_liters=currInjury*measHeigth*1e-12*h*1000;
-          double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
+          double injVolume_liters=cm->inj_Width()*measHeigth*1e-12*h*1000;
+          double simVol_liters=currInjury*1e-6*cm->h()*cm->h()*1000;
           double f=injVolume_liters/simVol_liters;
 
           auto rhoInj=m_->getNumberAtInjuryFromModel(rho[0],f);
@@ -845,8 +846,8 @@ std::vector<std::vector<double> > CortexPoisonLikelihood::g(const Parameters& pa
       if ( currInjury>0)
         {
           double measHeigth=cm->areaAstro()[0]/(cm->xpos()[1]-cm->xpos()[0]);
-          double injVolume_liters=currInjury*measHeigth*1e-12*h*1000;
-          double simVol_liters=cm->inj_Width()*1e-6*cm->h()*cm->h()*1000;
+          double injVolume_liters=cm->inj_Width()*measHeigth*1e-12*h*1000;
+          double simVol_liters=currInjury*1e-6*cm->h()*cm->h()*1000;
           double f=injVolume_liters/simVol_liters;
 
           auto rhoInj=m_->getNumberAtInjuryFromModel(rho[0],f);
