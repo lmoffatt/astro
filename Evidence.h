@@ -5811,6 +5811,7 @@ public:
 	if (!sDist.isValid)
 	    return {};
 	M_Matrix<E> c=sDist.proposed.sample(mt);
+	sDist.proposed.autotest(mt,500);
 	mcmc_step<E,pDist> cDist=LM_Lik.get_mcmc_step(lik,model,data,c,sDist.beta);
 
 	AP r_optimal=adapt_Parameter
@@ -5864,6 +5865,7 @@ public:
 	auto LM=LM_Lik(r_value);
 	sDist=LM.get_mcmc_step(lik,model,data,sDist.param,sDist.beta);
 	M_Matrix<E> c=sDist.proposed.sample(mt);
+	sDist.proposed.autotest(mt,500);
 	cDist=LM.get_mcmc_step(lik,model,data,c,sDist.beta);
 
 	n_steps(LM,lik,model,data,sDist,cDist,nsamples,naccepts,nrejects,mt,os,startTime,timeOpt);
@@ -6259,6 +6261,7 @@ public:
 	bool out;
 	LM_Lik.update_mcmc_step(lik,model,data,sDist,landa,sDist.beta);
 	M_Matrix<double> c=sDist.proposed.sample(mt);
+	//sDist.proposed.autoTest(mt,500);
 	cDist=LM_Lik.get_mcmc_step(lik,model,data,c,landa,sDist.beta,sDist.iscout,slogL_max,ndts_max);
 	if (test::accept(sDist,cDist,mt,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate))
 	    {
@@ -6340,6 +6343,7 @@ public:
 		sDist[i]=LM_Lik.update_mcmc_step
 		(lik,model,data,sDist[i],landa,aBeta.getBeta().getValue()[i]);
 		M_Matrix<E> c=sDist[i].proposed.sample(mt[i]);
+	//	sDist[i].proposed.autoTest(mt[i],500);
  		cDist=LM_Lik.get_mcmc_step
 		(lik,model,data,c,landa,aBeta.getBeta().getValue()[i],sDist[i].iscout,slogL_max,ndts_max);
 		std::cerr<<"logL "<<cDist.logLikelihood;
