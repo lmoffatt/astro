@@ -1,12 +1,5 @@
-sbatch m03/rs1_m03
-sbatch m03/rs2_m03
-
 sbatch m101/rs1_m101
 sbatch m101/rs2_m101
 sbatch m101/rs3_m101
 sbatch m101/rs5_m101
 
-sbatch m13/rs1_m13
-sbatch m13/rs2_m13
-sbatch m13/rs3_m13
-sbatch m13/rs4_m13
