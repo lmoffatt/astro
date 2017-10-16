@@ -286,7 +286,19 @@ DISTFILES += \
     run/Restart_script \
     run/m01/rs2_m01 \
     run/m01/rs3_m01 \
-    run/m01/rs1_m01
+    run/m01/rs1_m01 \
+    run/m02/rs1_m02 \
+    run/m02/rs2_m02 \
+    run/m02/rs3_m02 \
+    run/m03/rs1_m03 \
+    run/m03/rs2_m03 \
+    run/m03/rs3_m03 \
+    run/m10/rs1_m10 \
+    run/m10/rs2_m10 \
+    run/m10/rs3_m10 \
+    run/m101/rs1_m101 \
+    run/m101/rs2_m101 \
+    run/m101/rs3_m101
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

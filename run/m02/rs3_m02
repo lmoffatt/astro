@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Correr con `sbatch /ruta/a/este/script
+
+#SBATCH --job-name="rm_02"
+#SBATCH --nodes=1                    # Use one node
+#SBATCH --ntasks=1                   # Run a single task
+#SBATCH --cpus-per-task=8            # Number of CPU cores per task
+#SBATCH --workdir=/home/lmoffatt/Astro/astro/run/m01
+#SBATCH --error="rm02-%j.err"
+#SBATCH --output="rm02-%j.out"
+#SBATCH --account=freeriders
+#SBATCH --partition=freeriders
+
+echo "trabajo \"${SLURM_JOB_NAME}\""
+echo "    id: ${SLURM_JOB_ID}"
+echo "    partición: ${SLURM_JOB_PARTITION}"
+echo "    nodos: ${SLURM_JOB_NODELIST}"
+echo
+date +"inicio %F - %T"
+
+echo "
+--------------------------------------------------------------------------------
+"
+
+# INICIO VARIABLES IMPORTANTES
+#
+# NO TOCAR. No se aceptan reclamos en caso de modificar estas líneas. Deberán
+# incluirlas siempre, hasta próximo aviso.
+#
+[ -r /etc/profile.d/odin-users.sh ] && . /etc/profile.d/odin-users.sh
+#
+# FIN VARIABLES IMPORTANTES
+
+# El path al programa es `/home/USUARIO/ejemplos/programa-openmp`. Como más
+# arriba seteamos el directorio de trabajo a `/home/USUARIO/ejemplos`, el
+# programa se encuentra en el directorio de trabajo, por lo que basta poner
+# `./programa-openmp`.
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt/GCC-7.2.0/lib64/
+export OMP_NUM_THREADS=8
+srun /home/lmoffatt/Astro/parallel/Astro /home/lmoffatt/Astro/astro/run/Restart_script LABEL model_02 RESTART XM2_30_2k_E_250_50_model_01073047s968010_2567074072_state.txt
+
+echo "
+--------------------------------------------------------------------------------
+"
+
+date +"fin %F - %T"
