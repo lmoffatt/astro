@@ -2,13 +2,13 @@
 
 # Correr con `sbatch /ruta/a/este/script
 
-#SBATCH --job-name="rm_101"
+#SBATCH --job-name="rm_11"
 #SBATCH --nodes=1                    # Use one node
 #SBATCH --ntasks=1                   # Run a single task
 #SBATCH --cpus-per-task=8            # Number of CPU cores per task
-#SBATCH --workdir=/home/lmoffatt/Astro/astro/run/m101
-#SBATCH --error="rm101-%j.err"
-#SBATCH --output="rm101-%j.out"
+#SBATCH --workdir=/home/lmoffatt/Astro/astro/run/m11
+#SBATCH --error="rm11-%j.err"
+#SBATCH --output="rm11-%j.out"
 #SBATCH --account=freeriders
 #SBATCH --partition=freeriders
 
@@ -39,7 +39,7 @@ echo "
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt/GCC-7.2.0/lib64/
 export OMP_NUM_THREADS=8
-srun /home/lmoffatt/Astro/parallel/Astro /home/lmoffatt/Astro/astro/run/Restart_script LABEL model_101 RESTART NM2_30_2k_E_250_50_model_101163632s395507_1118872489_state.txt
+srun /home/lmoffatt/Astro/parallel/Astro /home/lmoffatt/Astro/astro/run/Restart_script LABEL model_11 RESTART NM2_30_2k_E_250_50_model_11152836s772812_1842098227_state.txt
 
 echo "
 --------------------------------------------------------------------------------

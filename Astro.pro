@@ -298,7 +298,23 @@ DISTFILES += \
     run/m10/rs3_m10 \
     run/m101/rs1_m101 \
     run/m101/rs2_m101 \
-    run/m101/rs3_m101
+    run/m101/rs3_m101 \
+    run/runRestartOdin \
+    run/m101/rs4_m101 \
+    run/m101/rs5_m101 \
+    run/m10/rs4_m10 \
+    run/m11/rs4_m11 \
+    run/m11/rs3_m11 \
+    run/m11/rs1_m11 \
+    run/m11/rs2_m11 \
+    run/m12/rs1_m12 \
+    run/m12/rs2_m12 \
+    run/m12/rs3_m12 \
+    run/m13/rs1_m13 \
+    run/m13/rs2_m13 \
+    run/m13/rs3_m13 \
+    run/m12/rs4_m12 \
+    run/m13/rs4_m13
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
