@@ -729,11 +729,13 @@ public:
     std::string line;
     std::getline(is,line);
     std::getline(is,line);
-    is>>me.p_;
+    if (!(is>>me.p_))
+      return is;
     me.rev_=cumulative_reverse_map(me.p_);
     std::getline(is,line);
     std::getline(is,line);
-    is>>me.nsamples_;
+    if (!(is>>me.nsamples_))
+      return is;
     return is;
   }
 
@@ -805,12 +807,14 @@ public:
     std::string line;
     std::getline(is,line);
     std::getline(is,line);
-    is>>me.logLik_;
+    if (!(is>>me.logLik_))
+      return is;
     me.p_=logLik_to_p(me.logLik_).first;
     me.rev_=cumulative_reverse_map(me.p_);
     std::getline(is,line);
     std::getline(is,line);
-    is>>me.nsamples_;
+    if (!(is>>me.nsamples_))
+      return is;
     return is;
   }
 

@@ -282,7 +282,11 @@ DISTFILES += \
     run/m13/s_m13 \
     run/runOdin \
     run/m01/t_m01 \
-    tupac/Makefile
+    tupac/Makefile \
+    run/Restart_script \
+    run/m01/rs2_m01 \
+    run/m01/rs3_m01 \
+    run/m01/rs1_m01
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

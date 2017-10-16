@@ -27,7 +27,7 @@ public:
 
   const Parameters& getPrior()const
   {
-     return CL_->getPrior();
+    return CL_->getPrior();
   }
 
 
@@ -1042,7 +1042,17 @@ struct Measure
 
 };
 
-
+inline
+std::pair<std::size_t, std::string>
+extract_Seed(const std::string& s)
+{
+   auto last=s.find("_state");
+   auto first=s.find_last_of('_',last-1);
+   auto v= s.substr(first+1,last-first-1);
+   auto val=std::stoull(v);
+   auto eviName=s.substr(0,last);
+   return {val,eviName};
+}
 
 template<class Cm>
 struct Tempering
@@ -1101,8 +1111,9 @@ struct Tempering
 
     Master_Adaptive_Beta_New
         aBeta(N_betasInit,beta_min,N_beta_2,beta_infimo);
+    std::random_device rd;
 
-
+    std::mt19937_64::result_type seed;
     if (does_stdout)
       {
         std::cout<<"\n eviName: "<<eviName;
@@ -1133,6 +1144,37 @@ struct Tempering
         std::cout<<"\n nskip "<<nskip;
         std::cout<<"\n pTjump "<<pTjump;
       }
+
+    bool isContinuation=!state_file.empty();
+
+    if (!isContinuation)
+      {
+        if (initseed==0)
+          {
+            seed=rd();
+
+            eviName+="_"+time_now()+"_"+std::to_string(seed);
+            *logs<<"\n random seed =\n"<<seed<<"\n";
+          }
+        else
+          {
+            seed=initseed;
+
+            eviName+="_"+time_now()+"_"+std::to_string(seed);
+
+            *logs<<"\n provided seed =\n"<<seed<<"\n";
+
+          }
+      }
+    else
+      {
+        auto o=extract_Seed(state_file);
+        seed=o.first;
+        eviName="R_"+o.second;
+        *logs<<"\n seed of previous run=\n"<<seed<<"\n";
+      }
+
+
 
     Experiment esim;
 
@@ -1207,25 +1249,6 @@ struct Tempering
             Poisson_DLikelihood<MyData,MyModel> DLik;
 
 
-            std::random_device rd;
-
-            std::mt19937_64::result_type seed;
-            if (initseed==0)
-              {
-                seed=rd();
-
-                eviName+=time_now()+"_"+std::to_string(seed);
-                *logs<<"\n random seed =\n"<<seed<<"\n";
-              }
-            else
-              {
-                seed=initseed;
-
-                eviName+=time_now()+"_"+std::to_string(seed);
-
-                *logs<<"\n provided seed =\n"<<seed<<"\n";
-
-              }
 
             std::string eviNameLog0=eviName+"_log.txt";
             std::string eviNameLog=eviNameLog0+".0";

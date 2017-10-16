@@ -6,7 +6,7 @@
 #include <map>
 #include <iostream>
 #include <sstream>
-
+#include <limits>
 #include "myTuples.h"
 
 inline
@@ -18,6 +18,128 @@ std::istream &safeGetline(std::istream &is, std::string &t)
   if (it!=t.npos)
     t.erase(it);
   return is;
+}
+
+
+template<typename T>
+struct value_wrapper
+{
+  value_wrapper(T& x):value(x){}
+
+
+  T& value;
+};
+
+inline
+std::istream& extract_infinite(std::istream& ss, value_wrapper<double>& val, bool is_negative)
+{
+  std::string s;
+  ss>>s;
+  if ((s=="inf")||(s=="infinity")||(s=="INF")||(s=="INFINITY"))
+    {
+      if (is_negative)
+        val.value=-std::numeric_limits<double>::infinity();
+      else
+        val.value=std::numeric_limits<double>::infinity();
+      return ss;
+    }
+  else
+    {
+      ss.setstate(std::ios::failbit);
+      return ss;
+    }
+}
+
+inline
+std::istream& extract_nan(std::istream& ss, value_wrapper<double>& val, bool is_negative)
+{
+  std::string s;
+  ss>>s;
+  if ((s=="nan")||(s=="NAN"))
+    {
+      if (is_negative)
+        val.value=-std::numeric_limits<double>::quiet_NaN();
+      else
+        val.value=std::numeric_limits<double>::quiet_NaN();
+      return ss;
+    }
+  else
+    {
+      ss.setstate(std::ios::failbit);
+      return ss;
+    }
+}
+
+inline
+std::istream& extract_finite(std::istream& ss, value_wrapper<double>& val, bool is_negative)
+{
+  ss>>val.value;
+  if (is_negative)
+    val.value=-val.value;
+  return ss;
+
+}
+
+
+inline
+std::istream& operator>>(std::istream& ss, value_wrapper<double>& val)
+{
+  char c;
+  bool is_negative=false;
+  ss>>c;
+  while (std::isspace(c))
+    ss>>c;
+  if (c=='-')
+    {
+      is_negative=true;
+      ss>>c;
+    }
+  else if (c=='+')
+    ss>>c;
+  switch(c)
+    {
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+      {
+        ss.putback(c);
+        return extract_finite(ss,val,is_negative);
+      }
+
+    case 'i':
+    case 'I':
+      {
+        ss.putback(c);
+        return extract_infinite(ss,val,is_negative);
+      }
+    case 'n':
+    case 'N':
+      {
+        ss.putback(c);
+        return extract_nan(ss,val,is_negative);
+    default:
+          {
+            ss.setstate(std::ios::failbit);
+            return ss;
+          }
+      }
+
+    }
+
+}
+
+template <typename T>
+std::istream& operator>>(std::istream& ss, value_wrapper<T>& val)
+{
+  ss>>val.value;
+  return ss;
 }
 
 template<typename T>
@@ -33,6 +155,9 @@ auto operator>>(std::istream& is, T& v)
   return is;
 
 }
+
+
+
 
 template<typename T>
 auto operator>>(std::istream& is, T*& v)
@@ -71,10 +196,11 @@ std::istream& operator>>(std::istream& is, std::vector<T>& v)
             {
               is.putback(c);
               T e;
-              if(is>>e)
-                 v.push_back(e);
+              value_wrapper<T> w(e);
+              if(is>>w)
+                v.push_back(e);
               else
-                 break;
+                break;
             }
         }
       return is;
@@ -86,8 +212,9 @@ std::istream& operator>>(std::istream& is, std::vector<T>& v)
         safeGetline(is,line);
 
       T x;
+      value_wrapper<T> w(x);
       std::stringstream ss(line);
-      while (ss>>x)
+      while (is>>w)
         v.push_back(x);
       return is;
     }
@@ -107,11 +234,12 @@ std::istream& operator>>(std::istream& is, std::vector<T*>& v)
           if (c!=']')
             {
               T* e=new T{};
+              value_wrapper<T> w(*e);
               is.putback(c);
-              if(is>>*e)
-                 v.push_back(e);
+              if(is>>w)
+                v.push_back(e);
               else
-                 break;
+                break;
             }
         }
       return is;
@@ -122,14 +250,21 @@ std::istream& operator>>(std::istream& is, std::vector<T*>& v)
       while (v.empty()  &&line.empty()&& is.good())
         safeGetline(is,line);
 
-      T* x=new T;
-      std::stringstream ss(line);
-      while (ss>>*x)
+      while (true)
         {
-          v.push_back(x);
-          x=new T;
+          T* x=new T;
+          value_wrapper<T> w(*x);
+          std::stringstream ss(line);
+          if (is>>w)
+            {
+              v.push_back(x);
+            }
+          else
+            {
+              delete x;
+              break;
+            }
         }
-      delete x;
       return is;
     }
 }
@@ -150,9 +285,9 @@ std::istream& operator>>(std::istream& is, std::vector<std::vector<T>>& m)
               is.putback(c);
               std::vector<T> e;
               if(is>>e)
-                 m.push_back(e);
+                m.push_back(e);
               else
-                 break;
+                break;
             }
         }
       return is;
@@ -182,14 +317,16 @@ std::istream& operator>>(std::istream& is, std::map<K,T>& v)
       while (c!='}')
         {
           is>>c;
+          while (std::isspace(c))
+            is>>c;
           if (c!='}')
             {
               is.putback(c);
               std::pair<K,T> e;
               if(is>>e)
-                 v.insert(e);
+                v.insert(e);
               else
-                 break;
+                break;
             }
         }
       return is;
@@ -205,7 +342,10 @@ template<typename T1, typename T2>
 std::istream& operator>>(std::istream& os,std::pair<T1,T2>& other)
 {
   char ch;
-  os>>other.first>>ch>>other.second;
+  value_wrapper<T1> w(other.first);
+  value_wrapper<T2> w2(other.second);
+
+  os>>w>>ch>>w2;
   return os;
 }
 
@@ -224,9 +364,9 @@ std::istream& operator>>(std::istream& is,  std::multimap<K,T>& v)
               std::pair<K,T> e;
               is.putback(c);
               if(is>>e)
-                 v.insert(e);
+                v.insert(e);
               else
-                 break;
+                break;
             }
         }
       return is;
@@ -250,10 +390,10 @@ std::istream& operator>>(std::istream& is, std::multiset<T>& v)
             {
               T e;
               is.putback(c);
-              if(is>>e)
-                 v.insert(e);
+              if(is>>value_wrapper<T>(e))
+                v.insert(e);
               else
-                 break;
+                break;
             }
         }
       return is;
@@ -263,7 +403,7 @@ std::istream& operator>>(std::istream& is, std::multiset<T>& v)
       is.setstate(std::ios::failbit);
       return is;
     }
-  }
+}
 
 
 template<typename Last>

@@ -2252,14 +2252,16 @@ public:
     {
 	std::string line;
 	std::getline(is,line);
-	is>>me.gainMoment_;
+	if (!(is>>me.gainMoment_))
+	  return is;
 	std::getline(is,line);
 	std::getline(is,line);
-	is>>me.p_;
+	if (!(is>>me.p_))
+	  return is;
 	std::getline(is,line);
 	std::getline(is,line);
-	is>>me.parDist_;
-	std::getline(is,line);
+	if (!(is>>me.parDist_))
+	  return is;
 	std::getline(is,line);
 	return is;
 
@@ -6442,7 +6444,7 @@ public:
 
     template<class E>
     static
-    void load_state(std::istream& is,
+    bool load_state(std::istream& is,
     std::vector<mcmc_step<E,pDist>>& sDist
     ,std::vector<Adaptive_parameterized>& pars
     ,Master_Adaptive_Beta_New& aBeta
@@ -6459,14 +6461,18 @@ public:
 		std::getline(is,line);
 	    }
 	std::getline(is,line);
-	is>>pars;
+	if (!(is>>pars))
+	  return false;
 	std::getline(is,line);
 	std::getline(is,line);
-	is>>aBeta;
+	if (!(is>>aBeta))
+	  return false;
 	std::getline(is,line);
 	std::getline(is,line);
-	is>> isamples;
+	if (!(is>> isamples))
+	  return false;
 	std::getline(is,line);
+	return true;
     };
 
 
