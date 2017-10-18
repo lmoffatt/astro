@@ -3,16 +3,19 @@
 ##cd /home/lmoffatt.inquimae/Astro/Astro/run/m01
 ##qsub p_m01
 
+
+
+cd /home/lmoffatt.inquimae/Astro/Astro/run/m13
+qsub rp1_m13
+
+cd /home/lmoffatt.inquimae/Astro/Astro/run/m03
+qsub rp1_m03
+
 cd /home/lmoffatt.inquimae/Astro/Astro/run/m101
 qsub rp1_m101
 qsub rp2_m101
 
 
-cd /home/lmoffatt.inquimae/Astro/Astro/run/m03
-qsub rp1_m03
-
-cd /home/lmoffatt.inquimae/Astro/Astro/run/m13
-qsub rp1_m13
 
 ##cd /home/lmoffatt.inquimae/Astro/Astro/run/m02
 ##qsub p_m02
