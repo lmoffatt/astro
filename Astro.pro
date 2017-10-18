@@ -314,7 +314,18 @@ DISTFILES += \
     run/m13/rs2_m13 \
     run/m13/rs3_m13 \
     run/m12/rs4_m12 \
-    run/m13/rs4_m13
+    run/m13/rs4_m13 \
+    run/m01/rp1_m01 \
+    run/m03/rp1_m03 \
+    run/runRestartPiluso \
+    run/m101/rp1_m101 \
+    run/m101/rp2_m101 \
+    run/m13/rp1_m13 \
+    run/m13/rp2_m13 \
+    run/m11/rp1_m11 \
+    run/m11/rp2_m11 \
+    run/m12/rp2_m12 \
+    run/m12/rp1_m12
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \

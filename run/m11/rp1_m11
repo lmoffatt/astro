@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+# Script para correr trabajo serial
+#
+
+# Opciones SGE
+#$ -pe openmp 8
+#$ -l h_rt=95:59:00 # Setea 48 horas de wall clock time
+
+#$ -V  # Exporta las variables de entorno
+#$ -N R11_2k30  # El nombre del job
+#$ -cwd # Cambia al directorio actual
+
+
+
+# Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/local/gcc-6.2.0/lib64/
+
+/home/lmoffatt.inquimae/Astro/parallel/Astro /home/lmoffatt.inquimae/Astro/Astro/run/Restart_script LABEL model_11 RESTART NM2_30_2k_E_250_50_model_11194611s366518_686582274_state.txt
+

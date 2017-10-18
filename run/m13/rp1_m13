@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# Script para correr trabajo serial
+#
+
+# Opciones SGE
+#$ -pe openmp 8
+#$ -l h_rt=95:59:00 # Setea 48 horas de wall clock time
+
+#$ -V  # Exporta las variables de entorno
+#$ -N R101_2k30  # El nombre del job
+#$ -cwd # Cambia al directorio actual
+
+
+
+# Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/local/gcc-6.2.0/lib64/
+
+/home/lmoffatt.inquimae/Astro/parallel2/Astro /home/lmoffatt.inquimae/Astro/Astro/run/Restart_script LABEL model_101 RESTART NM2_30_2k_E_250_50_model_101211856s608643_603945992_state.txt
+
+#!/bin/bash
+#
+# Script para correr trabajo serial
+#
+
+# Opciones SGE
+#$ -pe openmp 8
+#$ -l h_rt=95:59:00 # Setea 48 horas de wall clock time
+
+#$ -V  # Exporta las variables de entorno
+#$ -N R101_2k30  # El nombre del job
+#$ -cwd # Cambia al directorio actual
+
+
+
+# Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/local/gcc-6.2.0/lib64/
+
+/home/lmoffatt.inquimae/Astro/parallel2/Astro /home/lmoffatt.inquimae/Astro/Astro/run/Restart_script LABEL model_101 RESTART NM2_30_2k_E_250_50_model_101211856s608643_603945992_state.txt
+
+#!/bin/bash
+#
+# Script para correr trabajo serial
+#
+
+# Opciones SGE
+#$ -pe openmp 8
+#$ -l h_rt=95:59:00 # Setea 48 horas de wall clock time
+
+#$ -V  # Exporta las variables de entorno
+#$ -N R13_2k30  # El nombre del job
+#$ -cwd # Cambia al directorio actual
+
+
+
+# Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/local/gcc-6.2.0/lib64/
+
+/home/lmoffatt.inquimae/Astro/parallel2/Astro /home/lmoffatt.inquimae/Astro/Astro/run/Restart_script LABEL model_13 RESTART NM2_30_2k_E_250_50_model_13061656s156138_1966035569_state.txt
+
