@@ -1,7 +1,3 @@
-sbatch m01/rs1_m01
-sbatch m01/rs2_m01
-sbatch m01/rs3_m01
-
 sbatch m02/rs1_m02
 sbatch m02/rs2_m02
 
@@ -10,37 +6,16 @@ sbatch m03/rs2_m03
 
 sbatch m10/rs1_m10
 sbatch m10/rs2_m10
-sbatch m10/rs3_m10
 
-sbatch m101/rs1_m101
 sbatch m101/rs2_m101
 sbatch m101/rs3_m101
-sbatch m101/rs4_m101
-
-sbatch m11/rs1_m11
-sbatch m11/rs2_m11
-sbatch m11/rs3_m11
-sbatch m11/rs4_m11
+sbatch m101/rs5_m101
 
 sbatch m12/rs1_m12
-sbatch m12/rs2_m12
-sbatch m12/rs3_m12
-sbatch m12/rs4_m12
-
-sbatch m13/rs1_m13
-sbatch m13/rs2_m13
-sbatch m13/rs3_m13
-sbatch m13/rs4_m13
-
-
-sbatch m101/rs2_m101
-sbatch m101/rs3_m101
-sbatch m101/rs5_m101
 
 
 
-sbatch m101/rs1_m101
-sbatch m101/rs2_m101
-sbatch m101/rs3_m101
-sbatch m101/rs5_m101
+
+
+
 
