@@ -16,5 +16,5 @@
 # Comando para correr el programa, tal cual lo llamaríamos desde la línea de comandos
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt.inquimae/local/gcc-6.2.0/lib64/
 
-/home/lmoffatt.inquimae/Astro/parallel/Astro /home/lmoffatt.inquimae/Astro/Astro/run/Restart_script LABEL model_12 RESTART NM2_30_2k_E_250_50_model_12224311s309659_2866979168_state.txt
+/home/lmoffatt.inquimae/Astro/parallel2/Astro /home/lmoffatt.inquimae/Astro/Astro/run/Restart_script LABEL model_12 RESTART NM2_30_2k_E_250_50_model_12224311s309659_2866979168_state.txt
 

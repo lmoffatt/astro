@@ -39,7 +39,7 @@ echo "
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt/GCC-7.2.0/lib64/
 export OMP_NUM_THREADS=8
-srun /home/lmoffatt/Astro/parallel/Astro /home/lmoffatt/Astro/astro/run/Restart_script LABEL model_101 RESTART R_NM2_30_2k_E_250_50_model_101163632s396327_1725895888_state.txt
+srun /home/lmoffatt/Astro/parallel/Astro /home/lmoffatt/Astro/astro/run/Restart_script LABEL model_101 RESTART R_R_NM2_30_2k_E_250_50_model_101163632s396327_1725895888_state.txt
 
 echo "
 --------------------------------------------------------------------------------

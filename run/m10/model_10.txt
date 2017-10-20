@@ -104,12 +104,7 @@ a_max_psi_4 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturat
 
 a_max_psi_5 <LOG> 1E-5   [s^-1] 10 [dB]//  2E-5 neuron apoptosis rate at saturated DAMP
 
-
-
-
-
 inj_width <LOG>  1E-6   [m] 3 [dB]//  width of the injury
-
 
 DAMP_ratio <LOGRATIO> 0.001 [ratio] 10 [dB]// mass ratio of the cell proteins that are DAMPs
 

@@ -994,8 +994,11 @@ public:
 		    {
 			if (std::isnan(landa(i,j)))
 			    return landa(i,j);
-			else if (landa(i,j)!=0)
+			else
+			  if (landa(i,j)!=0)
 			    sumLogL+=logLikelihood(landa(i,j),k(i,j));
+			  else if(k(i,j)!=0)
+			    return std::numeric_limits<double>::quiet_NaN();
 		    }
 	    }
 	return sumLogL;
