@@ -326,7 +326,8 @@ DISTFILES += \
     run/m11/rp2_m11 \
     run/m12/rp2_m12 \
     run/m12/rp1_m12 \
-    run/runRestartOdin_copy
+    run/runRestartOdin_copy \
+    tupac/s
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
