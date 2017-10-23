@@ -10,7 +10,7 @@
 #SBATCH --error="m01-%j.err"
 #SBATCH --output="m01-%j.out"
 #SBATCH --partition=fast
-##SBATCH --time=59
+#SBATCH --time=59:59
 
 echo "trabajo \"${SLURM_JOB_NAME}\""
 echo "    id: ${SLURM_JOB_ID}"
