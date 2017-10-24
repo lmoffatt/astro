@@ -1,8 +1,8 @@
-sbatch m01/s_m01
-sbatch m02/s_m02
-sbatch m03/s_m03
 sbatch m10/s_m10
 sbatch m101/s_m101
 sbatch m11/s_m11
 sbatch m12/s_m12
 sbatch m13/s_m13
+sbatch m01/s_m01
+sbatch m02/s_m02
+sbatch m03/s_m03
