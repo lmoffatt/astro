@@ -23,11 +23,11 @@ cp $a par_header
 
 grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]*[[:space:]][5-9][0-9][0-9][[:space:]][-.0-9]*[[:space:]][1][[:space:]][0-9]*[[:space:]][-.0-9]*  *par.* -h >temporaryyy
 
-cat par_header temporaryyy>../beta_par_$1.txt
+cat par_header temporaryyy>../beta_par_eq_$1.txt
 rm temporaryyy
 cd ..
-echo $1 parameters beta=1
-echo $(ls beta_par_$1.txt -lh)
+echo $1 parameters nsamples>500 beta=1
+echo $(ls beta_par_eq_$1.txt -lh)
 }
 
 
@@ -55,11 +55,9 @@ a=($ls ./m*/*$1*.000*)
 cp $a $1_header
 grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]**[[:space:]][5-9][0-9][0-9][[:space:]][-.0-9]*[[:space:]][1][[:space:]][0-9]*[[:space:]][-.0-9]*  ./m*/*$1.* -h >temporaryyy
 
-
-
 cat $1_header temporaryyy>beta_eq_$1_total.txt
 rm temporaryyy
-echo beta=1  $1
+echo beta=1 nsamples>500 $1
 echo $(ls beta_eq_$1_total.txt -lh)
 
 }
