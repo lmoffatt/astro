@@ -6341,8 +6341,6 @@ public:
 	for(std::size_t i=0; i<sDist.size(); ++i)
 	    {
 		AP landa;
-
-
 		mcmc_step<E,pDist> cDist;
 		landa=pars[i].sample(mt[i]);
 		sDist[i]=LM_Lik.update_mcmc_step
@@ -6351,13 +6349,13 @@ public:
 	//	sDist[i].proposed.autoTest(mt[i],500);
  		cDist=LM_Lik.get_mcmc_step
 		(lik,model,data,c,landa,aBeta.getBeta().getValue()[i],sDist[i].iscout,slogL_max,ndts_max);
-		std::cerr<<"logL "<<cDist.logLikelihood;
-		std::cerr<<"("<<cDist.slogLik()<<","<<cDist.dts_size()<<") ";
-		if (!cDist.isValid)
-		    {
-			std::cerr<<"rejection :"<<landa<<"\n";
-			pars[i].push_rejection(landa);
-		    }
+//		std::cerr<<"logL "<<cDist.logLikelihood;
+//		std::cerr<<"("<<cDist.slogLik()<<","<<cDist.dts_size()<<") ";
+//		if (!cDist.isValid)
+//		    {
+//			std::cerr<<"rejection :"<<landa<<"\n";
+//			pars[i].push_rejection(landa);
+//		    }
 
 
 		if (test::accept(sDist[i],cDist,mt[i],dHd[i],
@@ -6374,7 +6372,6 @@ public:
 			aBeta.new_rjection(i,sDist[i]);
 			out[i]=false;
 			pars[i].push_rejection(landa);
-
 		    }
 
 	    }

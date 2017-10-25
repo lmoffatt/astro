@@ -327,7 +327,8 @@ DISTFILES += \
     run/m12/rp2_m12 \
     run/m12/rp1_m12 \
     run/runRestartOdin_copy \
-    tupac/s
+    tupac/s \
+    run/scripts/concatenate.sh
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
