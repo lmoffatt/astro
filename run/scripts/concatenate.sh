@@ -6,10 +6,10 @@ cd $1
 a=($ls *par*.000*)
 cp $a par_header
 
-grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]**[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][.0-9]**[[:space:]][0-9]*[[:space:]][-.0-9]*  *par.* -h >total
+grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]**[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][1]**[[:space:]][0-9]*[[:space:]][-.0-9]*  *par.* -h >temporaryyy
 
-cat par_header total>../beta_par_$1.txt
-rm total
+cat par_header temporaryyy>../beta_par_$1.txt
+rm temporaryyy
 cd ..
 echo $1 parameters beta=1
 echo $(ls beta_par_$1.txt -lh)
@@ -38,15 +38,20 @@ a=($ls ./m*/*$1*.000*)
 
 cp $a $1_header
 
-grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]**[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][1]**[[:space:]][0-9]*[[:space:]][-.0-9]*  ./m*/*$1.* -h >total
+grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]**[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][1]**[[:space:]][0-9]*[[:space:]][-.0-9]*  ./m*/*$1.* -h >temporaryyy
 
-cat $1_header total>beta_$1_total.txt
-rm total
+cat $1_header temporaryyy>beta_$1_total.txt
+rm temporaryyy
+echo beta=1  $1
+echo $(ls beta_$1_total.txt -lh)
+
 }
 
 extract_all logL
 extract_beta_1 fit
 extract_beta_1 sim
+extract_eq fit
+extract_eq sim
 extract_par_beta_1 m01
 extract_par_beta_1 m02
 extract_par_beta_1 m03
