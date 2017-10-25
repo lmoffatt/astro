@@ -21,7 +21,7 @@ cd $1
 a=($ls *par*.000*)
 cp $a par_header
 
-grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]*[[:space:]][5-9][0-9][0-9][[:space:]][-.0-9]*[[:space:]][1][[:space:]][0-9]*[[:space:]][-.0-9]*  *par.* -h >temporaryyy
+grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]*[[:space:]][5-9][0-9][0-9][[:space:]][-.0-9]*[[:space:]](1|1e[-]07)[[:space:]][0-9]*[[:space:]][-.0-9]*  *par.* -h >temporaryyy
 
 cat par_header temporaryyy>../beta_par_eq_$1.txt
 rm temporaryyy
@@ -74,9 +74,9 @@ echo $(ls beta_$1_total.txt -lh)
 }
 
 
-extract_all logL
-extract_beta_1 fit
-extract_beta_eq_1 sim
+#extract_all logL
+#extract_beta_1 fit
+#extract_beta_eq_1 sim
 extract_par_eq_beta_1 m01
 extract_par_eq_beta_1 m02
 extract_par_eq_beta_1 m03
