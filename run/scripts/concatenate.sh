@@ -11,11 +11,15 @@ grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]**[[:space
 cat par_header total>../beta_par_$1.txt
 rm total
 cd ..
+echo $1 parameters beta=1
+echo $(ls beta_par_$1.txt -lh)
 }
 extract_all(){
 a=($ls ./m*/*$1.*.000*)
 cp $a $1_header
 cat $1_header ./m*/*$1.*.00[1-9]* ./m*/*$1.*.0[1-9][0-9]* >total_$1.txt
+echo all $1
+echo $(ls total_$1.txt -lh)
 }
 
 
@@ -24,6 +28,9 @@ a=($ls ./m*/*$1*.000*)
 
 cp $a $1_header
 cat $1_header ./m*/*$1.*.01[7-9]* ./m*/*$1.*.0[2-9][0-9]* >total_eq_$1.txt
+echo equilibrio  $1
+echo $(ls total_eq_$1.txt -lh)
+
 }
 
 extract_beta_1(){
