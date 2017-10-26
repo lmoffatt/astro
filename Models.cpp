@@ -736,7 +736,7 @@ void SimplestModel::Omega_Bound(const SimplestModel::Param &p,
   const double NAv=6.022E23;
 
 
-  double molar_section=1.0/(NAv*p.epsilon_*c.h_*c.h_)*1000.0;
+  double molar_section=1.0/(NAv*p.epsilon_*c.h_*c.h_*1000.0);
 
   double K_omega=p.kcat_omega_/p.kon_omega_;
   for (unsigned x=0; x<numX; ++x)

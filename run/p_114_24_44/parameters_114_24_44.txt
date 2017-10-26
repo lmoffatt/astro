@@ -127,25 +127,25 @@ DAMP_MW <LOG> 32.33  [kD] 2.47 [dB]// peso molecular de las DAMPs
 k_sig <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate
 
 
-k_sig_max_omega_1 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
+k_sig_max_omega_1 <LOG> 10  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
 
-k_sig_max_omega_2 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
+k_sig_max_omega_2 <LOG> 10  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
 
-k_sig_max_omega_3 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
+k_sig_max_omega_3 <LOG> 10  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
 
-k_sig_max_omega_4 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
+k_sig_max_omega_4 <LOG> 10  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
 
-k_sig_max_omega_5 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
+k_sig_max_omega_5 <LOG> 10  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of psi  mediator
 
-k_sig_max_psi_1 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
+k_sig_max_psi_1 <LOG> 10  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
 
-k_sig_max_psi_2 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
+k_sig_max_psi_2 <LOG> 10  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
 
-k_sig_max_psi_3 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
+k_sig_max_psi_3 <LOG> 10  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
 
-k_sig_max_psi_4 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
+k_sig_max_psi_4 <LOG> 10  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
 
-k_sig_max_psi_5 <LOG> 1000  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
+k_sig_max_psi_5 <LOG> 10  [molecules s^-1 cell^-1] 15 [dB]// mediator secreation rate at saturation of DAMP
 
 
 

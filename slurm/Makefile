@@ -36,7 +36,7 @@ DISTNAME      = Astro1.0.0
 DISTDIR = /home/luciano/Data/celulas/astro/build-Astro-gcc_6-Release/.tmp/Astro1.0.0
 LINK          = ~/GCC-7.2.0/bin/g++
 LFLAGS        = -fopenmp -Wl,-O1,-rpath=/home/lmoffatt/GCC-7.2.0/lib/
-LIBS          = $(SUBLIBS) -L/usr/lib64 -lblas -llapack
+LIBS          = $(SUBLIBS) -L/usr/lib64/atlas-sse3/ -latlas -lf77blas -llapack
 AR            = ar cqs
 RANLIB        =
 SED           = sed
