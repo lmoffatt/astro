@@ -11,6 +11,8 @@
 #SBATCH --output="m01-%j.out"
 #SBATCH --account=freeriders
 #SBATCH --partition=freeriders
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=lmoffatt@gmail.com
 
 echo "trabajo \"${SLURM_JOB_NAME}\""
 echo "    id: ${SLURM_JOB_ID}"

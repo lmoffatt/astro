@@ -1170,7 +1170,7 @@ struct Tempering
       {
         auto o=extract_Seed(state_file);
         seed=o.first;
-        eviName="R_"+o.second;
+        eviName=o.second;
         *logs<<"\n seed of previous run=\n"<<seed<<"\n";
       }
 
