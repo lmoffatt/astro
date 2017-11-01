@@ -5,7 +5,7 @@
 #SBATCH --job-name="m_10"
 #SBATCH --nodes=1                    # Use one node
 #SBATCH --ntasks=1                   # Run a single task
-#SBATCH --cpus-per-task=32            # Number of CPU cores per task
+##SBATCH --cpus-per-task=32            # Number of CPU cores per task
 #SBATCH --workdir=/home/lmoffatt/Astro/astro/run/m10
 #SBATCH --error="m10-%j.err"
 #SBATCH --output="m10-%j.out"
@@ -40,7 +40,7 @@ echo "
 # `./programa-openmp`.
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt/GCC-7.2.0/lib64/
-export OMP_NUM_THREADS=32
+exportOMP_NUM_THREADS=$SLURM_NTASKS_PER_NODE
 srun /home/lmoffatt/Astro/parallel/Astro /home/lmoffatt/Astro/astro/run/evidence_script LABEL model_10
 
 
