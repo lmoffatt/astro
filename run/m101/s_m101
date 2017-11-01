@@ -47,5 +47,6 @@ srun /home/lmoffatt/Astro/parallel/Astro /home/lmoffatt/Astro/astro/run/evidence
 echo "
 --------------------------------------------------------------------------------
 "
+echo "SLURM_CPUS_PER_TASK=" $SLURM_CPUS_PER_TASK
 
 date +"fin %F - %T"
