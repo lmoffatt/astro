@@ -329,7 +329,8 @@ DISTFILES += \
     run/runRestartOdin_copy \
     tupac/s \
     run/scripts/concatenate.sh \
-    run/m13/s1_m13
+    run/m13/s1_m13 \
+    run/m13/t_m13
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
