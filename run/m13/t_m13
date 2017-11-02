@@ -4,7 +4,7 @@
 
 #SBATCH --job-name="m_13"
 #SBATCH --nodes=1                    # Use one node
-#SBATCH --ntasks=1                   # Run a single task
+##SBATCH --ntasks=1                   # Run a single task
 ##SBATCH --cpus-per-task=64            # Number of CPU cores per task
 #SBATCH --workdir=/home/lmoffatt/Astro/astro/run/m13
 #SBATCH --error="m13-%j.err"
