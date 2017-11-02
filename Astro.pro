@@ -240,7 +240,6 @@ DISTFILES += \
     run/evidence_script_1 \
     run/evidence_script_5 \
     run/evidence_script_6 \
-    run/evidence_script_7 \
     run/evidence_script \
     run/m01/o_m01_1 \
     run/m01/o_m01_2 \
@@ -330,7 +329,10 @@ DISTFILES += \
     tupac/s \
     run/scripts/concatenate.sh \
     run/m13/s1_m13 \
-    run/m13/t_m13
+    run/m13/t_m13 \
+    run/evidence_script_tupac \
+    run/Restart_script_tupac \
+    run/m13/rt1_m13
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
