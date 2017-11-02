@@ -13,6 +13,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=lmoffatt@gmail.com
 
+
 echo "trabajo \"${SLURM_JOB_NAME}\""
 echo "    id: ${SLURM_JOB_ID}"
 echo "    partición: ${SLURM_JOB_PARTITION}"
@@ -34,7 +35,7 @@ echo "
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt/GCC-7.2.0/lib64/
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-srun /home/lmoffatt/Astro/parallel/Astro /home/lmoffatt/Astro/astro/run/Restart_script_tupac LABEL model_13 RESTART Tu_M2_30_2k_E_250_50_model_13_163535s685354_268234294_state.txt
+srun /home/lmoffatt/Astro/parallel/Astro /home/lmoffatt/Astro/astro/run/Restart_script_tupac LABEL model_13 RESTART $RESTART_STATE_state.txt
 
 
 echo "
