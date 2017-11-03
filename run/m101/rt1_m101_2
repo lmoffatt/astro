@@ -2,13 +2,13 @@
 
 # Correr con `sbatch /ruta/a/este/script
 
-#SBATCH --job-name="m_10"
+#SBATCH --job-name="m_101"
 #SBATCH --nodes=1                    # Use one node
 #SBATCH --ntasks=1                   # Run a single task
 ##SBATCH --cpus-per-task=64            # Number of CPU cores per task
-#SBATCH --workdir=/home/lmoffatt/Astro/astro/run/m10
-#SBATCH --error="m10-%j.err"
-#SBATCH --output="m10-%j.out"
+#SBATCH --workdir=/home/lmoffatt/Astro/astro/run/m101
+#SBATCH --error="m101-%j.err"
+#SBATCH --output="m101-%j.out"
 #SBATCH --partition=free-rider
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=lmoffatt@gmail.com
@@ -34,7 +34,7 @@ echo "
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt/GCC-7.2.0/lib64/
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-srun /home/lmoffatt/Astro/parallelOpt/Astro /home/lmoffatt/Astro/astro/run/evidence_script_tupac_2 LABEL model_10
+srun /home/lmoffatt/Astro/parallelOpt/Astro /home/lmoffatt/Astro/astro/run/Restart_script_tupac_2 LABEL model_101 RESTART $RESTART_STATE_state.txt
 
 
 echo "
