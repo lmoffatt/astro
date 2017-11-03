@@ -239,7 +239,6 @@ DISTFILES += \
     run/0 \
     run/evidence_script_1 \
     run/evidence_script_5 \
-    run/evidence_script_6 \
     run/evidence_script \
     run/m01/o_m01_1 \
     run/m01/o_m01_2 \
@@ -340,7 +339,8 @@ DISTFILES += \
     run/m03/t_m03 \
     run/m03/rt_m03 \
     run/m10/t_m10 \
-    run/m10/rt_m10
+    run/m10/rt_m10 \
+    run/evidence_script_test
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
