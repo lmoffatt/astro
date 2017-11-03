@@ -113,6 +113,13 @@ void SimplestModel::nextEuler
   EulerStep(d,p,c,dt);
 }
 
+void SimplestModel::nextEuler(CortexState::Der &d, const SimplestModel::Param &p, CortexState &c, double dt) const
+{
+  dStep(d,p,c);
+  EulerStep(d,p,c,dt);
+
+}
+
 std::vector<CortexState> SimplestModel::nextEuler_i
 (const std::vector<SimplestModel::Param> &p,
  const std::vector<CortexState> &c,
@@ -138,6 +145,16 @@ CortexState::Der SimplestModel::dStep( const SimplestModel::Param &p, const Cort
     d.dOmega=dOmega_dt(p,c);
   d.dRho=dRho_dt(p,c,d.hasOmega);
   return d;
+}
+
+void SimplestModel::dStep(CortexState::Der &d, const SimplestModel::Param &p, const CortexState &c) const
+{
+  dPsi_dt(d.dPsi,p,c);
+  d.hasOmega=p.Domega_>0;
+  if (d.hasOmega)
+    dOmega_dt(d.dOmega,p,c);
+  dRho_dt(d.dRho,p,c,d.hasOmega);
+
 }
 
 
@@ -580,6 +597,26 @@ std::vector<double> SimplestModel::dPsi_dt(const Param &p,
   return o;
 }
 
+void SimplestModel::dPsi_dt(std::vector<double> &o, const SimplestModel::Param &p, const CortexState &c) const
+
+{
+  unsigned numX=c.rho_.size();
+
+
+
+  for (unsigned x=0; x<numX; ++x)
+    {
+      double Jn=0;
+      double Jp=0;
+      if (x>0)
+        Jn=2.0*p.Dpsi_*(c.psi_T_[x-1]-c.psi_B_[x-1]-c.psi_T_[x]+c.psi_B_[x])/(c.dx_[x-1]+c.dx_[x]);
+      if (x+1<numX)
+        Jp=2.0*p.Dpsi_*(c.psi_T_[x+1]-c.psi_B_[x+1]-c.psi_T_[x]+c.psi_B_[x])/(c.dx_[x+1]+c.dx_[x]);
+
+      o[x]=(Jn+Jp)/c.dx_[x]-p.kcat_psi_*c.psi_B_[x];
+    }
+}
+
 void SimplestModel::Psi_Bound(const SimplestModel::Param &p, CortexState &c) const
 {
   unsigned numX=c.rho_.size();
@@ -726,6 +763,60 @@ std::vector<double> SimplestModel::dOmega_dt(const Param &p,
 
 }
 
+void SimplestModel::dOmega_dt(std::vector<double> &o, const SimplestModel::Param &p, const CortexState &c) const
+{
+  unsigned numX=c.rho_.size();
+  unsigned numK=c.rho_.front().size();
+
+  const double NAv=6.022E23;
+
+  /// esto de abajo indica que para uso un espesor y ancho c.h_ para el numero rho de celulas
+  double molar_section=1.0/(NAv*p.epsilon_*c.h_*c.h_*1000.0);
+
+  for (unsigned x=0; x<numX; ++x)
+    {
+      double Jn=0;
+      double Jp=0;
+      double Dfn,Dfp;
+      if (x>0)
+        {
+          Dfn=2.0*p.Domega_/(c.dx_[x-1]+c.dx_[x]);
+          Jn=(c.omega_T_[x-1]-c.omega_B_[x-1]-c.omega_T_[x]+c.omega_B_[x]);
+          Jn=Dfn*Jn;
+        }
+      if (x+1<numX)
+        {
+          Dfp=2.0*p.Domega_/(c.dx_[x+1]+c.dx_[x]);
+          Jp=(c.omega_T_[x+1]-c.omega_B_[x+1]-c.omega_T_[x]+c.omega_B_[x]);
+          Jp=Dfp*Jp;
+        }
+      double sig=0;
+      double psi_F=c.psi_T_[x]-c.psi_B_[x];
+      double omega_F=c.omega_T_[x]-c.omega_B_[x];
+
+      if (p.DAMP_omega_ratio_==0)
+        {for (unsigned k=0; k<numK; ++k)
+            {
+              sig+=(p.ksig_omega_[k]
+                    +p.ksig_max_omega_[k]*p.kon_omega_*omega_F
+                    /(p.kcat_omega_+p.kon_omega_*omega_F)
+                    +p.ksig_max_psi_[k]*p.kon_psi_*psi_F
+                    /(p.kcat_psi_+p.kon_psi_*psi_F)
+                    )*c.rho_[x][k];
+
+            }
+        }
+
+      /// esto de abajo indica que para uso un espesor y ancho c.h_ para el numero rho de celulas, el largo de la ///
+      ///celda es variable, es dx_[x]
+      // por otro lado
+      sig*=molar_section/c.dx_[x];
+
+      o[x]=(Jn+Jp)/c.dx_[x]+sig-p.kcat_omega_*c.omega_B_[x];
+
+    }
+
+}
 void SimplestModel::Omega_Bound(const SimplestModel::Param &p,
                                 CortexState &c) const
 {
@@ -1260,6 +1351,91 @@ SimplestModel::dRho_dt(const SimplestModel::Param &p, const CortexState &c, bool
   return drho_;
 }
 
+void SimplestModel::dRho_dt(std::vector<std::vector<double> > &drho_, const SimplestModel::Param &p, const CortexState &c, bool hasOmega) const
+{
+  unsigned numX=c.rho_.size();
+  unsigned numK=c.rho_.front().size();
+
+
+
+  if (hasOmega)
+    {
+      for (unsigned x=0; x<numX; ++x)
+        {
+          double psi_F=c.psi_T_[x]-c.psi_B_[x];
+          double omega_F=c.omega_T_[x]-c.omega_B_[x];
+          for (unsigned k=0; k<numK; ++k)
+            {
+              double Jr,Jl,Ja;
+              if (k+1<numK)
+                Jr=p.g_left_[k+1]*c.rho_[x][k+1]
+                    -(p.g_rigth_[k]
+                      +p.g_max_psi_[k]*psi_F
+                      /(p.Keq_gmax_psi_[k]+psi_F)
+                      +p.g_max_omega_[k]*omega_F
+                      /(p.Keq_gmax_omega_[k]+omega_F)
+                      )*c.rho_[x][k];
+              else
+                Jr=0;
+              if (k>0)
+                Jl=-p.g_left_[k]*c.rho_[x][k]
+                    +(p.g_rigth_[k-1]
+                    +p.g_max_psi_[k-1]*psi_F
+                    /(p.Keq_gmax_psi_[k-1]+psi_F)
+                    +p.g_max_omega_[k-1]*omega_F
+                    /(p.Keq_gmax_omega_[k-1]+omega_F)
+                    )*c.rho_[x][k-1];
+              else
+                Jl=0;
+              Ja= (+p.a_[k]
+                   +p.a_psi_[k]*p.kon_psi_*psi_F
+                   /(p.kcat_psi_+p.kon_psi_*psi_F)
+                   +p.a_omega_[k]*p.kon_omega_*omega_F
+                   /(p.kcat_omega_+p.kon_omega_*omega_F)
+                   )*c.rho_[x][k];
+
+
+              drho_[x][k]=Jl+Jr-Ja;
+
+            }
+        }
+    }
+  else
+    {
+      for (unsigned x=0; x<numX; ++x)
+        {
+          for (unsigned k=0; k<numK; ++k)
+            {
+              double psi_F=c.psi_T_[x]-c.psi_B_[x];
+              double Jr,Jl,Ja;
+              if (k+1<numK)
+                Jr=p.g_left_[k+1]*c.rho_[x][k+1]
+                    -(p.g_rigth_[k]
+                      +p.g_max_psi_[k]*psi_F
+                      /(p.Keq_gmax_psi_[k]+psi_F)
+                      )*c.rho_[x][k];
+              else
+                Jr=0;
+              if (k>0)
+                Jl=-p.g_left_[k]*c.rho_[x][k]
+                    +(p.g_rigth_[k-1]
+                    +p.g_max_psi_[k-1]*psi_F
+                    /(p.Keq_gmax_psi_[k-1]+psi_F)
+                    )*c.rho_[x][k-1];
+              else
+                Jl=0;
+              Ja= (p.a_[k]
+                   +p.a_psi_[k]*p.kon_psi_*psi_F
+                   /(p.kcat_psi_+p.kon_psi_*psi_F)
+                   )*c.rho_[x][k];
+
+              drho_[x][k]=Jl+Jr-Ja;
+
+            }
+        }
+    }
+}
+
 
 
 
@@ -1409,9 +1585,10 @@ std::pair<CortexSimulation, std::pair<std::vector<double>, std::vector<std::size
   unsigned i=0;
   std::vector<std::vector<double>> dRho=c.rho_;
 
+  auto d=dStep(p,c);
   while ((t+dt_run<=0)&&(c.isValid_))
     {
-      nextEuler(p,c,dt_run);
+      nextEuler(d,p,c,dt_run);
       dts.first.push_back(dt_run);
       t+=dt_run;
 
@@ -1459,7 +1636,7 @@ std::pair<CortexSimulation, std::pair<std::vector<double>, std::vector<std::size
 
           t+=dt_run;
 
-          nextEuler(p,c,dt_run);
+          nextEuler(d,p,c,dt_run);
           dts.first.push_back(dt_run);
 
           if (dt_run<sp.tSimul(i)-t)

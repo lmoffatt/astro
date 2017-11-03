@@ -110,6 +110,8 @@ public:
   std::pair<CortexState, double> nextEuler_Adapt(const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, std::vector<double> &dts) const;
 
   void nextEuler(const SimplestModel::Param &p, CortexState &c, double dt) const;
+  void nextEuler(CortexState::Der &d,const SimplestModel::Param &p, CortexState &c, double dt) const;
+
 
   std::pair<Di<CortexState>, double> nextEuler_Adapt_i(const Di<SimplestModel::Param> &p, const std::pair<Di<CortexState>, double> &c, double dt, double dtmin, double maxlogError) const;
 
@@ -150,16 +152,24 @@ private:
 
   std::vector<double> dPsi_dt(const Param &p, const CortexState& c) const;
 
+   void dPsi_dt(std::vector<double>& d,const Param &p, const CortexState& c) const;
+
 
   void Psi_Bound(const Param &p, CortexState &c) const;
 
 
   std::vector<double> dOmega_dt(const Param &p, const CortexState &c)const;
 
+  void  dOmega_dt(std::vector<double>& o,const Param &p, const CortexState &c)const;
+
   void Omega_Bound(const Param &p,  CortexState& c) const;
 
 
   std::vector<std::vector<double> > dRho_dt(const Param &p, const CortexState &c, bool hasOmega)const;
+
+  void dRho_dt(std::vector<std::vector<double> >& drho_, const Param &p, const CortexState &c, bool hasOmega)const;
+
+
   std::vector<CortexState> nextEuler_i(const std::vector<SimplestModel::Param> &p, const std::vector<CortexState> &c, double dt) const;
 
   std::pair<CortexState, double> nextEuler_Adapt_2(const CortexState &one, const CortexState::Der &d, const SimplestModel::Param &p, const std::pair<CortexState, double> &c, double dt, double dtmin, double maxlogError, std::vector<double> &dts) const;
@@ -170,6 +180,8 @@ private:
   void EulerStep(const CortexState::Der &d, const SimplestModel::Param &p, CortexState &c, double dt) const;
 
   CortexState::Der dStep(const SimplestModel::Param &p, const CortexState &c) const;
+
+ void  dStep( CortexState::Der &d,const SimplestModel::Param &p, const CortexState &c) const;
 
 
 };

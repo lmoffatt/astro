@@ -531,7 +531,8 @@ struct mcmc_step<M_Matrix<M_Matrix<double>>,Dist>: public mcmc_Dpost<M_Matrix<M_
     return os;
   }
 
-  std::ostream& writelogLRowDataFrame(std::ostream& os, const std::string& ss)
+  std::ostream& writelogLRowDataFrame(std::ostream& os,
+                                      const std::string& ss)
   {
     writelogLRowMeanDataFrame(os,ss);
     os<<"\n";
@@ -5552,7 +5553,7 @@ public:
   {
     return Evidence(sample.first,sample.second);
   }
-  static double Evidence(const Beta mybeta,const std::vector<mcmc>& sample)
+  static double Evidence(const Beta& mybeta,const std::vector<mcmc>& sample)
   {
     auto n=mybeta.getValue().size();
     double beta0=mybeta.getValue()[0];
@@ -5579,6 +5580,49 @@ public:
 
   }
 
+
+  static double Evidence(std::size_t i0,const Beta& mybeta,const std::vector<mcmc>& sample)
+  {
+    //  el verdadero logLik es logLik* beta[i0]
+    // el verdadero beta[i] es beta[i]/beta[i0]
+    double betaRef=mybeta.getValue()[i0];
+    auto n=mybeta.getValue().size();
+    double beta0=mybeta.getValue()[i0]/betaRef;
+    double sum=0;
+    double sumdb=0;
+    double logLik0=sample[i0].logLik()*betaRef;
+    if (i0+1==sample.size())return logLik0;
+    else
+      {
+        for (std::size_t i=i0+1; i<sample.size(); ++i)
+          {
+            double beta=mybeta.getValue()[i]/betaRef;
+            double db=beta0-beta;
+            double logLik=sample[i].logLik()*betaRef;
+            sum+=db*(logLik0+logLik)/2;
+            sumdb+=db;
+            if ((i==n-1)&&(beta>0))
+              {
+                double db0=beta;
+                sum+=(db0*(1+db0/db/2))*logLik-sqr(db0)/db/2*logLik0;
+                sumdb+=db0;
+              }
+            beta0=beta;
+            logLik0=logLik;
+          }
+        return sum;
+      }
+  }
+
+  static std::vector<double> Evidence_of_beta(const Beta& mybeta,const std::vector<mcmc>& sample)
+  {
+    std::vector<double> out(mybeta.getValue().size());
+    for (std::size_t i=0; i<out.size(); ++i)
+      {
+        out[i]=Evidence(i,mybeta,sample);
+      }
+    return out;
+  }
 
 };
 
@@ -6237,6 +6281,41 @@ public:
     return os;
   }
 
+  template<class E>
+  static std::ostream& put
+  (std::size_t i,
+   std::ostream& os
+   ,const std::vector<mcmc_step<E,pDist>>& sLik
+   ,const std::vector<bool>& accepts,
+   const std::vector<double>& dHd,
+   const std::vector<double>& logPforward,
+   const std::vector<double>& logPbackward,
+   const std::vector<double>& logChiforward,
+   const std::vector<double>& logChibackward,
+   const std::vector<double>& logDetCurrent,
+   const std::vector<double>& logDetCandidate
+   )
+  {
+    os<<sLik[i].iscout<<" ";
+    os<<sLik[i].beta<<" ";
+    if(accepts[i]) os<<"acc ";
+    else
+      os<<"rej ";
+    os<<sLik[i].proposed.landa<<" ";
+    os<<" dHd "<<dHd[i]<<" ";
+    os<<" chif "<<logChiforward[i]<<" ";
+    os<<" chib "<<logChibackward[i]<<" ";
+    os<<" sD "<<logDetCurrent[i]<<" ";
+    os<<" cD "<<logDetCandidate[i]<<" ";
+    os<<" Pf "<<logPforward[i]<<" ";
+    os<<" Pb "<<logPbackward[i]<<" ";
+    os<<sLik[i].logPrior()<<" ";
+    os<<sLik[i].mlogbPL()<<" ";
+    os<<sLik[i].logLik()<<"s"<<sLik[i].slogLik();
+    os<<"("<<sLik[i].dts_size()<<")\n";
+    return os;
+  }
+
 
 
   template<class E>
@@ -6309,7 +6388,8 @@ public:
 
   template<class E>
   static void tempered_step
-  (const propDistStep<D,M,D_Lik,my_PropD,AP>& LM_Lik
+  (std::size_t nskip
+   ,const propDistStep<D,M,D_Lik,my_PropD,AP>& LM_Lik
    ,const D_Lik& lik
    ,const M& model
    ,const D& data
@@ -6326,7 +6406,6 @@ public:
    , double p_Tjump
    ,std::vector<std::mt19937_64>& mt
    ,std::size_t isamples
-   ,std::size_t isubSamples
    , bool does_stdout
    ,double slogL_max,
    std::size_t ndts_max
@@ -6336,85 +6415,144 @@ public:
   {
     std::vector<bool> out(sDist.size());
     aBeta.push_step();
+    std::size_t isubSamples=0;
+
+    double p_Tjump_cycle_desired=0.5;
+
+
+    double pp_Tjump=p_Tjump;
+    std::size_t nsubSamples=1;
+    if (p_Tjump<p_Tjump_cycle_desired)
+      {
+        nsubSamples=p_Tjump_cycle_desired/p_Tjump;
+        pp_Tjump=p_Tjump*nsubSamples;
+      }
+    while(isubSamples<nskip)
+      {
+        nsubSamples=std::min(nsubSamples,nskip-isubSamples);
+
+        std::vector<std::stringstream> ss(sDist.size()+1);
 
 #pragma omp parallel for
-    for(std::size_t i=0; i<sDist.size(); ++i)
-      {
-        AP landa;
-        mcmc_step<E,pDist> cDist;
-        landa=pars[i].sample(mt[i]);
-        sDist[i]=LM_Lik.update_mcmc_step
-            (lik,model,data,sDist[i],landa,aBeta.getBeta().getValue()[i]);
-        M_Matrix<E> c=sDist[i].proposed.sample(mt[i]);
-        //	sDist[i].proposed.autoTest(mt[i],500);
-        cDist=LM_Lik.get_mcmc_step
-            (lik,model,data,c,landa,aBeta.getBeta().getValue()[i],sDist[i].iscout,slogL_max,ndts_max);
-        //		std::cerr<<"logL "<<cDist.logLikelihood;
-        //		std::cerr<<"("<<cDist.slogLik()<<","<<cDist.dts_size()<<") ";
-        //		if (!cDist.isValid)
-        //		    {
-        //			std::cerr<<"rejection :"<<landa<<"\n";
-        //			pars[i].push_rejection(landa);
-        //		    }
-
-
-        if (test::accept(sDist[i],cDist,mt[i],dHd[i],
-                         logPcandidate[i],logPcurrent[i],logChiforward[i],
-                         logChibackward[i],logDetCurrent[i],logDetCandidate[i]))
+        for(std::size_t i=0; i<sDist.size(); ++i)
           {
-            aBeta.new_acceptance(i,sDist[i],cDist);
-            pars[i].push_acceptance(landa);
-            sDist[i]=cDist;
-            out[i] =true;
-          }
-        else
-          {
-            aBeta.new_rjection(i,sDist[i]);
-            out[i]=false;
-            pars[i].push_rejection(landa);
-          }
+            std::size_t isubSample_i=isubSamples;
 
-      }
-
-
-    auto tnow=std::chrono::steady_clock::now();
-    auto d=tnow-startTime;
-    double t0=timeOpt;
-    timeOpt=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
-    auto timeIter_=60*(timeOpt-t0);
-    double evidence=Tempered_Evidence_Evaluation<mcmc_step<E,pDist>>::Evidence(aBeta.getBeta(),sDist);
-    std::cout<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSamples<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<"Evidence\t"<<evidence<<"\n";
-
-    os<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSamples<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<"Evidence\t"<<evidence<<"\n";
-
-    put(os,sDist,out,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate);
-    if (does_stdout)
-      put(std::cout,sDist,out,dHd,logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate);
-
-    for(std::size_t i=1; i<sDist.size(); ++i)
-      {
-        std::uniform_real_distribution<> u;
-        double r=u(mt[i]);
-        double s_dHd, c_dHd;
-        if (r<p_Tjump)
-          {
-            if (test::accept_swap(sDist[i-1],
-                                  sDist[i],
-                                  mt[i], s_dHd, c_dHd))
+            for(std::size_t ii=0; ii<nsubSamples; ++ii)
               {
-                std::swap(sDist[i-1],sDist[i]);
-                std::swap(sDist[i-1].beta,sDist[i].beta);
-                os<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
-                if (does_stdout)
-                  std::cout<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
-                aBeta.push_acceptance(sDist[i-1].beta,sDist[i].beta);
-              }
-            else
-              aBeta.push_rejection(sDist[i-1].beta,sDist[i].beta);
-            ;
-          }
-      }
+                AP landa;
+                mcmc_step<E,pDist> cDist;
+                landa=pars[i].sample(mt[i]);
+                sDist[i]=LM_Lik.update_mcmc_step
+                    (lik,model,data,sDist[i],landa,aBeta.getBeta().getValue()[i]);
+                M_Matrix<E> c=sDist[i].proposed.sample(mt[i]);
+                //	sDist[i].proposed.autoTest(mt[i],500);
+                cDist=LM_Lik.get_mcmc_step
+                    (lik,model,data,c,landa,aBeta.getBeta().getValue()[i],sDist[i].iscout,slogL_max,ndts_max);
+                //		std::cerr<<"logL "<<cDist.logLikelihood;
+                //		std::cerr<<"("<<cDist.slogLik()<<","<<cDist.dts_size()<<") ";
+                //		if (!cDist.isValid)
+                //		    {
+                //			std::cerr<<"rejection :"<<landa<<"\n";
+                //			pars[i].push_rejection(landa);
+                //		    }
 
+
+                if (test::accept(sDist[i],cDist,mt[i],dHd[i],
+                                 logPcandidate[i],logPcurrent[i],logChiforward[i],
+                                 logChibackward[i],logDetCurrent[i],logDetCandidate[i]))
+                  {
+                    // aBeta.new_acceptance(i,sDist[i],cDist);
+                    pars[i].push_acceptance(landa);
+                    sDist[i]=cDist;
+                    out[i] =true;
+                  }
+                else
+                  {
+                    //  aBeta.new_rjection(i,sDist[i]);
+                    out[i]=false;
+                    pars[i].push_rejection(landa);
+                  }
+                if (i==0)
+                  {
+                    auto tnow=std::chrono::steady_clock::now();
+                    auto d=tnow-startTime;
+                    double t0=timeOpt;
+                    timeOpt=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
+                    auto timeIter_=60*(timeOpt-t0);
+                    double evidence=Tempered_Evidence_Evaluation<mcmc_step<E,pDist>>::Evidence(aBeta.getBeta(),sDist);
+                  ss[i]<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSample_i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<"Evidence\t"<<evidence<<"\n";
+                   isubSample_i++;
+
+                  }
+                put(i,ss[i+1],sDist,out,dHd,logPcandidate,logPcurrent,logChiforward, logChibackward,logDetCurrent,logDetCandidate);
+
+              }
+
+
+
+          }
+
+
+        for (std::size_t i=0; i<ss.size(); ++i)
+          os<<ss[i].str()<<"\n";
+
+        if (does_stdout)
+          for (std::size_t i=0; i<ss.size(); ++i)
+            std::cout<<ss[i].str()<<"\n";
+
+#pragma omp parallel for
+        for(std::size_t i=1; i<sDist.size(); i+=2)
+          {
+            std::uniform_real_distribution<> u;
+            double r=u(mt[i]);
+            double s_dHd, c_dHd;
+            if (r<pp_Tjump)
+              {
+                if (test::accept_swap(sDist[i-1],
+                                      sDist[i],
+                                      mt[i], s_dHd, c_dHd))
+                  {
+                    std::swap(sDist[i-1],sDist[i]);
+                    std::swap(sDist[i-1].beta,sDist[i].beta);
+                    //   os<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
+                    //   if (does_stdout)
+                    //     std::cout<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
+                    //   aBeta.push_acceptance(sDist[i-1].beta,sDist[i].beta);
+                  }
+                // else
+                //   aBeta.push_rejection(sDist[i-1].beta,sDist[i].beta);
+                ;
+              }
+          }
+
+#pragma omp parallel for
+
+        for(std::size_t i=2; i<sDist.size(); i+=2)
+          {
+            std::uniform_real_distribution<> u;
+            double r=u(mt[i]);
+            double s_dHd, c_dHd;
+            if (r<pp_Tjump)
+              {
+                if (test::accept_swap(sDist[i-1],
+                                      sDist[i],
+                                      mt[i], s_dHd, c_dHd))
+                  {
+                    std::swap(sDist[i-1],sDist[i]);
+                    std::swap(sDist[i-1].beta,sDist[i].beta);
+                    //   os<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
+                    //   if (does_stdout)
+                    //     std::cout<<"swap::\t"<<sDist[i-1].beta<<"\t"<<sDist[i].beta<<"\n";
+                    //   aBeta.push_acceptance(sDist[i-1].beta,sDist[i].beta);
+                  }
+                // else
+                //   aBeta.push_rejection(sDist[i-1].beta,sDist[i].beta);
+                ;
+              }
+          }
+        isubSamples+=nsubSamples;
+      }
 
   }
 
@@ -6874,7 +7012,7 @@ public:
             AP landa;
             mcmc_post<E> postL;
             postL=lik.get_mcmc_Post(model,data,sDists[i].param,slogL_max,ndts_max);
-           // landa=pars[i].sample(mts[i]);
+            // landa=pars[i].sample(mts[i]);
             sDists[i]=LMLik.get_mcmc_step(lik,model,data,sDists[i].param,postL,landa,beta0,sDists[i].iscout);
           }
 
@@ -6904,7 +7042,7 @@ public:
         s.writelogLHeaderDataFrame(ss);
 
 
-        f_logL<<ss.str()<<std::endl;
+        f_logL<<ss.str()<<"\tbetaEvidence"<<std::endl;
         f_par<<ss.str()<<"\t";
         f_sim<<ss.str()<<"\t";
         f_fit<<ss.str()<<"\t";
@@ -6957,12 +7095,9 @@ public:
 
     while (o<nsamples&&timeOpt<maxTime*60)
       {
-       for( std::size_t i=0;i<nskip; ++i)
-          {
-            mcmc.tempered_step
-                (LMLik,lik,model,data,sDists,pars,beta,dHd,
-                 logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate,pTjump,mts,o,i,does_stdout,slogL_max,ndts_max,os,startTime,timeOpt);
-          }
+        mcmc.tempered_step
+            (nskip,LMLik,lik,model,data,sDists,pars,beta,dHd,
+             logPcandidate,logPcurrent,logChiforward,logChibackward,logDetCurrent,logDetCandidate,pTjump,mts,o,does_stdout,slogL_max,ndts_max,os,startTime,timeOpt);
 
 
         o++;
@@ -6972,6 +7107,8 @@ public:
         auto d=tnow-startTime;
         double t0=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
         double evidence=Tempered_Evidence_Evaluation<mystep<E>>::Evidence(beta.getBeta(),sDists);
+        auto evidences=Tempered_Evidence_Evaluation<mystep<E>>::
+                                                              Evidence_of_beta(beta.getBeta(),sDists);
 
         std::stringstream ss1;
         ss1<<model.id()<<"\t";
@@ -6981,26 +7118,43 @@ public:
         ss1<<o<<"\t";
         ss1<<evidence<<"\t";
 
+        std::vector<std::stringstream> s_logL(sDists.size());
+        std::vector<std::stringstream> s_par(sDists.size());
+        std::vector<std::stringstream> s_fit(sDists.size());
+        std::vector<std::stringstream> s_sim(sDists.size());
+
+#pragma omp parallel for
         for (std::size_t i=0; i<sDists.size(); ++i)
           {
 
-            (sDists[i].writelogLRowDataFrame(f_logL,ss1.str()))<<"\n";
-            (sDists[i].writeParamRowDataFrame(f_par,model,ss1.str()))<<"\n";
-            (sDists[i].writeYfitRowDataFrame(f_fit,ss1.str()))<<"\n";
+            (sDists[i].writelogLRowDataFrame(s_logL[i],ss1.str()))<<"\t"<<evidences[i]<<"\n";
+            (sDists[i].writeParamRowDataFrame(s_par[i],model,ss1.str()))<<"\n";
+            (sDists[i].writeYfitRowDataFrame(s_fit[i],ss1.str()))<<"\n";
 
 
             if (o%5==0)
               {
                 (sDists[i].writeSimulationRowDataFrame
-                    (f_sim,data,model,ss1.str()))<<"\n";
+                    (s_sim[i],data,model,ss1.str()))<<"\n";
               }
           }
-        f_logL.flush();
-        f_par.flush();
-        f_fit.flush();
 
-        f_sim.flush();
-        os.flush();
+
+        for (std::size_t i=0; i<sDists.size(); ++i)
+          {
+            f_logL<<s_logL[i].str();
+            f_par<<s_par[i].str();
+            f_fit<<s_fit[i].str();
+            f_sim<<s_sim[i].str();
+
+          }
+
+           f_logL.flush();
+        // f_par.flush();
+        // f_fit.flush();
+
+        //  f_sim.flush();
+        //  os.flush();
         std::size_t f_sim_pos=
             f_sim.tellp()+f_logL.tellp()+f_fit.tellp()+f_par.tellp()+os.tellp();
         if (f_sim_pos>maxSimFileSize)
@@ -7060,17 +7214,19 @@ public:
 
         if (o>nsamples/10)
           {
+#pragma omp parallel for
             for (std::size_t i=0; i<n;++i)
               {
-                std::cerr<<"\n"<<beta.getBeta().getValue()[i]<<"\t";
+                //  std::cerr<<"\n"<<beta.getBeta().getValue()[i]<<"\t";
                 pars[i].actualize();
               }
           }
         else
           {
+#pragma omp parallel for
             for (std::size_t i=0; i<n;++i)
               {
-                std::cerr<<"\n"<<beta.getBeta().getValue()[i]<<"\t";
+                //  std::cerr<<"\n"<<beta.getBeta().getValue()[i]<<"\t";
                 pars[i].actualize(nAdapt*nskip);
               }
           }
