@@ -35,7 +35,7 @@ echo "
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt/GCC-7.2.0/lib64/
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-srun /home/lmoffatt/Astro/parallelOpt/Astro /home/lmoffatt/Astro/astro/run/Restart_script_tupac LABEL model_13 RESTART $RESTART_STATE_state.txt
+srun /home/lmoffatt/Astro/parallelOpt/Astro /home/lmoffatt/Astro/astro/run/Restart_script_tupac LABEL model_13 RESTART Tu_M2_30_2k_E_250_50_model_13_183355s161973_1577615984_state.txt
 
 
 echo "
