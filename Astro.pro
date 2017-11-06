@@ -353,7 +353,8 @@ DISTFILES += \
     run/m13/rt_m13_3 \
     run/Restart_script_tupac_3 \
     run/m101/rt_m101_3 \
-    run/m13/rt_m13_4
+    run/m13/rt_m13_4 \
+    run/m101/rt_m101_4
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
