@@ -134,6 +134,11 @@ const std::vector<std::vector<double> > CortexLikelihood::n_obs(const Experiment
   return getstate(e);
 }
 
+const std::vector<std::vector<double> > CortexLikelihood::se2_obs(const Experiment *e) const
+{
+   return getse2(e);
+}
+
 
 
 
@@ -189,6 +194,30 @@ std::vector<std::vector<double> > CortexLikelihood::getstate(const Experiment *e
         }
     }
   return o;
+}
+
+std::vector<std::vector<double> > CortexLikelihood::getse2(const Experiment *e) const
+{
+  std::vector<std::vector<double>> o;
+  for (unsigned ie=0; ie<e->numMeasures(); ie++)
+    {
+      const CortexMeasure* cm=e->getMeasure(ie);
+      std::vector<double> rho_se2(m_->getNumberOfObservedStates(),0);
+      if (cm->inj_Width()>0)
+        {
+          for (std::size_t i=0; i<m_->getNumberOfSimulatedStatesAtInjury(); ++i)
+            o.push_back(rho_se2);
+        }
+
+      for (unsigned ix=0; ix<cm->meanAstro().size(); ++ix)
+        {
+          auto ob=cm->se2Astro(ix);
+          rho_se2=m_->getObservedNumberFromData(ob);
+          o.push_back(rho_se2);
+        }
+    }
+  return o;
+
 }
 
 

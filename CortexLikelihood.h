@@ -54,6 +54,7 @@ public:
 
   // ABC_Freq_obs interface
   virtual const std::vector<std::vector<double>>  n_obs(const Experiment* e)const override;
+  virtual const std::vector<std::vector<double>>  se2_obs(const Experiment* e)const override;
   virtual const std::vector<double> bin_dens(const Experiment* e)const override;
 
   virtual const std::vector<double> ntot_obs(const Experiment* e) const override;
@@ -100,6 +101,8 @@ protected:
   void update() override;
 
   std::vector<std::vector<double>> getstate(const Experiment* e) const;
+  std::vector<std::vector<double>> getse2(const Experiment* e) const;
+
 
   std::vector<double> getNtot(const std::vector<std::vector<double>> nstate) const;
 
@@ -459,7 +462,7 @@ class Experiment;
 class MyData
 {
 public:
-  M_Matrix<std::size_t> operator()()const
+  M_Matrix<double> operator()()const
   {
 
     auto nobs=CL_->n_obs(e_);
@@ -467,13 +470,30 @@ public:
     if (nrows>0)
       {
         std::size_t ncols=nobs[0].size();
-        M_Matrix<std::size_t> out(nrows,ncols);
+        M_Matrix<double> out(nrows,ncols);
         for (std::size_t i=0; i<nrows; ++i)
           for (std::size_t j=0; j<ncols; ++j)
             out(i,j)=nobs[i][j];
         return out;
       }
     else return {};
+  }
+
+  M_Matrix<double> se2()const
+  {
+    auto nobs=CL_->se2_obs(e_);
+    std::size_t nrows= nobs.size();
+    if (nrows>0)
+      {
+        std::size_t ncols=nobs[0].size();
+        M_Matrix<double> out(nrows,ncols);
+        for (std::size_t i=0; i<nrows; ++i)
+          for (std::size_t j=0; j<ncols; ++j)
+            out(i,j)=nobs[i][j];
+        return out;
+      }
+    else return {};
+
   }
 
   const Experiment* myExperiment()const {return e_;}

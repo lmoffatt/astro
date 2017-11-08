@@ -1110,7 +1110,8 @@ public:
         out.f=f0;
         out.dtmin_Npoints_dtmax={dtmin_0,n_per10_0,dtmax_0};
         out.dts=dts_0;
-        if (!std::isfinite(out.logLikelihood))
+        if (!std::isfinite(out.logLikelihood)
+            ||out.vlogLikelihood>std::sqrt(std::abs(out.logLikelihood)))
           out.isValid=false;
         else out.isValid=true;
       }
@@ -1235,6 +1236,289 @@ private:
 
 };
 
+
+
+template<class D,  class M>
+class PoissonNormal_Likelihood
+{
+public:
+
+
+
+  static double logLikelihood(double landa,double k,double se2)
+  {
+    if (se2!=0)
+    return -(sqr(landa-k)/(landa+se2)+std::log(2*PI*se2))/2.0;
+    else
+      return k*log(landa)-landa-lgamma(k+1);
+
+   }
+
+  static
+  M_Matrix<double> sample(const M& model,const D& ,std::mt19937_64& mt)
+  {
+
+    return model.sample(mt);
+  }
+
+
+
+
+  static double logL(const D& data,const M_Matrix<double>& landa)
+  {
+    M_Matrix<double> k=data();
+    M_Matrix<double> se2=data.se2();
+    if (landa.empty()) return std::numeric_limits<double>::quiet_NaN();
+    double sumLogL=0;
+    for (std::size_t i=0; i<k.nrows(); ++i)
+      {
+        for (std::size_t j=0; j<k.ncols(); ++j)
+          {
+            if (std::isnan(landa(i,j)))
+              return landa(i,j);
+            else
+              if ((landa(i,j)!=0)&&std::isfinite(se2(i,j)))
+                sumLogL+=logLikelihood(landa(i,j),k(i,j), se2(i,j));
+              else if ((k(i,j)!=0)&& std::isfinite(se2(i,j)))
+                return std::numeric_limits<double>::quiet_NaN();
+          }
+      }
+    return sumLogL;
+  }
+
+  static mcmc_post<double> get_mcmc_Post(const M& model, const D& data, M_Matrix<double> param)
+  {
+
+
+    mcmc_prior<double> p=model.prior(data,param);
+    mcmc_post<double> out(p);
+    out.f=model.f(data,param,out.dts);
+    if (out.f.size()==0)
+      out.isValid=false;
+    else
+      {
+
+        out.logLikelihood=logL(data,out.f);
+        if (std::isnan(out.logLikelihood))
+          out.isValid=false;
+        else out.isValid=true;
+      }
+    return out;
+  }
+
+  static mcmc_post<double> get_mcmc_Post(const M& model,
+                                         const D& data,
+                                         M_Matrix<double> param,
+                                         double slogL_max,
+                                         std::size_t ndts_max_1)
+  {
+    std::size_t ndts_max_0=ndts_max_1/2;
+    double vlogL_max=sqr(slogL_max);
+    mcmc_prior<double> p=model.prior(data,param);
+    mcmc_post<double> out(p);
+    double dtmin_0=0, dtmin_1;
+    std::size_t n_per10_0, n_per10_1;
+    double dtmax_0, dtmax_1;
+    std::pair<std::vector<double>, std::vector<std::size_t>> dts_0, dts_1;
+    auto f0=model.f(data,param,dtmin_0,n_per10_0,dtmax_0, ndts_max_0,dts_0);
+    double logLik0=logL(data,f0);
+    bool ishope=dts_0.first.size()>0&&dts_0.first.size()<ndts_max_0;
+    bool firstValid=false;
+    std::size_t iloop=0;
+    std::size_t maxloop=10;
+    while (ishope&&!firstValid&& iloop<maxloop)
+      {
+        ++iloop;
+        dtmin_0/=2;
+        n_per10_0*=2;
+        dtmax_0/=2;
+        f0=model.f(data,param,dtmin_0,n_per10_0,dtmax_0, ndts_max_0,dts_0);
+        logLik0=logL(data,f0);
+        ishope=dts_0.first.size()>0&&dts_0.first.size()<ndts_max_0;
+        firstValid=std::isfinite(logLik0);
+      }
+
+    if (!ishope )
+      {
+        out.isValid=false;
+        out.logLikelihood=logLik0;
+        out.dts=dts_0;
+        out.f=f0;
+
+      }
+    else
+      {
+        dtmin_1=dtmin_0/2;
+        n_per10_1=n_per10_0*2;
+        dtmax_1=dtmax_0/2;
+        auto f1=model.f(data,param,dtmin_1,n_per10_1,dtmax_1,ndts_max_1,dts_1);
+        double logLik1=logL(data,f1);
+        double vlogLik=sqr(logLik0-logLik1);
+        bool hav_logL1=std::isfinite(logLik1);
+        bool have_slogL=std::isfinite(vlogLik);
+        bool good_slogL=vlogLik<vlogL_max;
+        bool exceed_ndts=dts_1.first.size()>ndts_max_0;
+        iloop=0;
+        while (hav_logL1&&have_slogL&&!good_slogL&&!exceed_ndts&&iloop<maxloop)
+          {
+            ++iloop;
+            f0=std::move(f1);
+            dts_0=std::move(dts_1);
+
+            logLik0=logLik1;
+            dtmin_0=dtmin_1;
+            n_per10_0=n_per10_1;
+
+            dtmin_1=dtmin_0/2;
+            n_per10_1=n_per10_0*2;
+            dtmax_1=dtmax_0/2;
+
+            f1=model.f(data,param,dtmin_1,n_per10_1,dtmax_1,ndts_max_1,dts_1);
+            logLik1=logL(data,f1);
+            hav_logL1=std::isfinite(logLik1);
+            if (hav_logL1)
+              vlogLik=sqr(logLik0-logLik1);
+            else
+              vlogLik/=4;
+            have_slogL=std::isfinite(vlogLik);
+            good_slogL=vlogLik<vlogL_max;
+            exceed_ndts=dts_1.first.size()>ndts_max_0;
+
+          }
+
+        out.vlogLikelihood=vlogLik*4;
+        out.logLikelihood=logLik0;
+        out.f=f0;
+        out.dtmin_Npoints_dtmax={dtmin_0,n_per10_0,dtmax_0};
+        out.dts=dts_0;
+        if (!std::isfinite(out.logLikelihood))
+          out.isValid=false;
+        else out.isValid=true;
+      }
+
+
+    return out;
+  }
+
+
+};
+
+template<class D,  class M>
+class PoissonNormal_DLikelihood: public PoissonNormal_Likelihood<D,M>
+{
+public:
+  typedef double  E;
+
+
+  static mcmc_Dpost<double> get_mcmc_Dpost(const M& model, const D& data, const M_Matrix<double>& param,double slogL_max,std::size_t ndts_max)
+  {
+    return get_mcmc_Dpost(model,data,param,get_mcmc_Post(model,data,param,slogL_max,ndts_max));
+  }
+
+  static mcmc_post<double> get_mcmc_Post(const M& model, const D& data, M_Matrix<double> param,double slogL_max,std::size_t ndts_max)
+  {
+    return PoissonNormal_Likelihood<D,M>::get_mcmc_Post(model,data,param,slogL_max,ndts_max);
+  }
+
+
+  static mcmc_Dpost<double> get_mcmc_Dpost(const M& model, const D& data, const M_Matrix<double>& param, mcmc_post<double> p)
+  {
+    mcmc_Dpost<double> out(p);
+    if (out.isValid)
+      {
+        M_Matrix<double> k=data();
+        M_Matrix<double> se2=data.se2();
+        M_Matrix<double> logLanda_0=out.f.apply([](double x)
+        {return log10_guard(x);});
+        if (isnan(logLanda_0))
+          out.isValid=false;
+        M_Matrix<double> J=get_J(model,  data, param,logLanda_0, out.dts  );
+        if (J.size()==0)
+          out.isValid=false;
+        else
+          {
+            out.D_lik.G=get_G(out.f,k,J,se2);
+            out.D_lik.H=get_H(out.f,J,se2);
+          }
+      }
+    return out;
+  }
+
+private:
+  static
+  M_Matrix<double> get_G(const M_Matrix<double>& landa, const M_Matrix<std::size_t>& k, const M_Matrix<double>& J, const M_Matrix<double>& se2)
+  {
+    M_Matrix<double> out(1,J.ncols(),0.0);
+    for (std::size_t j=0; j<J.ncols(); ++j)
+      for (std::size_t i=0; i<landa.size(); ++i)
+        if (std::isfinite(se2[i]))
+        out[j]+=(landa[i]-k[i])*landa[i]/(landa[i]+se2[i])*J(i,j);
+     return out;
+  }
+
+  static
+  M_Matrix<double> get_H(const M_Matrix<double>& landa, const M_Matrix<double>& J, const M_Matrix<double>& se2)
+  {
+    std::size_t n=landa.size();
+    std::size_t npar=J.ncols();
+    M_Matrix<double> out(npar,npar,M_Matrix<double>::SYMMETRIC,0.0);
+    for (std::size_t j=0; j<npar; ++j)
+      for (std::size_t j2=j; j2<npar; ++j2)
+        for (std::size_t i=0; i<n; ++i)
+          if (std::isfinite(se2[i]))
+          out(j,j2)+=landa[i]*landa[i]/(landa[i]+se2[i])*J(i,j)*J(i,j2);
+
+    //auto test=out-Transpose(J)*diag(landa.toVector_of_Rows())*J;
+    return out;
+
+  }
+
+  static
+  M_Matrix<double>
+  get_J(const M& model, const D& data, const M_Matrix<double>& param,
+        const M_Matrix<double>& logLanda_0 , std::pair<std::vector<double>,std::vector<std::size_t>>& dts,
+        double delta=1e-5, double delta_div=10, double deltamin=1e-7)
+  {
+    M_Matrix<double> k=data();
+    std::size_t n=k.size();
+    std::size_t npar=param.size();
+    M_Matrix<double> out(n,npar,0.0);
+
+    M_Matrix<double> logLanda2=model.logLanda(data,param,dts);
+    auto logLandadif=logLanda_0-logLanda2;
+
+    double maxdif=maxAbs(logLandadif);
+    std::cerr<<"max dif="<<maxdif<<"\n";
+
+    for (std::size_t j=0; j<npar; ++j)
+      {
+        double deltarun=delta;
+        M_Matrix<double> logLanda_0_run=logLanda_0;
+        auto dts_run=dts;
+
+        M_Matrix<double> p(param);
+        p[j]+=deltarun;
+        M_Matrix<double> logLanda_i=model.logLanda(data,p,dts);
+        while ((isnan(logLanda_i)||(logLanda_i.empty()))&&deltarun>deltamin)
+          {
+            deltarun=deltarun/delta_div;
+            p=param;
+            p[j]+=deltarun;
+            logLanda_i=model.logLanda(data,p,dts);
+          }
+        if (isnan(logLanda_i)||logLanda_i.empty())
+          {
+            return {};
+          }
+
+        for (std::size_t i=0; i<n; ++i)
+          out(i,j)=(logLanda_i[i]-logLanda_0[i])/deltarun;
+
+      }
+    return out;
+  }
+
+};
 
 
 

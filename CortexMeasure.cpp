@@ -1037,6 +1037,7 @@ CortexMeasure TissuePhoto::measure(std::mt19937_64& mt,std::string id,double dia
     injury_Width_=injury_Area_/injlength;
 
 
+
   CortexMeasure m(id,dia,
                   100e-6
                   ,rata
@@ -1379,7 +1380,7 @@ else
 Experiment::Experiment(std::string ide, std::vector<CortexMeasure> mv,const  std::vector<double> &tsimul):
   isMeasure_(true),m_(mv),tMeasures_(mv.size()),tsim_(0),tSimulates_()
 {
-  setId(ide);
+    setId(ide);
   std::size_t isimul=0;
   for (unsigned i=0; i<m_.size(); ++i)
     {

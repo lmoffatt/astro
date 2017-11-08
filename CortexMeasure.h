@@ -452,8 +452,15 @@ public:
 
         rata_.insert(rata_.begin(),other.rata_.begin(),other.rata_.end());
         measAreaAstro_+=other.measAreaAstro_;
+        meassqrAreaAstro_+=other.meassqrAreaAstro_;
         meanAstro_+=other.meanAstro_;
+        meansqrAstro_+=other.meansqrAstro_;
+        nAstro_+=other.nAstro_;
+
         covAstro_+=other.covAstro_;
+        Neq_=getNeq(measAreaAstro_,meassqrAreaAstro_);
+        se2Astro_=getSe2Astro(meanAstro_,meansqrAstro_,nAstro_,Neq_);
+
         for (unsigned i=0; i<meanAstro_.size(); ++i)
           {
             for (unsigned j=0; j<meanAstro_[i].size();++j)
@@ -477,6 +484,10 @@ public:
   const std::vector<std::vector<double>>& meanAstro()const
   {
     return meanAstro_;
+  }
+  const std::vector<double>& se2Astro(unsigned idx)const
+  {
+    return se2Astro_[idx];
   }
   const std::vector<double>& meanAstro(unsigned idx)const
   {
@@ -558,7 +569,6 @@ public:
 
 
 
-
   CortexMeasure(std::string id,
                 double dia,
                 double h,
@@ -567,10 +577,10 @@ public:
                 ,double minimalVasoDistance
                 ,double injWidth
                 ,double injLength
-                ,std::vector<double> dx
-                ,std::vector<double> measAreaAstro
-                ,std::vector<std::vector<double>> meanAstro
-                ,std::vector<std::vector<std::vector<double>>> covAstro)
+                ,const std::vector<double>& dx
+                ,const std::vector<double>& measAreaAstro
+                ,const std::vector<std::vector<double>>& meanAstro
+                ,const std::vector<std::vector<std::vector<double>>>& covAstro)
     :dia_(dia),h_(h),rata_(1,rata)
     ,minimalTissueDistance_(minimalTissueDistance)
     ,minimalVasoDistance_(minimalVasoDistance)
@@ -578,9 +588,23 @@ public:
     ,injLength_(injLength)
     ,x_(dx)
     ,measAreaAstro_(measAreaAstro)
-    ,numAstro_(std::vector<double>(meanAstro.size(),0))
-    ,meanAstro_(meanAstro),densAstro_(numAstro_),
+    ,meassqrAreaAstro_(measAreaAstro)
+
+    ,numAstro_(meanAstro.size())
+    ,meanAstro_(meanAstro),
+      meansqrAstro_(meanAstro),
+      nAstro_(meanAstro.size()),
+      densAstro_(numAstro_),
       covAstro_(covAstro){
+
+    for (std::size_t i=0; i<measAreaAstro_.size(); ++i)
+      {
+      meassqrAreaAstro_[i]=sqr(measAreaAstro_[i]);
+      if(measAreaAstro_[i]>0) nAstro_[i]=1;
+      }
+    for (std::size_t i=0; i<meanAstro_.size(); ++i)
+      for (std::size_t j=0; j<meanAstro_[i].size(); ++j)
+        meansqrAstro_[i][j]=sqr(meanAstro_[i][j]);
 
     setId(id);
     for (unsigned i=0; i<meanAstro_.size(); ++i)
@@ -616,8 +640,15 @@ private:
   double injLength_;
   std::vector<double> x_;
   std::vector<double> measAreaAstro_;
+  std::vector<double> meassqrAreaAstro_;
+  std::vector<double> Neq_;
+
   std::vector<double> numAstro_;
   std::vector<std::vector<double>> meanAstro_;
+  std::vector<std::vector<double>> meansqrAstro_;
+  std::vector<std::size_t> nAstro_;
+  std::vector<std::vector<double>> se2Astro_;
+
   std::vector<double> densAstro_;
 
   std::vector<std::vector<std::vector<double>>> covAstro_;
@@ -629,10 +660,39 @@ public:
     x_.clear();
     numAstro_.clear();
     meanAstro_.clear();
+    meansqrAstro_.clear();
+    se2Astro_.clear();
     measAreaAstro_.clear();
+    meassqrAreaAstro_.clear();
+    nAstro_.clear();
+
     densAstro_.clear();
     covAstro_.clear();
   }
+  static std::vector<double>
+  getNeq(        const std::vector<double>& area,
+                 const std::vector<double>& sqrArea)
+  {
+    std::vector<double> Co(area.size());
+    for (std::size_t i=0; i<area.size(); ++i)
+      Co[i]=sqr(area[i])/sqrArea[i];
+    return Co;
+  }
+
+  static std::vector<std::vector<double>>
+  getSe2Astro(const std::vector<std::vector<double>>& meanAstro,
+                 const std::vector<std::vector<double>>& sqrAstro,
+                 const std::vector<std::size_t>& nAstro,
+
+                 const std::vector<double>& Neq)
+  {
+    std::vector<std::vector<double>> out(meanAstro.size(), std::vector<double>(meanAstro[0].size()));
+    for (std::size_t i=0; i<out.size(); ++i)
+      for (std::size_t j=0; j<out[0].size(); ++j)
+        out[i][j]=(sqrAstro[i][j]-sqr(meanAstro[i][j])/nAstro[i])/(1.0-1./Neq[i])/nAstro[i];
+    return out;
+  }
+
   virtual std::ostream &writeBody(std::ostream &s) const override
   {
     writeField(s,"dia",dia_);
@@ -644,9 +704,17 @@ public:
 
     writeField(s,"x_pos",x_);
     writeField(s,"area_covered_by_Astrocytes",measAreaAstro_);
+    writeField(s,"sqr_area_covered_by_Astrocytes",meassqrAreaAstro_);
+    writeField(s,"corrected_number_of_samples",Neq_);
+
     writeField(s,"total_number_of_Astrocytes",numAstro_);
 
     writeField(s,"number_of_Astrocytes_of_each_type",meanAstro_);
+    writeField(s,"stddev_of_number_of_Astrocytes_of_each_type",se2Astro_);
+    writeField(s,"number_sqr_of_Astrocytes_of_each_type",meansqrAstro_);
+    writeField(s,"number_of_samples_of_Astrocytes_of_each_type",nAstro_);
+
+
     writeField(s,"density_of_Astrocytes_of_each_type",densAstro_);
     writeField(s,"covariance_of_number_of_Astrocytes_of_each_type",covAstro_);
 
@@ -667,7 +735,9 @@ public:
     os<<"Area"<<"\t";
     os<<"astroType"<<"\t";
     os<<"numAstrocites"<<"\t";
+    os<<"stdnumAstrocites"<<"\t";
     os<<"densityAstrocites"<<"\t";
+    os<<"stddensityAstrocites"<<"\t";
     os<<"pAstrocites";
 
   }
@@ -690,7 +760,10 @@ public:
     //double simulated_liters=(x_[idx+1]-x_[idx])*1e-6*h()*h()*1000;
     double measured_liters=measAreaAstro_[idx]*1e-12*h()*1000;
     os<<meanAstro_[idx][type]<<"\t";
+    os<<se2Astro_[idx][type]<<"\t";
     os<<meanAstro_[idx][type]/measured_liters<<"\t";
+    os<<se2Astro_[idx][type]/measured_liters<<"\t";
+
     os<<meanAstro_[idx][type]/numAstro_[idx];
 
   }
@@ -751,6 +824,16 @@ public:
         logs<<"area_covered_by_Astrocytes expected; found: "<<line<<std::endl;
         return false;
       }
+    else if (!readField(line,s,"sqr_area_covered_by_Astrocytes",meassqrAreaAstro_,logs))
+      {
+        logs<<"sqr_area_covered_by_Astrocytes expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"corrected_number_of_samples",Neq_,logs))
+      {
+        logs<<"corrected_number_of_samples expected; found: "<<line<<std::endl;
+        return false;
+      }
     else if (!readField(line,s,"total_number_of_Astrocytes",numAstro_,logs))
       {
         logs<<"total_number_of_Astrocytes expected; found: "<<line<<std::endl;
@@ -759,6 +842,21 @@ public:
     else if (!readField(line,s,"number_of_Astrocytes_of_each_type",meanAstro_,logs))
       {
         logs<<"number_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"stddev_of_number_of_Astrocytes_of_each_type",se2Astro_,logs))
+      {
+        logs<<"stddev_of_number_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"number_sqr_of_Astrocytes_of_each_type",meansqrAstro_,logs))
+      {
+        logs<<"number_sqr_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
+        return false;
+      }
+    else if (!readField(line,s,"number_of_samples_of_Astrocytes_of_each_type",nAstro_,logs))
+      {
+        logs<<"number_of_samples_of_Astrocytes_of_each_type expected; found: "<<line<<std::endl;
         return false;
       }
     else if (!readField(line,s,"density_of_Astrocytes_of_each_type",densAstro_,logs))

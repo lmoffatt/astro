@@ -14,6 +14,7 @@ class ABC_Freq_obs
 public:
 
   virtual const std::vector<std::vector<double>> n_obs(const Experiment* e)const=0;
+  virtual const std::vector<std::vector<double>>  se2_obs(const Experiment* e)const=0;
 
   virtual const std::vector<double> bin_dens(const Experiment* e)const=0;
 

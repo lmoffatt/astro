@@ -141,8 +141,9 @@ private:
 
 template <class Ad>
 using TI=
-Thermodynamic_Integration_mcmc<Ad,
-MyData,MyModel,Poisson_DLikelihood<MyData,MyModel>,LM_MultivariateGaussian<double>,Landa,LevenbergMarquardt_step>;
+Thermodynamic_Integration_mcmc
+<Ad,MyData,MyModel,Poisson_DLikelihood<MyData,MyModel>,LM_MultivariateGaussian<double>,Landa,
+LevenbergMarquardt_step>;
 
 template <class Ad, class MyData, class Lik>
 using TT=
@@ -1062,6 +1063,7 @@ struct Tempering
                    std::string experimentName,
                    std::string priorName,
                    std::string state_file,
+                   std::string likelihoodType,
                    double dtmin0,
                    double dtmin,
                    double dtmax,
@@ -1081,6 +1083,7 @@ struct Tempering
                    double slogL_max,
                    std::size_t ndts_max,
                    std::size_t nmaxloop,
+
                    std::mt19937_64::result_type initseed,
                    std::size_t nPoints_per_decade,
                    std::size_t niter,
@@ -1238,7 +1241,8 @@ struct Tempering
                    dtmax,tequilibrio,maxlogError,f_maxlogError,dtinf,maxloop,UseDerivative);
           }
         MyModel m(CL);
-        if (e.size()==1)
+        if (e.size()==1){
+            if (likelihoodType=="Poisson")
           {
             MyData d(CL,&e[0]);
             LevenbergMarquardt_step
@@ -1258,6 +1262,7 @@ struct Tempering
             flog<<" eviName: "<<eviName<<"\n";
             flog<<" experimentName:"<<experimentName<<"\n";
             flog<<" priorName: "<<priorName<<"\n";
+            flog<<" likelihoodType: "<<likelihoodType<<"\n";
             flog<<" dx: "<<dx<<"\n";
             flog<<" dtmin: "<<dtmin<<"\n";
             flog<<" dtmax: "<<dtmax<<"\n";
@@ -1358,7 +1363,129 @@ struct Tempering
 
 
           }
+            else
+              {
+                MyData d(CL,&e[0]);
+                LevenbergMarquardt_step
+                    <
+                    MyData,MyModel,PoissonNormal_DLikelihood<MyData,MyModel>
+                    ,LM_MultivariateGaussian<double>,Landa
+                    > LMLik;
+                PoissonNormal_DLikelihood<MyData,MyModel> DLik;
 
+
+
+                std::string eviNameLog0=eviName+"_log.txt";
+                std::string eviNameLog=eviNameLog0+".0";
+                std::ofstream flog;
+
+                flog.open(eviNameLog.c_str(), std::ofstream::out | std::ofstream::app);
+                flog<<" eviName: "<<eviName<<"\n";
+                flog<<" experimentName:"<<experimentName<<"\n";
+                flog<<" priorName: "<<priorName<<"\n";
+                flog<<" likelihoodType: "<<likelihoodType<<"\n";
+                flog<<" dx: "<<dx<<"\n";
+                flog<<" dtmin: "<<dtmin<<"\n";
+                flog<<" dtmax: "<<dtmax<<"\n";
+                flog<<" nPoints_per_decade: "<<nPoints_per_decade<<"\n";
+                flog<<" adapt_dt: "<<adapt_dt<<"\n";
+                flog<<" maxlogError: "<<maxlogError<<"\n";
+                flog<<" dtinf: "<<dtinf<<"\n";
+                flog<<" CrankNicholson: "<<CrankNicholson<<"\n";
+                flog<<" f_maxlogError: "<<f_maxlogError<<"\n";
+                flog<<" maxloop: "<<maxloop<<"\n";
+                flog<<" UseDerivative: "<<UseDerivative<<"\n";
+                flog<<" slogL_max: "<<slogL_max<<"\n";
+                flog<<" ndts_max: "<<ndts_max<<"\n";
+                flog<<" nmaxloop: "<<nmaxloop<<"\n";
+                flog<<" dtinf: "<<dtinf<<"\n";
+                flog<<" N_betasInit: "<<N_betasInit<<"\n";
+                flog<<" beta_min: "<<beta_min<<"\n";
+                flog<<" N_beta_2: "<<N_beta_2<<"\n";
+                flog<<" beta_infimo: "<<beta_infimo<<"\n";
+                flog<<" Landa_algorithm: "<<Landa_algorithm<<"\n";
+                flog<<" gainMoment: "<<gainMoment<<"\n";
+                flog<<" unInformativePriorPar: "<<unInformativePriorPar<<"\n";
+                flog<<" targetProb: "<<targetProb<<"\n";
+                flog<<" maxSimFileSize: "<<maxSimFileSize<<"\n";
+                flog<<" beta_min: "<<beta_min<<"\n";
+                flog<<" niter: "<<niter<<"\n";
+                flog<<" maxduration "<<maxduration<<"\n";
+                flog<<" landa0 "<<landa0<<"\n";
+                flog<<" v "<<v<<"\n";
+                flog<<" nmaxloop "<<nmaxloop<<"\n";
+
+                flog<<" initseed "<<initseed<<"\n";
+                flog<<" adaptive beta "<<aBeta<<"\n";
+                flog<<AP::ClassName()<<" "<<aps<<"\n";
+                flog<<" maxTime (h) "<<maxTime<<"\n";
+
+                flog<<" samples "<<samples<<"\n";
+                flog<<" nskip "<<nskip<<"\n";
+                flog<<" nAdapt "<<nAdapt<<"\n";
+                flog<<" pTjump "<<pTjump<<"\n";
+
+
+
+
+                flog.close();
+
+
+                std::chrono::steady_clock::time_point startTime=std::chrono::steady_clock::now();
+                double timeOpt=0;
+
+                if (Landa_algorithm.find("Probability")!=std::string::npos)
+                  {
+                    typedef
+                    Adaptive_probability<One<AP>,TargetProb,AP> Ad;
+                    TargetProb t(targetProb);
+                    Ad landa(t,aps);
+                    if (does_stdout)
+                      std::cout<<landa;
+
+                    Metropolis_Hastings_mcmc<Ad,
+                        MyData,MyModel,PoissonNormal_DLikelihood<MyData,MyModel>,LM_MultivariateGaussian<double>,Landa> mcmc;
+                    TT<Ad,MyData,PoissonNormal_DLikelihood<MyData,MyModel> > tt;
+
+                    tt.run<double>(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+                    flog.close();
+
+                  }
+                else if (Landa_algorithm.find("Velocity")!=std::string::npos)
+                  {
+                    typedef
+                    Adaptive_probability<AP::ExpectedVelocity,PascalProb,AP> Ad;
+                    Ad landa(aps);
+                    if (does_stdout)
+                      std::cout<<landa;
+
+                    Metropolis_Hastings_mcmc<Ad,
+                        MyData,MyModel,PoissonNormal_DLikelihood<MyData,MyModel>,LM_MultivariateGaussian<double>,Landa> mcmc;
+                    TT<Ad, MyData,PoissonNormal_DLikelihood<MyData,MyModel>> tt;
+
+                    tt.run<double>(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+                    flog.close();
+
+                  }
+                else
+                  {
+                    Adaptive_parameterized<AP> landa(aps,apsPar,gainMoment);
+
+                    if (does_stdout)
+                      std::cout<<landa;
+
+                    Metropolis_Hastings_mcmc<Adaptive_parameterized<AP>,
+                        MyData,MyModel,PoissonNormal_DLikelihood<MyData,MyModel>,LM_MultivariateGaussian<double>,Landa> mcmc;
+                    TT<Adaptive_parameterized<AP>,MyData,PoissonNormal_DLikelihood<MyData,MyModel>> tt;
+
+                    tt.run<double>(mcmc,LMLik,DLik,m,d,landa,aBeta,maxTime,samples,nskip,nAdapt,pTjump,slogL_max,ndts_max,seed,eviName,eviNameLog0,startTime,timeOpt,maxSimFileSize,does_stdout,state_file );
+                    flog.close();
+                  }
+
+
+              }
+
+          }
         else  //Random effects
 
           {
