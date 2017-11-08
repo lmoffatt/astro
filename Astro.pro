@@ -358,7 +358,11 @@ DISTFILES += \
     run/m03/rt_m03_4 \
     run/EN_250_50 \
     run/evidence_script_tupac_4 \
-    run/m13/t_m13_4
+    run/m13/t_m13_4 \
+    run/m101/t_m101_4 \
+    run/m03/t_m03_4 \
+    run/m01/t_m01_4 \
+    run/m10/t_m10_4
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
