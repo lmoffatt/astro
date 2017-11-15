@@ -1248,11 +1248,11 @@ public:
   static double logLikelihood(double landa,double k,double se2)
   {
     if (se2!=0)
-    return -(sqr(landa-k)/(landa+se2)+std::log(2*PI*se2))/2.0;
+      return -(sqr(landa-k)/(landa+se2)+std::log(2*PI*se2))/2.0;
     else
       return k*log(landa)-landa-lgamma(k+1);
 
-   }
+  }
 
   static
   M_Matrix<double> sample(const M& model,const D& ,std::mt19937_64& mt)
@@ -1452,8 +1452,8 @@ private:
     for (std::size_t j=0; j<J.ncols(); ++j)
       for (std::size_t i=0; i<landa.size(); ++i)
         if (std::isfinite(se2[i]))
-        out[j]+=(landa[i]-k[i])*landa[i]/(landa[i]+se2[i])*J(i,j);
-     return out;
+          out[j]+=(landa[i]-k[i])*landa[i]/(landa[i]+se2[i])*J(i,j);
+    return out;
   }
 
   static
@@ -1466,7 +1466,7 @@ private:
       for (std::size_t j2=j; j2<npar; ++j2)
         for (std::size_t i=0; i<n; ++i)
           if (std::isfinite(se2[i]))
-          out(j,j2)+=landa[i]*landa[i]/(landa[i]+se2[i])*J(i,j)*J(i,j2);
+            out(j,j2)+=landa[i]*landa[i]/(landa[i]+se2[i])*J(i,j)*J(i,j2);
 
     //auto test=out-Transpose(J)*diag(landa.toVector_of_Rows())*J;
     return out;
@@ -6765,8 +6765,8 @@ public:
                     timeOpt=1.0e-6*std::chrono::duration_cast<std::chrono::microseconds>(d).count()/60.0;
                     auto timeIter_=60*(timeOpt-t0);
                     double evidence=Tempered_Evidence_Evaluation<mcmc_step<E,pDist>>::Evidence(aBeta.getBeta(),sDist);
-                  ss[i]<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSample_i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<"Evidence\t"<<evidence<<"\n";
-                   isubSample_i++;
+                    ss[i]<<"isample::"<<isamples<<"\t"<<"isubSample::"<<isubSample_i<<"\t"<<timeOpt<<"\t"<<timeIter_<<"\t"<<"Evidence\t"<<evidence<<"\n";
+                    isubSample_i++;
 
                   }
                 put(i,ss[i+1],sDist,out,dHd,logPcandidate,logPcurrent,logChiforward, logChibackward,logDetCurrent,logDetCandidate);
@@ -7402,43 +7402,47 @@ public:
         ss1<<o<<"\t";
         ss1<<evidence<<"\t";
 
-        std::vector<std::stringstream> s_logL(sDists.size());
-        std::vector<std::stringstream> s_par(sDists.size());
-        std::vector<std::stringstream> s_fit(sDists.size());
-        std::vector<std::stringstream> s_sim(sDists.size());
+//        std::vector<std::stringstream> s_logL(sDists.size());
+//        std::vector<std::stringstream> s_par(sDists.size());
+//        std::vector<std::stringstream> s_fit(sDists.size());
+//        std::vector<std::stringstream> s_sim(sDists.size());
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (std::size_t i=0; i<sDists.size(); ++i)
           {
 
-            (sDists[i].writelogLRowDataFrame(s_logL[i],ss1.str()))<<"\t"<<evidences[i]<<"\n";
-            (sDists[i].writeParamRowDataFrame(s_par[i],model,ss1.str()))<<"\n";
-            (sDists[i].writeYfitRowDataFrame(s_fit[i],ss1.str()))<<"\n";
+            (sDists[i].writelogLRowDataFrame(f_logL,ss1.str()))<<"\t"<<evidences[i]<<"\n";
+            (sDists[i].writeParamRowDataFrame(f_par,model,ss1.str()))<<"\n";
+            (sDists[i].writeYfitRowDataFrame(f_fit,ss1.str()))<<"\n";
+          }
 
 
-            if (o%5==0)
+        if (o%2==0)
+          {
+//#pragma omp parallel for
+            for (std::size_t i=0; i<sDists.size(); ++i)
               {
                 (sDists[i].writeSimulationRowDataFrame
-                    (s_sim[i],data,model,ss1.str()))<<"\n";
+                    (f_sim,data,model,ss1.str()))<<"\n";
               }
           }
 
 
-        for (std::size_t i=0; i<sDists.size(); ++i)
-          {
-            f_logL<<s_logL[i].str();
-            f_par<<s_par[i].str();
-            f_fit<<s_fit[i].str();
-            f_sim<<s_sim[i].str();
+//        for (std::size_t i=0; i<sDists.size(); ++i)
+//          {
+//            f_logL<<s_logL[i].str();
+//            f_par<<s_par[i].str();
+//            f_fit<<s_fit[i].str();
+//            f_sim<<s_sim[i].str();
 
-          }
+//          }
 
-           f_logL.flush();
-        // f_par.flush();
-        // f_fit.flush();
+        f_logL.flush();
+         f_par.flush();
+         f_fit.flush();
 
-        //  f_sim.flush();
-        //  os.flush();
+          f_sim.flush();
+          os.flush();
         std::size_t f_sim_pos=
             f_sim.tellp()+f_logL.tellp()+f_fit.tellp()+f_par.tellp()+os.tellp();
         if (f_sim_pos>maxSimFileSize)

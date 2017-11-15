@@ -2030,8 +2030,6 @@ CortexSimulation SimplestModel::simulate(Parameters par,
                   return s;
                 }
 
-
-
             }
           dt_run=dts.first[its];
           nextEuler(p,c,dt_run);

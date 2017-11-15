@@ -34,7 +34,7 @@ echo "
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lmoffatt/GCC-7.2.0/lib64/
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-srun /home/lmoffatt/Astro/parallelOpt/Astro /home/lmoffatt/Astro/astro/run/evidence_script_tupac_2 LABEL model_101
+srun /home/lmoffatt/Astro/parallelOpt/Astro /home/lmoffatt/Astro/astro/run/evidence_script_tupac LABEL model_101
 
 
 echo "
