@@ -331,7 +331,6 @@ DISTFILES += \
     run/m13/t_m13 \
     run/evidence_script_tupac \
     run/Restart_script_tupac \
-    run/m13/rt1_m13 \
     run/m101/t_m101 \
     run/m101/rt1_m101 \
     run/m13/t2_m13 \
@@ -364,7 +363,9 @@ DISTFILES += \
     run/m01/t_m01_4 \
     run/m10/t_m10_4 \
     run/m11/t_m11 \
-    run/m11/rt_m11
+    run/m11/rt_m11 \
+    run/m01/rt_m01 \
+    run/m13/rt_m13
 
 win32{
 LIBS += -L$$PWD/bin -lcygblas \
