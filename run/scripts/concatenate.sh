@@ -31,12 +31,12 @@ echo $(ls beta_par_eq_$1.txt -lh)
 }
 
 
-extract_all(){
+extract_all(){																														
 a=($ls ./m*/[PQ]*$1.*.000*done)
 cp $a $1_header
-grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*  ./m*/[PQ]*$1.* -h >temporary_all
+grep '^model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*'  ./m*/[PQ]*$1.* -h >temporary_all
 cat $1_header temporary_all >dtotal_$1.txt
-rm temporary_all
+rm temporary_all																		
 echo all $1
 echo $(ls dtotal_$1.txt -lh)
 }
