@@ -32,9 +32,9 @@ echo $(ls beta_par_eq_$1.txt -lh)
 
 
 extract_all(){
-a=($ls ./m*/*$1.*.000*)
+a=($ls ./m*/[PQ]*$1.*.000*)
 cp $a $1_header
-cat $1_header ./m*/*$1.*.00[1-9]* ./m*/*$1.*.0[1-9][0-9]* >total_$1.txt
+cat $1_header ./m*/[PQ]*$1.*.00[1-9]* ./m*/[PQ]*$1.*.[0-9][1-9][0-9]* >total_$1.txt
 echo all $1
 echo $(ls total_$1.txt -lh)
 }
@@ -74,17 +74,17 @@ echo $(ls beta_$1_total.txt -lh)
 }
 
 
-#extract_all logL
+extract_all logL
 #extract_beta_1 fit
 #extract_beta_eq_1 sim
-extract_par_eq_beta_1 m01
-extract_par_eq_beta_1 m02
-extract_par_eq_beta_1 m03
-extract_par_eq_beta_1 m10
-extract_par_eq_beta_1 m101
-extract_par_eq_beta_1 m11
-extract_par_eq_beta_1 m12
-extract_par_eq_beta_1 m13
+#extract_par_eq_beta_1 m01
+#extract_par_eq_beta_1 m02
+#extract_par_eq_beta_1 m03
+#extract_par_eq_beta_1 m10
+#extract_par_eq_beta_1 m101
+#extract_par_eq_beta_1 m11
+#extract_par_eq_beta_1 m12
+#extract_par_eq_beta_1 m13
 
 
 
