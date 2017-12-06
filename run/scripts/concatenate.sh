@@ -32,11 +32,11 @@ echo $(ls beta_par_eq_$1.txt -lh)
 
 
 extract_all(){
-a=($ls ./m*/[PQ]*$1.*.000*)
+a=($ls ./m*/[PQ]*$1.*.000*done)
 cp $a $1_header
-cat $1_header ./m*/[PQ]*$1.*.00[1-9]* ./m*/[PQ]*$1.*.[0-9][1-9][0-9]* >total_$1.txt
+cat $1_header ./m*/[PQ]*$1.*.00[1-9]*done ./m*/[PQ]*$1.*.[0-9][1-9][0-9]*done >dtotal_$1.txt
 echo all $1
-echo $(ls total_$1.txt -lh)
+echo $(ls dtotal_$1.txt -lh)
 }
 
 
