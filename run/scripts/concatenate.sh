@@ -18,7 +18,7 @@ echo $(ls beta_par_$1.txt -lh)
 
 extract_par_eq_beta_1(){
 cd $1
-a=($ls *par*.000*)
+a=($ls *par*.000.done)
 cp $a par_header
 
 grep "$model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]*[[:space:]][1-9][0-9][0-9][0-9][[:space:]][-.0-9]*[[:space:]]\(1\|1[.][01]*e[-]07\|9[.][0-9]*e[-]08\)[[:space:]][0-9]*[[:space:]][-.0-9]*"  [PQ]*par.*.[1-9][0-9][0-9]* -h  >temporaryyy
@@ -77,15 +77,15 @@ echo $(ls beta_$1_total.txt -lh)
 
 
 #extract_all logL
-extract_par_eq_beta_1 m01
+#extract_par_eq_beta_1 m01
 #extract_par_eq_beta_1 m02
-extract_par_eq_beta_1 m03
-extract_par_eq_beta_1 m10
-extract_par_eq_beta_1 m101
+#extract_par_eq_beta_1 m03
+#extract_par_eq_beta_1 m10
+#extract_par_eq_beta_1 m101
 extract_par_eq_beta_1 m11
 #extract_par_eq_beta_1 m12
-extract_par_eq_beta_1 m13
-extract_beta_eq_1 sim
+#extract_par_eq_beta_1 m13
+#extract_beta_eq_1 sim
 #extract_beta_1 fit
 
 
