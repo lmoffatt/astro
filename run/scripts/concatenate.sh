@@ -21,7 +21,7 @@ cd $1
 a=($ls *par*.000*)
 cp $a par_header
 
-grep "$model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]*[[:space:]][5-9][0-9][0-9][[:space:]][-.0-9]*[[:space:]]\(1\|1e[-]07\|9[.][0-9]*e[-]08\)[[:space:]][0-9]*[[:space:]][-.0-9]*"  *par.* -h  >temporaryyy
+grep "$model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]*[[:space:]][1-9][5-9][0-9][0-9][[:space:]][-.0-9]*[[:space:]]\(1\|1[.][01]*e[-]07\|9[.][0-9]*e[-]08\)[[:space:]][0-9]*[[:space:]][-.0-9]*"  *par.*.[1-9][0-9][0-9] -h  >temporaryyy
 
 cat par_header temporaryyy>../beta_par_eq_$1.txt
 rm temporaryyy
@@ -34,7 +34,7 @@ echo $(ls beta_par_eq_$1.txt -lh)
 extract_all(){
 a=($ls ./m*/[PQ]*$1.*.000*done)
 cp $a $1_header
-cat $1_header ./m*/[PQ]*$1.*.00[1-9]*done ./m*/[PQ]*$1.*.[0-9][1-9][0-9]*done >dtotal_$1.txt
+cat $1_header ./m*/[PQ]*$1.*.00[1-9]*done ./m*/[PQ]*$1.*.0[1-9][0-9]*done ./m*/[PQ]*$1.*.[1-9][0-9][0-9]*done >dtotal_$1.txt
 echo all $1
 echo $(ls dtotal_$1.txt -lh)
 }
