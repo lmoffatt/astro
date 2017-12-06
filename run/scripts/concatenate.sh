@@ -34,7 +34,7 @@ echo $(ls beta_par_eq_$1.txt -lh)
 extract_all(){																														
 a=($ls ./m*/[PQ]*$1.*.000*done)
 cp $a $1_header
-grep '^model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*'  ./m*/[PQ]*$1.* -h >temporary_all
+grep '^model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*'  ./m*/[PQ]*$1.*done -h >temporary_all
 cat $1_header temporary_all >dtotal_$1.txt
 rm temporary_all																		
 echo all $1
@@ -55,7 +55,7 @@ echo $(ls total_eq_$1.txt -lh)
 extract_beta_eq_1(){
 a=($ls ./m*/*$1*.000*)
 cp $a $1_header
-grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]**[[:space:]][5-9][0-9][0-9][[:space:]][-.0-9]*[[:space:]][1][[:space:]][0-9]*[[:space:]][-.0-9]*  ./m*/*$1.* -h >temporaryyy
+grep '^model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]**[[:space:]][5-9][0-9][0-9][[:space:]][-.0-9]*[[:space:]][1][[:space:]][0-9]*[[:space:]][-.0-9]*'  ./m*/*$1.* -h >temporaryyy
 
 cat $1_header temporaryyy>beta_eq_$1_total.txt
 rm temporaryyy
@@ -66,7 +66,7 @@ echo $(ls beta_eq_$1_total.txt -lh)
 extract_beta_1(){
 a=($ls ./m*/*$1*.000*)
 cp $a $1_header
-grep $model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][1][[:space:]][0-9]*[[:space:]][-.0-9]*  ./m*/*$1.* -h >temporaryyy
+grep '^model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][1][[:space:]][0-9]*[[:space:]][-.0-9]*'  ./m*/*$1.* -h >temporaryyy
 
 cat $1_header temporaryyy>beta_$1_total.txt
 rm temporaryyy
