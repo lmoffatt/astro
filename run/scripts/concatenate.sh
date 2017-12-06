@@ -76,9 +76,7 @@ echo $(ls beta_$1_total.txt -lh)
 }
 
 
-extract_all logL
-extract_beta_1 fit
-extract_beta_eq_1 sim
+#extract_all logL
 extract_par_eq_beta_1 m01
 #extract_par_eq_beta_1 m02
 extract_par_eq_beta_1 m03
@@ -87,6 +85,8 @@ extract_par_eq_beta_1 m101
 extract_par_eq_beta_1 m11
 #extract_par_eq_beta_1 m12
 extract_par_eq_beta_1 m13
+extract_beta_eq_1 sim
+#extract_beta_1 fit
 
 
 
