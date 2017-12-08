@@ -53,7 +53,7 @@ echo $(ls total_eq_$1.txt -lh)
 }
 
 extract_beta_eq_1(){
-a=($ls ./m*/[PQ]*$1*.000*)
+a=($ls ./m*/[Q]*$1*.000*)
 cp $a $1_header
 grep '^model_[0-9]*[[:space:]][0-9]*[[:space:]][-.0-9]*[[:space:]][0-9]**[[:space:]][1-9][0-9][0-9][0-9][[:space:]][-.0-9]*[[:space:]][1][[:space:]][0-9]*[[:space:]][-.0-9]*'  ./m*/[PQ]*$1.*.[1-9][0-9][-9]* -h >temporaryyy
 
@@ -82,10 +82,10 @@ echo $(ls beta_$1_total.txt -lh)
 #extract_par_eq_beta_1 m03
 #extract_par_eq_beta_1 m10
 #extract_par_eq_beta_1 m101
-extract_par_eq_beta_1 m11
+#extract_par_eq_beta_1 m11
 #extract_par_eq_beta_1 m12
 #extract_par_eq_beta_1 m13
-#extract_beta_eq_1 sim
+extract_beta_eq_1 sim
 #extract_beta_1 fit
 
 
