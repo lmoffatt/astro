@@ -2,13 +2,13 @@
 
 # Correr con `sbatch /ruta/a/este/script
 
-#SBATCH --job-name="Nm3_01"
+#SBATCH --job-name="t8_01"
 #SBATCH --nodes=1                    # Use one node
-##SBATCH --ntasks=1                   # Run a single task
-##SBATCH --cpus-per-task=64            # Number of CPU cores per task
+#SBATCH --ntasks=1                   # Run a single task
+#SBATCH --cpus-per-task=8            # Number of CPU cores per task
 #SBATCH --workdir=/home/lmoffatt/Astro/astro/run/m01
-#SBATCH --error="m01-%j.err"
-#SBATCH --output="m01-%j.out"
+#SBATCH --error="t801-%j.err"
+#SBATCH --output="t801-%j.out"
 #SBATCH --partition=free-rider
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=lmoffatt@gmail.com
